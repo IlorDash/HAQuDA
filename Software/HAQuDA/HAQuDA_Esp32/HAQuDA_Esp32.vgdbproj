@@ -18,7 +18,10 @@
           <string>HAQuDA_Esp32.ino</string>
         </Files>
       </RootSketchFolder>
-      <OtherFiles />
+      <OtherFiles>
+        <string>sketches\TimeHelper.h</string>
+        <string>sketches\Board.h</string>
+      </OtherFiles>
     </ProjectModeSettings>
   </Project>
   <Build xsi:type="com.visualgdb.build.external.arduino">

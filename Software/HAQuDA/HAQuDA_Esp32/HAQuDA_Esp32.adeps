@@ -9,5 +9,13 @@
         <Version>1.0.6</Version>
       </Key>
     </Dependency>
+    <Dependency>
+      <Type>Library</Type>
+      <Key>
+        <Packager>Volodymyr Shymanskyy</Packager>
+        <Name>Blynk</Name>
+        <Version>0.6.1</Version>
+      </Key>
+    </Dependency>
   </Dependencies>
 </ArduinoDependencyCollection>
