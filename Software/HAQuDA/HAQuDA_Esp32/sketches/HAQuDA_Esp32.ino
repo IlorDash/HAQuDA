@@ -51,3 +51,15 @@ void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info) {
 	digitalWrite(LED_BUILTIN, LOW);
 	log_i("WiFiStationDisconnected");
 }
+
+BLYNK_WRITE(V0) {
+	int red = param[0].asInt();
+	int green = param[1].asInt();
+	int blue = param[2].asInt();
+	log_i("V0, r: %d, g: %d, b: %d,", red, green, blue);
+	if (red > 80) {
+		digitalWrite(LED_BUILTIN, HIGH);
+	} else {
+		digitalWrite(LED_BUILTIN, LOW);
+	}
+}
