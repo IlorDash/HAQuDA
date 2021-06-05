@@ -48,7 +48,7 @@
 .tmp_versions/
 modules.order
 Module.symvers
-Mkfile.old
+*.old
 dkms.conf
 
 **/Obj/*
@@ -58,9 +58,22 @@ dkms.conf
 **/Drivers/**
 **/EWARM/*
 
-**/Garbages/*
-
 **/__Previews/*
 **/History/*
-**/Project Logs for SatSP_Microscope/*
-**/Project Outputs for SatSP_Microscope/*
+
+*/__Previews/
+*.bak
+*.bak_cir
+*.vgdbsettings.*.user
+*/MemoryUtilizationReport.xml
+*.vcxproj.user
+*/.vs/
+*.mak.old
+Makefile.old
+~$*.xlsx
+Garbage/
+SCH_PCB/*.TNO
+SCH_PCB/*.inx
+plot.log
+.visualgdb
+*.vgdbproj.*.user
