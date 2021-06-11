@@ -58,6 +58,8 @@ dkms.conf
 **/Drivers/**
 **/EWARM/*
 
+**/Garbages/*
+
 **/__Previews/*
 **/History/*
 
