@@ -47,7 +47,7 @@
   </CustomDebug>
   <DeviceTerminalSettings>
     <Connection xsi:type="com.sysprogs.terminal.connection.serial">
-      <ComPortName>COM8</ComPortName>
+      <ComPortName>COM17</ComPortName>
       <AdvancedSettings>
         <BaudRate>115200</BaudRate>
         <DataBits>8</DataBits>
@@ -113,10 +113,17 @@
   <UserDefinedVariables />
   <ImportedPropertySheets />
   <CodeSense>
-    <Enabled>Unknown</Enabled>
+    <Enabled>True</Enabled>
+    <ExternalSourceFileList />
     <ExtraSettings>
       <HideErrorsInSystemHeaders>true</HideErrorsInSystemHeaders>
       <SupportLightweightReferenceAnalysis>true</SupportLightweightReferenceAnalysis>
+      <DiscoverySettings>
+        <Mode>Enabled</Mode>
+        <SearchInProjectDir>true</SearchInProjectDir>
+        <SearchInSourceDirs>true</SearchInSourceDirs>
+        <SearchInIncludeSubdirs>true</SearchInIncludeSubdirs>
+      </DiscoverySettings>
       <CheckForClangFormatFiles>true</CheckForClangFormatFiles>
       <FormattingEngine xsi:nil="true" />
     </ExtraSettings>
@@ -197,7 +204,7 @@
       </DebugSettingsOverride>
       <BuildSettingsExtension xsi:type="com.visualgdb.build.external.arduino.extension">
         <BoardID>esp32:esp32:esp32</BoardID>
-        <COMPort>COM8</COMPort>
+        <COMPort>COM17</COMPort>
         <Properties>
           <Entries>
             <KeyValue>
@@ -214,11 +221,11 @@
             </KeyValue>
             <KeyValue>
               <Key>FlashMode</Key>
-              <Value>qio</Value>
+              <Value>dio</Value>
             </KeyValue>
             <KeyValue>
               <Key>FlashFreq</Key>
-              <Value>80</Value>
+              <Value>40</Value>
             </KeyValue>
             <KeyValue>
               <Key>FlashSize</Key>
