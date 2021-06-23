@@ -47,7 +47,7 @@
   </CustomDebug>
   <DeviceTerminalSettings>
     <Connection xsi:type="com.sysprogs.terminal.connection.serial">
-      <ComPortName>COM17</ComPortName>
+      <ComPortName>COM3</ComPortName>
       <AdvancedSettings>
         <BaudRate>115200</BaudRate>
         <DataBits>8</DataBits>
@@ -168,23 +168,36 @@
           <EnableVerboseMode>true</EnableVerboseMode>
         </AdditionalGDBSettings>
         <DebugMethod>
-          <ID>gdbstub</ID>
-          <InterfaceID>com.sysprogs.espxx.bootloader</InterfaceID>
-          <InterfaceSerialNumber>01530E1A</InterfaceSerialNumber>
-          <Configuration xsi:type="com.visualgdb.edp.espxx.settings.gdbstub.esp32">
-            <COMPort>COM8</COMPort>
-            <StubBaudRate>74880</StubBaudRate>
-            <BootloaderBaudRate>115200</BootloaderBaudRate>
-            <BootloaderResetDelay>50</BootloaderResetDelay>
-            <BootloaderActivationSequence>!DTR;RTS;SLEEP;DTR;!RTS;SLEEP;!DTR;SLEEP</BootloaderActivationSequence>
+          <ID>openocd</ID>
+          <Configuration xsi:type="com.visualgdb.edp.openocd.settings.esp32">
+            <CommandLine>-f interface/ftdi/olimex-arm-usb-ocd.cfg -c "adapter_khz 3000" -f target/esp32.cfg</CommandLine>
+            <ExtraParameters>
+              <Frequency xsi:nil="true" />
+              <BoostedFrequency xsi:nil="true" />
+              <ConnectUnderReset>false</ConnectUnderReset>
+            </ExtraParameters>
+            <LoadProgressGUIThreshold>131072</LoadProgressGUIThreshold>
             <ProgramMode>Enabled</ProgramMode>
-            <SuppressResetConfirmation>false</SuppressResetConfirmation>
-            <PatchBootloader>true</PatchBootloader>
+            <StartupCommands>
+              <string>set remotetimeout 60</string>
+              <string>target remote :$$SYS:GDB_PORT$$</string>
+              <string>mon gdb_breakpoint_override hard</string>
+              <string>mon reset halt</string>
+              <string>load</string>
+            </StartupCommands>
+            <ProgramFLASHUsingExternalTool>false</ProgramFLASHUsingExternalTool>
+            <PreferredGDBPort>0</PreferredGDBPort>
+            <PreferredTelnetPort>0</PreferredTelnetPort>
+            <AlwaysPassSerialNumber>false</AlwaysPassSerialNumber>
+            <SelectedCoreIndex xsi:nil="true" />
+            <SuggestionLogicRevision>1</SuggestionLogicRevision>
+            <CheckFLASHSize>true</CheckFLASHSize>
             <FLASHSettings>
               <Size>size2MB</Size>
               <Frequency>freq40M</Frequency>
               <Mode>DIO</Mode>
             </FLASHSettings>
+            <PatchBootloader>true</PatchBootloader>
           </Configuration>
         </DebugMethod>
         <AutoDetectRTOS>true</AutoDetectRTOS>
