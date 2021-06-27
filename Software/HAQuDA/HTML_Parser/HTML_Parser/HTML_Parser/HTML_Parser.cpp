@@ -34,8 +34,8 @@ void HTML_Parser(const char *inputFile, const char *outputFile) {
 }
 
 int main() {
-	const char *inputFileName = "D:\\Projects\\ESP 8266\\AmbientOrb\\HTML_Parser\\input.txt";
-	const char *outputFileName = "D:\\Projects\\ESP 8266\\AmbientOrb\\HTML_Parser\\output.txt";
+	const char *inputFileName = "..\\..\\input.txt";
+	const char *outputFileName = "..\\..\\output.txt";
 	HTML_Parser(inputFileName, outputFileName);
 	return 0;
 }
