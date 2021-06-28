@@ -17,18 +17,25 @@ void HTML_Parser(const char *inputFile, const char *outputFile) {
 	}
 
 	char buff;
-	char prevSymbol = 'a';
-
+	fout << '"';
+	bool nextString = false;
 	while (fin.get(buff)) {
 		if (buff == '"') {
 			fout << '\\';
 			fout << '"';
-		} else if ((buff != '\n') && ((buff != ' ') && (prevSymbol != '>'))) {
+		} else if (buff == '\n') {
+			fout << '"';
+			fout << buff;
+			nextString = true;
+		} else if ((buff != ' ') && nextString) {
+			fout << '"';
+			fout << buff;
+			nextString = false;
+		} else {
 			fout << buff;
 		}
-		prevSymbol = buff;
 	}
-
+	fout << '"';
 	fin.close();
 	fout.close();
 }
