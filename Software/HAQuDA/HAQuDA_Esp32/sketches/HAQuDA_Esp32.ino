@@ -1,17 +1,34 @@
 
 #include <WiFi.h>
+
+#include <WebServer.h>
+#include "WebPages.h"
+
 #include <WiFiClient.h>
 #include <BlynkSimpleEsp32.h>
 
 #include "Board.h"
+#include <Adafruit_Sensor.h>
+#include <DHT.h>
+#include <SoftwareSerial.h>
 
-#include <HardwareSerial.h>
+//#include <SoftwareSerial.h>
 
 #define LENG 31 // 0x42 + 31 bytes equal to 32 bytes
 
-char auth[] = "4MdAV357utNNjm7vmCUEY2NPAdlHQMSM";
-char ssid[] = "ilor";
-char pass[] = "ilor66142222!";
+#define DHTPIN 27
+#define DHTTYPE DHT11
+
+char BlynkAuth[] = "4MdAV357utNNjm7vmCUEY2NPAdlHQMSM";
+char ssid_AP[] = "HAQuDA_ESP32";
+char pass_AP[] = "1234567!";
+
+IPAddress local_ip(192, 168, 1, 1);
+IPAddress gateway(192, 168, 1, 1);
+IPAddress subnet(255, 255, 255, 0);
+
+String ssidLocal = "";
+String passLocal = "";
 
 unsigned char buf[LENG];
 
@@ -19,7 +36,10 @@ int PM01Value = 0;  // define PM1.0 value of the air detector module
 int PM2_5Value = 0; // define PM2.5 value of the air detector module
 int PM10Value = 0;  // define PM10 value of the air detector module
 
+bool WiFiCredsFound = false;
+
 WidgetTerminal terminal(V1);
+WebServer server(80);
 
 void WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info);
 void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info);
@@ -30,28 +50,47 @@ int transmitPM10(unsigned char *thebuf);
 
 char checkValue(unsigned char *thebuf, char leng);
 
-HardwareSerial PMSerial(1);
+SoftwareSerial PMSerial;
+DHT dht(DHTPIN, DHTTYPE);
 
 void setup() {
 	Serial.begin(115200);
-	PMSerial.begin(9600, SERIAL_8N1, 10, 9);
+	PMSerial.begin(9600, SWSERIAL_8N1, 17, 16, false, 256);
 	PMSerial.setTimeout(1500);
+
+	dht.begin();
 
 	pinMode(LED_BUILTIN, OUTPUT);
 
-	WiFi.onEvent(WiFiStationConnected, SYSTEM_EVENT_STA_CONNECTED);
-	WiFi.onEvent(WiFiStationDisconnected, SYSTEM_EVENT_STA_DISCONNECTED);
-	WiFi.mode(WIFI_STA);
-	WiFi.begin(ssid, pass, 0, 0);
+	WiFi.mode(WIFI_AP);
+	WiFi.softAP(ssid_AP, pass_AP);
+	WiFi.softAPConfig(local_ip, gateway, subnet);
+	// IPAddress ip_address = WiFi.softAPIP(); // IP Address of our accesspoint
+	delay(100);
+	// Start web server
 
-	Blynk.config(auth, BLYNK_DEFAULT_DOMAIN, BLYNK_DEFAULT_PORT);
+	// Serial.print("AP IP address: ");
+	// Serial.println(ip_address);
+
+	server.on("/", setWiFiCreds);
+	server.onNotFound(handle_NotFound);
+	server.begin();
+	Serial.println("HTTP server started");
 }
 
 uint16_t measNum = 0;
 void loop() {
+	server.handleClient();
 	wl_status_t status = WiFi.status();
+	if (WiFiCredsFound) {
+		WiFiCredsFound = false;
+		connectToWiFi();
+	} else if (!WiFiCredsFound && (status != WL_CONNECTED)) {
+		return;
+	}
+
 	if (status != WL_CONNECTED) {
-		log_i("Connecting to %s", ssid);
+		log_i("Connecting to %s", ssidLocal.c_str());
 		WiFi.reconnect();
 		uint32_t timer = millis();
 
@@ -83,11 +122,16 @@ void loop() {
 		}
 	}
 
+	// Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+	float humid = dht.readHumidity();
+	// Read temperature as Celsius (the default)
+	float temp = dht.readTemperature();
+
 	static unsigned long OledTimer = millis();
 	if (millis() - OledTimer >= 1000) {
 		measNum++;
 		OledTimer = millis();
-		
+
 		terminal.print("	Measurment:");
 		terminal.println(measNum);
 
@@ -104,8 +148,48 @@ void loop() {
 		terminal.println("  ug/m3");
 		terminal.println();
 
+		if (isnan(humid) || isnan(temp)) {
+			Serial.println(F("Failed to read from DHT sensor!"));
+		} else {
+			Serial.println("Read DHT data");
+			terminal.print("Temp: ");
+			terminal.print(temp);
+			terminal.println("  C");
+			terminal.println();
+			terminal.print("Humid: ");
+			terminal.print(humid);
+			terminal.println("  %");
+			terminal.println();
+		}
+
 		terminal.flush();
 	}
+}
+
+void connectToWiFi() {
+	WiFi.mode(WIFI_STA);
+	WiFi.begin(ssidLocal.c_str(), passLocal.c_str(), 0, 0);
+	WiFi.onEvent(WiFiStationConnected, SYSTEM_EVENT_STA_CONNECTED);
+	WiFi.onEvent(WiFiStationDisconnected, SYSTEM_EVENT_STA_DISCONNECTED);
+
+	Blynk.config(BlynkAuth, BLYNK_DEFAULT_DOMAIN, BLYNK_DEFAULT_PORT);
+}
+
+void setWiFiCreds() {
+	if (server.hasArg("ssid") && server.hasArg("password")) {
+		ssidLocal = server.arg("ssid");
+		passLocal = server.arg("password");
+		WiFiCredsFound = true;
+		server.send(200, "text/html", WiFiCredsPage);
+		// server.stop();
+	} else {
+		// If one of the creds is missing, go back to form page
+		server.send(200, "text/html", WiFiCredsPage);
+	}
+}
+
+void handle_NotFound() {
+	server.send(404, "text/plain", "Not found");
 }
 
 void WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info) {

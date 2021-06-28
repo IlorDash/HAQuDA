@@ -21,11 +21,15 @@
       <OtherFiles>
         <string>sketches\TimeHelper.h</string>
         <string>sketches\Board.h</string>
+        <string>sketches\WebPages.h</string>
       </OtherFiles>
     </ProjectModeSettings>
   </Project>
   <Build xsi:type="com.visualgdb.build.external.arduino">
     <BuildLogMode xsi:nil="true" />
+    <AdditionalLibraryDirectories>
+      <string>..\..\..\..\..\..\Downloads\EspSoftwareSerial-6.12.6</string>
+    </AdditionalLibraryDirectories>
     <IgnoreNormalLibraryDirectories>false</IgnoreNormalLibraryDirectories>
     <OutputSubdirectory>Output\$(PlatformName.defuse)\$(ConfigurationName.defuse)</OutputSubdirectory>
     <EnableVerboseBuild>false</EnableVerboseBuild>
@@ -58,7 +62,7 @@
     </Connection>
     <LastConnectionTime>0</LastConnectionTime>
     <EchoTypedCharacters>false</EchoTypedCharacters>
-    <ClearContentsWhenReconnecting>false</ClearContentsWhenReconnecting>
+    <ClearContentsWhenReconnecting>true</ClearContentsWhenReconnecting>
     <ReconnectAutomatically>false</ReconnectAutomatically>
     <DisplayMode>ASCII</DisplayMode>
     <Colors>
@@ -217,7 +221,7 @@
       </DebugSettingsOverride>
       <BuildSettingsExtension xsi:type="com.visualgdb.build.external.arduino.extension">
         <BoardID>esp32:esp32:esp32</BoardID>
-        <COMPort>COM17</COMPort>
+        <COMPort>COM3</COMPort>
         <Properties>
           <Entries>
             <KeyValue>

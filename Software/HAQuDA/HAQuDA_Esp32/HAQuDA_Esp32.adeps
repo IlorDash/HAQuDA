@@ -17,5 +17,13 @@
         <Version>1.0.0-beta.3</Version>
       </Key>
     </Dependency>
+    <Dependency>
+      <Type>Library</Type>
+      <Key>
+        <Packager>Dirk Kaar, Peter Lerup</Packager>
+        <Name>EspSoftwareSerial</Name>
+        <Version>6.12.6</Version>
+      </Key>
+    </Dependency>
   </Dependencies>
 </ArduinoDependencyCollection>
