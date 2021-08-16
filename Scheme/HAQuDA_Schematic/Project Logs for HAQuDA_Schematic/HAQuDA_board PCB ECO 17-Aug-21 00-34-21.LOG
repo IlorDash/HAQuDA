@@ -1,0 +1,50 @@
+Removed Pin From Net: NetName=VCC Pin=P?-1
+Removed Pin From Net: NetName=JTAG_TDI Pin=P?-3
+Change Component Designator: OldDesignator=C? NewDesignator=C1
+Change Component Designator: OldDesignator=C? NewDesignator=C2
+Change Component Designator: OldDesignator=C? NewDesignator=C3
+Change Component Designator: OldDesignator=C? NewDesignator=C4
+Change Component Designator: OldDesignator=C? NewDesignator=C5
+Change Component Designator: OldDesignator=C? NewDesignator=C6
+Change Component Designator: OldDesignator=J? NewDesignator=J1
+Change Component Designator: OldDesignator=J? NewDesignator=J2
+Change Component Designator: OldDesignator=J? NewDesignator=J3
+Change Component Designator: OldDesignator=P? NewDesignator=P2
+Change Component Designator: OldDesignator=Q? NewDesignator=Q1
+Change Component Designator: OldDesignator=R? NewDesignator=R1
+Change Component Designator: OldDesignator=R? NewDesignator=R2
+Change Component Designator: OldDesignator=R? NewDesignator=R3
+Change Component Designator: OldDesignator=R? NewDesignator=R4
+Change Component Designator: OldDesignator=R? NewDesignator=R5
+Change Component Designator: OldDesignator=R? NewDesignator=R6
+Change Component Designator: OldDesignator=R? NewDesignator=R7
+Change Component Designator: OldDesignator=R? NewDesignator=R8
+Added Pin To Net: NetName=GND Pin=P2-1
+Change Net Name : Old Net Name=NetQ?_2 New Net Name=NetQ1_2
+Added Pin To Net: NetName=NetQ1_1 Pin=Q1-1
+Added Pin To Net: NetName=NetQ1_1 Pin=R7-1
+Added Net: Name=NetQ1_1
+Added Pin To Net: NetName=NetR1_1 Pin=R1-1
+Added Net: Name=NetR1_1
+Added Pin To Net: NetName=NetR4_2 Pin=R4-2
+Added Net: Name=NetR4_2
+Added Pin To Net: NetName=NetR5_1 Pin=R5-1
+Added Pin To Net: NetName=NetR5_1 Pin=R6-1
+Added Net: Name=NetR5_1
+Added Pin To Net: NetName=NetR5_2 Pin=R5-2
+Added Net: Name=NetR5_2
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component C1 100uF
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component C2 100nF
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component C3 100uF
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component C4 100nF
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component C6 6.3V 470uF
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component J2 105017-0001
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component J3 USB-A
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component R2 4.7K
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component R3 4.7K
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component R4 4.7K
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component R5 2.2K
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component R6 4.7K
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component R7 4.7K
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component R8 1K
+Added Room: Name=HAQuDa_schematic
