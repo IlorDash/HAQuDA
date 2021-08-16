@@ -7,16 +7,21 @@
 #include <WiFiClient.h>
 #include <BlynkSimpleEsp32.h>
 
-#include "Board.h"
-#include <Adafruit_Sensor.h>
-#include <DHT.h>
+#include "Arduino.h"
+#include "TimeHelper.h"
+
+
 #include <SoftwareSerial.h>
 
-//#include <SoftwareSerial.h>
+#include <DHT.h>
+
+#include "winsen_ze25o3.h"
 
 #define LENG 31 // 0x42 + 31 bytes equal to 32 bytes
 
-#define DHTPIN 27
+#define LED_BUILTIN 2
+
+#define DHTPIN 0
 #define DHTTYPE DHT11
 
 char BlynkAuth[] = "4MdAV357utNNjm7vmCUEY2NPAdlHQMSM";
@@ -27,8 +32,11 @@ IPAddress local_ip(192, 168, 1, 1);
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 255, 0);
 
-String ssidLocal = "";
-String passLocal = "";
+//String ssidLocal = "";
+//String passLocal = "";
+
+String ssidLocal = "ilor";
+String passLocal = "ilor66142222!";
 
 unsigned char buf[LENG];
 
@@ -44,6 +52,9 @@ WebServer server(80);
 void WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info);
 void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info);
 void UpdateVirtualPins();
+
+void createAP();
+
 int transmitPM01(unsigned char *thebuf);
 int transmitPM2_5(unsigned char *thebuf);
 int transmitPM10(unsigned char *thebuf);
@@ -51,6 +62,7 @@ int transmitPM10(unsigned char *thebuf);
 char checkValue(unsigned char *thebuf, char leng);
 
 SoftwareSerial PMSerial;
+SoftwareSerial O3Serial;
 DHT dht(DHTPIN, DHTTYPE);
 
 void setup() {
@@ -58,50 +70,50 @@ void setup() {
 	PMSerial.begin(9600, SWSERIAL_8N1, 17, 16, false, 256);
 	PMSerial.setTimeout(1500);
 
+	O3Serial.begin(9600, SWSERIAL_8N1, 2, 0, false, 256);
+	O3Serial.setTimeout(1500);
 	dht.begin();
 
 	pinMode(LED_BUILTIN, OUTPUT);
 
-	WiFi.mode(WIFI_AP);
-	WiFi.softAP(ssid_AP, pass_AP);
-	WiFi.softAPConfig(local_ip, gateway, subnet);
-	// IPAddress ip_address = WiFi.softAPIP(); // IP Address of our accesspoint
-	delay(100);
-	// Start web server
+	//createAP();
+
+	// Start web server-
 
 	// Serial.print("AP IP address: ");
 	// Serial.println(ip_address);
 
-	server.on("/", setWiFiCreds);
-	server.onNotFound(handle_NotFound);
-	server.begin();
-	Serial.println("HTTP server started");
+	//server.on("/", setWiFiCreds);
+	//server.onNotFound(handle_NotFound);
+	//server.begin();
+	//Serial.println("HTTP server started");
 }
 
 uint16_t measNum = 0;
+uint32_t dht11_meas_time = 0;
 void loop() {
-	server.handleClient();
+	//server.handleClient();
 	wl_status_t status = WiFi.status();
-	if (WiFiCredsFound) {
-		WiFiCredsFound = false;
-		connectToWiFi();
-	} else if (!WiFiCredsFound && (status != WL_CONNECTED)) {
-		return;
-	}
+//	if (WiFiCredsFound) {
+//		WiFiCredsFound = false;
+//		connectToWiFi();
+//	} else if (!WiFiCredsFound && (status != WL_CONNECTED)) {
+//		return;
+//	}
 
-	if (status != WL_CONNECTED) {
-		log_i("Connecting to %s", ssidLocal.c_str());
-		WiFi.reconnect();
-		uint32_t timer = millis();
-
-		while (WiFi.status() != WL_CONNECTED && !PeriodInRange(timer, 5000)) {
-			delay(200);
-		}
-	} else if (!Blynk.connected()) {
-		Blynk.connect();
-	} else {
-		Blynk.run();
-	}
+//	if (status != WL_CONNECTED) {
+//		log_i("Connecting to %s", ssidLocal.c_str());
+//		WiFi.reconnect();
+//		uint32_t timer = millis();
+//
+//		while (WiFi.status() != WL_CONNECTED && !PeriodInRange(timer, 5000)) {
+//			delay(200);
+//		}
+//	} else if (!Blynk.connected()) {
+//		Blynk.connect();
+//	} else {
+//		Blynk.run();
+//	}
 
 	//	while (MySerial.available() > 0) {
 	//		uint8_t byteFromSerial = MySerial.read();
@@ -122,11 +134,20 @@ void loop() {
 		}
 	}
 
-	// Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
-	float humid = dht.readHumidity();
-	// Read temperature as Celsius (the default)
-	float temp = dht.readTemperature();
+	Serial.println(O3Serial.read());
 
+	//	if (O3Serial.find(0xFF)) {
+	//		PMSerial.readBytes(buf, LENG);
+	//
+	//		if (buf[0] == 0x4d) {
+	//			if (checkValue(buf, LENG)) {
+	//				PM01Value = transmitPM01(buf);   // count PM1.0 value of the air detector module
+	//				PM2_5Value = transmitPM2_5(buf); // count PM2.5 value of the air detector module
+	//				PM10Value = transmitPM10(buf);   // count PM10 value of the air detector module
+	//			}
+	//		}
+	//	}
+	
 	static unsigned long OledTimer = millis();
 	if (millis() - OledTimer >= 1000) {
 		measNum++;
@@ -148,22 +169,38 @@ void loop() {
 		terminal.println("  ug/m3");
 		terminal.println();
 
-		if (isnan(humid) || isnan(temp)) {
-			Serial.println(F("Failed to read from DHT sensor!"));
-		} else {
-			Serial.println("Read DHT data");
-			terminal.print("Temp: ");
-			terminal.print(temp);
-			terminal.println("  C");
-			terminal.println();
-			terminal.print("Humid: ");
-			terminal.print(humid);
-			terminal.println("  %");
-			terminal.println();
+		// Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+		if ((millis() - dht11_meas_time) > 2000) {
+			float humid = dht.readHumidity();
+			// Read temperature as Celsius (the default)
+			float temp = dht.readTemperature();
+			dht11_meas_time = millis();
+			if (isnan(humid) || isnan(temp)) {
+				Serial.println(F("Failed to read from DHT sensor!"));
+			} else {
+				Serial.println("Read DHT data");
+				terminal.print("Temp: ");
+				terminal.print(temp);
+				terminal.println("  C");
+				terminal.println();
+				terminal.print("Humid: ");
+				terminal.print(humid);
+				terminal.println("  %");
+				terminal.println();
+			}
 		}
 
 		terminal.flush();
 	}
+}
+
+void createAP() {
+	WiFi.mode(WIFI_AP);
+	WiFi.softAP(ssid_AP, pass_AP);
+	delay(2000);
+	WiFi.softAPConfig(local_ip, gateway, subnet);
+	// IPAddress ip_address = WiFi.softAPIP(); // IP Address of our accesspoint
+	delay(100);
 }
 
 void connectToWiFi() {
