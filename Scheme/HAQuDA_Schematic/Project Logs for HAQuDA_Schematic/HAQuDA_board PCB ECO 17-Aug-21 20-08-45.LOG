@@ -1,0 +1,70 @@
+Removed Pin From Net: NetName=GND Pin=P2-1
+Removed Pin From Net: NetName=UART_TX Pin=P2-2
+Removed Member From Class: ClassName=HAQuDa_schematic Member=P2
+Added Component: Designator=C?(CAPC2013X70X45NL10T25)
+Add component (AddParameter): Name = "Manufacturer"; Value = "Murata"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Part Number"; Value = "GRM216R61E105KA12D"; VariantName = "[No Variations]"
+Added Component: Designator=C?(CAPC2013X70X45NL10T25)
+Add component (AddParameter): Name = "Manufacturer"; Value = "Murata"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Part Number"; Value = "GRM216R61E105KA12D"; VariantName = "[No Variations]"
+Added Component: Designator=C?(CAPC2013X70X45NL10T25)
+Add component (AddParameter): Name = "Manufacturer"; Value = "Murata"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Part Number"; Value = "GRM216R61E105KA12D"; VariantName = "[No Variations]"
+Added Component: Designator=U?(FTDI-SSOP-28_M)
+Add component (AddParameter): Name = "Datasheet URL"; Value = "http://datasheet.octopart.com/FT232RL-FTDI-datasheet-120501.pdf"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Datasheet Version"; Value = "Rev. 1.04, 02/2006"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Dimensions"; Value = "10.2x5.3x1.75mm"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Height"; Value = "1.75mm"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Length"; Value = "10.2mm"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer"; Value = "FTDI"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer URL"; Value = "http://www.ftdichip.com/"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Maximum Data Rate"; Value = "3MBd"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Maximum Operating Temperature"; Value = "+85degC"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Minimum Operating Temperature"; Value = "-40degC"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Mounting Type"; Value = "SurfaceMount"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Number of Channels per Chip"; Value = "1"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Package Type"; Value = "SSOP"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Pin Count"; Value = "28"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Receive FIFO"; Value = "256B"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Transmit FIFO"; Value = "128B"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Width"; Value = "5.3mm"; VariantName = "[No Variations]"
+Added Pin To Net: NetName=GND Pin=C?-1
+Added Pin To Net: NetName=GND Pin=C?-1
+Added Pin To Net: NetName=GND Pin=C?-1
+Added Pin To Net: NetName=+5V Pin=C?-2
+Added Pin To Net: NetName=+5V Pin=C?-2
+Added Pin To Net: NetName=VCC Pin=U?-1
+Added Pin To Net: NetName=GND Pin=U?-2
+Added Pin To Net: NetName=I2C0_SCL Pin=U?-3
+Added Pin To Net: NetName=+5V Pin=U?-4
+Added Pin To Net: NetName=I2C0_SDA Pin=U?-4
+Added Pin To Net: NetName=CCS811_WAK Pin=U?-5
+Added Pin To Net: NetName=GND Pin=U?-7
+Added Pin To Net: NetName=NetR1_1 Pin=U?-7
+Added Pin To Net: NetName=NetR4_2 Pin=U?-8
+Added Pin To Net: NetName=GND Pin=U?-18
+Added Pin To Net: NetName=+5V Pin=U?-20
+Added Pin To Net: NetName=GND Pin=U?-21
+Added Pin To Net: NetName=GND Pin=U?-25
+Added Pin To Net: NetName=GND Pin=U?-26
+Added Pin To Net: NetName=DHT11_Data Pin=R5-1
+Added Pin To Net: NetName=DHT11_Data Pin=R6-1
+Added Net: Name=DHT11_Data
+Added Pin To Net: NetName=NetC?_2 Pin=C?-2
+Added Pin To Net: NetName=NetC?_2 Pin=U?-17
+Added Net: Name=NetC?_2
+Added Pin To Net: NetName=NetJ2_2 Pin=J2-2
+Added Pin To Net: NetName=NetJ2_2 Pin=U?-16
+Added Net: Name=NetJ2_2
+Added Pin To Net: NetName=NetJ2_3 Pin=J2-3
+Added Pin To Net: NetName=NetJ2_3 Pin=U?-15
+Added Net: Name=NetJ2_3
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component C5 6.3V 1000uF
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component C? 100nF
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component C? 100nF
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component C? 4.7uF
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component J1 USB-A
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component R1 4.7K
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component U? FT232RL
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component U? CCS811
+Added Room: Name=HAQuDa_schematic
