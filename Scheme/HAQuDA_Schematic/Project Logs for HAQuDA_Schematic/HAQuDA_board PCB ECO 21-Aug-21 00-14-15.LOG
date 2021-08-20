@@ -1,0 +1,28 @@
+Added Component: Designator=P1(JTAG)
+Added Component: Designator=U2(ZH03B)
+Added Component: Designator=U4(DHT-11)
+Added Component: Designator=U5(ZE25-O3)
+Added Component: Designator=U6(WS2812)
+Added Pin To Net: NetName=VCC Pin=P1-1
+Added Pin To Net: NetName=JTAG_RST Pin=P1-2
+Added Pin To Net: NetName=JTAG_TDI Pin=P1-3
+Added Pin To Net: NetName=JTAG_TMS Pin=P1-4
+Added Pin To Net: NetName=JTAG_TCK Pin=P1-5
+Added Pin To Net: NetName=JTAG_TDO Pin=P1-6
+Added Pin To Net: NetName=+5V Pin=P1-10
+Added Pin To Net: NetName=GND Pin=P1-12
+Added Pin To Net: NetName=+5V Pin=U2-1
+Added Pin To Net: NetName=GND Pin=U2-2
+Added Pin To Net: NetName=PMSerial_Tx Pin=U2-4
+Added Pin To Net: NetName=PMSerial_Rx Pin=U2-5
+Added Pin To Net: NetName=+5V Pin=U4-1
+Added Pin To Net: NetName=NetR5_2 Pin=U4-2
+Added Pin To Net: NetName=GND Pin=U4-4
+Added Pin To Net: NetName=+5V Pin=U6-1
+Added Pin To Net: NetName=NetQ1_1 Pin=U6-2
+Added Pin To Net: NetName=GND Pin=U6-3
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component P1 JTAG
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component U2 Dust sensor
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component U4 DHT-11
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component U5 ZE25-O3
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component U6 WS2812
