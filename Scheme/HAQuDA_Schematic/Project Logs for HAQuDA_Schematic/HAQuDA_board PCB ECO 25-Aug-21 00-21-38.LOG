@@ -1,0 +1,24 @@
+Added Component: Designator=P1(JTAG)
+Added Component: Designator=U2(ZH03B)
+Added Component: Designator=U5(ZE25-O3)
+Added Pin To Net: NetName=VCC Pin=P1-1
+Added Pin To Net: NetName=RST Pin=P1-2
+Added Pin To Net: NetName=JTAG_TDI Pin=P1-3
+Added Pin To Net: NetName=JTAG_TMS Pin=P1-4
+Added Pin To Net: NetName=JTAG_TCK Pin=P1-5
+Added Pin To Net: NetName=JTAG_TDO Pin=P1-6
+Added Pin To Net: NetName=+5V Pin=P1-10
+Added Pin To Net: NetName=GND Pin=P1-12
+Added Pin To Net: NetName=RST Pin=Q2-1
+Added Pin To Net: NetName=+5V Pin=U2-1
+Added Pin To Net: NetName=GND Pin=U2-2
+Added Pin To Net: NetName=PMSerial_Tx Pin=U2-4
+Added Pin To Net: NetName=PMSerial_Rx Pin=U2-5
+Added Pin To Net: NetName=+5V Pin=U5-1
+Added Pin To Net: NetName=O3Serial_Rx Pin=U5-2
+Added Pin To Net: NetName=O3Serial_Tx Pin=U5-3
+Added Pin To Net: NetName=GND Pin=U5-4
+Added Pin To Net: NetName=O3_DAC Pin=U5-5
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component P1 JTAG
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component U2 ZH03B
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component U5 ZE25-O3
