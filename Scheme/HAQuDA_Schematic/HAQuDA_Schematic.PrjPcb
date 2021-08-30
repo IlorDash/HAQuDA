@@ -105,6 +105,10 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=VBATLRWF
 
+[GeneratedDocument1]
+DocumentPath=Project Outputs for HAQuDA_Schematic\Design Rule Check - HAQuDA_board.html
+DItemRevisionGUID=
+
 [Configuration1]
 Name=Sources
 ParameterCount=0
