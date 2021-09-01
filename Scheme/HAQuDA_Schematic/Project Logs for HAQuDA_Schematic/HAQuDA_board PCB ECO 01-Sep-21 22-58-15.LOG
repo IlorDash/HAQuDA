@@ -1,0 +1,17 @@
+Added Component: Designator=C5(CAPPR60-350-1500X800X1650)
+Add component (AddParameter): Name = "Capacitance"; Value = "1000µF"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Case Size/Dimension"; Value = "O8x15mm"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Datasheet URL"; Value = "http://products.nichicon.co.jp/en/pdf/XJA043/e-uhe.pdf"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Datasheet Version"; Value = "08/2015"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer"; Value = "Nichicon"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer URL"; Value = "http://www.nichicon.co.jp/english/"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Mounting Technology"; Value = "ThroughHole"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Operating Temp-Max"; Value = "105°C"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Package Description"; Value = "2-Pin Through Hole Device, Dia 8 mm, Body Length 16.5 mm"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Package Reference"; Value = "CAPPR60-350-1500X800X1650"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Rated Voltage"; Value = "6.3V"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Type"; Value = "Radial"; VariantName = "[No Variations]"
+Added Pin To Net: NetName=+5V Pin=C5-1
+Added Pin To Net: NetName=GND Pin=C5-2
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component C5 6.3V 1000uF
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component U3 ESP-32 MINI

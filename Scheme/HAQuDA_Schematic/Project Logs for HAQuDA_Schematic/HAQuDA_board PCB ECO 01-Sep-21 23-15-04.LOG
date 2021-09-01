@@ -1,0 +1,16 @@
+Added Component: Designator=P?(JTAG)
+Added Component: Designator=U?(ZH03B)
+Added Pin To Net: NetName=VCC Pin=P?-1
+Added Pin To Net: NetName=+5V Pin=P?-2
+Added Pin To Net: NetName=JTAG_TDI Pin=P?-3
+Added Pin To Net: NetName=JTAG_TMS Pin=P?-4
+Added Pin To Net: NetName=JTAG_TCK Pin=P?-5
+Added Pin To Net: NetName=JTAG_TDO Pin=P?-6
+Added Pin To Net: NetName=RST Pin=P?-10
+Added Pin To Net: NetName=GND Pin=P?-12
+Added Pin To Net: NetName=+5V Pin=U?-1
+Added Pin To Net: NetName=PMSerial_Rx Pin=U?-2
+Added Pin To Net: NetName=PMSerial_Tx Pin=U?-4
+Added Pin To Net: NetName=GND Pin=U?-5
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component P? JTAG
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component U? ZH03B

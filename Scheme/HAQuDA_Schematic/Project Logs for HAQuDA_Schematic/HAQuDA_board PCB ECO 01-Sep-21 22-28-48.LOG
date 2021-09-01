@@ -1,0 +1,42 @@
+Removed Pin From Net: NetName=GND Pin=J1-Shell
+Removed Pin From Net: NetName=GND Pin=J1-Shell
+Removed Pin From Net: NetName=GND Pin=J3-Shell
+Removed Pin From Net: NetName=GND Pin=J3-Shell
+Change Component Footprint: Designator=J1 Old Footprint=61400416021 New Footprint=TE-292303-1_V
+Change Component Footprint: Designator=J3 Old Footprint=61400416021 New Footprint=TE-292303-1_V
+Change Managed Component Library Link : Designator=J1 Old VaultGUID=B7D15EC3-160A-466F-A46C-7801FE6295A7 New VaultGUID=B7D15EC3-160A-466F-A46C-7801FE6295A7 Old ItemGUID=2E593534-2875-4F39-9A7A-01AEBDF5E5FA New ItemGUID=2BF87BE4-D921-405E-AF05-EAB5C5B1D3A3 Old RevisionGUID=CA958280-3DA3-4637-B81E-DA5EF9A05348 New RevisionGUID=85AD688A-3441-4A4D-A222-7DF2FF47AB65
+Change Managed Component Library Link : Designator=J3 Old VaultGUID=B7D15EC3-160A-466F-A46C-7801FE6295A7 New VaultGUID=B7D15EC3-160A-466F-A46C-7801FE6295A7 Old ItemGUID=2E593534-2875-4F39-9A7A-01AEBDF5E5FA New ItemGUID=2BF87BE4-D921-405E-AF05-EAB5C5B1D3A3 Old RevisionGUID=CA958280-3DA3-4637-B81E-DA5EF9A05348 New RevisionGUID=85AD688A-3441-4A4D-A222-7DF2FF47AB65
+Change component parameters: Designator = "J1" ("J1"); Footprint = "61400416021"; UniqueID = "\VRDNHQKL" ("\VRDNHQKL")
+Change component parameters (AddParameter): Name = "Connector Mounting"; Value = "PCB"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Connector Type"; Value = "USBA"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Contact Material"; Value = "Copper"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Contact Plating"; Value = "Gold"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Contact Termination Type"; Value = "Solder"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Datasheet URL"; Value = "http://www.farnell.com/cad/1653030.pdf"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Datasheet Version"; Value = "Feb-12"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Gender"; Value = "Receptacle"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Manufacturer"; Value = "TE Connectivity"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Manufacturer URL"; Value = "http://www.te.com/"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "No. of Contacts"; Value = "4"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Package Description"; Value = "4-Pin Through Hole Device, Body 14 x 13.13 mm, Pitch 2.5 mm"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Package Reference"; Value = "292303-1"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "SVHC"; Value = "NoSVHC(16-Jun-2014)"; VariantName = "[No Variations]"
+Change component parameters: Designator = "J3" ("J3"); Footprint = "61400416021"; UniqueID = "\HZDCYYNS" ("\HZDCYYNS")
+Change component parameters (AddParameter): Name = "Connector Mounting"; Value = "PCB"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Connector Type"; Value = "USBA"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Contact Material"; Value = "Copper"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Contact Plating"; Value = "Gold"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Contact Termination Type"; Value = "Solder"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Datasheet URL"; Value = "http://www.farnell.com/cad/1653030.pdf"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Datasheet Version"; Value = "Feb-12"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Gender"; Value = "Receptacle"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Manufacturer"; Value = "TE Connectivity"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Manufacturer URL"; Value = "http://www.te.com/"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "No. of Contacts"; Value = "4"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Package Description"; Value = "4-Pin Through Hole Device, Body 14 x 13.13 mm, Pitch 2.5 mm"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Package Reference"; Value = "292303-1"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "SVHC"; Value = "NoSVHC(16-Jun-2014)"; VariantName = "[No Variations]"
+Added Pin To Net: NetName=GND Pin=J1-5
+Added Pin To Net: NetName=GND Pin=J1-6
+Added Pin To Net: NetName=GND Pin=J3-5
+Added Pin To Net: NetName=GND Pin=J3-6
