@@ -1,0 +1,5 @@
+Added Pin To Net: NetName=VCC Pin=R2-2
+Added Pin To Net: NetName=DHT11_Data Pin=R8-2
+Added Pin To Net: NetName=NetR6_2 Pin=R6-2
+Added Pin To Net: NetName=NetR6_2 Pin=U1-8
+Added Net: Name=NetR6_2

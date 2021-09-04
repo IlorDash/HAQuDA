@@ -1,0 +1,9 @@
+Added Component: Designator=U?(CCS811)
+Added Pin To Net: NetName=VCC Pin=U?-1
+Added Pin To Net: NetName=GND Pin=U?-2
+Added Pin To Net: NetName=I2C0_SCL Pin=U?-3
+Added Pin To Net: NetName=I2C0_SDA Pin=U?-4
+Added Pin To Net: NetName=CCS811_WAK Pin=U?-5
+Added Pin To Net: NetName=NetR2_1 Pin=U?-7
+Added Pin To Net: NetName=NetR6_2 Pin=U?-8
+Added Member To Class: ClassName=HAQuDa_schematic Member=Component U? CCS811
