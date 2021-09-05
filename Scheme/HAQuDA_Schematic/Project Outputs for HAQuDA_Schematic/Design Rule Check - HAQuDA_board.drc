@@ -1,7 +1,7 @@
 Protel Design System Design Rule Check
 PCB File : C:\Users\Ilya\Documents\Projects\HAQuDA\Scheme\HAQuDA_Schematic\HAQuDA_board.PcbDoc
 Date     : 05-Sep-21
-Time     : 00:57:47
+Time     : 14:53:00
 
 Processing Rule : Clearance Constraint (Gap=0.2mm) (All),(All)
 Rule Violations :0
@@ -35,15 +35,7 @@ Processing Rule : Silk To Solder Mask (Clearance=0.2mm) (IsPad),(All)
    Violation between Silk To Solder Mask Clearance Constraint: (0.197mm < 0.2mm) Between Pad J1-6(-33.091mm,5.864mm) on Multi-Layer And Track (-42.749mm,9.385mm)(-34.671mm,6.445mm) on Top Overlay [Top Overlay] to [Top Solder] clearance [0.197mm]
    Violation between Silk To Solder Mask Clearance Constraint: (0.197mm < 0.2mm) Between Pad J3-5(-33.119mm,-5.362mm) on Multi-Layer And Track (-42.777mm,-8.882mm)(-34.699mm,-5.942mm) on Top Overlay [Top Overlay] to [Top Solder] clearance [0.197mm]
    Violation between Silk To Solder Mask Clearance Constraint: (0.2mm < 0.2mm) Between Pad J3-6(-28.624mm,-17.709mm) on Multi-Layer And Track (-38.286mm,-21.221mm)(-30.209mm,-18.281mm) on Top Overlay [Top Overlay] to [Top Solder] clearance [0.2mm]
-   Violation between Silk To Solder Mask Clearance Constraint: (0.044mm < 0.2mm) Between Pad U5-1(-9.4mm,23.4mm) on Multi-Layer And Text "2" (-9.48mm,24.57mm) on Bottom Overlay [Bottom Overlay] to [Bottom Solder] clearance [0.044mm]
-   Violation between Silk To Solder Mask Clearance Constraint: (Collision < 0.2mm) Between Pad U5-2(-9.4mm,25.4mm) on Multi-Layer And Text "2" (-9.48mm,24.57mm) on Bottom Overlay [Bottom Overlay] to [Bottom Solder] clearance [0mm]
-   Violation between Silk To Solder Mask Clearance Constraint: (0.105mm < 0.2mm) Between Pad U5-2(-9.4mm,25.4mm) on Multi-Layer And Text "SD1" (-9.48mm,27.11mm) on Bottom Overlay [Bottom Overlay] to [Bottom Solder] clearance [0.105mm]
-   Violation between Silk To Solder Mask Clearance Constraint: (0.027mm < 0.2mm) Between Pad U5-3(-9.4mm,27.4mm) on Multi-Layer And Text "SD1" (-9.48mm,27.11mm) on Bottom Overlay [Bottom Overlay] to [Bottom Solder] clearance [0.027mm]
-   Violation between Silk To Solder Mask Clearance Constraint: (0.001mm < 0.2mm) Between Pad U5-4(-9.4mm,29.4mm) on Multi-Layer And Text "CLK" (-9.48mm,29.65mm) on Bottom Overlay [Bottom Overlay] to [Bottom Solder] clearance [0.001mm]
-   Violation between Silk To Solder Mask Clearance Constraint: (0.063mm < 0.2mm) Between Pad U6-2(-5.4mm,-7.56mm) on Multi-Layer And Text "+" (-4.55mm,-8.162mm) on Top Overlay [Top Overlay] to [Top Solder] clearance [0.063mm]
-   Violation between Silk To Solder Mask Clearance Constraint: (0.187mm < 0.2mm) Between Pad U7-2(23.275mm,-16.025mm) on Top Layer And Text "R10" (19.65mm,-17mm) on Top Overlay [Top Overlay] to [Top Solder] clearance [0.187mm]
-   Violation between Silk To Solder Mask Clearance Constraint: (0.177mm < 0.2mm) Between Pad U7-3(23.275mm,-16.675mm) on Top Layer And Text "R10" (19.65mm,-17mm) on Top Overlay [Top Overlay] to [Top Solder] clearance [0.177mm]
-Rule Violations :12
+Rule Violations :4
 
 Processing Rule : Silk to Silk (Clearance=0.254mm) (All),(All)
    Violation between Silk To Silk Clearance Constraint: (Collision < 0.254mm) Between Text "N:  " (-18.075mm,-28.093mm) on Top Overlay And Track (-1.025mm,-31.041mm)(-1.025mm,-22.517mm) on Top Overlay Silk Text to Silk Clearance [0mm]
@@ -58,6 +50,6 @@ Processing Rule : Height Constraint (Min=-15mm) (Max=30mm) (Prefered=12.7mm) (Al
 Rule Violations :0
 
 
-Violations Detected : 15
+Violations Detected : 7
 Waived Violations : 0
-Time Elapsed        : 00:00:02
+Time Elapsed        : 00:00:01
