@@ -1,0 +1,23 @@
+----------------------------------------------------------------------------------------------------------------------------------
+NCDrill File Report For: HAQuDA_board.PcbDoc   11-Sep-21  01:27:15
+----------------------------------------------------------------------------------------------------------------------------------
+
+Layer Pair : Top Layer to Bottom Layer
+ASCII RoundHoles File : HAQuDA_board-RoundHoles.TXT
+ASCII SlotHoles File : HAQuDA_board-SlotHoles.TXT
+
+Tool       Hole Size               Hole Tolerance               Hole Type       Hole Count   Plated         Tool Travel
+----------------------------------------------------------------------------------------------------------------------------------
+T1      0.3mm (12mil)                                             Round             16        PTH        0.00mm (0.00inch)
+T2      0.6mm (24mil)                                             Slot              2         PTH        0.00mm (0.00inch)
+T3      0.85mm (33mil)                                            Round             10        PTH        0.00mm (0.00inch)
+T4      0.9mm (35mil)                                             Round             9         PTH        0.00mm (0.00inch)
+T5      0.92mm (36mil)                                            Round             8         PTH        0.00mm (0.00inch)
+T6      1.016mm (40mil)                                           Round             40        PTH        0.00mm (0.00inch)
+T7      1.02mm (40mil)                                            Round             30        PTH        0.00mm (0.00inch)
+T8      1.1mm (43mil)                                             Round             5         PTH        0.00mm (0.00inch)
+T9      2.3mm (91mil)                                             Round             4         PTH        0.00mm (0.00inch)
+----------------------------------------------------------------------------------------------------------------------------------
+Totals                                                                              124
+
+Total Processing Time (hh:mm:ss) : 00:00:00

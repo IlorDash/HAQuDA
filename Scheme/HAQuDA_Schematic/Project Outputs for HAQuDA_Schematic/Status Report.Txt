@@ -1,0 +1,24 @@
+Output: Gerber Files
+Type  : Gerber
+From  : Variant [[No Variations]] of Project [HAQuDA_Schematic.PrjPcb]
+   Generated File[HAQuDA_board.GTO]
+   Generated File[HAQuDA_board.GTP]
+   Generated File[HAQuDA_board.GTS]
+   Generated File[HAQuDA_board.GTL]
+   Generated File[HAQuDA_board.GBL]
+   Generated File[HAQuDA_board.GBS]
+   Generated File[HAQuDA_board.GBO]
+   Generated File[HAQuDA_board.GM1]
+   Generated File[HAQuDA_board.GM2]
+   Generated File[HAQuDA_board.GM13]
+   Generated File[HAQuDA_board.GM15]
+   Generated File[HAQuDA_board.GKO]
+   Generated File[HAQuDA_board.RUL]
+   Generated File[HAQuDA_board.EXTREP]
+   Generated File[HAQuDA_board.REP]
+
+
+Files Generated   : 15
+Documents Printed : 0
+
+Finished Output Generation At 01:40:50 On 11-Sep-21
