@@ -1,28 +1,27 @@
 
 #include <WiFi.h>
-
 #include <WebServer.h>
 #include "WebPages.h"
-
 #include <WiFiClient.h>
 #include <BlynkSimpleEsp32.h>
 
 #include "Arduino.h"
 #include "TimeHelper.h"
-
-
 #include <SoftwareSerial.h>
 
-#include <DHT.h>
-
 #include "winsen_ze25o3.h"
+#include <Adafruit_NeoPixel.h>
 
 #define LENG 31 // 0x42 + 31 bytes equal to 32 bytes
-
 #define LED_BUILTIN 2
 
-#define DHTPIN 0
+#define DHTPIN 32
 #define DHTTYPE DHT11
+
+#define PIN 18
+#define NUMPIXELS 109
+
+Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_BRG + NEO_KHZ800);
 
 char BlynkAuth[] = "4MdAV357utNNjm7vmCUEY2NPAdlHQMSM";
 char ssid_AP[] = "HAQuDA_ESP32";
@@ -32,19 +31,23 @@ IPAddress local_ip(192, 168, 1, 1);
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 255, 0);
 
-//String ssidLocal = "";
-//String passLocal = "";
+// String ssidLocal = "";
+// String passLocal = "";
 
-String ssidLocal = "ilor";
-String passLocal = "ilor66142222!";
+// String ssidLocal = "ilor";
+// String passLocal = "ilor66142222!";
+
+String ssidLocal = "ordash";
+String passLocal = "or14591711!";
 
 unsigned char buf[LENG];
+byte O3_buf[9];
 
 int PM01Value = 0;  // define PM1.0 value of the air detector module
 int PM2_5Value = 0; // define PM2.5 value of the air detector module
 int PM10Value = 0;  // define PM10 value of the air detector module
 
-bool WiFiCredsFound = false;
+bool WiFiCredsFound = true;
 
 WidgetTerminal terminal(V1);
 WebServer server(80);
@@ -63,80 +66,86 @@ char checkValue(unsigned char *thebuf, char leng);
 
 SoftwareSerial PMSerial;
 SoftwareSerial O3Serial;
-DHT dht(DHTPIN, DHTTYPE);
+
+void NeoFade(int FadeSpeed) {
+	int fspeed;
+	for (int i = 0; i < NUMPIXELS; i++) {
+		pixels.setPixelColor(i, 165, 242, 243);
+	}
+	for (int j = 255; j > 0; j = j - 2) {
+		pixels.setBrightness(j);
+		pixels.show();
+		delay(FadeSpeed);
+	}
+}
 
 void setup() {
 	Serial.begin(115200);
 	PMSerial.begin(9600, SWSERIAL_8N1, 17, 16, false, 256);
 	PMSerial.setTimeout(1500);
 
-	O3Serial.begin(9600, SWSERIAL_8N1, 2, 0, false, 256);
+	O3Serial.begin(9600, SWSERIAL_8N1, 2, 5, false, 256);
 	O3Serial.setTimeout(1500);
-	dht.begin();
 
-	pinMode(LED_BUILTIN, OUTPUT);
+	pixels.begin();
 
-	//createAP();
+	// pinMode(LED_BUILTIN, OUTPUT);
+
+	// createAP();
 
 	// Start web server-
 
 	// Serial.print("AP IP address: ");
 	// Serial.println(ip_address);
 
-	//server.on("/", setWiFiCreds);
-	//server.onNotFound(handle_NotFound);
-	//server.begin();
-	//Serial.println("HTTP server started");
+	// server.on("/", setWiFiCreds);
+	// server.onNotFound(handle_NotFound);
+	// server.begin();
+	// Serial.println("HTTP server started");
 }
 
 uint16_t measNum = 0;
 uint32_t dht11_meas_time = 0;
 void loop() {
-	//server.handleClient();
-	wl_status_t status = WiFi.status();
-//	if (WiFiCredsFound) {
-//		WiFiCredsFound = false;
-//		connectToWiFi();
-//	} else if (!WiFiCredsFound && (status != WL_CONNECTED)) {
-//		return;
-//	}
 
-//	if (status != WL_CONNECTED) {
-//		log_i("Connecting to %s", ssidLocal.c_str());
-//		WiFi.reconnect();
-//		uint32_t timer = millis();
-//
-//		while (WiFi.status() != WL_CONNECTED && !PeriodInRange(timer, 5000)) {
-//			delay(200);
-//		}
-//	} else if (!Blynk.connected()) {
-//		Blynk.connect();
-//	} else {
-//		Blynk.run();
-//	}
-
-	//	while (MySerial.available() > 0) {
-	//		uint8_t byteFromSerial = MySerial.read();
-	//		Serial.println(byteFromSerial);
-	//		terminal.println(byteFromSerial);
-	//		terminal.flush();
+	// server.handleClient();
+	//	wl_status_t status = WiFi.status();
+	//	if (WiFiCredsFound && (status != WL_CONNECTED)) {
+	//		connectToWiFi();
+	//	}
+	//
+	//	if (status != WL_CONNECTED) {
+	//		log_i("Connecting to %s", ssidLocal.c_str());
+	//		WiFi.reconnect();
+	//		uint32_t timer = millis();
+	//
+	//		while (WiFi.status() != WL_CONNECTED && !PeriodInRange(timer, 5000)) {
+	//			delay(200);
+	//		}
+	//	} else if (!Blynk.connected()) {
+	//		Blynk.connect();
+	//	} else {
+	//		Blynk.run();
 	//	}
 
-	if (PMSerial.find(0x42)) {
-		PMSerial.readBytes(buf, LENG);
-
-		if (buf[0] == 0x4d) {
-			if (checkValue(buf, LENG)) {
-				PM01Value = transmitPM01(buf);   // count PM1.0 value of the air detector module
-				PM2_5Value = transmitPM2_5(buf); // count PM2.5 value of the air detector module
-				PM10Value = transmitPM10(buf);   // count PM10 value of the air detector module
-			}
-		}
-	}
-
-	Serial.println(O3Serial.read());
-
-	//	if (O3Serial.find(0xFF)) {
+	pixels.clear();
+	pixels.show();
+	delay(1000);
+	pixels.setBrightness(10);
+	pixels.setPixelColor(0, pixels.Color(255, 255, 255));
+	pixels.setPixelColor(1, pixels.Color(255, 0, 0));
+	pixels.setPixelColor(2, pixels.Color(0, 255, 0));
+	pixels.setPixelColor(3, pixels.Color(0, 0, 255));
+	pixels.setPixelColor(4, pixels.Color(255, 0, 255));
+	pixels.setPixelColor(5, pixels.Color(255, 255, 0));
+	pixels.setPixelColor(10, pixels.Color(0, 255, 255));
+	pixels.show();
+	delay(1000);
+	pixels.setBrightness(100);
+	pixels.fill(pixels.Color(255, 255, 255), 0, NUMPIXELS);
+	pixels.show();
+	delay(3000);
+	//	if (PMSerial.find(0x42)) {
 	//		PMSerial.readBytes(buf, LENG);
 	//
 	//		if (buf[0] == 0x4d) {
@@ -147,51 +156,56 @@ void loop() {
 	//			}
 	//		}
 	//	}
-	
-	static unsigned long OledTimer = millis();
-	if (millis() - OledTimer >= 1000) {
-		measNum++;
-		OledTimer = millis();
-
-		terminal.print("	Measurment:");
-		terminal.println(measNum);
-
-		terminal.print("PM1.0: ");
-		terminal.print(PM01Value);
-		terminal.println("  ug/m3");
-
-		terminal.print("PM2.5: ");
-		terminal.print(PM2_5Value);
-		terminal.println("  ug/m3");
-
-		terminal.print("PM1 0: ");
-		terminal.print(PM10Value);
-		terminal.println("  ug/m3");
-		terminal.println();
-
-		// Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
-		if ((millis() - dht11_meas_time) > 2000) {
-			float humid = dht.readHumidity();
-			// Read temperature as Celsius (the default)
-			float temp = dht.readTemperature();
-			dht11_meas_time = millis();
-			if (isnan(humid) || isnan(temp)) {
-				Serial.println(F("Failed to read from DHT sensor!"));
-			} else {
-				Serial.println("Read DHT data");
-				terminal.print("Temp: ");
-				terminal.print(temp);
-				terminal.println("  C");
-				terminal.println();
-				terminal.print("Humid: ");
-				terminal.print(humid);
-				terminal.println("  %");
-				terminal.println();
-			}
-		}
-
-		terminal.flush();
-	}
+	//
+	//	if (O3Serial.available() > 8) {
+	//		memset(O3_buf, 0, 9);
+	//		O3Serial.readBytes(O3_buf, 9);
+	//	}
+	//
+	//	static unsigned long OledTimer = millis();
+	//	if (millis() - OledTimer >= 1000) {
+	//		measNum++;
+	//		OledTimer = millis();
+	//
+	//		terminal.print("	Measurment:");
+	//		terminal.println(measNum);
+	//
+	//		terminal.print("PM1.0: ");
+	//		terminal.print(PM01Value);
+	//		terminal.println("  ug/m3");
+	//
+	//		terminal.print("PM2.5: ");
+	//		terminal.print(PM2_5Value);
+	//		terminal.println("  ug/m3");
+	//
+	//		terminal.print("PM1 0: ");
+	//		terminal.print(PM10Value);
+	//		terminal.println("  ug/m3");
+	//		terminal.println();
+	//
+	//		// Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+	//		//		if ((millis() - dht11_meas_time) > 2000) {
+	//		//			float humid = dht.readHumidity();
+	//		//			// Read temperature as Celsius (the default)
+	//		//			float temp = dht.readTemperature();
+	//		//			dht11_meas_time = millis();
+	//		//			if (isnan(humid) || isnan(temp)) {
+	//		//				Serial.println(F("Failed to read from DHT sensor!"));
+	//		//			} else {
+	//		//				Serial.println("Read DHT data");
+	//		//				terminal.print("Temp: ");
+	//		//				terminal.print(temp);
+	//		//				terminal.println("  C");
+	//		//				terminal.println();
+	//		//				terminal.print("Humid: ");
+	//		//				terminal.print(humid);
+	//		//				terminal.println("  %");
+	//		//				terminal.println();
+	//		//			}
+	//		//		}
+	//
+	//		terminal.flush();
+	//	}
 }
 
 void createAP() {
@@ -230,12 +244,12 @@ void handle_NotFound() {
 }
 
 void WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info) {
-	digitalWrite(LED_BUILTIN, HIGH);
+	// digitalWrite(LED_BUILTIN, HIGH);
 	log_i("WiFiStationConnected");
 }
 
 void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info) {
-	digitalWrite(LED_BUILTIN, LOW);
+	// digitalWrite(LED_BUILTIN, LOW);
 	log_i("WiFiStationDisconnected");
 }
 
@@ -245,9 +259,9 @@ BLYNK_WRITE(V0) {
 	int blue = param[2].asInt();
 	log_i("V0, r: %d, g: %d, b: %d,", red, green, blue);
 	if (red > 80) {
-		digitalWrite(LED_BUILTIN, HIGH);
+		// digitalWrite(LED_BUILTIN, HIGH);
 	} else {
-		digitalWrite(LED_BUILTIN, LOW);
+		// digitalWrite(LED_BUILTIN, LOW);
 	}
 }
 

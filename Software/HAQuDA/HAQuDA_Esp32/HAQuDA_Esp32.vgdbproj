@@ -30,6 +30,8 @@
     <BuildLogMode xsi:nil="true" />
     <AdditionalLibraryDirectories>
       <string>..\..\..\..\..\..\Downloads\EspSoftwareSerial-6.12.6</string>
+      <string>..\..\..\..\..\..\Arduino\libraries\Adafruit_NeoPixel</string>
+      <string>..\..\..\..\..\..\Arduino\libraries</string>
     </AdditionalLibraryDirectories>
     <IgnoreNormalLibraryDirectories>false</IgnoreNormalLibraryDirectories>
     <OutputSubdirectory>Output\$(PlatformName.defuse)\$(ConfigurationName.defuse)</OutputSubdirectory>
@@ -175,7 +177,7 @@
         <DebugMethod>
           <ID>openocd</ID>
           <Configuration xsi:type="com.visualgdb.edp.openocd.settings.esp32">
-            <CommandLine>-f interface/ftdi/olimex-arm-usb-ocd.cfg -c "adapter_khz 3000" -f target/esp32.cfg</CommandLine>
+            <CommandLine>-f interface/ftdi/olimex-arm-usb-ocd.cfg -c "adapter_khz 12000" -f target/esp32.cfg</CommandLine>
             <ExtraParameters>
               <Frequency xsi:nil="true" />
               <BoostedFrequency xsi:nil="true" />
