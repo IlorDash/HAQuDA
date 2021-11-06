@@ -11,6 +11,22 @@
 
 #include "winsen_ze25o3.h"
 #include <Adafruit_NeoPixel.h>
+#include <Adafruit_BusIO_Register.h>
+#include <Adafruit_I2CDevice.h>
+#include <Adafruit_I2CRegister.h>
+#include <Adafruit_SPIDevice.h>
+#include <Adafruit_CCS811.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_GrayOLED.h>
+#include <Adafruit_SPITFT.h>
+#include <Adafruit_SPITFT_Macros.h>
+#include <gfxfont.h>
+#include <Adafruit_SSD1306.h>
+#include <splash.h>
+
+#include <vector>
+
+using namespace std;
 
 #define LENG 31 // 0x42 + 31 bytes equal to 32 bytes
 #define LED_BUILTIN 2
@@ -18,10 +34,19 @@
 #define DHTPIN 32
 #define DHTTYPE DHT11
 
-#define PIN 18
-#define NUMPIXELS 109
+#define CCS811_WAK 33
 
-Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_BRG + NEO_KHZ800);
+#define LED_PIN 18
+#define LED_NUM_PIXELS 109
+#define COLOR_AQUA 0x00FFFF
+#define COLOR_LIME 0x99FF33
+
+Adafruit_NeoPixel pixels(LED_NUM_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_CCS811 CCS811;
+
+int eCO2 = 0;
+int TVOC = 0;
+float temp = 0;
 
 char BlynkAuth[] = "4MdAV357utNNjm7vmCUEY2NPAdlHQMSM";
 char ssid_AP[] = "HAQuDA_ESP32";
@@ -67,10 +92,12 @@ char checkValue(unsigned char *thebuf, char leng);
 SoftwareSerial PMSerial;
 SoftwareSerial O3Serial;
 
-void NeoFade(int FadeSpeed) {
-	int fspeed;
-	for (int i = 0; i < NUMPIXELS; i++) {
-		pixels.setPixelColor(i, 165, 242, 243);
+void NeoFade(int FadeSpeed, int startBrightness, uint32_t color) {
+	pixels.clear();
+	pixels.show();
+	delay(100);
+	for (int i = 0; i < LED_NUM_PIXELS; i++) {
+		pixels.setPixelColor(i, color);
 	}
 	for (int j = 255; j > 0; j = j - 2) {
 		pixels.setBrightness(j);
@@ -79,8 +106,52 @@ void NeoFade(int FadeSpeed) {
 	}
 }
 
+void NeoRandom(int speed, int brightness) {
+	pixels.clear();
+	pixels.show();
+	delay(100);
+	pixels.setBrightness(brightness);
+	vector<int> pixelEnArr;
+	for (int i = 0; i < LED_NUM_PIXELS; i++) {
+		int pixelNum = random(0, LED_NUM_PIXELS);
+		while (find(pixelEnArr.begin(), pixelEnArr.end(), pixelNum) != pixelEnArr.end()) {
+			pixelNum = random(0, LED_NUM_PIXELS);
+		}
+		pixelEnArr.push_back(pixelNum);
+		pixels.setPixelColor(pixelNum, random(0, 255), random(0, 255), random(0, 255));
+		pixels.show();
+		delay(speed);
+	}
+	delay(1000);
+}
+
+void NeoSnake(int speed, int brightness, int tailLength, uint32_t color) {
+	if (tailLength > 10) {
+		return;
+	}
+	pixels.clear();
+	pixels.show();
+	delay(100);
+	pixels.setBrightness(brightness);
+	for (int i = 0; i < LED_NUM_PIXELS; i++) {
+		int pixelNum = 0;
+		for (int j = 0; j < tailLength; j++) {
+			pixelNum = i - j;
+			pixelNum = (pixelNum < 0) ? 0 : pixelNum;
+			pixelNum = (pixelNum > LED_NUM_PIXELS) ? LED_NUM_PIXELS : pixelNum;
+			pixels.setPixelColor(pixelNum, color);
+			pixels.show();
+			delay(speed);
+		}
+		pixels.clear();
+		pixels.show();
+	}
+	delay(1000);
+}
+
 void setup() {
 	Serial.begin(115200);
+
 	PMSerial.begin(9600, SWSERIAL_8N1, 17, 16, false, 256);
 	PMSerial.setTimeout(1500);
 
@@ -88,6 +159,15 @@ void setup() {
 	O3Serial.setTimeout(1500);
 
 	pixels.begin();
+
+	pinMode(CCS811_WAK, OUTPUT);
+	digitalWrite(CCS811_WAK, LOW);
+
+	if (!CCS811.begin()) {
+		Serial.println("Failed to start sensor! Please check your wiring.");
+		while (1)
+			;
+	}
 
 	// pinMode(LED_BUILTIN, OUTPUT);
 
@@ -106,106 +186,108 @@ void setup() {
 
 uint16_t measNum = 0;
 uint32_t dht11_meas_time = 0;
+
 void loop() {
+	server.handleClient();
+	wl_status_t status = WiFi.status();
+	if (WiFiCredsFound && (status != WL_CONNECTED)) {
+		connectToWiFi();
+	}
 
-	// server.handleClient();
-	//	wl_status_t status = WiFi.status();
-	//	if (WiFiCredsFound && (status != WL_CONNECTED)) {
-	//		connectToWiFi();
-	//	}
-	//
-	//	if (status != WL_CONNECTED) {
-	//		log_i("Connecting to %s", ssidLocal.c_str());
-	//		WiFi.reconnect();
-	//		uint32_t timer = millis();
-	//
-	//		while (WiFi.status() != WL_CONNECTED && !PeriodInRange(timer, 5000)) {
-	//			delay(200);
-	//		}
-	//	} else if (!Blynk.connected()) {
-	//		Blynk.connect();
-	//	} else {
-	//		Blynk.run();
-	//	}
+	if (status != WL_CONNECTED) {
+		log_i("Connecting to %s", ssidLocal.c_str());
+		WiFi.reconnect();
+		uint32_t timer = millis();
 
-	pixels.clear();
-	pixels.show();
-	delay(1000);
-	pixels.setBrightness(10);
-	pixels.setPixelColor(0, pixels.Color(255, 255, 255));
-	pixels.setPixelColor(1, pixels.Color(255, 0, 0));
-	pixels.setPixelColor(2, pixels.Color(0, 255, 0));
-	pixels.setPixelColor(3, pixels.Color(0, 0, 255));
-	pixels.setPixelColor(4, pixels.Color(255, 0, 255));
-	pixels.setPixelColor(5, pixels.Color(255, 255, 0));
-	pixels.setPixelColor(10, pixels.Color(0, 255, 255));
-	pixels.show();
-	delay(1000);
-	pixels.setBrightness(100);
-	pixels.fill(pixels.Color(255, 255, 255), 0, NUMPIXELS);
-	pixels.show();
-	delay(3000);
-	//	if (PMSerial.find(0x42)) {
-	//		PMSerial.readBytes(buf, LENG);
-	//
-	//		if (buf[0] == 0x4d) {
-	//			if (checkValue(buf, LENG)) {
-	//				PM01Value = transmitPM01(buf);   // count PM1.0 value of the air detector module
-	//				PM2_5Value = transmitPM2_5(buf); // count PM2.5 value of the air detector module
-	//				PM10Value = transmitPM10(buf);   // count PM10 value of the air detector module
-	//			}
-	//		}
-	//	}
-	//
-	//	if (O3Serial.available() > 8) {
-	//		memset(O3_buf, 0, 9);
-	//		O3Serial.readBytes(O3_buf, 9);
-	//	}
-	//
-	//	static unsigned long OledTimer = millis();
-	//	if (millis() - OledTimer >= 1000) {
-	//		measNum++;
-	//		OledTimer = millis();
-	//
-	//		terminal.print("	Measurment:");
-	//		terminal.println(measNum);
-	//
-	//		terminal.print("PM1.0: ");
-	//		terminal.print(PM01Value);
-	//		terminal.println("  ug/m3");
-	//
-	//		terminal.print("PM2.5: ");
-	//		terminal.print(PM2_5Value);
-	//		terminal.println("  ug/m3");
-	//
-	//		terminal.print("PM1 0: ");
-	//		terminal.print(PM10Value);
-	//		terminal.println("  ug/m3");
-	//		terminal.println();
-	//
-	//		// Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
-	//		//		if ((millis() - dht11_meas_time) > 2000) {
-	//		//			float humid = dht.readHumidity();
-	//		//			// Read temperature as Celsius (the default)
-	//		//			float temp = dht.readTemperature();
-	//		//			dht11_meas_time = millis();
-	//		//			if (isnan(humid) || isnan(temp)) {
-	//		//				Serial.println(F("Failed to read from DHT sensor!"));
-	//		//			} else {
-	//		//				Serial.println("Read DHT data");
-	//		//				terminal.print("Temp: ");
-	//		//				terminal.print(temp);
-	//		//				terminal.println("  C");
-	//		//				terminal.println();
-	//		//				terminal.print("Humid: ");
-	//		//				terminal.print(humid);
-	//		//				terminal.println("  %");
-	//		//				terminal.println();
-	//		//			}
-	//		//		}
-	//
-	//		terminal.flush();
-	//	}
+		while (WiFi.status() != WL_CONNECTED && !PeriodInRange(timer, 5000)) {
+			delay(200);
+		}
+	} else if (!Blynk.connected()) {
+		Blynk.connect();
+	} else {
+		Blynk.run();
+	}
+
+	NeoRandom(100, 150);
+	if (CCS811.available()) {
+		if (!CCS811.readData()) {
+			eCO2 = CCS811.geteCO2(); // returns eCO2 reading
+			TVOC = CCS811.getTVOC(); // return TVOC reading
+		}
+	}
+	delay(100);
+
+	if (PMSerial.find(0x42)) {
+		PMSerial.readBytes(buf, LENG);
+
+		if (buf[0] == 0x4d) {
+			if (checkValue(buf, LENG)) {
+				PM01Value = transmitPM01(buf);   // count PM1.0 value of the air detector module
+				PM2_5Value = transmitPM2_5(buf); // count PM2.5 value of the air detector module
+				PM10Value = transmitPM10(buf);   // count PM10 value of the air detector module
+			}
+		}
+	}
+
+	if (O3Serial.available() > 8) {
+		memset(O3_buf, 0, 9);
+		O3Serial.readBytes(O3_buf, 9);
+	}
+
+	static unsigned long OledTimer = millis();
+	if (millis() - OledTimer >= 1000) {
+		measNum++;
+		OledTimer = millis();
+
+		terminal.print("	Measurment:");
+		terminal.println(measNum);
+
+		terminal.print("PM1.0: ");
+		terminal.print(PM01Value);
+		terminal.println("  ug/m3");
+
+		terminal.print("PM2.5: ");
+		terminal.print(PM2_5Value);
+		terminal.println("  ug/m3");
+
+		terminal.print("PM1 0: ");
+		terminal.print(PM10Value);
+		terminal.println("  ug/m3");
+		terminal.println();
+
+		terminal.print("eCO2: ");
+		terminal.print(eCO2);
+		terminal.println("  ppm");
+		terminal.println();
+
+		terminal.print("TVOC: ");
+		terminal.print(TVOC);
+		terminal.println("  ppb");
+		terminal.println();
+
+		// Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+		//		if ((millis() - dht11_meas_time) > 2000) {
+		//			float humid = dht.readHumidity();
+		//			// Read temperature as Celsius (the default)
+		//			float temp = dht.readTemperature();
+		//			dht11_meas_time = millis();
+		//			if (isnan(humid) || isnan(temp)) {
+		//				Serial.println(F("Failed to read from DHT sensor!"));
+		//			} else {
+		//				Serial.println("Read DHT data");
+		//				terminal.print("Temp: ");
+		//				terminal.print(temp);
+		//				terminal.println("  C");
+		//				terminal.println();
+		//				terminal.print("Humid: ");
+		//				terminal.print(humid);
+		//				terminal.println("  %");
+		//				terminal.println();
+		//			}
+		//		}
+
+		terminal.flush();
+	}
 }
 
 void createAP() {
