@@ -39,6 +39,9 @@ using namespace std;
 #define LED_PIN 18
 #define LED_NUM_PIXELS 109
 #define MAX_BRIGHTNESS 250
+#define LED_COLUMN_NUM 9
+#define LED_ROW_NUM 12
+#define WHITE_BRIGHTNESS_COEFF 150
 
 #define WIFI_CREDS_NUM 3
 
@@ -157,45 +160,87 @@ void NeoSnake(int speed, int brightness, int tailLength, uint32_t color) {
 }
 
 int firstDot;
-int secondDot; // parametrs of printSensor
+int secondDot; // parametrs of dispParams
 int thirdDot;
 float coefficient;
 
-void printSensor(int data) {
-	int red, green, blue; // values of LED colors
-
+void getRGB(int *_red, int *_green, int *_blue, int data) {
 	if ((data < secondDot) && (data >= firstDot)) {
-		blue = round(-abs(data - firstDot) * coefficient) + MAX_BRIGHTNESS;
-		green = round(-abs(data - secondDot) * coefficient) + MAX_BRIGHTNESS;
-		red = 0;
+		*_blue = round(-abs(data - firstDot) * coefficient) + MAX_BRIGHTNESS;
+		*_green = round(-abs(data - secondDot) * coefficient) + MAX_BRIGHTNESS;
+		*_red = 0;
 	} else if ((data >= secondDot) && (data <= thirdDot)) { // calculating values of LED colors (using parametres of color function)
-		blue = 0;
-		green = round(-abs(data - secondDot) * coefficient) + MAX_BRIGHTNESS;
-		red = round(-abs(data - thirdDot) * coefficient) + MAX_BRIGHTNESS;
+		*_blue = 0;
+		*_green = round(-abs(data - secondDot) * coefficient) + MAX_BRIGHTNESS;
+		*_red = round(-abs(data - thirdDot) * coefficient) + MAX_BRIGHTNESS;
 	} else if (data < firstDot) {
-		blue = MAX_BRIGHTNESS;
-		green = 0;
-		red = 0;
+		*_blue = MAX_BRIGHTNESS;
+		*_green = 0;
+		*_red = 0;
 	} else if (data > thirdDot) {
-		blue = 0;
-		green = 0;
-		red = MAX_BRIGHTNESS;
+		*_blue = 0;
+		*_green = 0;
+		*_red = MAX_BRIGHTNESS;
 	}
+}
 
-	pixels.fill(pixels.Color(red, green, blue), 0, LED_NUM_PIXELS);
+void LED_showParams(int data) {
+	/**************************************************/
+	int time = 9; // get real time
+	/**************************************************/
+
+	int red, green, blue; // values of LED colors
+	getRGB(&red, &green, &blue, data);
+
+	for (int i = 0; i < LED_COLUMN_NUM; i++) {
+		uint8_t whiteBrightness = pixels.getBrightness() * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
+		uint32_t color = (!(i % 3)) ? pixels.Color(red, green, blue) : pixels.Color(whiteBrightness, whiteBrightness, whiteBrightness);
+		uint8_t pixelNum = (!(i % 3)) ? LED_ROW_NUM : time;
+		uint8_t startPixel = (!(i % 2)) ? (i * LED_ROW_NUM) : (i * LED_ROW_NUM + LED_ROW_NUM - pixelNum);
+		pixels.fill(color, startPixel, pixelNum);
+	}
 	pixels.show();
 	delay(100);
+}
+
+bool dispFirstParam = false;
+
+void dispParam() {
+	if (whatToDisp == eCO2) {
+		firstDot = 400;
+		secondDot = 1000;
+		thirdDot = 5000;
+		coefficient = pixels.getBrightness() * 2 / (thirdDot - firstDot);
+		LED_showParams(eCO2_meas.value / eCO2_meas.measNum);
+		eCO2_meas.value = 0;
+		eCO2_meas.measNum = 0;
+	} else if (whatToDisp == TVOC) {
+		firstDot = 220;
+		secondDot = 660;
+		thirdDot = 1000;
+		coefficient = pixels.getBrightness() * 2 / (thirdDot - firstDot);
+		LED_showParams(TVOC_meas.value / TVOC_meas.measNum);
+		TVOC_meas.value = 0;
+		TVOC_meas.measNum = 0;
+	} else if (whatToDisp == PM2_5) {
+		firstDot = 15;
+		secondDot = 20;
+		thirdDot = 45;
+		coefficient = pixels.getBrightness() * 2 / (thirdDot - firstDot);
+		LED_showParams(PM2_5_meas.value / PM2_5_meas.measNum);
+		PM2_5_meas.value = 0;
+		PM2_5_meas.measNum = 0;
+	}
 }
 
 void WiFi_handler() {
 	wl_status_t status = WiFi.status();
 	int i = 0;
 	int j = 0;
-	pixels.clear();
-	pixels.show();
-	delay(100);
-
 	while (WiFiCredsFound && (status != WL_CONNECTED) && (i < WIFI_CREDS_NUM)) {
+		pixels.clear();
+		pixels.show();
+		delay(100);
 		connectToWiFi(ssidArr[i], passArr[i]);
 		// connectToWiFi(ssidLocal, passLocal);
 		status = WiFi.status();
@@ -255,7 +300,7 @@ void setup() {
 	O3Serial.setTimeout(1500);
 
 	pixels.begin();
-	pixels.setBrightness(80);
+	pixels.setBrightness(200);
 
 	pinMode(CCS811_WAK, OUTPUT);
 	digitalWrite(CCS811_WAK, LOW);
@@ -389,32 +434,10 @@ void loop() {
 
 		terminal.flush();
 	}
-	if ((millis() - dispMeasTimer > DISP_MEAS_PERIOD) && isMeasExist) {
-		if (whatToDisp == eCO2) {
-			firstDot = 400;
-			secondDot = 1000;
-			thirdDot = 5000;
-			coefficient = pixels.getBrightness() * 2 / (thirdDot - firstDot);
-			printSensor(eCO2_meas.value / eCO2_meas.measNum);
-			eCO2_meas.value = 0;
-			eCO2_meas.measNum = 0;
-		} else if (whatToDisp == TVOC) {
-			firstDot = 220;
-			secondDot = 660;
-			thirdDot = 1000;
-			coefficient = pixels.getBrightness() * 2 / (thirdDot - firstDot);
-			printSensor(TVOC_meas.value / TVOC_meas.measNum);
-			TVOC_meas.value = 0;
-			TVOC_meas.measNum = 0;
-		} else if (whatToDisp == PM2_5) {
-			firstDot = 15;
-			secondDot = 20;
-			thirdDot = 45;
-			coefficient = pixels.getBrightness() * 2 / (thirdDot - firstDot);
-			printSensor(PM2_5_meas.value / PM2_5_meas.measNum);
-			PM2_5_meas.value = 0;
-			PM2_5_meas.measNum = 0;
-		}
+	if (((millis() - dispMeasTimer > DISP_MEAS_PERIOD) || dispFirstParam) && isMeasExist) {
+		dispMeasTimer = millis();
+		dispParam();
+		dispFirstParam = false;
 	}
 }
 
@@ -466,12 +489,12 @@ void WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info) {
 
 void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info) {
 	// digitalWrite(LED_BUILTIN, LOW);
-	pixels.fill(COLOR_RED, 0, LED_NUM_PIXELS);
-	pixels.show();
-	delay(1000);
-	pixels.clear();
-	pixels.show();
-	delay(100);
+	//	pixels.fill(COLOR_RED, 0, LED_NUM_PIXELS);
+	//	pixels.show();
+	//	delay(1000);
+	//	pixels.clear();
+	//	pixels.show();
+	//	delay(100);
 	log_i("WiFiStationDisconnected");
 }
 
@@ -482,24 +505,41 @@ BLYNK_WRITE(V0) {
 	log_i("V0, r: %d, g: %d, b: %d,", red, green, blue);
 	pixels.fill(pixels.Color(red, green, blue), 0, LED_NUM_PIXELS);
 	pixels.show();
-	delay(5000);
+	delay(100);
+	whatToDisp = none;
 }
 
 BLYNK_WRITE(V2) {
 	switch (param.asInt()) {
 		case 1: // Item 1
 			whatToDisp = eCO2;
+			pixels.clear();
+			pixels.show();
+			delay(100);
 			break;
 		case 2: // Item 2
 			whatToDisp = TVOC;
+			pixels.clear();
+			pixels.show();
+			delay(100);
 			break;
 		case 3: // Item 3
 			whatToDisp = PM2_5;
+			pixels.clear();
+			pixels.show();
+			delay(100);
 			break;
 		default:
 			whatToDisp = none;
 	}
+	dispFirstParam = true;
 }
+
+BLYNK_WRITE(V3) {
+	pixels.setBrightness(param.asInt());
+	pixels.show();
+}
+
 char checkValue(unsigned char *thebuf, char leng) {
 	char receiveflag = 0;
 	int receiveSum = 0;
