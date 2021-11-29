@@ -23,6 +23,8 @@
         <string>sketches\Board.h</string>
         <string>sketches\WebPages.h</string>
         <string>sketches\winsen_ze25o3.h</string>
+        <string>sketches\Sensors.h</string>
+        <string>sketches\WS2812.h</string>
       </OtherFiles>
     </ProjectModeSettings>
   </Project>
@@ -177,7 +179,7 @@
         <DebugMethod>
           <ID>openocd</ID>
           <Configuration xsi:type="com.visualgdb.edp.openocd.settings.esp32">
-            <CommandLine>-f interface/ftdi/olimex-arm-usb-ocd.cfg -c "adapter_khz 12000" -f target/esp32.cfg</CommandLine>
+            <CommandLine>-f interface/jlink.cfg -c "adapter_khz 7000" -f target/esp32.cfg</CommandLine>
             <ExtraParameters>
               <Frequency xsi:nil="true" />
               <BoostedFrequency xsi:nil="true" />

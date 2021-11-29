@@ -1,0 +1,159 @@
+#include "Sensors.h"
+
+#define DHTPIN 32
+#define DHTTYPE DHT11
+
+#define CCS811_WAK 33
+
+#define PM_BUF_LEN 31 // 0x42 + 31 bytes equal to 32 bytes
+
+Adafruit_CCS811 CCS811;
+
+measStruct eCO2_meas;
+measStruct TVOC_meas;
+measStruct PM01_meas;  // define PM1.0 value of the air detector module
+measStruct PM2_5_meas; // define PM2.5 value of the air detector module
+measStruct PM10_meas;  // define PM10 value of the air detector module
+measStruct temp_meas;  // define PM10 value of the air detector module
+measStruct humid_meas; // define PM10 value of the air detector module
+
+unsigned char buf[PM_BUF_LEN];
+byte O3_buf[9];
+
+DHT dht(DHTPIN, DHTTYPE);
+
+SoftwareSerial PMSerial;
+SoftwareSerial O3Serial;
+
+char checkValue(unsigned char *thebuf, char leng) {
+	char receiveflag = 0;
+	int receiveSum = 0;
+
+	for (int i = 0; i < (leng - 2); i++) {
+		receiveSum = receiveSum + thebuf[i];
+	}
+	receiveSum = receiveSum + 0x42;
+
+	if (receiveSum == ((thebuf[leng - 2] << 8) + thebuf[leng - 1])) // check the serial data
+	{
+		receiveSum = 0;
+		receiveflag = 1;
+	}
+	return receiveflag;
+}
+
+int transmitPM01(unsigned char *thebuf) {
+	int PM01Val;
+	PM01Val = ((thebuf[3] << 8) + thebuf[4]); // count PM1.0 value of the air detector module
+	return PM01Val;
+}
+
+// transmit PM Value to PC
+int transmitPM2_5(unsigned char *thebuf) {
+	int PM2_5Val;
+	PM2_5Val = ((thebuf[5] << 8) + thebuf[6]); // count PM2.5 value of the air detector module
+	return PM2_5Val;
+}
+
+// transmit PM Value to PC
+int transmitPM10(unsigned char *thebuf) {
+	int PM10Val;
+	PM10Val = ((thebuf[7] << 8) + thebuf[8]); // count PM10 value of the air detector module
+	return PM10Val;
+}
+
+bool sensorsBegin() {
+	PMSerial.begin(9600, SWSERIAL_8N1, 17, 16, false, 256);
+	PMSerial.setTimeout(1500);
+
+	O3Serial.begin(9600, SWSERIAL_8N1, 2, 5, false, 256);
+	O3Serial.setTimeout(1500);
+
+	pinMode(CCS811_WAK, OUTPUT);
+	digitalWrite(CCS811_WAK, LOW);
+
+	eCO2_meas.measNum = 0;
+	eCO2_meas.value = 0;
+
+	TVOC_meas.measNum = 0;
+	TVOC_meas.value = 0;
+
+	PM01_meas.measNum = 0;
+	PM01_meas.value = 0;
+
+	PM10_meas.measNum = 0;
+	PM10_meas.value = 0;
+
+	PM2_5_meas.measNum = 0;
+	PM2_5_meas.value = 0;
+
+	temp_meas.measNum = 0;
+	temp_meas.value = 0;
+
+	humid_meas.measNum = 0;
+	humid_meas.value = 0;
+
+	if (!CCS811.begin()) {
+		// Serial.println("Failed to start sensor! Please check your wiring.");
+		return false;
+	}
+
+	dht.begin();
+	return true;
+}
+
+bool getCCS811_meas() {
+	if (CCS811.available()) {
+		if (!CCS811.readData()) {
+			eCO2_meas.value += CCS811.geteCO2(); // returns eCO2 reading
+			eCO2_meas.measNum++;
+			TVOC_meas.value += CCS811.getTVOC(); // return TVOC reading
+			TVOC_meas.measNum++;
+			return true;
+		}
+	}
+	return false;
+}
+
+bool getPM_meas() {
+	if (PMSerial.find(0x42)) {
+		PMSerial.readBytes(buf, PM_BUF_LEN);
+
+		if (buf[0] == 0x4d) {
+			if (checkValue(buf, PM_BUF_LEN)) {
+				PM01_meas.value += transmitPM01(buf); // count PM1.0 value of the air detector module
+				PM01_meas.measNum++;
+
+				PM2_5_meas.value += transmitPM2_5(buf); // count PM2.5 value of the air detector module
+				PM2_5_meas.measNum++;
+
+				PM10_meas.value += transmitPM10(buf); // count PM10 value of the air detector module
+				PM10_meas.measNum++;
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool getDHT11_meas() {
+	// Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+	float humid = dht.readHumidity();
+	// Read temperature as Celsius (the default)
+	float temp = dht.readTemperature();
+	if (isnan(humid) || isnan(temp)) {
+		return false;
+	} else {
+		temp_meas.measNum++;
+		temp_meas.value += temp;
+
+		humid_meas.measNum++;
+		humid_meas.value += humid;
+	}
+	return true;
+}
+
+//	if (O3Serial.available() > 8) {
+//		memset(O3_buf, 0, 9);
+//		O3Serial.readBytes(O3_buf, 9);
+//	}
