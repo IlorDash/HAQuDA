@@ -11,6 +11,9 @@
 
 #include "Sensors.h"
 #include "WS2812.h"
+#include "Tasks.h"
+
+#include "Main.h"
 
 #define WIFI_CREDS_NUM 3
 
@@ -30,8 +33,10 @@ char *passDefault = "ilor66142222!";
 char *ssidArr[WIFI_CREDS_NUM] = {"ilor", "ordash", "realme 7"};
 char *passArr[WIFI_CREDS_NUM] = {"ilor66142222!", "or14591711", "1a387fa49c2b"};
 
-enum dispParams { eCO2, TVOC, PM2_5, temp, humid, none };
-dispParams whatToDisp = none;
+enum dispParams { eCO2, TVOC, PM2_5, temp, humid, noneParam };
+dispParams whatParamDisp = noneParam;
+
+dispEffects whatEffectDisp = noneEffect;
 
 bool WiFiCredsFound = true;
 
@@ -51,43 +56,55 @@ int thirdDot;
 
 bool dispFirstParam = false;
 
-void dispParam() {
+void dispParam_WS2812() {
 	showParamsDivideDots myDots;
-	if (whatToDisp == temp) {
+	if (whatParamDisp == temp) {
 		myDots.firstDot = 20;
 		myDots.secondDot = 26;
 		myDots.thirdDot = 30;
 		WS2812_showParams(PM2_5_meas.value / PM2_5_meas.measNum, myDots);
 		PM2_5_meas.value = 0;
 		PM2_5_meas.measNum = 0;
-	} else if (whatToDisp == humid) {
+	} else if (whatParamDisp == humid) {
 		myDots.firstDot = 40;
 		myDots.secondDot = 60;
 		myDots.thirdDot = 80;
 		WS2812_showParams(PM2_5_meas.value / PM2_5_meas.measNum, myDots);
 		PM2_5_meas.value = 0;
 		PM2_5_meas.measNum = 0;
-	} else if (whatToDisp == eCO2) {
+	} else if (whatParamDisp == eCO2) {
 		myDots.firstDot = 400;
 		myDots.secondDot = 1000;
 		myDots.thirdDot = 5000;
 		WS2812_showParams(eCO2_meas.value / eCO2_meas.measNum, myDots);
 		eCO2_meas.value = 0;
 		eCO2_meas.measNum = 0;
-	} else if (whatToDisp == TVOC) {
+	} else if (whatParamDisp == TVOC) {
 		myDots.firstDot = 220;
 		myDots.secondDot = 660;
 		myDots.thirdDot = 1000;
 		WS2812_showParams(TVOC_meas.value / TVOC_meas.measNum, myDots);
 		TVOC_meas.value = 0;
 		TVOC_meas.measNum = 0;
-	} else if (whatToDisp == PM2_5) {
+	} else if (whatParamDisp == PM2_5) {
 		myDots.firstDot = 15;
 		myDots.secondDot = 20;
 		myDots.thirdDot = 45;
 		WS2812_showParams(PM2_5_meas.value / PM2_5_meas.measNum, myDots);
 		PM2_5_meas.value = 0;
 		PM2_5_meas.measNum = 0;
+	}
+}
+
+void dispEffect_WS2812() {
+	if (whatEffectDisp == snake) {
+		WS2812_Snake(400, 7, COLOR_LIME);
+	} else if (whatEffectDisp == randomPixel) {
+		WS2812_Random(400);
+	} else if (whatEffectDisp == fade) {
+		WS2812_Fade(400, 5, COLOR_AQUA);
+	} else if (whatEffectDisp == christmasTree) {
+		WS2812_ChristmasTree(400);
 	}
 }
 
@@ -154,6 +171,8 @@ void setup() {
 		}
 	}
 
+	createTasks();
+
 	// pinMode(LED_BUILTIN, OUTPUT);
 
 	// createAP();
@@ -183,14 +202,18 @@ void loop() {
 
 	delay(100);
 
+	deleteTasks();
 	getCCS811_meas();
 	getPM_meas();
-
+	createTasks();
+	
 	if ((millis() - dht11_meas_time) > DHT_MEAS_PERIOD) {
+		deleteTasks();
 		if (!getDHT11_meas()) {
 			terminal.println(F("Failed to read from DHT sensor!"));
 		}
 		dht11_meas_time = millis();
+		createTasks();
 	}
 
 	bool isMeasExist = (eCO2_meas.measNum) && (TVOC_meas.measNum) && (PM01_meas.measNum) && (PM2_5_meas.measNum) && (PM10_meas.measNum) && (temp_meas.measNum)
@@ -233,7 +256,7 @@ void loop() {
 		terminal.println("  ppb");
 		terminal.println();
 
-		switch (whatToDisp) {
+		switch (whatParamDisp) {
 			case temp: // Item 3
 				terminal.println("Display temperature");
 				break;
@@ -250,16 +273,19 @@ void loop() {
 				terminal.println("Display PM2_5");
 				break;
 			default:
-				terminal.println("Display none");
+				terminal.println("Display none parametr");
 		}
 
 		terminal.flush();
 	}
 	if (((millis() - dispMeasTimer > DISP_MEAS_PERIOD) || dispFirstParam) && isMeasExist) {
 		dispMeasTimer = millis();
-		dispParam();
+		dispParam_WS2812();
 		dispFirstParam = false;
 	}
+//	if (whatEffectDisp != noneEffect) {
+//		dispEffect_WS2812();
+//	}
 }
 
 void createAP() {
@@ -317,47 +343,81 @@ BLYNK_WRITE(V0) {
 	uint32_t color = ((uint32_t)red << 16) | ((uint32_t)green << 8) | blue;
 	WS2812_fillColor(color);
 	delay(100);
-	whatToDisp = none;
+	whatParamDisp = noneParam;
+	whatEffectDisp = noneEffect;
 }
 
 BLYNK_WRITE(V2) {
 	switch (param.asInt()) {
 		case 1: { // Item 3
-			whatToDisp = temp;
+			whatParamDisp = temp;
 			WS2812_clear();
 			delay(100);
 			break;
 		}
 		case 2: { // Item 3
-			whatToDisp = humid;
+			whatParamDisp = humid;
 			WS2812_clear();
 			delay(100);
 			break;
 		}
 		case 3: { // Item 1
-			whatToDisp = eCO2;
+			whatParamDisp = eCO2;
 			WS2812_clear();
 			delay(100);
 			break;
 		}
 		case 4: { // Item 2
-			whatToDisp = TVOC;
+			whatParamDisp = TVOC;
 			WS2812_clear();
 			delay(100);
 			break;
 		}
 		case 5: { // Item 3
-			whatToDisp = PM2_5;
+			whatParamDisp = PM2_5;
 			WS2812_clear();
 			delay(100);
 			break;
 		}
 		default:
-			whatToDisp = none;
+			whatParamDisp = noneParam;
 	}
 	dispFirstParam = true;
+	whatEffectDisp = noneEffect;
 }
 
 BLYNK_WRITE(V3) {
-	WS2812_setBrightness(param.asInt());
+	WS2812_setBrightnessPerCent(param.asInt());
+}
+
+BLYNK_WRITE(V4) {
+	switch (param.asInt()) {
+		case 1: { // Item 3
+			whatEffectDisp = snake;
+			WS2812_clear();
+			delay(100);
+			break;
+		}
+		case 2: { // Item 3
+			whatEffectDisp = randomPixel;
+			WS2812_clear();
+			delay(100);
+			break;
+		}
+		case 3: { // Item 1
+			whatEffectDisp = fade;
+			WS2812_clear();
+			delay(100);
+			break;
+		}
+		case 4: { // Item 2
+			whatEffectDisp = christmasTree;
+			WS2812_clear();
+			delay(100);
+			break;
+		}
+		default:
+			whatEffectDisp = noneEffect;
+	}
+	whatParamDisp = noneParam;
 }
