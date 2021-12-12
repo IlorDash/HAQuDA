@@ -3,6 +3,9 @@
 #define DHTPIN 32
 #define DHTTYPE DHT11
 
+#define ZE2503_RX_PIN 2
+#define ZE2503_TX_PIN 5
+
 #define CCS811_WAK 33
 
 #define PM_BUF_LEN 31 // 0x42 + 31 bytes equal to 32 bytes
@@ -16,6 +19,7 @@ measStruct PM2_5_meas; // define PM2.5 value of the air detector module
 measStruct PM10_meas;  // define PM10 value of the air detector module
 measStruct temp_meas;  // define PM10 value of the air detector module
 measStruct humid_meas; // define PM10 value of the air detector module
+measStruct O3_meas;	// define O3 value of the ZE25-O3
 
 unsigned char buf[PM_BUF_LEN];
 byte O3_buf[9];
@@ -23,7 +27,6 @@ byte O3_buf[9];
 DHT dht(DHTPIN, DHTTYPE);
 
 SoftwareSerial PMSerial;
-SoftwareSerial O3Serial;
 
 char checkValue(unsigned char *thebuf, char leng) {
 	char receiveflag = 0;
@@ -66,8 +69,8 @@ bool sensorsBegin() {
 	PMSerial.begin(9600, SWSERIAL_8N1, 17, 16, false, 256);
 	PMSerial.setTimeout(1500);
 
-	O3Serial.begin(9600, SWSERIAL_8N1, 2, 5, false, 256);
-	O3Serial.setTimeout(1500);
+	ZE25O3_init(ZE2503_RX_PIN, ZE2503_TX_PIN);
+	ZE25O3_setCommQuestionMode(); // set ZE25-O3 in Q/A mode
 
 	pinMode(CCS811_WAK, OUTPUT);
 	digitalWrite(CCS811_WAK, LOW);
@@ -92,6 +95,9 @@ bool sensorsBegin() {
 
 	humid_meas.measNum = 0;
 	humid_meas.value = 0;
+
+	O3_meas.measNum = 0;
+	O3_meas.value = 0;
 
 	if (!CCS811.begin()) {
 		// Serial.println("Failed to start sensor! Please check your wiring.");
@@ -153,7 +159,14 @@ bool getDHT11_meas() {
 	return true;
 }
 
-//	if (O3Serial.available() > 8) {
-//		memset(O3_buf, 0, 9);
-//		O3Serial.readBytes(O3_buf, 9);
-//	}
+bool getO3_meas() {
+	ZE25O3_requestSensorReading();
+	delay(10);
+	int val = ZE25O3_readPPB(5000);
+	if (val == -1) {
+		return false;
+	}
+	O3_meas.measNum++;
+	O3_meas.value += val;
+	return true;
+}

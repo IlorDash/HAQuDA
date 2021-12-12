@@ -1,7 +1,5 @@
 #include "WS2812.h"
 
-using namespace std;
-
 Adafruit_NeoPixel pixels(LED_NUM_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 void WS2812_begin() {
@@ -21,7 +19,11 @@ void WS2812_clear() {
 	pixels.show();
 }
 
-void WS2812_fillPixelColor(uint16_t pixelNum, uint32_t color) {
+void WS2812_show() {
+	pixels.show();
+}
+
+void WS2812_setPixelColor(uint16_t pixelNum, uint32_t color) {
 	pixels.setPixelColor(pixelNum, color);
 	pixels.show();
 }
@@ -29,59 +31,6 @@ void WS2812_fillPixelColor(uint16_t pixelNum, uint32_t color) {
 void WS2812_fillColor(uint32_t color) {
 	pixels.fill(color, 0, LED_NUM_PIXELS);
 	pixels.show();
-}
-
-void WS2812_Fade(int FadeSpeed, int startBrightness, uint32_t color) {
-	pixels.clear();
-	pixels.show();
-	vTaskDelay(100 / portTICK_PERIOD_MS);
-	for (int i = 0; i < LED_NUM_PIXELS; i++) {
-		pixels.setPixelColor(i, color);
-	}
-	for (int j = MAX_BRIGHTNESS; j > 0; j = j - 2) {
-		pixels.setBrightness(j);
-		pixels.show();
-		vTaskDelay(FadeSpeed / portTICK_PERIOD_MS);
-	}
-}
-
-void WS2812_Random(int speed) {
-	pixels.clear();
-	pixels.show();
-	vTaskDelay(100 / portTICK_PERIOD_MS);
-	vector<int> pixelEnArr;
-	for (int i = 0; i < LED_NUM_PIXELS; i++) {
-		int pixelNum = random(0, LED_NUM_PIXELS);
-		while (find(pixelEnArr.begin(), pixelEnArr.end(), pixelNum) != pixelEnArr.end()) {
-			pixelNum = random(0, LED_NUM_PIXELS);
-		}
-		pixelEnArr.push_back(pixelNum);
-		pixels.setPixelColor(pixelNum, random(0, 255), random(0, 255), random(0, 255));
-		pixels.show();
-		vTaskDelay(speed / portTICK_PERIOD_MS);
-	}
-	vTaskDelay(1000 / portTICK_PERIOD_MS);
-}
-
-void WS2812_Snake(int speed, int tailLength, uint32_t color) {
-	if (tailLength > 10) {
-		return;
-	}
-	pixels.clear();
-	pixels.show();
-	vTaskDelay(100 / portTICK_PERIOD_MS);
-	for (int i = 0; i < LED_NUM_PIXELS; i++) {
-		int pixelNum = 0;
-		for (int j = 0; j < tailLength; j++) {
-			pixelNum = j + i;
-			pixelNum = (pixelNum > LED_NUM_PIXELS) ? LED_NUM_PIXELS : pixelNum;
-			pixels.setPixelColor(pixelNum, color);
-			pixels.show();
-			vTaskDelay(speed / portTICK_PERIOD_MS);
-		}
-		pixels.setPixelColor(i, 0);
-	}
-	vTaskDelay(1000 / portTICK_PERIOD_MS);
 }
 
 uint8_t christmasTreeMaxWidth = 7;
@@ -156,7 +105,7 @@ void WS2812_ChristmasTree(int speed) {
 	uint8_t lightsEffect = rand() % 3;
 }
 
-void getRGB(int *_red, int *_green, int *_blue, int data, showParamsDivideDots divideDots) {
+void getRGB(int *_red, int *_green, int *_blue, float data, showParamsDivideDots divideDots) {
 	float coefficient = pixels.getBrightness() * 2 / (divideDots.thirdDot - divideDots.firstDot);
 	if ((data < divideDots.secondDot) && (data >= divideDots.firstDot)) {
 		*_blue = round(-abs(data - divideDots.firstDot) * coefficient) + MAX_BRIGHTNESS;
@@ -177,7 +126,7 @@ void getRGB(int *_red, int *_green, int *_blue, int data, showParamsDivideDots d
 	}
 }
 
-void WS2812_showParams(int data, showParamsDivideDots divideDots) {
+void WS2812_showParams(float data, showParamsDivideDots divideDots) {
 	/**************************************************/
 	int time = 9; // get real time
 	/**************************************************/

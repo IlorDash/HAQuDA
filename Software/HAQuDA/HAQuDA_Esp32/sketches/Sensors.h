@@ -8,10 +8,10 @@
 
 #include <DHT.h>
 
-#define DHT_MEAS_PERIOD 2000
+#define SENSORS_MEAS_PERIOD 2000
 
 typedef struct {
-	uint32_t value;
+	float value;
 	uint16_t measNum;
 } measStruct;
 
@@ -22,8 +22,10 @@ extern measStruct PM2_5_meas; // define PM2.5 value of the air detector module
 extern measStruct PM10_meas;  // define PM10 value of the air detector module
 extern measStruct temp_meas;  // define PM10 value of the air detector module
 extern measStruct humid_meas; // define PM10 value of the air detector module
+extern measStruct O3_meas; // define PM10 value of the air detector module
 
 bool sensorsBegin();
 bool getCCS811_meas();
 bool getPM_meas();
 bool getDHT11_meas();
+bool getO3_meas();

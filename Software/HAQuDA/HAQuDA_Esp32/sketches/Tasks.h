@@ -1,6 +1,7 @@
 #pragma once
 
-#include  "WS2812.h"
+#include "WS2812.h"
+#include <vector>
 #include "Main.h"
 
 extern dispEffects whatEffectDisp;

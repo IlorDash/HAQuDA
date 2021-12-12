@@ -1,90 +1,89 @@
 #include "Tasks.h"
 
-TaskHandle_t WS2812_SnakeTask;
-TaskHandle_t WS2812_RandomTask;
-TaskHandle_t WS2812_FadeTask;
-TaskHandle_t WS2812_ChristmasTask;
+using namespace std;
 
-void WS2812_Snake_taskCode(void *parameter) {
-	while (1) {
-		if (whatEffectDisp == snake) {
-			WS2812_Snake(400, 5, COLOR_LIME);
-		}
-	}
-}
+void WS2812_EffectsTaskCode(void *parameter) {
+	while (true) {
+		switch (whatEffectDisp) {
+			case snake: { // Item 3
+				uint8_t tailLength = 5;
+				uint16_t SnakeSpeed = 400;
+				WS2812_clear();
+				vTaskDelay(100 / portTICK_PERIOD_MS);
+				for (int i = 0; i < LED_NUM_PIXELS; i++) {
+					int pixelNum = 0;
+					for (int j = 0; j < tailLength; j++) {
+						pixelNum = j + i;
+						pixelNum = (pixelNum > LED_NUM_PIXELS) ? LED_NUM_PIXELS : pixelNum;
+						WS2812_setPixelColor(pixelNum, COLOR_LIME);
+						WS2812_show();
+						vTaskDelay(SnakeSpeed / portTICK_PERIOD_MS);
+					}
+					WS2812_setPixelColor(i, 0);
+					if (whatEffectDisp != snake) {
+						break;
+					}
+				}
+				vTaskDelay(1000 / portTICK_PERIOD_MS);
 
-void WS2812_Random_taskCode(void *parameter) {
-	while (1) {
-		if (whatEffectDisp == randomPixel) {
-			WS2812_Random(400);
-		}
-	}
-}
+				break;
+			}
+			case randomPixel: { // Item 3
+				uint16_t RandomSpeed = 400;
+				WS2812_clear();
+				vTaskDelay(100 / portTICK_PERIOD_MS);
+				vector<int> pixelEnArr;
+				for (int i = 0; i < LED_NUM_PIXELS; i++) {
+					int pixelNum = random(0, LED_NUM_PIXELS);
+					while (find(pixelEnArr.begin(), pixelEnArr.end(), pixelNum) != pixelEnArr.end()) {
+						pixelNum = random(0, LED_NUM_PIXELS);
+					}
+					pixelEnArr.push_back(pixelNum);
 
-void WS2812_Fade_taskCode(void *parameter) {
-	while (1) {
-		if (whatEffectDisp == fade) {
-			WS2812_Fade(400, 5, COLOR_AQUA);
-		}
-	}
-}
-
-void WS2812_ChristmasTree_taskCode(void *parameter) {
-	while (1) {
-		if (whatEffectDisp == christmasTree) {
-			WS2812_ChristmasTree(400);
+					WS2812_setPixelColor(pixelNum, ((uint32_t)random(0, 255) << 16) | ((uint32_t)random(0, 255) << 8) | random(0, 255));
+					WS2812_show();
+					vTaskDelay(RandomSpeed / portTICK_PERIOD_MS);
+					if (whatEffectDisp != randomPixel) {
+						break;
+					}
+				}
+				vTaskDelay(1000 / portTICK_PERIOD_MS);
+				break;
+			}
+			case fade: { // Item 3
+				uint16_t FadeSpeed = 400;
+				WS2812_clear();
+				vTaskDelay(100 / portTICK_PERIOD_MS);
+				WS2812_fillColor(COLOR_AQUA);
+				for (int j = 100; j > 0; j = j - 2) {
+					WS2812_setBrightnessPerCent(j);
+					WS2812_show();
+					vTaskDelay(FadeSpeed / portTICK_PERIOD_MS);
+					if (whatEffectDisp != fade) {
+						break;
+					}
+				}
+				break;
+			}
+			case christmasTree: { // Item 3
+				// WS2812_ChristmasTree(400);
+				break;
+			}
+			default: {
+				vTaskDelay(500 / portTICK_PERIOD_MS);
+				break;
+			}
 		}
 	}
 }
 
 void createTasks() {
-	xTaskCreate(WS2812_Snake_taskCode, // Function that should be called
-				"WS2812 Snake task",   // Name of the task (for debugging)
-				1000,				   // Stack size (bytes)
-				NULL,				   // Parameter to pass
-				1,					   // Task priority
-				&WS2812_SnakeTask			 // Task handle
+	xTaskCreatePinnedToCore(WS2812_EffectsTaskCode, // Function that should be called
+							"WS2812 Effects task",  // Name of the task (for debugging)
+							2048,					// Stack size (bytes)
+							NULL,					// Parameter to pass
+							1,						// Task priority
+							NULL,					// Task handler
+							1						// Task core
 	);
-
-	xTaskCreate(WS2812_Random_taskCode, // Function that should be called
-				"WS2812 Random task",   // Name of the task (for debugging)
-				1000,					// Stack size (bytes)
-				NULL,					// Parameter to pass
-				1,						// Task priority
-				&WS2812_RandomTask			 // Task handle
-	);
-
-	xTaskCreate(WS2812_Fade_taskCode, // Function that should be called
-				"WS2812 Fade task",   // Name of the task (for debugging)
-				1000,				  // Stack size (bytes)
-				NULL,				  // Parameter to pass
-				1,					  // Task priority
-				&WS2812_FadeTask			 // Task handle
-	);
-
-	xTaskCreate(WS2812_ChristmasTree_taskCode, // Function that should be called
-				"WS2812 Christmas task",	   // Name of the task (for debugging)
-				1000,						   // Stack size (bytes)
-				NULL,						   // Parameter to pass
-				1,							   // Task priority
-				&WS2812_ChristmasTask			 // Task handle
-	);
-}
-
-void deleteTasks() {
-	if (WS2812_SnakeTask != NULL) {
-		vTaskDelete(WS2812_SnakeTask);
-	}
-
-	if (WS2812_RandomTask != NULL) {
-		vTaskDelete(WS2812_RandomTask);
-	}
-
-	if (WS2812_FadeTask != NULL) {
-		vTaskDelete(WS2812_FadeTask);
-	}
-
-	if (WS2812_ChristmasTask != NULL) {
-		vTaskDelete(WS2812_ChristmasTask);
-	}
 }

@@ -96,18 +96,6 @@ void dispParam_WS2812() {
 	}
 }
 
-void dispEffect_WS2812() {
-	if (whatEffectDisp == snake) {
-		WS2812_Snake(400, 7, COLOR_LIME);
-	} else if (whatEffectDisp == randomPixel) {
-		WS2812_Random(400);
-	} else if (whatEffectDisp == fade) {
-		WS2812_Fade(400, 5, COLOR_AQUA);
-	} else if (whatEffectDisp == christmasTree) {
-		WS2812_ChristmasTree(400);
-	}
-}
-
 void WiFi_handler() {
 	wl_status_t status = WiFi.status();
 	int i = 0;
@@ -118,7 +106,7 @@ void WiFi_handler() {
 		connectToWiFi(ssidArr[i], passArr[i]);
 		status = WiFi.status();
 		if (status != WL_CONNECTED) {
-			WS2812_fillPixelColor(j, COLOR_YELLOW);
+			WS2812_setPixelColor(j, COLOR_YELLOW);
 			log_i("Connecting to %s", ssidArr[i]);
 			WiFi.reconnect();
 			uint32_t timer = millis();
@@ -147,18 +135,12 @@ void connectToWiFi_AP() {
 	wl_status_t status = WiFi.status();
 	while (WiFiCredsFound && (status != WL_CONNECTED) && (i < WIFI_CREDS_NUM)) {
 		connectToWiFi(ssidArr[i], passArr[i]);
-		// connectToWiFi(ssidLocal, passLocal);
 		i++;
 		status = WiFi.status();
 		if (i == WIFI_CREDS_NUM) {
 			i = 0;
 		}
 	}
-	//	if (WiFiCredsFound && (status != WL_CONNECTED)) {
-	//		connectToWiFi(ssidLocal, passLocal);
-	//		i++;
-	//		status = WiFi.status();
-	//	}
 }
 
 void setup() {
@@ -190,7 +172,10 @@ void setup() {
 
 uint16_t measNum = 0;
 uint32_t dispMeasTimer = 0;
-uint32_t dht11_meas_time = 0;
+uint32_t sensors_meas_time = 0;
+
+uint8_t tempBuf[9];
+
 void loop() {
 	server.handleClient();
 	WiFi_handler();
@@ -201,23 +186,21 @@ void loop() {
 	}
 
 	delay(100);
-
-	deleteTasks();
-	getCCS811_meas();
-	getPM_meas();
-	createTasks();
-	
-	if ((millis() - dht11_meas_time) > DHT_MEAS_PERIOD) {
-		deleteTasks();
+	if ((millis() - sensors_meas_time) > SENSORS_MEAS_PERIOD) {
 		if (!getDHT11_meas()) {
 			terminal.println(F("Failed to read from DHT sensor!"));
 		}
-		dht11_meas_time = millis();
-		createTasks();
+		sensors_meas_time = millis();
+		getCCS811_meas();
+		getPM_meas();
+
+		if (!getO3_meas()) {
+			terminal.println(F("Failed to read from ZE25-O3 sensor!"));
+		}
 	}
 
 	bool isMeasExist = (eCO2_meas.measNum) && (TVOC_meas.measNum) && (PM01_meas.measNum) && (PM2_5_meas.measNum) && (PM10_meas.measNum) && (temp_meas.measNum)
-					   && (humid_meas.measNum);
+					   && (humid_meas.measNum) && (O3_meas.measNum);
 
 	static unsigned long OledTimer = millis();
 	if ((millis() - OledTimer >= 1000) && isMeasExist) {
@@ -256,6 +239,11 @@ void loop() {
 		terminal.println("  ppb");
 		terminal.println();
 
+		terminal.print("O3: ");
+		terminal.print(O3_meas.value / O3_meas.measNum);
+		terminal.println("  ppb");
+		terminal.println();
+
 		switch (whatParamDisp) {
 			case temp: // Item 3
 				terminal.println("Display temperature");
@@ -283,9 +271,9 @@ void loop() {
 		dispParam_WS2812();
 		dispFirstParam = false;
 	}
-//	if (whatEffectDisp != noneEffect) {
-//		dispEffect_WS2812();
-//	}
+	//	if (whatEffectDisp != noneEffect) {
+	//		dispEffect_WS2812();
+	//	}
 }
 
 void createAP() {

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Adafruit_NeoPixel.h>
-#include <vector>
 
 #define LED_PIN 18
 #define LED_NUM_PIXELS 109
@@ -26,12 +25,10 @@ void WS2812_begin();
 void WS2812_setBrightnessPerCent(uint8_t brightness);
 
 void WS2812_clear();
-void WS2812_fillPixelColor(uint16_t pixelNum, uint32_t color);
+void WS2812_show();
+void WS2812_setPixelColor(uint16_t pixelNum, uint32_t color);
 void WS2812_fillColor(uint32_t color);
 
-void WS2812_showParams(int data, showParamsDivideDots divideDots);
+void WS2812_showParams(float data, showParamsDivideDots divideDots);
 
-void WS2812_Snake(int speed, int tailLength, uint32_t color);
-void WS2812_Random(int speed);
-void WS2812_Fade(int FadeSpeed, int startBrightness, uint32_t color);
 void WS2812_ChristmasTree(int speed);
