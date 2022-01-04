@@ -105,7 +105,7 @@ void WS2812_ChristmasTree(int speed) {
 	uint8_t lightsEffect = rand() % 3;
 }
 
-void getRGB(int *_red, int *_green, int *_blue, float data, showParamsDivideDots divideDots) {
+void getRGB(int *_red, int *_green, int *_blue, float data, paramsDivideDots divideDots) {
 	float coefficient = pixels.getBrightness() * 2 / (divideDots.thirdDot - divideDots.firstDot);
 	if ((data < divideDots.secondDot) && (data >= divideDots.firstDot)) {
 		*_blue = round(-abs(data - divideDots.firstDot) * coefficient) + MAX_BRIGHTNESS;
@@ -126,7 +126,7 @@ void getRGB(int *_red, int *_green, int *_blue, float data, showParamsDivideDots
 	}
 }
 
-void WS2812_showParams(float data, showParamsDivideDots divideDots) {
+void WS2812_showParams(float data, paramsDivideDots divideDots) {
 	/**************************************************/
 	int time = 9; // get real time
 	/**************************************************/

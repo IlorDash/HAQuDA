@@ -150,6 +150,7 @@ bool getPM_meas() {
 				PM10_meas.value += transmitPM10(buf); // count PM10 value of the air detector module
 				PM10_meas.measNum++;
 				PM10_meas.newMeasDone = true;
+
 				return true;
 			}
 		}

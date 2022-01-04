@@ -18,7 +18,6 @@
 #define WIFI_CREDS_NUM 3
 
 #define DISP_MEAS_PERIOD 300000 //=5 min in ms
-#define BLUNK_LOG_PERIOD 1000
 #define SENSORS_MEAS_PERIOD 2000
 
 #define DISP_PARAMS_NUM 5
@@ -39,6 +38,7 @@ char *passArr[WIFI_CREDS_NUM] = {"ilor66142222!", "or14591711!", "1a387fa49c2b"}
 
 enum dispParams { eCO2, TVOC, PM2_5, temp, humid, noneParam };
 dispParams whatParamDisp = noneParam;
+
 
 paramsDivideDots temp_divideDots = {20, 26, 30};
 paramsDivideDots humid_divideDots = {40, 60, 80};
@@ -147,7 +147,6 @@ void setup() {
 uint16_t measNum = 0;
 uint32_t dispMeasTimer = 0;
 uint32_t sensors_meas_time = 0;
-uint32_t blynk_log_time = 0;
 
 void loop() {
 	server.handleClient();
@@ -164,13 +163,11 @@ void loop() {
 		getCCS811_meas();
 		getPM_meas();
 		getO3_meas();
-		sensors_meas_time = millis();
-	}
 
-	if (millis() - blynk_log_time >= BLUNK_LOG_PERIOD) {
 		measNum++;
-		blynk_log_time = millis();
 		blynkPrintLog();
+
+		sensors_meas_time = millis();
 	}
 
 	if (millis() - dispMeasTimer > DISP_MEAS_PERIOD) {
@@ -225,21 +222,29 @@ bool checkIfMeasCorrect() {
 		terminal.println("FATAL ERROR: Failed to get HUMID measurment");
 		returnVal = false;
 	}
-	if (!humid_meas.newMeasDone) {
+	if (!O3_meas.newMeasDone) {
 		terminal.println("FATAL ERROR: Failed to get O3 measurment");
 		returnVal = false;
 	}
 	terminal.flush();
+
+	eCO2_meas.newMeasDone = false;
+	TVOC_meas.newMeasDone = false;
+	PM2_5_meas.newMeasDone = false;
+	temp_meas.newMeasDone = false;
+	humid_meas.newMeasDone = false;
+	O3_meas.newMeasDone = false;
+
 	return returnVal;
 }
 
 void blynkPrintLog() {
-	if (!checkIfMeasCorrect) {
+	if (!checkIfMeasCorrect()) {
 		return;
 	}
 
 	terminal.println();
-	terminal.print("----------------------------");
+	terminal.println("----------------------------");
 	terminal.print(measNum);
 	terminal.println(" - measurment");
 
@@ -363,14 +368,7 @@ BLYNK_WRITE(V2) {
 }
 
 BLYNK_WRITE(V3) {
-	switch (param.asInt()) {
-		case 1: { // Item 3
-			break;
-		}
 
-		default:
-			whatParamDisp = noneParam;
-	}
 }
 
 BLYNK_WRITE(V4) {
