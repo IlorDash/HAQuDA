@@ -77,27 +77,35 @@ bool sensorsBegin() {
 
 	eCO2_meas.measNum = 0;
 	eCO2_meas.value = 0;
+	eCO2_meas.newMeasDone = false;
 
 	TVOC_meas.measNum = 0;
 	TVOC_meas.value = 0;
+	TVOC_meas.newMeasDone = false;
 
 	PM01_meas.measNum = 0;
 	PM01_meas.value = 0;
+	PM01_meas.newMeasDone = false;
 
 	PM10_meas.measNum = 0;
 	PM10_meas.value = 0;
+	PM10_meas.newMeasDone = false;
 
 	PM2_5_meas.measNum = 0;
 	PM2_5_meas.value = 0;
+	PM2_5_meas.newMeasDone = false;
 
 	temp_meas.measNum = 0;
 	temp_meas.value = 0;
+	temp_meas.newMeasDone = false;
 
 	humid_meas.measNum = 0;
 	humid_meas.value = 0;
+	humid_meas.newMeasDone = false;
 
 	O3_meas.measNum = 0;
 	O3_meas.value = 0;
+	O3_meas.newMeasDone = false;
 
 	if (!CCS811.begin()) {
 		// Serial.println("Failed to start sensor! Please check your wiring.");
@@ -113,11 +121,15 @@ bool getCCS811_meas() {
 		if (!CCS811.readData()) {
 			eCO2_meas.value += CCS811.geteCO2(); // returns eCO2 reading
 			eCO2_meas.measNum++;
+			eCO2_meas.newMeasDone = true;
 			TVOC_meas.value += CCS811.getTVOC(); // return TVOC reading
 			TVOC_meas.measNum++;
+			TVOC_meas.newMeasDone = true;
 			return true;
 		}
 	}
+	eCO2_meas.newMeasDone = false;
+	TVOC_meas.newMeasDone = false;
 	return false;
 }
 
@@ -129,16 +141,22 @@ bool getPM_meas() {
 			if (checkValue(buf, PM_BUF_LEN)) {
 				PM01_meas.value += transmitPM01(buf); // count PM1.0 value of the air detector module
 				PM01_meas.measNum++;
+				PM01_meas.newMeasDone = true;
 
 				PM2_5_meas.value += transmitPM2_5(buf); // count PM2.5 value of the air detector module
 				PM2_5_meas.measNum++;
+				PM2_5_meas.newMeasDone = true;
 
 				PM10_meas.value += transmitPM10(buf); // count PM10 value of the air detector module
 				PM10_meas.measNum++;
+				PM10_meas.newMeasDone = true;
 				return true;
 			}
 		}
 	}
+	PM01_meas.newMeasDone = false;
+	PM2_5_meas.newMeasDone = false;
+	PM10_meas.newMeasDone = false;
 	return false;
 }
 
@@ -148,13 +166,17 @@ bool getDHT11_meas() {
 	// Read temperature as Celsius (the default)
 	float temp = dht.readTemperature();
 	if (isnan(humid) || isnan(temp)) {
+		temp_meas.newMeasDone = false;
+		humid_meas.newMeasDone = false;
 		return false;
 	} else {
 		temp_meas.measNum++;
 		temp_meas.value += temp;
+		temp_meas.newMeasDone = true;
 
 		humid_meas.measNum++;
 		humid_meas.value += humid;
+		humid_meas.newMeasDone = true;
 	}
 	return true;
 }
@@ -164,9 +186,11 @@ bool getO3_meas() {
 	delay(10);
 	int val = ZE25O3_readPPB(5000);
 	if (val == -1) {
+		O3_meas.newMeasDone = false;
 		return false;
 	}
 	O3_meas.measNum++;
 	O3_meas.value += val;
+	O3_meas.newMeasDone = true;
 	return true;
 }

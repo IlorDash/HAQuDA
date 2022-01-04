@@ -18,7 +18,7 @@ typedef struct {
 	uint16_t firstDot;
 	uint16_t secondDot;
 	uint16_t thirdDot;
-} showParamsDivideDots;
+} paramsDivideDots;
 
 void WS2812_begin();
 
@@ -29,6 +29,6 @@ void WS2812_show();
 void WS2812_setPixelColor(uint16_t pixelNum, uint32_t color);
 void WS2812_fillColor(uint32_t color);
 
-void WS2812_showParams(float data, showParamsDivideDots divideDots);
+void WS2812_showParams(float data, paramsDivideDots divideDots);
 
 void WS2812_ChristmasTree(int speed);

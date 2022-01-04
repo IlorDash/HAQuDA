@@ -8,11 +8,10 @@
 
 #include <DHT.h>
 
-#define SENSORS_MEAS_PERIOD 2000
-
 typedef struct {
 	float value;
 	uint16_t measNum;
+	bool newMeasDone;
 } measStruct;
 
 extern measStruct eCO2_meas;
