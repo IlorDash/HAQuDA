@@ -39,6 +39,8 @@ char *passArr[WIFI_CREDS_NUM] = {"ilor66142222!", "or14591711!", "1a387fa49c2b"}
 enum dispParams { eCO2, TVOC, PM2_5, temp, humid, noneParam };
 dispParams whatParamDisp = noneParam;
 
+enum dispMode { standard, multi, night, noneMode };
+dispMode whatModeDisp = standard;
 
 paramsDivideDots temp_divideDots = {20, 26, 30};
 paramsDivideDots humid_divideDots = {40, 60, 80};
@@ -117,7 +119,7 @@ void connectToWiFi_AP() {
 }
 
 void setup() {
-	Serial.begin(115200);
+ 	Serial.begin(115200);
 
 	WS2812_begin();
 	if (!sensorsBegin()) {
@@ -176,27 +178,69 @@ void loop() {
 	}
 }
 
-void dispParam_WS2812() {
+void standardDispParam_WS2818() {
 	if (whatParamDisp == temp) {
-		WS2812_showParams(temp_meas.value / temp_meas.measNum, temp_divideDots);
+		WS2812_showParams_standard(temp_meas.value / temp_meas.measNum, temp_divideDots);
 		temp_meas.value = 0;
 		temp_meas.measNum = 0;
 	} else if (whatParamDisp == humid) {
-		WS2812_showParams(humid_meas.value / humid_meas.measNum, humid_divideDots);
+		WS2812_showParams_standard(humid_meas.value / humid_meas.measNum, humid_divideDots);
 		humid_meas.value = 0;
 		humid_meas.measNum = 0;
 	} else if (whatParamDisp == eCO2) {
-		WS2812_showParams(eCO2_meas.value / eCO2_meas.measNum, eCO2_divideDots);
+		WS2812_showParams_standard(eCO2_meas.value / eCO2_meas.measNum, eCO2_divideDots);
 		eCO2_meas.value = 0;
 		eCO2_meas.measNum = 0;
 	} else if (whatParamDisp == TVOC) {
-		WS2812_showParams(TVOC_meas.value / TVOC_meas.measNum, TVOC_divideDots);
+		WS2812_showParams_standard(TVOC_meas.value / TVOC_meas.measNum, TVOC_divideDots);
 		TVOC_meas.value = 0;
 		TVOC_meas.measNum = 0;
 	} else if (whatParamDisp == PM2_5) {
-		WS2812_showParams(PM2_5_meas.value / PM2_5_meas.measNum, PM2_5_divideDots);
+		WS2812_showParams_standard(PM2_5_meas.value / PM2_5_meas.measNum, PM2_5_divideDots);
 		PM2_5_meas.value = 0;
 		PM2_5_meas.measNum = 0;
+	}
+}
+
+void nightDispParam_WS2818() {
+	if (whatParamDisp == temp) {
+		WS2812_showParams_night(temp_meas.value / temp_meas.measNum, temp_divideDots);
+		temp_meas.value = 0;
+		temp_meas.measNum = 0;
+	} else if (whatParamDisp == humid) {
+		WS2812_showParams_night(humid_meas.value / humid_meas.measNum, humid_divideDots);
+		humid_meas.value = 0;
+		humid_meas.measNum = 0;
+	} else if (whatParamDisp == eCO2) {
+		WS2812_showParams_night(eCO2_meas.value / eCO2_meas.measNum, eCO2_divideDots);
+		eCO2_meas.value = 0;
+		eCO2_meas.measNum = 0;
+	} else if (whatParamDisp == TVOC) {
+		WS2812_showParams_night(TVOC_meas.value / TVOC_meas.measNum, TVOC_divideDots);
+		TVOC_meas.value = 0;
+		TVOC_meas.measNum = 0;
+	} else if (whatParamDisp == PM2_5) {
+		WS2812_showParams_night(PM2_5_meas.value / PM2_5_meas.measNum, PM2_5_divideDots);
+		PM2_5_meas.value = 0;
+		PM2_5_meas.measNum = 0;
+	}
+}
+
+void dispParam_WS2812() {
+	switch (whatModeDisp) {
+		case standard: {
+			standardDispParam_WS2818();
+			break;
+		}
+		case multi: {
+			break;
+		}
+		case night: {
+			nightDispParam_WS2818();
+			break;
+		}
+		default:
+			break;
 	}
 }
 
@@ -359,7 +403,7 @@ BLYNK_WRITE(V1) {
 	uint32_t color = ((uint32_t)red << 16) | ((uint32_t)green << 8) | blue;
 	WS2812_fillColor(color);
 	delay(100);
-	whatParamDisp = noneParam;
+	whatModeDisp = noneMode;
 	whatEffectDisp = noneEffect;
 }
 
@@ -368,7 +412,30 @@ BLYNK_WRITE(V2) {
 }
 
 BLYNK_WRITE(V3) {
-
+	switch (param.asInt()) {
+		case 1: {
+			whatModeDisp = standard;
+			WS2812_clear();
+			delay(100);
+			break;
+		}
+		case 2: {
+			whatModeDisp = multi;
+			WS2812_clear();
+			delay(100);
+			break;
+		}
+		case 3: {
+			whatModeDisp = night;
+			WS2812_clear();
+			delay(100);
+			break;
+		}
+		default:
+			whatModeDisp = noneMode;
+	}
+	dispParam_WS2812();
+	whatEffectDisp = noneEffect;
 }
 
 BLYNK_WRITE(V4) {
@@ -439,5 +506,6 @@ BLYNK_WRITE(V5) {
 		default:
 			whatEffectDisp = noneEffect;
 	}
+	dispParam_WS2812();
 	whatParamDisp = noneParam;
 }

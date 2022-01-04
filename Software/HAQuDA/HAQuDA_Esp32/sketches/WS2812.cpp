@@ -126,7 +126,15 @@ void getRGB(int *_red, int *_green, int *_blue, float data, paramsDivideDots div
 	}
 }
 
-void WS2812_showParams(float data, paramsDivideDots divideDots) {
+void WS2812_showParams_standard(float data, paramsDivideDots divideDots) {
+	int red, green, blue; // values of LED colors
+	getRGB(&red, &green, &blue, data, divideDots);
+	pixels.fill(pixels.Color(red, green, blue), 0, LED_NUM_PIXELS);
+	pixels.show();
+	delay(100);
+}
+
+void WS2812_showParams_night(float data, paramsDivideDots divideDots) {
 	/**************************************************/
 	int time = 9; // get real time
 	/**************************************************/
