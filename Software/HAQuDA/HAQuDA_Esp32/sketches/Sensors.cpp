@@ -155,6 +155,7 @@ bool getPM_meas() {
 			}
 		}
 	}
+	char t = PMSerial.read();
 	PM01_meas.newMeasDone = false;
 	PM2_5_meas.newMeasDone = false;
 	PM10_meas.newMeasDone = false;

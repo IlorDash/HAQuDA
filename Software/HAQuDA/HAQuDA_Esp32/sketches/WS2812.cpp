@@ -106,7 +106,8 @@ void WS2812_ChristmasTree(int speed) {
 }
 
 void getRGB(int *_red, int *_green, int *_blue, float data, paramsDivideDots divideDots) {
-	float coefficient = pixels.getBrightness() * 2 / (divideDots.thirdDot - divideDots.firstDot);
+	volatile float temp = pixels.getBrightness();
+	volatile float coefficient = (temp * 2) / (divideDots.thirdDot - divideDots.firstDot);
 	if ((data < divideDots.secondDot) && (data >= divideDots.firstDot)) {
 		*_blue = round(-abs(data - divideDots.firstDot) * coefficient) + MAX_BRIGHTNESS;
 		*_green = round(-abs(data - divideDots.secondDot) * coefficient) + MAX_BRIGHTNESS;
@@ -149,6 +150,47 @@ void WS2812_showParams_night(float data, paramsDivideDots divideDots) {
 		uint8_t startPixel = (!(i % 2)) ? (i * LED_ROW_NUM) : (i * LED_ROW_NUM + LED_ROW_NUM - pixelNum);
 		pixels.fill(color, startPixel, pixelNum);
 	}
+	pixels.show();
+	delay(100);
+}
+
+void WS2812_showParams_multi(float *data, paramsDivideDots *divideDots) {
+	int red[MULTI_MODE_PARAM_NUM], green[MULTI_MODE_PARAM_NUM], blue[MULTI_MODE_PARAM_NUM]; // values of LED colors
+	for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
+		getRGB(&(red[i]), &(green[i]), &(blue[i]), data[i], divideDots[i]);
+	}
+	for (int i = 0; i < LED_ROW_NUM; i++) {
+		if (!(i % 2)) {
+			pixels.fill(pixels.Color(red[0], green[0], blue[0]), i * LED_ROW_NUM + 1, 3);
+			pixels.fill(pixels.Color(red[1], green[1], blue[1]), i * LED_ROW_NUM + 5, 3);
+			pixels.fill(pixels.Color(red[2], green[2], blue[2]), i * LED_ROW_NUM + 9, 3);
+		} else {
+			pixels.fill(pixels.Color(red[2], green[2], blue[2]), i * LED_ROW_NUM, 3);
+			pixels.fill(pixels.Color(red[1], green[1], blue[1]), i * LED_ROW_NUM + 4, 3);
+			pixels.fill(pixels.Color(red[0], green[0], blue[0]), i * LED_ROW_NUM + 8, 3);
+		}
+	}
+	pixels.show();
+	delay(100);
+}
+
+void WS2812_showParams_standardTotal(float *data) {
+	int colorsArr[DISP_PARAMS_NUM][COLORS_NUM];
+	for (int i = 0; i < DISP_PARAMS_NUM; i++) {
+		getRGB(&(colorsArr[i][0]), &(colorsArr[i][1]), &(colorsArr[i][2]), data[i], temp_divideDots); // calculating all 3 colors for all displayable parameters
+	}
+
+	int red, green, blue; // values of LED colors
+
+	for (int i = 0; i < DISP_PARAMS_NUM; i++) {
+		red += colorsArr[i][0];
+		green += colorsArr[i][1]; // calculating mean of colors of all displayable parameters
+		blue += colorsArr[i][2];
+	}
+	red /= DISP_PARAMS_NUM;
+	green /= DISP_PARAMS_NUM;
+	blue /= DISP_PARAMS_NUM;
+	pixels.fill(pixels.Color(red, green, blue), 0, LED_NUM_PIXELS);
 	pixels.show();
 	delay(100);
 }

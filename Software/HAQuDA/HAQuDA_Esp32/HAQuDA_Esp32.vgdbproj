@@ -41,7 +41,11 @@
     <OutputSubdirectory>Output\$(PlatformName.defuse)\$(ConfigurationName.defuse)</OutputSubdirectory>
     <EnableVerboseBuild>false</EnableVerboseBuild>
     <PreprocessorMacros />
-    <ExtraCompilerFlags />
+    <ExtraCompilerFlags>
+      <string>-Og</string>
+      <string>-fno-inline-functions</string>
+      <string>-ggdb</string>
+    </ExtraCompilerFlags>
     <AutoBuildSPIFFSPartition>true</AutoBuildSPIFFSPartition>
   </Build>
   <CustomBuild>
@@ -162,7 +166,7 @@
           <ExitAction>None</ExitAction>
           <DisableDisassembly>false</DisableDisassembly>
           <ExamineMemoryWithXCommand>false</ExamineMemoryWithXCommand>
-          <StepIntoNewInstanceEntry>main</StepIntoNewInstanceEntry>
+          <StepIntoNewInstanceEntry />
           <ExamineRegistersInRawFormat>true</ExamineRegistersInRawFormat>
           <DisableSignals>false</DisableSignals>
           <EnableAsyncExecutionMode>false</EnableAsyncExecutionMode>
@@ -198,8 +202,8 @@
             <SuggestionLogicRevision>1</SuggestionLogicRevision>
             <CheckFLASHSize>true</CheckFLASHSize>
             <FLASHSettings>
-              <Size>size2MB</Size>
-              <Frequency>freq40M</Frequency>
+              <Size>size4MB</Size>
+              <Frequency>freq80M</Frequency>
               <Mode>DIO</Mode>
             </FLASHSettings>
             <PatchBootloader>true</PatchBootloader>
@@ -255,7 +259,7 @@
             </KeyValue>
             <KeyValue>
               <Key>DebugLevel</Key>
-              <Value>info</Value>
+              <Value>none</Value>
             </KeyValue>
           </Entries>
         </Properties>

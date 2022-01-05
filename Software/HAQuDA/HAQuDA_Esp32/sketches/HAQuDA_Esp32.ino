@@ -15,13 +15,6 @@
 
 #include "Main.h"
 
-#define WIFI_CREDS_NUM 3
-
-#define DISP_MEAS_PERIOD 300000 //=5 min in ms
-#define SENSORS_MEAS_PERIOD 2000
-
-#define DISP_PARAMS_NUM 5
-
 char BlynkAuth[] = "4MdAV357utNNjm7vmCUEY2NPAdlHQMSM";
 char ssid_AP[] = "HAQuDA_ESP32";
 char pass_AP[] = "1234567!";
@@ -36,11 +29,19 @@ char *passDefault = "ilor66142222!";
 char *ssidArr[WIFI_CREDS_NUM] = {"ilor", "ordash", "realme 7"};
 char *passArr[WIFI_CREDS_NUM] = {"ilor66142222!", "or14591711!", "1a387fa49c2b"};
 
-enum dispParams { eCO2, TVOC, PM2_5, temp, humid, noneParam };
+enum dispParams { total, eCO2, TVOC, PM2_5, temp, humid, noneParam };
 dispParams whatParamDisp = noneParam;
 
 enum dispMode { standard, multi, night, noneMode };
 dispMode whatModeDisp = standard;
+
+typedef struct {
+	dispParams paramsArr[MULTI_MODE_PARAM_NUM];
+	float dataArr[MULTI_MODE_PARAM_NUM];
+	paramsDivideDots divideDotsArr[MULTI_MODE_PARAM_NUM];
+} multiModeParamDispStruct;
+
+multiModeParamDispStruct multiModeStruct;
 
 paramsDivideDots temp_divideDots = {20, 26, 30};
 paramsDivideDots humid_divideDots = {40, 60, 80};
@@ -119,7 +120,7 @@ void connectToWiFi_AP() {
 }
 
 void setup() {
- 	Serial.begin(115200);
+	Serial.begin(115200);
 
 	WS2812_begin();
 	if (!sensorsBegin()) {
@@ -175,30 +176,102 @@ void loop() {
 	if (millis() - dispMeasTimer > DISP_MEAS_PERIOD) {
 		dispParam_WS2812();
 		dispMeasTimer = millis();
+
+		temp_meas.value = 0;
+		temp_meas.measNum = 0;
+
+		humid_meas.value = 0;
+		humid_meas.measNum = 0;
+
+		eCO2_meas.value = 0;
+		eCO2_meas.measNum = 0;
+
+		TVOC_meas.value = 0;
+		TVOC_meas.measNum = 0;
+
+		PM2_5_meas.value = 0;
+		PM2_5_meas.measNum = 0;
 	}
 }
 
+dispParams checkBadParam() {
+	if ((temp_meas.value / temp_meas.measNum) >= temp_divideDots.thirdDot) {
+		return temp;
+	} else if ((humid_meas.value / humid_meas.measNum) >= humid_divideDots.thirdDot) {
+		return humid;
+	} else if ((eCO2_meas.value / eCO2_meas.measNum) >= eCO2_divideDots.thirdDot) {
+		return eCO2;
+	} else if ((TVOC_meas.value / TVOC_meas.measNum) >= TVOC_divideDots.thirdDot) {
+		return TVOC;
+	} else if ((PM2_5_meas.value / PM2_5_meas.measNum) >= PM2_5_divideDots.thirdDot) {
+		return PM2_5;
+	}
+	return noneParam;
+}
+
 void standardDispParam_WS2818() {
-	if (whatParamDisp == temp) {
-		WS2812_showParams_standard(temp_meas.value / temp_meas.measNum, temp_divideDots);
-		temp_meas.value = 0;
-		temp_meas.measNum = 0;
-	} else if (whatParamDisp == humid) {
-		WS2812_showParams_standard(humid_meas.value / humid_meas.measNum, humid_divideDots);
-		humid_meas.value = 0;
-		humid_meas.measNum = 0;
-	} else if (whatParamDisp == eCO2) {
-		WS2812_showParams_standard(eCO2_meas.value / eCO2_meas.measNum, eCO2_divideDots);
-		eCO2_meas.value = 0;
-		eCO2_meas.measNum = 0;
-	} else if (whatParamDisp == TVOC) {
-		WS2812_showParams_standard(TVOC_meas.value / TVOC_meas.measNum, TVOC_divideDots);
-		TVOC_meas.value = 0;
-		TVOC_meas.measNum = 0;
-	} else if (whatParamDisp == PM2_5) {
-		WS2812_showParams_standard(PM2_5_meas.value / PM2_5_meas.measNum, PM2_5_divideDots);
-		PM2_5_meas.value = 0;
-		PM2_5_meas.measNum = 0;
+	switch (whatParamDisp) {
+		case total: {
+			dispParams badParam = checkBadParam();
+			switch (badParam) {
+				case temp: {
+					WS2812_showParams_standard(temp_meas.value / temp_meas.measNum, temp_divideDots);
+					break;
+				}
+				case humid: {
+					WS2812_showParams_standard(humid_meas.value / humid_meas.measNum, humid_divideDots);
+					break;
+				}
+				case eCO2: {
+					WS2812_showParams_standard(eCO2_meas.value / eCO2_meas.measNum, eCO2_divideDots);
+					break;
+				}
+				case TVOC: {
+					WS2812_showParams_standard(TVOC_meas.value / TVOC_meas.measNum, TVOC_divideDots);
+					break;
+				}
+				case PM2_5: {
+					WS2812_showParams_standard(PM2_5_meas.value / PM2_5_meas.measNum, PM2_5_divideDots);
+					break;
+				}
+				case noneParam: {
+					float paramsValuesArr[DISP_PARAMS_NUM];
+					paramsValuesArr[0] = temp_meas.value / temp_meas.measNum;
+					paramsValuesArr[1] = humid_meas.value / humid_meas.measNum;
+					paramsValuesArr[2] = eCO2_meas.value / eCO2_meas.measNum;
+					paramsValuesArr[3] = TVOC_meas.value / TVOC_meas.measNum;
+					paramsValuesArr[4] = PM2_5_meas.value / PM2_5_meas.measNum;
+					WS2812_showParams_standardTotal(paramsValuesArr);
+					break;
+				}
+				default:
+					break;
+			}
+			break;
+		}
+		case temp: {
+			WS2812_showParams_standard(temp_meas.value / temp_meas.measNum, temp_divideDots);
+			break;
+		}
+		case humid: {
+			WS2812_showParams_standard(humid_meas.value / humid_meas.measNum, humid_divideDots);
+			break;
+		}
+		case eCO2: {
+			WS2812_showParams_standard(eCO2_meas.value / eCO2_meas.measNum, eCO2_divideDots);
+			break;
+		}
+		case TVOC: {
+			WS2812_showParams_standard(TVOC_meas.value / TVOC_meas.measNum, TVOC_divideDots);
+			break;
+		}
+		case PM2_5: {
+			WS2812_showParams_standard(PM2_5_meas.value / PM2_5_meas.measNum, PM2_5_divideDots);
+			break;
+		}
+
+		default:
+			break;
 	}
 }
 
@@ -233,6 +306,33 @@ void dispParam_WS2812() {
 			break;
 		}
 		case multi: {
+			for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
+				switch (multiModeStruct.paramsArr[i]) {
+					case temp: {
+						multiModeStruct.dataArr[i] = temp_meas.value / temp_meas.measNum;
+						break;
+					}
+					case humid: {
+						multiModeStruct.dataArr[i] = humid_meas.value / humid_meas.measNum;
+						break;
+					}
+					case eCO2: {
+						multiModeStruct.dataArr[i] = eCO2_meas.value / eCO2_meas.measNum;
+						break;
+					}
+					case PM2_5: {
+						multiModeStruct.dataArr[i] = PM2_5_meas.value / PM2_5_meas.measNum;
+						break;
+					}
+					case TVOC: {
+						multiModeStruct.dataArr[i] = TVOC_meas.value / TVOC_meas.measNum;
+						break;
+					}
+					default:
+						break;
+				}
+			}
+			WS2812_showParams_multi(multiModeStruct.dataArr, multiModeStruct.divideDotsArr);
 			break;
 		}
 		case night: {
@@ -327,6 +427,9 @@ void blynkPrintLog() {
 	terminal.println();
 
 	switch (whatParamDisp) {
+		case total:
+			terminal.println("Display total quality");
+			break;
 		case temp: // Item 3
 			terminal.println("Display temperature");
 			break;
@@ -421,6 +524,15 @@ BLYNK_WRITE(V3) {
 		}
 		case 2: {
 			whatModeDisp = multi;
+
+			multiModeStruct.paramsArr[0] = temp;
+			multiModeStruct.paramsArr[1] = eCO2;
+			multiModeStruct.paramsArr[2] = PM2_5;
+
+			multiModeStruct.divideDotsArr[0] = temp_divideDots;
+			multiModeStruct.divideDotsArr[1] = eCO2_divideDots;
+			multiModeStruct.divideDotsArr[2] = PM2_5_divideDots;
+
 			WS2812_clear();
 			delay(100);
 			break;
@@ -466,6 +578,12 @@ BLYNK_WRITE(V4) {
 		}
 		case 5: {
 			whatParamDisp = PM2_5;
+			WS2812_clear();
+			delay(100);
+			break;
+		}
+		case 6: {
+			whatParamDisp = total;
 			WS2812_clear();
 			delay(100);
 			break;
