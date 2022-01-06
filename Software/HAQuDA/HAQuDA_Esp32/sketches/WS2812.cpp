@@ -135,10 +135,7 @@ void WS2812_showParams_standard(float data, paramsDivideDots divideDots) {
 	delay(100);
 }
 
-void WS2812_showParams_night(float data, paramsDivideDots divideDots) {
-	/**************************************************/
-	int time = 9; // get real time
-	/**************************************************/
+void WS2812_showParams_night(float data, paramsDivideDots divideDots, uint8_t time) {
 
 	int red, green, blue; // values of LED colors
 	getRGB(&red, &green, &blue, data, divideDots);

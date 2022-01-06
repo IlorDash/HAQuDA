@@ -31,6 +31,6 @@ void WS2812_fillColor(uint32_t color);
 void WS2812_showParams_standard(float data, paramsDivideDots divideDots);
 void WS2812_showParams_standardTotal(float *data);
 void WS2812_showParams_multi(float *data, paramsDivideDots *divideDots);
-void WS2812_showParams_night(float data, paramsDivideDots divideDots);
+void WS2812_showParams_night(float data, paramsDivideDots divideDots, uint8_t time);
 
 void WS2812_ChristmasTree(int speed);
