@@ -36,6 +36,7 @@
       <string>..\..\..\..\..\..\Downloads\EspSoftwareSerial-6.12.6</string>
       <string>..\..\..\..\..\..\Arduino\libraries\Adafruit_NeoPixel</string>
       <string>..\..\..\..\..\..\Arduino\libraries</string>
+      <string>..\..\..\..\..\..\..\Downloads\NTPClient-master</string>
     </AdditionalLibraryDirectories>
     <IgnoreNormalLibraryDirectories>false</IgnoreNormalLibraryDirectories>
     <OutputSubdirectory>Output\$(PlatformName.defuse)\$(ConfigurationName.defuse)</OutputSubdirectory>

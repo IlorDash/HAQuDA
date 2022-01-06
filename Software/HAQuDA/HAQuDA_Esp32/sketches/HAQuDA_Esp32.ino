@@ -1,3 +1,5 @@
+#include "Arduino.h"
+#include "Main.h"
 
 #include <WiFi.h>
 #include <WebServer.h>
@@ -5,7 +7,6 @@
 #include <WiFiClient.h>
 #include <BlynkSimpleEsp32.h>
 
-#include "Arduino.h"
 #include "TimeHelper.h"
 #include <SoftwareSerial.h>
 
@@ -13,7 +14,8 @@
 #include "WS2812.h"
 #include "Tasks.h"
 
-#include "Main.h"
+#include <NTPClient.h>
+#include <WiFiUdp.h>
 
 char BlynkAuth[] = "4MdAV357utNNjm7vmCUEY2NPAdlHQMSM";
 char ssid_AP[] = "HAQuDA_ESP32";
@@ -51,10 +53,22 @@ paramsDivideDots PM2_5_divideDots = {15, 20, 45};
 
 dispEffects whatEffectDisp = noneEffect;
 
+typedef struct {
+	uint8_t timeFirstBorder;
+	uint8_t timeSecondBorder;
+} nightMode_timeBorderStruct;
+
+nightMode_timeBorderStruct currentTimeBorder;
+
 bool WiFiCredsFound = true;
+bool WiFiConnected = false;
 
 WidgetTerminal terminal(V0);
 WebServer server(80);
+
+// Define NTP Client to get time
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP);
 
 void WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info);
 void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info);
@@ -72,7 +86,7 @@ int thirdDot;
 
 bool dispFirstParam = false;
 
-void WiFi_handler() {
+void WiFi_handleConnection() {
 	wl_status_t status = WiFi.status();
 	int i = 0;
 	int j = 0;
@@ -122,6 +136,11 @@ void connectToWiFi_AP() {
 void setup() {
 	Serial.begin(115200);
 
+	currentTimeBorder.timeFirstBorder = 21;
+	currentTimeBorder.timeSecondBorder = 9;
+
+	WiFi_handleConnection();
+
 	WS2812_begin();
 	if (!sensorsBegin()) {
 		WS2812_fillColor(COLOR_RED);
@@ -131,6 +150,18 @@ void setup() {
 	}
 
 	createTasks();
+
+	// Initialize a NTPClient to get time
+	timeClient.begin();
+	// Set offset time in seconds to adjust for your timezone, for example:
+	// GMT +1 = 3600
+	// GMT +8 = 28800
+	// GMT +3 = 10800
+	// GMT 0 = 0
+	timeClient.setTimeOffset(10800);
+
+	terminal.println("*************************");
+	terminal.print("START LOGGING");
 
 	// pinMode(LED_BUILTIN, OUTPUT);
 
@@ -153,7 +184,9 @@ uint32_t sensors_meas_time = 0;
 
 void loop() {
 	server.handleClient();
-	WiFi_handler();
+	if (!WiFiConnected) {
+		WiFi_handleConnection();
+	}
 	if (!Blynk.connected()) {
 		Blynk.connect();
 	} else {
@@ -189,8 +222,8 @@ void loop() {
 		TVOC_meas.value = 0;
 		TVOC_meas.measNum = 0;
 
-		PM2_5_meas.value = 0;
-		PM2_5_meas.measNum = 0;
+		PM_2_5_meas.value = 0;
+		PM_2_5_meas.measNum = 0;
 	}
 }
 
@@ -203,7 +236,7 @@ dispParams checkBadParam() {
 		return eCO2;
 	} else if ((TVOC_meas.value / TVOC_meas.measNum) >= TVOC_divideDots.thirdDot) {
 		return TVOC;
-	} else if ((PM2_5_meas.value / PM2_5_meas.measNum) >= PM2_5_divideDots.thirdDot) {
+	} else if ((PM_2_5_meas.value / PM_2_5_meas.measNum) >= PM2_5_divideDots.thirdDot) {
 		return PM2_5;
 	}
 	return noneParam;
@@ -231,7 +264,7 @@ void standardDispParam_WS2818() {
 					break;
 				}
 				case PM2_5: {
-					WS2812_showParams_standard(PM2_5_meas.value / PM2_5_meas.measNum, PM2_5_divideDots);
+					WS2812_showParams_standard(PM_2_5_meas.value / PM_2_5_meas.measNum, PM2_5_divideDots);
 					break;
 				}
 				case noneParam: {
@@ -240,7 +273,7 @@ void standardDispParam_WS2818() {
 					paramsValuesArr[1] = humid_meas.value / humid_meas.measNum;
 					paramsValuesArr[2] = eCO2_meas.value / eCO2_meas.measNum;
 					paramsValuesArr[3] = TVOC_meas.value / TVOC_meas.measNum;
-					paramsValuesArr[4] = PM2_5_meas.value / PM2_5_meas.measNum;
+					paramsValuesArr[4] = PM_2_5_meas.value / PM_2_5_meas.measNum;
 					WS2812_showParams_standardTotal(paramsValuesArr);
 					break;
 				}
@@ -266,7 +299,7 @@ void standardDispParam_WS2818() {
 			break;
 		}
 		case PM2_5: {
-			WS2812_showParams_standard(PM2_5_meas.value / PM2_5_meas.measNum, PM2_5_divideDots);
+			WS2812_showParams_standard(PM_2_5_meas.value / PM_2_5_meas.measNum, PM2_5_divideDots);
 			break;
 		}
 
@@ -275,27 +308,70 @@ void standardDispParam_WS2818() {
 	}
 }
 
+uint8_t get_nightMode_hour(uint8_t curHour) {
+	bool isBordersInDifferentDays = (currentTimeBorder.timeSecondBorder < currentTimeBorder.timeFirstBorder);
+
+	if (isBordersInDifferentDays) {
+		if ((curHour >= currentTimeBorder.timeFirstBorder) || (curHour <= currentTimeBorder.timeSecondBorder)) {
+			int8_t hourDiff = curHour - currentTimeBorder.timeFirstBorder;
+			hourDiff += (hourDiff < 0) ? 24 : 0;
+			return hourDiff;
+		} else {
+			return 12;
+		}
+	} else {
+		if ((curHour >= currentTimeBorder.timeFirstBorder) && (curHour <= currentTimeBorder.timeSecondBorder)) {
+			int8_t hourDiff = curHour - currentTimeBorder.timeFirstBorder;
+			return hourDiff;
+		} else {
+			return 12;
+		}
+	}
+	return 12;
+}
+
 void nightDispParam_WS2818() {
+	while (!timeClient.update()) {
+		timeClient.forceUpdate();
+	}
+	// The formattedDate comes with the following format:
+	// 2018-05-28T16:00:13Z
+	// We need to extract date and time
+	// Variables to save date and time
+	String formattedDate;
+	uint8_t curHour;
+
+	formattedDate = timeClient.getFormattedDate();
+	Serial.println(formattedDate);
+
+	// Extract date
+	int splitT = formattedDate.indexOf("T");
+	int splitColon = formattedDate.indexOf(":");
+	// Extract time
+	curHour = formattedDate.substring(splitT + 1, splitColon).toInt();
+
+	uint8_t nightMode_hour = get_nightMode_hour(curHour);
+
 	if (whatParamDisp == temp) {
-		WS2812_showParams_night(temp_meas.value / temp_meas.measNum, temp_divideDots);
+		WS2812_showParams_night(temp_meas.value / temp_meas.measNum, temp_divideDots, nightMode_hour);
 		temp_meas.value = 0;
 		temp_meas.measNum = 0;
 	} else if (whatParamDisp == humid) {
-		WS2812_showParams_night(humid_meas.value / humid_meas.measNum, humid_divideDots);
+		WS2812_showParams_night(humid_meas.value / humid_meas.measNum, humid_divideDots, nightMode_hour);
 		humid_meas.value = 0;
 		humid_meas.measNum = 0;
 	} else if (whatParamDisp == eCO2) {
-		WS2812_showParams_night(eCO2_meas.value / eCO2_meas.measNum, eCO2_divideDots);
+		WS2812_showParams_night(eCO2_meas.value / eCO2_meas.measNum, eCO2_divideDots, nightMode_hour);
 		eCO2_meas.value = 0;
 		eCO2_meas.measNum = 0;
 	} else if (whatParamDisp == TVOC) {
-		WS2812_showParams_night(TVOC_meas.value / TVOC_meas.measNum, TVOC_divideDots);
+		WS2812_showParams_night(TVOC_meas.value / TVOC_meas.measNum, TVOC_divideDots, nightMode_hour);
 		TVOC_meas.value = 0;
 		TVOC_meas.measNum = 0;
 	} else if (whatParamDisp == PM2_5) {
-		WS2812_showParams_night(PM2_5_meas.value / PM2_5_meas.measNum, PM2_5_divideDots);
-		PM2_5_meas.value = 0;
-		PM2_5_meas.measNum = 0;
+		WS2812_showParams_night(PM_2_5_meas.value / PM_2_5_meas.measNum, PM2_5_divideDots, nightMode_hour);
+		PM_2_5_meas.value = 0;
+		PM_2_5_meas.measNum = 0;
 	}
 }
 
@@ -321,7 +397,7 @@ void dispParam_WS2812() {
 						break;
 					}
 					case PM2_5: {
-						multiModeStruct.dataArr[i] = PM2_5_meas.value / PM2_5_meas.measNum;
+						multiModeStruct.dataArr[i] = PM_2_5_meas.value / PM_2_5_meas.measNum;
 						break;
 					}
 					case TVOC: {
@@ -344,48 +420,37 @@ void dispParam_WS2812() {
 	}
 }
 
-bool checkIfMeasCorrect() {
-	bool returnVal = true;
+void checkIfMeasCorrect() {
 	if (!eCO2_meas.newMeasDone) {
-		terminal.println("FATAL ERROR: Failed to get eCO2 measurment");
-		returnVal = false;
+		terminal.println("ERROR: Failed to get eCO2 measurment");
 	}
 	if (!TVOC_meas.newMeasDone) {
-		terminal.println("FATAL ERROR: Failed to get TVOC measurment");
-		returnVal = false;
+		terminal.println("ERROR: Failed to get TVOC measurment");
 	}
-	if (!PM2_5_meas.newMeasDone) {
-		terminal.println("FATAL ERROR: Failed to get PM 2.5 measurment");
-		returnVal = false;
+	if (!PM_2_5_meas.newMeasDone) {
+		terminal.println("ERROR: Failed to get PM 2.5 measurment");
 	}
 	if (!temp_meas.newMeasDone) {
-		terminal.println("FATAL ERROR: Failed to get TEMP measurment");
-		returnVal = false;
+		terminal.println("ERROR: Failed to get TEMP measurment");
 	}
 	if (!humid_meas.newMeasDone) {
-		terminal.println("FATAL ERROR: Failed to get HUMID measurment");
-		returnVal = false;
+		terminal.println("ERROR: Failed to get HUMID measurment");
 	}
 	if (!O3_meas.newMeasDone) {
-		terminal.println("FATAL ERROR: Failed to get O3 measurment");
-		returnVal = false;
+		terminal.println("ERROR: Failed to get O3 measurment");
 	}
 	terminal.flush();
 
 	eCO2_meas.newMeasDone = false;
 	TVOC_meas.newMeasDone = false;
-	PM2_5_meas.newMeasDone = false;
+	PM_2_5_meas.newMeasDone = false;
 	temp_meas.newMeasDone = false;
 	humid_meas.newMeasDone = false;
 	O3_meas.newMeasDone = false;
-
-	return returnVal;
 }
 
 void blynkPrintLog() {
-	if (!checkIfMeasCorrect()) {
-		return;
-	}
+	checkIfMeasCorrect();
 
 	terminal.println();
 	terminal.println("----------------------------");
@@ -401,13 +466,13 @@ void blynkPrintLog() {
 	terminal.println();
 
 	terminal.print("PM1.0: ");
-	terminal.print(PM01_meas.value / PM01_meas.measNum);
+	terminal.print(PM_1_0_meas.value / PM_1_0_meas.measNum);
 	terminal.println("  ug/m3");
 	terminal.print("PM2.5: ");
-	terminal.print(PM2_5_meas.value / PM2_5_meas.measNum);
+	terminal.print(PM_2_5_meas.value / PM_2_5_meas.measNum);
 	terminal.println("  ug/m3");
 	terminal.print("PM1 0: ");
-	terminal.print(PM10_meas.value / PM10_meas.measNum);
+	terminal.print(PM_10_meas.value / PM_10_meas.measNum);
 	terminal.println("  ug/m3");
 	terminal.println();
 
@@ -423,31 +488,101 @@ void blynkPrintLog() {
 
 	terminal.print("O3: ");
 	terminal.print(O3_meas.value / O3_meas.measNum);
-	terminal.println("  ppb");
+	terminal.println("  ppm");
 	terminal.println();
 
-	switch (whatParamDisp) {
-		case total:
-			terminal.println("Display total quality");
-			break;
-		case temp: // Item 3
-			terminal.println("Display temperature");
-			break;
-		case humid: // Item 3
-			terminal.println("Display humidity");
-			break;
-		case eCO2:
-			terminal.println("Display eCO2");
-			break;
-		case TVOC:
-			terminal.println("Display TVOC");
-			break;
-		case PM2_5:
-			terminal.println("Display PM2_5");
-			break;
-		default:
-			terminal.println("Display none parametr");
+	if (whatModeDisp == standard) {
+		terminal.println("Display standard");
+		switch (whatParamDisp) {
+			case total:
+				terminal.println("Display total quality");
+				break;
+			case temp:
+				terminal.println("Display temperature");
+				break;
+			case humid:
+				terminal.println("Display humidity");
+				break;
+			case eCO2:
+				terminal.println("Display eCO2");
+				break;
+			case TVOC:
+				terminal.println("Display TVOC");
+				break;
+			case PM2_5:
+				terminal.println("Display PM2_5");
+				break;
+			default:
+				terminal.println("Display none parametr");
+		}
+	} else if (whatModeDisp == multi) {
+		terminal.println("Display multi");
+		for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
+			switch (multiModeStruct.paramsArr[i]) {
+				case total:
+					terminal.println("Display total quality");
+					break;
+				case temp:
+					terminal.println("Display temperature");
+					break;
+				case humid:
+					terminal.println("Display humidity");
+					break;
+				case eCO2:
+					terminal.println("Display eCO2");
+					break;
+				case TVOC:
+					terminal.println("Display TVOC");
+					break;
+				case PM2_5:
+					terminal.println("Display PM2_5");
+					break;
+				default:
+					terminal.println("Display none parametr");
+			}
+		}
+	} else if (whatModeDisp == night) {
+		switch (whatParamDisp) {
+			case total:
+				terminal.println("Display total quality");
+				break;
+			case temp:
+				terminal.println("Display temperature");
+				break;
+			case humid:
+				terminal.println("Display humidity");
+				break;
+			case eCO2:
+				terminal.println("Display eCO2");
+				break;
+			case TVOC:
+				terminal.println("Display TVOC");
+				break;
+			case PM2_5:
+				terminal.println("Display PM2_5");
+				break;
+			default:
+				terminal.println("Display none parametr");
+		}
+	} else {
+		switch (whatEffectDisp) {
+			case snake:
+				terminal.println("Display snake effect");
+				break;
+			case randomPixel:
+				terminal.println("Display random pixel effect");
+				break;
+			case fade:
+				terminal.println("Display fade effect");
+				break;
+			case christmasTree:
+				terminal.println("Display Christmas Tree effect");
+				break;
+			default:
+				break;
+		}
 	}
+
 	terminal.flush();
 }
 
@@ -491,11 +626,11 @@ void WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info) {
 	delay(1000);
 	WS2812_clear();
 	delay(100);
-	log_i("WiFiStationConnected");
+	WiFiConnected = true;
 }
 
 void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info) {
-	log_i("WiFiStationDisconnected");
+	WiFiConnected = false;
 }
 
 BLYNK_WRITE(V1) {
