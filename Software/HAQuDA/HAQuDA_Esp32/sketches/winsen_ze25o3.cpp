@@ -27,11 +27,11 @@ void ZE25O3_init(uint8_t rxPin, uint8_t txPin) {
 }
 
 /**
- * Returns ozone concentration in PPB or -1 if either
+ * Returns ozone concentration in PPM or -1 if either
  * there's a checksum mismatch or no data was available.
  **/
-int ZE25O3_readPPB(uint16_t timeout) {
-	int ozonePPB = -1;
+float ZE25O3_readPPB(uint16_t timeout) {
+	float ozonePPM = -1;
 	uint32_t O3_time = millis();
 	while ((O3Serial.available() < MSG_LENGTH) && ((millis() - O3_time) < timeout)) {
 	}
@@ -39,21 +39,21 @@ int ZE25O3_readPPB(uint16_t timeout) {
 	int temp = O3Serial.available();
 
 	if (O3Serial.available() < MSG_LENGTH) {
-		return ozonePPB;
+		return ozonePPM;
 	}
 
 	byte sensorMessage[MSG_LENGTH] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 	O3Serial.readBytes(sensorMessage, 9);
 
 	if (sensorMessage[0] != 0xff) {
-		return ozonePPB;
+		return ozonePPM;
 	}
 
 	if (isChecksumCorrect(sensorMessage)) {
-		ozonePPB = sensorMessage[4] * 256 + sensorMessage[5];
+		ozonePPM = (sensorMessage[4] * 256 + sensorMessage[5]) / 1000;
 	}
 
-	return ozonePPB;
+	return ozonePPM;
 }
 
 void ZE25O3_setCommQuestionMode() {
@@ -82,4 +82,10 @@ boolean isChecksumCorrect(byte *sensorMessage) {
 	checksum = (~checksum) + 1;
 
 	return checksum == sensorMessage[8];
+}
+
+void ZE25O3_clearRxBuff() {
+	while (O3Serial.available() > 0) {
+		char t = O3Serial.read();
+	}
 }
