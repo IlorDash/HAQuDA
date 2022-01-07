@@ -450,12 +450,12 @@ void checkIfMeasCorrect() {
 }
 
 void blynkPrintLog() {
-	checkIfMeasCorrect();
-
 	terminal.println();
 	terminal.println("----------------------------");
 	terminal.print(measNum);
 	terminal.println(" - measurment");
+
+	checkIfMeasCorrect();
 
 	terminal.print("Temp: ");
 	terminal.print(temp_meas.value / temp_meas.measNum);
@@ -465,6 +465,8 @@ void blynkPrintLog() {
 	terminal.println("  %");
 	terminal.println();
 
+	terminal.flush();
+	
 	terminal.print("PM1.0: ");
 	terminal.print(PM_1_0_meas.value / PM_1_0_meas.measNum);
 	terminal.println("  ug/m3");
@@ -476,10 +478,13 @@ void blynkPrintLog() {
 	terminal.println("  ug/m3");
 	terminal.println();
 
+	terminal.flush();
+
 	terminal.print("eCO2: ");
 	terminal.print(eCO2_meas.value / eCO2_meas.measNum);
 	terminal.println("  ppm");
 	terminal.println();
+	
 
 	terminal.print("TVOC: ");
 	terminal.print(TVOC_meas.value / TVOC_meas.measNum);
@@ -490,6 +495,8 @@ void blynkPrintLog() {
 	terminal.print(O3_meas.value / O3_meas.measNum);
 	terminal.println("  ppm");
 	terminal.println();
+
+	terminal.flush();
 
 	if (whatModeDisp == standard) {
 		terminal.println("Display standard");
