@@ -196,7 +196,7 @@ bool getDHT11_meas() {
 bool getO3_meas() {
 	ZE25O3_requestSensorReading();
 	delay(10);
-	int val = ZE25O3_readPPB(5000);
+	int val = ZE25O3_readPPB(500);
 	if (val == -1) {
 		ZE25O3_clearRxBuff();
 		O3_meas.newMeasDone = false;
