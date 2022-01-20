@@ -25,11 +25,8 @@ IPAddress local_ip(192, 168, 0, 198);
 IPAddress gateway(192, 168, 0, 1);
 IPAddress subnet(255, 255, 255, 0);
 
-char *ssidDefault = "ilor";
-char *passDefault = "ilor66142222!";
-
-char *ssidArr[WIFI_CREDS_NUM] = {"ilor", "ordash", "realme 7"};
-char *passArr[WIFI_CREDS_NUM] = {"ilor66142222!", "or14591711!", "1a387fa49c2b"};
+char *ssidArr[WIFI_CREDS_NUM] = {"ENTER", "YOUR", "SSIDs"};
+char *passArr[WIFI_CREDS_NUM] = {"ENTER!", "YOUR!", "PASSWORDs"};
 
 enum dispParams { total, eCO2, TVOC, PM2_5, temp, humid, noneParam };
 dispParams whatParamDisp = noneParam;
