@@ -63,6 +63,7 @@ dkms.conf
 
 **/__Previews/*
 **/History/*
+**/Project Logs for HAQuDA_Schematic/*
 
 */__Previews/
 *.bak
