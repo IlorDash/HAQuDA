@@ -65,6 +65,9 @@ dkms.conf
 **/History/*
 **/Project Logs for HAQuDA_Schematic/*
 
+**/Project Logs for WS2812_PCB_stack/*
+
+
 */__Previews/
 *.bak
 *.bak_cir
