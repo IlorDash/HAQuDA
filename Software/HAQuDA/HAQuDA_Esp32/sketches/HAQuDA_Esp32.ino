@@ -14,7 +14,7 @@
 #include "WS2812.h"
 #include "Tasks.h"
 
-#include <NTPClient.h>
+//#include <NTPClient.h>
 #include <WiFiUdp.h>
 
 char BlynkAuth[] = "4MdAV357utNNjm7vmCUEY2NPAdlHQMSM";
