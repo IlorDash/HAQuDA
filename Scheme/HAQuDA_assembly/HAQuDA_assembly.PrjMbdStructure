@@ -1,0 +1,4 @@
+Record=DiagramHierarchy|SourceDocument=MultiBoardSchematic1.MbsDoc|Kind=Multi-board Schematic Module|Designator=1|Source=..\HAQuDA_Schematic\HAQuDA_Schematic.PrjPcb
+Record=SubProject|SourceDocument=MultiBoardSchematic1.MbsDoc|ProjectPath=..\HAQuDA_Schematic\HAQuDA_Schematic.PrjPcb
+Record=DiagramHierarchy|SourceDocument=MultiBoardSchematic1.MbsDoc|Kind=Multi-board Schematic Module|Designator=2|Source=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=SubProject|SourceDocument=MultiBoardSchematic1.MbsDoc|ProjectPath=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
