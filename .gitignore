@@ -86,3 +86,4 @@ SCH_PCB/*.inx
 plot.log
 .visualgdb
 *.vgdbproj.*.user
+*.PcbDoc.htm
