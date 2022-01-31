@@ -1,4 +1,44 @@
 Record=DiagramHierarchy|SourceDocument=MultiBoardSchematic1.MbsDoc|Kind=Multi-board Schematic Module|Designator=1|Source=..\HAQuDA_Schematic\HAQuDA_Schematic.PrjPcb
 Record=SubProject|SourceDocument=MultiBoardSchematic1.MbsDoc|ProjectPath=..\HAQuDA_Schematic\HAQuDA_Schematic.PrjPcb
+Record=DiagramHierarchy|SourceDocument=MultiBoardSchematic1.MbsDoc|Kind=Multi-board Schematic Module|Designator=11|Source=..\HAQuDA_upper_PCB\HAQuDA_upper_PCB.PrjPcb
+Record=SubProject|SourceDocument=MultiBoardSchematic1.MbsDoc|ProjectPath=..\HAQuDA_upper_PCB\HAQuDA_upper_PCB.PrjPcb
+Record=DiagramHierarchy|SourceDocument=MultiBoardSchematic1.MbsDoc|Kind=Multi-board Schematic Module|Designator=10|Source=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=SubProject|SourceDocument=MultiBoardSchematic1.MbsDoc|ProjectPath=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=DiagramHierarchy|SourceDocument=MultiBoardSchematic1.MbsDoc|Kind=Multi-board Schematic Module|Designator=9|Source=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=SubProject|SourceDocument=MultiBoardSchematic1.MbsDoc|ProjectPath=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=DiagramHierarchy|SourceDocument=MultiBoardSchematic1.MbsDoc|Kind=Multi-board Schematic Module|Designator=8|Source=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=SubProject|SourceDocument=MultiBoardSchematic1.MbsDoc|ProjectPath=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=DiagramHierarchy|SourceDocument=MultiBoardSchematic1.MbsDoc|Kind=Multi-board Schematic Module|Designator=7|Source=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=SubProject|SourceDocument=MultiBoardSchematic1.MbsDoc|ProjectPath=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=DiagramHierarchy|SourceDocument=MultiBoardSchematic1.MbsDoc|Kind=Multi-board Schematic Module|Designator=6|Source=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=SubProject|SourceDocument=MultiBoardSchematic1.MbsDoc|ProjectPath=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=DiagramHierarchy|SourceDocument=MultiBoardSchematic1.MbsDoc|Kind=Multi-board Schematic Module|Designator=5|Source=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=SubProject|SourceDocument=MultiBoardSchematic1.MbsDoc|ProjectPath=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=DiagramHierarchy|SourceDocument=MultiBoardSchematic1.MbsDoc|Kind=Multi-board Schematic Module|Designator=4|Source=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=SubProject|SourceDocument=MultiBoardSchematic1.MbsDoc|ProjectPath=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=DiagramHierarchy|SourceDocument=MultiBoardSchematic1.MbsDoc|Kind=Multi-board Schematic Module|Designator=3|Source=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=SubProject|SourceDocument=MultiBoardSchematic1.MbsDoc|ProjectPath=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
 Record=DiagramHierarchy|SourceDocument=MultiBoardSchematic1.MbsDoc|Kind=Multi-board Schematic Module|Designator=2|Source=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
 Record=SubProject|SourceDocument=MultiBoardSchematic1.MbsDoc|ProjectPath=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=DiagramHierarchy|SourceDocument=MultiBoardSchematic.MbsDoc|Kind=Multi-board Schematic Module|Designator=1|Source=..\HAQuDA_Schematic\HAQuDA_Schematic.PrjPcb
+Record=SubProject|SourceDocument=MultiBoardSchematic.MbsDoc|ProjectPath=..\HAQuDA_Schematic\HAQuDA_Schematic.PrjPcb
+Record=DiagramHierarchy|SourceDocument=MultiBoardSchematic.MbsDoc|Kind=Multi-board Schematic Module|Designator=11|Source=..\HAQuDA_upper_PCB\HAQuDA_upper_PCB.PrjPcb
+Record=SubProject|SourceDocument=MultiBoardSchematic.MbsDoc|ProjectPath=..\HAQuDA_upper_PCB\HAQuDA_upper_PCB.PrjPcb
+Record=DiagramHierarchy|SourceDocument=MultiBoardSchematic.MbsDoc|Kind=Multi-board Schematic Module|Designator=10|Source=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=SubProject|SourceDocument=MultiBoardSchematic.MbsDoc|ProjectPath=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=DiagramHierarchy|SourceDocument=MultiBoardSchematic.MbsDoc|Kind=Multi-board Schematic Module|Designator=9|Source=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=SubProject|SourceDocument=MultiBoardSchematic.MbsDoc|ProjectPath=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=DiagramHierarchy|SourceDocument=MultiBoardSchematic.MbsDoc|Kind=Multi-board Schematic Module|Designator=8|Source=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=SubProject|SourceDocument=MultiBoardSchematic.MbsDoc|ProjectPath=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=DiagramHierarchy|SourceDocument=MultiBoardSchematic.MbsDoc|Kind=Multi-board Schematic Module|Designator=7|Source=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=SubProject|SourceDocument=MultiBoardSchematic.MbsDoc|ProjectPath=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=DiagramHierarchy|SourceDocument=MultiBoardSchematic.MbsDoc|Kind=Multi-board Schematic Module|Designator=6|Source=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=SubProject|SourceDocument=MultiBoardSchematic.MbsDoc|ProjectPath=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=DiagramHierarchy|SourceDocument=MultiBoardSchematic.MbsDoc|Kind=Multi-board Schematic Module|Designator=5|Source=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=SubProject|SourceDocument=MultiBoardSchematic.MbsDoc|ProjectPath=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=DiagramHierarchy|SourceDocument=MultiBoardSchematic.MbsDoc|Kind=Multi-board Schematic Module|Designator=4|Source=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=SubProject|SourceDocument=MultiBoardSchematic.MbsDoc|ProjectPath=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=DiagramHierarchy|SourceDocument=MultiBoardSchematic.MbsDoc|Kind=Multi-board Schematic Module|Designator=3|Source=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=SubProject|SourceDocument=MultiBoardSchematic.MbsDoc|ProjectPath=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=DiagramHierarchy|SourceDocument=MultiBoardSchematic.MbsDoc|Kind=Multi-board Schematic Module|Designator=2|Source=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
+Record=SubProject|SourceDocument=MultiBoardSchematic.MbsDoc|ProjectPath=..\WS2812_PCB_stack\WS2812_PCB_stack.PrjPcb
