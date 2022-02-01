@@ -75,7 +75,7 @@ GenerateClassCluster=0
 DocumentUniqueId=NCQDBFQT
 
 [Document3]
-DocumentPath=Schlib.SchLib
+DocumentPath=HAQuDA_Upper_PCB.SchLib
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
@@ -92,7 +92,7 @@ GenerateClassCluster=0
 DocumentUniqueId=LZJRCSAD
 
 [Document4]
-DocumentPath=PcbLib.PcbLib
+DocumentPath=HAQuDA_Upper_PCB.PcbLib
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
@@ -107,6 +107,10 @@ ClassGenNCAutoScope=None
 DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=QNXHQLGE
+
+[GeneratedDocument1]
+DocumentPath=
+DItemRevisionGUID=
 
 [Configuration1]
 Name=Sources
