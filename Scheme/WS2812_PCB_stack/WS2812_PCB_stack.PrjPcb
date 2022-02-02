@@ -125,10 +125,6 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=GJYIPQJE
 
-[GeneratedDocument1]
-DocumentPath=
-DItemRevisionGUID=
-
 [Configuration1]
 Name=Sources
 ParameterCount=0
