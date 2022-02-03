@@ -1,0 +1,14 @@
+Source PCB Design WS2812_PCB_stack_Panel_100x100.PcbDoc contains embedded board array. It is recomended to generate individual BOM for each embedded board PCB design.
+
+Output: NC Drill Files
+Type  : NC Drill
+From  : Project [WS2812_PCB_stack.PrjPcb]
+   Generated File[WS2812_PCB_stack_Panel_100x100-Plated.TXT]
+   Generated File[WS2812_PCB_stack_Panel_100x100.LDP]
+   Generated File[WS2812_PCB_stack_Panel_100x100.DRR]
+
+
+Files Generated   : 3
+Documents Printed : 0
+
+Finished Output Generation At 23:12:39 On 03-Feb-22

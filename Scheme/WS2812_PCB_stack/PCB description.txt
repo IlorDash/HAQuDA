@@ -1,0 +1,1 @@
+PCB is a panel of 8 PCBs (12.5mm x 96mm) similar design. I'd like it to be V-cut between each PCB. Single PCB outline is presented in layer - Mechanical 1. In each single PCB lengths between traces to outline are equal to 0.25mm, so between traces in two adjacent boards there will be 0.5 mm, that fit to V-cut clearance. 

@@ -1,0 +1,126 @@
+*************************************************************
+FileName = WS2812_PCB_stack_Panel_100x100.GBR
+AutoAperture = True
+*************************************************************
+Generating : Bottom Layer
+      File : WS2812_PCB_stack_Panel_100x100.GBL
+
+    Adding Layer      : Bottom Layer
+
+    Adding Layer      : Multi-Layer
+
+
+Used DCodes :
+    D10
+    D13
+    D14
+    D15
+    D16
+    D17
+    D18
+*************************************************************
+
+*************************************************************
+Generating : Top Overlay
+      File : WS2812_PCB_stack_Panel_100x100.GTO
+
+    Adding Layer      : Top Overlay
+
+
+Used DCodes :
+    D19
+    D20
+*************************************************************
+
+*************************************************************
+Generating : Top Solder
+      File : WS2812_PCB_stack_Panel_100x100.GTS
+
+    Adding Layer      : Top Solder
+
+    Adding Layer      : Top Layer
+
+    Adding Layer      : Multi-Layer
+
+
+Used DCodes :
+    D21
+    D22
+    D23
+    D24
+    D25
+    D26
+*************************************************************
+
+*************************************************************
+Generating : Bottom Solder
+      File : WS2812_PCB_stack_Panel_100x100.GBS
+
+    Adding Layer      : Bottom Solder
+
+    Adding Layer      : Bottom Layer
+
+    Adding Layer      : Multi-Layer
+
+
+Used DCodes :
+    D21
+    D24
+    D25
+    D26
+*************************************************************
+
+*************************************************************
+Generating : Mechanical 1
+      File : WS2812_PCB_stack_Panel_100x100.GM1
+
+    Adding Layer      : Mechanical 1
+
+
+Used DCodes :
+    D27
+*************************************************************
+
+*************************************************************
+Generating : Mechanical 13
+      File : WS2812_PCB_stack_Panel_100x100.GM13
+
+    Adding Layer      : Mechanical 13
+
+
+Used DCodes :
+    D27
+*************************************************************
+
+*************************************************************
+Generating : Mechanical 15
+      File : WS2812_PCB_stack_Panel_100x100.GM15
+
+    Adding Layer      : Mechanical 15
+
+
+Used DCodes :
+    D27
+    D28
+*************************************************************
+
+*************************************************************
+Generating : Top Layer
+      File : WS2812_PCB_stack_Panel_100x100.GTL
+
+    Adding Layer      : Top Layer
+
+    Adding Layer      : Multi-Layer
+
+
+Used DCodes :
+    D10
+    D11
+    D12
+    D13
+    D14
+    D15
+    D16
+    D17
+*************************************************************
+
