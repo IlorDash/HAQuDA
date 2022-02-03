@@ -1,0 +1,22 @@
+----------------------------------------------------------------------------------------------------------------------------------
+NCDrill File Report For: HAQuDA_upper_PCB.PcbDoc   03-Feb-22  23:26:02
+----------------------------------------------------------------------------------------------------------------------------------
+
+Layer Pair : Top Layer to Bottom Layer
+ASCII RoundHoles File : HAQuDA_upper_PCB.TXT
+ASCII RectHoles File : HAQuDA_upper_PCB-RectHoles.TXT
+
+Tool       Hole Size               Hole Tolerance               Hole Type       Hole Count   Plated         Tool Travel
+----------------------------------------------------------------------------------------------------------------------------------
+T1      0.2mm (8mil)                                              Round             4         PTH        109.82mm (4.32inch)
+T2      0.4mm (16mil)                                             Round             36        PTH        284.44mm (11.20inch)
+T3      0.6mm (24mil)                                             Round             26        PTH        303.72mm (11.96inch)
+T4      0.85mm (33mil)                                            Round             2         PTH        3.50mm (0.14inch)
+T5      1.02mm (40mil)                                            Round             3         PTH        5.08mm (0.20inch)
+T6      2.2mm (87mil)                                             Rectangle         9         NPTH       527.36mm (20.76inch)
+T7      2.5mm (98mil)                                             Round             3         NPTH       52.90mm (2.08inch)
+T8      8mm (315mil)                                              Round             3         NPTH       47.80mm (1.88inch)
+----------------------------------------------------------------------------------------------------------------------------------
+Totals                                                                              86
+
+Total Processing Time (hh:mm:ss) : 00:00:00

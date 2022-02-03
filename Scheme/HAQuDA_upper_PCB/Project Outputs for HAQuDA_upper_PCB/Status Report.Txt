@@ -1,0 +1,13 @@
+Output: NC Drill Files
+Type  : NC Drill
+From  : Project [HAQuDA_upper_PCB.PrjPcb]
+   Generated File[HAQuDA_upper_PCB.TXT]
+   Generated File[HAQuDA_upper_PCB-RectHoles.TXT]
+   Generated File[HAQuDA_upper_PCB.LDP]
+   Generated File[HAQuDA_upper_PCB.DRR]
+
+
+Files Generated   : 4
+Documents Printed : 0
+
+Finished Output Generation At 00:30:53 On 04-Feb-22
