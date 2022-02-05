@@ -109,74 +109,6 @@ GenerateClassCluster=0
 DocumentUniqueId=VBATLRWF
 
 [Document5]
-DocumentPath=CAMtastic.Cam
-AnnotationEnabled=1
-AnnotateStartValue=1
-AnnotationIndexControlEnabled=0
-AnnotateSuffix=
-AnnotateScope=All
-AnnotateOrder=-1
-DoLibraryUpdate=1
-DoDatabaseUpdate=1
-ClassGenCCAutoEnabled=1
-ClassGenCCAutoRoomEnabled=1
-ClassGenNCAutoScope=None
-DItemRevisionGUID=
-GenerateClassCluster=0
-DocumentUniqueId=
-
-[Document6]
-DocumentPath=CAMtastic_Drill.Cam
-AnnotationEnabled=1
-AnnotateStartValue=1
-AnnotationIndexControlEnabled=0
-AnnotateSuffix=
-AnnotateScope=All
-AnnotateOrder=-1
-DoLibraryUpdate=1
-DoDatabaseUpdate=1
-ClassGenCCAutoEnabled=1
-ClassGenCCAutoRoomEnabled=1
-ClassGenNCAutoScope=None
-DItemRevisionGUID=
-GenerateClassCluster=0
-DocumentUniqueId=
-
-[Document7]
-DocumentPath=CAMtastic1.Cam
-AnnotationEnabled=1
-AnnotateStartValue=1
-AnnotationIndexControlEnabled=0
-AnnotateSuffix=
-AnnotateScope=All
-AnnotateOrder=-1
-DoLibraryUpdate=1
-DoDatabaseUpdate=1
-ClassGenCCAutoEnabled=1
-ClassGenCCAutoRoomEnabled=1
-ClassGenNCAutoScope=None
-DItemRevisionGUID=
-GenerateClassCluster=0
-DocumentUniqueId=
-
-[Document8]
-DocumentPath=CAMtastic2.Cam
-AnnotationEnabled=1
-AnnotateStartValue=1
-AnnotationIndexControlEnabled=0
-AnnotateSuffix=
-AnnotateScope=All
-AnnotateOrder=-1
-DoLibraryUpdate=1
-DoDatabaseUpdate=1
-ClassGenCCAutoEnabled=1
-ClassGenCCAutoRoomEnabled=1
-ClassGenNCAutoScope=None
-DItemRevisionGUID=
-GenerateClassCluster=0
-DocumentUniqueId=
-
-[Document9]
 DocumentPath=CAMtastic3.Cam
 AnnotationEnabled=1
 AnnotateStartValue=1
@@ -193,7 +125,7 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=
 
-[Document10]
+[Document6]
 DocumentPath=CAMtastic4.Cam
 AnnotationEnabled=1
 AnnotateStartValue=1
@@ -211,102 +143,82 @@ GenerateClassCluster=0
 DocumentUniqueId=
 
 [GeneratedDocument1]
-DocumentPath=
-DItemRevisionGUID=
-
-[GeneratedDocument2]
-DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board-RectHoles-NonPlated.TXT
-DItemRevisionGUID=
-
-[GeneratedDocument3]
 DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board-RectHoles.TXT
 DItemRevisionGUID=
 
-[GeneratedDocument4]
-DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board-RoundHoles-NonPlated.TXT
-DItemRevisionGUID=
-
-[GeneratedDocument5]
-DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board-RoundHoles-Plated.TXT
-DItemRevisionGUID=
-
-[GeneratedDocument6]
+[GeneratedDocument2]
 DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board-RoundHoles.TXT
 DItemRevisionGUID=
 
-[GeneratedDocument7]
-DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board-SlotHoles-Plated.TXT
-DItemRevisionGUID=
-
-[GeneratedDocument8]
+[GeneratedDocument3]
 DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board-SlotHoles.TXT
 DItemRevisionGUID=
 
-[GeneratedDocument9]
+[GeneratedDocument4]
 DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.DRR
 DItemRevisionGUID=
 
-[GeneratedDocument10]
+[GeneratedDocument5]
 DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.EXTREP
 DItemRevisionGUID=
 
-[GeneratedDocument11]
+[GeneratedDocument6]
 DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GBL
 DItemRevisionGUID=
 
-[GeneratedDocument12]
+[GeneratedDocument7]
 DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GBO
 DItemRevisionGUID=
 
-[GeneratedDocument13]
+[GeneratedDocument8]
 DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GBP
 DItemRevisionGUID=
 
-[GeneratedDocument14]
+[GeneratedDocument9]
 DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GBS
 DItemRevisionGUID=
 
-[GeneratedDocument15]
+[GeneratedDocument10]
 DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GM1
 DItemRevisionGUID=
 
-[GeneratedDocument16]
+[GeneratedDocument11]
 DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GM2
 DItemRevisionGUID=
 
-[GeneratedDocument17]
+[GeneratedDocument12]
 DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GM13
 DItemRevisionGUID=
 
-[GeneratedDocument18]
+[GeneratedDocument13]
 DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GM15
 DItemRevisionGUID=
 
-[GeneratedDocument19]
+[GeneratedDocument14]
 DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GTL
 DItemRevisionGUID=
 
-[GeneratedDocument20]
+[GeneratedDocument15]
 DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GTO
 DItemRevisionGUID=
 
-[GeneratedDocument21]
+[GeneratedDocument16]
 DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GTP
 DItemRevisionGUID=
 
-[GeneratedDocument22]
+[GeneratedDocument17]
 DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GTS
 DItemRevisionGUID=
 
-[GeneratedDocument23]
+[GeneratedDocument18]
 DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.LDP
 DItemRevisionGUID=
 
-[GeneratedDocument24]
+[GeneratedDocument19]
 DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.REP
 DItemRevisionGUID=
 
-[GeneratedDocument25]
+[GeneratedDocument20]
 DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.RUL
 DItemRevisionGUID=
 
