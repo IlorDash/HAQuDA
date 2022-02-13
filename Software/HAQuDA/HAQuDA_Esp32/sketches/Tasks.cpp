@@ -4,7 +4,7 @@ using namespace std;
 
 void WS2812_EffectsTaskCode(void *parameter) {
 	while (true) {
-		switch (whatEffectDisp) {
+		switch (myUI_tasks->currUI_Params.dispEffect) {
 			case snake: { // Item 3
 				uint8_t tailLength = 5;
 				uint16_t SnakeSpeed = 400;
@@ -20,7 +20,7 @@ void WS2812_EffectsTaskCode(void *parameter) {
 						vTaskDelay(SnakeSpeed / portTICK_PERIOD_MS);
 					}
 					WS2812_setPixelColor(i, 0);
-					if (whatEffectDisp != snake) {
+					if (myUI_tasks->currUI_Params.dispEffect != snake) {
 						break;
 					}
 				}
@@ -43,7 +43,7 @@ void WS2812_EffectsTaskCode(void *parameter) {
 					WS2812_setPixelColor(pixelNum, ((uint32_t)random(0, 255) << 16) | ((uint32_t)random(0, 255) << 8) | random(0, 255));
 					WS2812_show();
 					vTaskDelay(RandomSpeed / portTICK_PERIOD_MS);
-					if (whatEffectDisp != randomPixel) {
+					if (myUI_tasks->currUI_Params.dispEffect != randomPixel) {
 						break;
 					}
 				}
@@ -59,7 +59,7 @@ void WS2812_EffectsTaskCode(void *parameter) {
 					WS2812_setBrightnessPerCent(j);
 					WS2812_show();
 					vTaskDelay(FadeSpeed / portTICK_PERIOD_MS);
-					if (whatEffectDisp != fade) {
+					if (myUI_tasks->currUI_Params.dispEffect != fade) {
 						break;
 					}
 				}
@@ -77,7 +77,8 @@ void WS2812_EffectsTaskCode(void *parameter) {
 	}
 }
 
-void createTasks() {
+void createTasks(HAQuDA_UI *currUI) {
+	myUI_tasks = currUI;
 	xTaskCreatePinnedToCore(WS2812_EffectsTaskCode, // Function that should be called
 							"WS2812 Effects task",  // Name of the task (for debugging)
 							2048,					// Stack size (bytes)

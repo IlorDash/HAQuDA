@@ -1,10 +1,10 @@
 #pragma once
 
 #include "WS2812.h"
+#include "HAQuDA_UI.h"
 #include <vector>
-#include "Main.h"
 
-extern dispEffects whatEffectDisp;
+HAQuDA_UI *myUI_tasks;
 
-void createTasks();
+void createTasks(HAQuDA_UI *currUI);
 void deleteTasks();
