@@ -1,6 +1,8 @@
 #include "HAQuDA_UI.h"
 
-HAQuDA_UI::HAQuDA_UI() {
+HAQuDA_UI::HAQuDA_UI(HAQuDA_DispManip *currDispManip) {
+	this->myDispManip = currDispManip;
+
 	currUI_Params.dispMode = multi;
 
 	currUI_Params.dispParam = noneParam;

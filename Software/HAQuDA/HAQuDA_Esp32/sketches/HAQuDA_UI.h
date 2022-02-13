@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Arduino.h>
+#include "HAQuDA_DispManip.h"
 #include "WS2812.h"
 
 #define MULTI_MODE_PARAM_NUM 3
@@ -14,8 +14,8 @@ typedef struct {
 	uint16_t thirdDot;
 } measDivideDots_struct;
 
-enum dispParams { total, eCO2, TVOC, PM2_5, temp, humid, noneParam };
-enum dispMode { standard, multi, night, effect, noneMode };
+typedef enum { total, eCO2, TVOC, PM2_5, temp, humid, noneParam } dispParams;
+typedef enum { standard, multi, night, effect, noneMode } dispMode;
 
 typedef struct {
 	dispParams paramsArr[MULTI_MODE_PARAM_NUM];
@@ -45,9 +45,11 @@ typedef struct {
 
 class HAQuDA_UI {
   private:
+	HAQuDA_DispManip *myDispManip;
+
   public:
 	UI_Params currUI_Params;
-	HAQuDA_UI();
+	HAQuDA_UI(HAQuDA_DispManip *currDispManip);
 	void setStaticColor(int red, int green, int blue);
 	void setBrightness(uint8_t newBrightnessPerCent);
 	void changeDispMode(int newDispMode);
