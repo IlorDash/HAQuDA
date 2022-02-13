@@ -1,7 +1,6 @@
 #include "HAQuDA_DispManip.h"
 
-HAQuDA_DispManip::HAQuDA_DispManip(HAQuDA_UI *currUI) {
-	this->myUI_dispManip = currUI;
+HAQuDA_DispManip::HAQuDA_DispManip() {
 
 	timeClient = new NTPClient(ntpUDP);
 
@@ -19,44 +18,46 @@ HAQuDA_DispManip::~HAQuDA_DispManip() {
 	delete timeClient;
 }
 
-dispParams HAQuDA_DispManip::checkBadParam() {
-	if ((temp_meas.value / temp_meas.measNum) >= myUI_dispManip->currUI_Params.temp_divideDots.thirdDot) {
+dispParams HAQuDA_DispManip::checkBadParam(UI_Params currUI_Params) {
+	if (((temp_meas.value / temp_meas.measNum) >= currUI_Params.temp_divideDots.thirdDot)
+		|| ((temp_meas.value / temp_meas.measNum) <= currUI_Params.temp_divideDots.firstDot)) {
 		return temp;
-	} else if ((humid_meas.value / humid_meas.measNum) >= myUI_dispManip->currUI_Params.humid_divideDots.thirdDot) {
+	} else if (((humid_meas.value / humid_meas.measNum) >= currUI_Params.humid_divideDots.thirdDot)
+			   || ((humid_meas.value / humid_meas.measNum) <= currUI_Params.humid_divideDots.firstDot)) {
 		return humid;
-	} else if ((eCO2_meas.value / eCO2_meas.measNum) >= myUI_dispManip->currUI_Params.eCO2_divideDots.thirdDot) {
+	} else if ((eCO2_meas.value / eCO2_meas.measNum) >= currUI_Params.eCO2_divideDots.thirdDot) {
 		return eCO2;
-	} else if ((TVOC_meas.value / TVOC_meas.measNum) >= myUI_dispManip->currUI_Params.TVOC_divideDots.thirdDot) {
+	} else if ((TVOC_meas.value / TVOC_meas.measNum) >= currUI_Params.TVOC_divideDots.thirdDot) {
 		return TVOC;
-	} else if ((PM_2_5_meas.value / PM_2_5_meas.measNum) >= myUI_dispManip->currUI_Params.PM2_5_divideDots.thirdDot) {
+	} else if ((PM_2_5_meas.value / PM_2_5_meas.measNum) >= currUI_Params.PM2_5_divideDots.thirdDot) {
 		return PM2_5;
 	}
 	return noneParam;
 }
 
-void HAQuDA_DispManip::standardMode() {
-	switch (myUI_dispManip->currUI_Params.dispParam) {
+void HAQuDA_DispManip::standardMode(UI_Params currUI_Params) {
+	switch (currUI_Params.dispParam) {
 		case total: {
-			dispParams badParam = checkBadParam();
+			dispParams badParam = checkBadParam(currUI_Params);
 			switch (badParam) {
 				case temp: {
-					WS2812_showParams_standard(temp_meas.value / temp_meas.measNum, myUI_dispManip->currUI_Params.temp_divideDots);
+					WS2812_showParams_standard(temp_meas.value / temp_meas.measNum, currUI_Params.temp_divideDots);
 					break;
 				}
 				case humid: {
-					WS2812_showParams_standard(humid_meas.value / humid_meas.measNum, myUI_dispManip->currUI_Params.humid_divideDots);
+					WS2812_showParams_standard(humid_meas.value / humid_meas.measNum, currUI_Params.humid_divideDots);
 					break;
 				}
 				case eCO2: {
-					WS2812_showParams_standard(eCO2_meas.value / eCO2_meas.measNum, myUI_dispManip->currUI_Params.eCO2_divideDots);
+					WS2812_showParams_standard(eCO2_meas.value / eCO2_meas.measNum, currUI_Params.eCO2_divideDots);
 					break;
 				}
 				case TVOC: {
-					WS2812_showParams_standard(TVOC_meas.value / TVOC_meas.measNum, myUI_dispManip->currUI_Params.TVOC_divideDots);
+					WS2812_showParams_standard(TVOC_meas.value / TVOC_meas.measNum, currUI_Params.TVOC_divideDots);
 					break;
 				}
 				case PM2_5: {
-					WS2812_showParams_standard(PM_2_5_meas.value / PM_2_5_meas.measNum, myUI_dispManip->currUI_Params.PM2_5_divideDots);
+					WS2812_showParams_standard(PM_2_5_meas.value / PM_2_5_meas.measNum, currUI_Params.PM2_5_divideDots);
 					break;
 				}
 				case noneParam: {
@@ -64,19 +65,19 @@ void HAQuDA_DispManip::standardMode() {
 					measDivideDots_struct measDivideDots[DISP_PARAMS_NUM];
 
 					measValuesArr[0] = temp_meas.value / temp_meas.measNum;
-					measDivideDots[0] = myUI_dispManip->currUI_Params.temp_divideDots;
+					measDivideDots[0] = currUI_Params.temp_divideDots;
 
 					measValuesArr[1] = humid_meas.value / humid_meas.measNum;
-					measDivideDots[1] = myUI_dispManip->currUI_Params.humid_divideDots;
+					measDivideDots[1] = currUI_Params.humid_divideDots;
 
 					measValuesArr[2] = eCO2_meas.value / eCO2_meas.measNum;
-					measDivideDots[2] = myUI_dispManip->currUI_Params.eCO2_divideDots;
+					measDivideDots[2] = currUI_Params.eCO2_divideDots;
 
 					measValuesArr[3] = TVOC_meas.value / TVOC_meas.measNum;
-					measDivideDots[3] = myUI_dispManip->currUI_Params.TVOC_divideDots;
+					measDivideDots[3] = currUI_Params.TVOC_divideDots;
 
 					measValuesArr[4] = PM_2_5_meas.value / PM_2_5_meas.measNum;
-					measDivideDots[4] = myUI_dispManip->currUI_Params.PM2_5_divideDots;
+					measDivideDots[4] = currUI_Params.PM2_5_divideDots;
 
 					WS2812_showParams_standardTotal(measValuesArr, measDivideDots);
 					break;
@@ -87,23 +88,23 @@ void HAQuDA_DispManip::standardMode() {
 			break;
 		}
 		case temp: {
-			WS2812_showParams_standard(temp_meas.value / temp_meas.measNum, myUI_dispManip->currUI_Params.temp_divideDots);
+			WS2812_showParams_standard(temp_meas.value / temp_meas.measNum, currUI_Params.temp_divideDots);
 			break;
 		}
 		case humid: {
-			WS2812_showParams_standard(humid_meas.value / humid_meas.measNum, myUI_dispManip->currUI_Params.humid_divideDots);
+			WS2812_showParams_standard(humid_meas.value / humid_meas.measNum, currUI_Params.humid_divideDots);
 			break;
 		}
 		case eCO2: {
-			WS2812_showParams_standard(eCO2_meas.value / eCO2_meas.measNum, myUI_dispManip->currUI_Params.eCO2_divideDots);
+			WS2812_showParams_standard(eCO2_meas.value / eCO2_meas.measNum, currUI_Params.eCO2_divideDots);
 			break;
 		}
 		case TVOC: {
-			WS2812_showParams_standard(TVOC_meas.value / TVOC_meas.measNum, myUI_dispManip->currUI_Params.TVOC_divideDots);
+			WS2812_showParams_standard(TVOC_meas.value / TVOC_meas.measNum, currUI_Params.TVOC_divideDots);
 			break;
 		}
 		case PM2_5: {
-			WS2812_showParams_standard(PM_2_5_meas.value / PM_2_5_meas.measNum, myUI_dispManip->currUI_Params.PM2_5_divideDots);
+			WS2812_showParams_standard(PM_2_5_meas.value / PM_2_5_meas.measNum, currUI_Params.PM2_5_divideDots);
 			break;
 		}
 
@@ -112,20 +113,53 @@ void HAQuDA_DispManip::standardMode() {
 	}
 }
 
-uint8_t get_nightMode_hour(uint8_t curHour) {
-	bool isBordersInDifferentDays = (currentTimeBorder.timeSecondBorder < currentTimeBorder.timeFirstBorder);
+void HAQuDA_DispManip::multiMode(UI_Params currUI_Params) {
+	for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
+		switch (currUI_Params.multiModeStruct.paramsArr[i]) {
+			case temp: {
+				currUI_Params.multiModeStruct.dataArr[i] = temp_meas.value / temp_meas.measNum;
+				break;
+			}
+			case humid: {
+				currUI_Params.multiModeStruct.dataArr[i] = humid_meas.value / humid_meas.measNum;
+				break;
+			}
+			case eCO2: {
+				currUI_Params.multiModeStruct.dataArr[i] = eCO2_meas.value / eCO2_meas.measNum;
+				break;
+			}
+			case PM2_5: {
+				currUI_Params.multiModeStruct.dataArr[i] = PM_2_5_meas.value / PM_2_5_meas.measNum;
+				break;
+			}
+			case TVOC: {
+				currUI_Params.multiModeStruct.dataArr[i] = TVOC_meas.value / TVOC_meas.measNum;
+				break;
+			}
+			default:
+				break;
+		}
+	}
+	WS2812_showParams_multi(currUI_Params.multiModeStruct.dataArr, currUI_Params.multiModeStruct.divideDotsArr);
+}
+
+uint8_t HAQuDA_DispManip::get_nightMode_hour(uint8_t curHour, UI_Params currUI_Params) {
+	bool isBordersInDifferentDays
+		= (currUI_Params.currentTimeBorder.timeSecondBorder < currUI_Params.currentTimeBorder.timeFirstBorder);
 
 	if (isBordersInDifferentDays) {
-		if ((curHour >= currentTimeBorder.timeFirstBorder) || (curHour <= currentTimeBorder.timeSecondBorder)) {
-			int8_t hourDiff = curHour - currentTimeBorder.timeFirstBorder;
+		if ((curHour >= currUI_Params.currentTimeBorder.timeFirstBorder)
+			|| (curHour <= currUI_Params.currentTimeBorder.timeSecondBorder)) {
+			int8_t hourDiff = curHour - currUI_Params.currentTimeBorder.timeFirstBorder;
 			hourDiff += (hourDiff < 0) ? 24 : 0;
 			return hourDiff;
 		} else {
 			return 12;
 		}
 	} else {
-		if ((curHour >= currentTimeBorder.timeFirstBorder) && (curHour <= currentTimeBorder.timeSecondBorder)) {
-			int8_t hourDiff = curHour - currentTimeBorder.timeFirstBorder;
+		if ((curHour >= currUI_Params.currentTimeBorder.timeFirstBorder)
+			&& (curHour <= currUI_Params.currentTimeBorder.timeSecondBorder)) {
+			int8_t hourDiff = curHour - currUI_Params.currentTimeBorder.timeFirstBorder;
 			return hourDiff;
 		} else {
 			return 12;
@@ -134,9 +168,9 @@ uint8_t get_nightMode_hour(uint8_t curHour) {
 	return 12;
 }
 
-void nightDispParam_WS2818() {
-	while (!timeClient.update()) {
-		timeClient.forceUpdate();
+void HAQuDA_DispManip::nightMode(UI_Params currUI_Params) {
+	while (!timeClient->update()) {
+		timeClient->forceUpdate();
 	}
 	// The formattedDate comes with the following format:
 	// 2018-05-28T16:00:13Z
@@ -145,7 +179,7 @@ void nightDispParam_WS2818() {
 	String formattedDate;
 	uint8_t curHour;
 
-	formattedDate = timeClient.getFormattedDate();
+	formattedDate = timeClient->getFormattedDate();
 	Serial.println(formattedDate);
 
 	// Extract date
@@ -154,69 +188,56 @@ void nightDispParam_WS2818() {
 	// Extract time
 	curHour = formattedDate.substring(splitT + 1, splitColon).toInt();
 
-	uint8_t nightMode_hour = get_nightMode_hour(curHour);
+	uint8_t nightMode_hour = get_nightMode_hour(curHour, currUI_Params);
 
-	if (whatParamDisp == temp) {
-		WS2812_showParams_night(temp_meas.value / temp_meas.measNum, temp_divideDots, nightMode_hour);
-		temp_meas.value = 0;
-		temp_meas.measNum = 0;
-	} else if (whatParamDisp == humid) {
-		WS2812_showParams_night(humid_meas.value / humid_meas.measNum, humid_divideDots, nightMode_hour);
-		humid_meas.value = 0;
-		humid_meas.measNum = 0;
-	} else if (whatParamDisp == eCO2) {
-		WS2812_showParams_night(eCO2_meas.value / eCO2_meas.measNum, eCO2_divideDots, nightMode_hour);
-		eCO2_meas.value = 0;
-		eCO2_meas.measNum = 0;
-	} else if (whatParamDisp == TVOC) {
-		WS2812_showParams_night(TVOC_meas.value / TVOC_meas.measNum, TVOC_divideDots, nightMode_hour);
-		TVOC_meas.value = 0;
-		TVOC_meas.measNum = 0;
-	} else if (whatParamDisp == PM2_5) {
-		WS2812_showParams_night(PM_2_5_meas.value / PM_2_5_meas.measNum, PM2_5_divideDots, nightMode_hour);
-		PM_2_5_meas.value = 0;
-		PM_2_5_meas.measNum = 0;
+	switch (currUI_Params.dispParam) {
+		case temp: {
+			WS2812_showParams_night(temp_meas.value / temp_meas.measNum, currUI_Params.temp_divideDots, nightMode_hour);
+			temp_meas.value = 0;
+			temp_meas.measNum = 0;
+			break;
+		}
+		case humid: {
+			WS2812_showParams_night(humid_meas.value / humid_meas.measNum, currUI_Params.humid_divideDots, nightMode_hour);
+			humid_meas.value = 0;
+			humid_meas.measNum = 0;
+			break;
+		}
+		case eCO2: {
+			WS2812_showParams_night(eCO2_meas.value / eCO2_meas.measNum, currUI_Params.eCO2_divideDots, nightMode_hour);
+			eCO2_meas.value = 0;
+			eCO2_meas.measNum = 0;
+			break;
+		}
+		case TVOC: {
+			WS2812_showParams_night(TVOC_meas.value / TVOC_meas.measNum, currUI_Params.TVOC_divideDots, nightMode_hour);
+			TVOC_meas.value = 0;
+			TVOC_meas.measNum = 0;
+			break;
+		}
+		case PM2_5: {
+			WS2812_showParams_night(PM_2_5_meas.value / PM_2_5_meas.measNum, currUI_Params.PM2_5_divideDots, nightMode_hour);
+			PM_2_5_meas.value = 0;
+			PM_2_5_meas.measNum = 0;
+			break;
+		}
+		default:
+			break;
 	}
 }
 
-void HAQuDA_DispManip::dispParam_WS2812() {
-	switch (whatModeDisp) {
+void HAQuDA_DispManip::displayData(UI_Params currUI_Params) {
+	switch (currUI_Params.dispMode) {
 		case standard: {
-			standardDispParam_WS2818();
+			standardMode(currUI_Params);
 			break;
 		}
 		case multi: {
-			for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
-				switch (multiModeStruct.paramsArr[i]) {
-					case temp: {
-						multiModeStruct.dataArr[i] = temp_meas.value / temp_meas.measNum;
-						break;
-					}
-					case humid: {
-						multiModeStruct.dataArr[i] = humid_meas.value / humid_meas.measNum;
-						break;
-					}
-					case eCO2: {
-						multiModeStruct.dataArr[i] = eCO2_meas.value / eCO2_meas.measNum;
-						break;
-					}
-					case PM2_5: {
-						multiModeStruct.dataArr[i] = PM_2_5_meas.value / PM_2_5_meas.measNum;
-						break;
-					}
-					case TVOC: {
-						multiModeStruct.dataArr[i] = TVOC_meas.value / TVOC_meas.measNum;
-						break;
-					}
-					default:
-						break;
-				}
-			}
-			WS2812_showParams_multi(multiModeStruct.dataArr, multiModeStruct.divideDotsArr);
+			multiMode(currUI_Params);
 			break;
 		}
 		case night: {
-			nightDispParam_WS2818();
+			nightMode(currUI_Params);
 			break;
 		}
 		default:
