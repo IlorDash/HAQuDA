@@ -105,7 +105,7 @@ void WS2812_ChristmasTree(int speed) {
 	uint8_t lightsEffect = rand() % 3;
 }
 
-void getRGB(int *_red, int *_green, int *_blue, float data, paramsDivideDots divideDots) {
+void getRGB(int *_red, int *_green, int *_blue, float data, measDivideDots_struct divideDots) {
 	volatile float temp = pixels.getBrightness();
 	volatile float coefficient = (temp * 2) / (divideDots.thirdDot - divideDots.firstDot);
 	if ((data < divideDots.secondDot) && (data >= divideDots.firstDot)) {
@@ -127,7 +127,7 @@ void getRGB(int *_red, int *_green, int *_blue, float data, paramsDivideDots div
 	}
 }
 
-void WS2812_showParams_standard(float data, paramsDivideDots divideDots) {
+void WS2812_showParams_standard(float data, measDivideDots_struct divideDots) {
 	int red, green, blue; // values of LED colors
 	getRGB(&red, &green, &blue, data, divideDots);
 	pixels.fill(pixels.Color(red, green, blue), 0, LED_NUM_PIXELS);
@@ -135,7 +135,7 @@ void WS2812_showParams_standard(float data, paramsDivideDots divideDots) {
 	delay(100);
 }
 
-void WS2812_showParams_night(float data, paramsDivideDots divideDots, uint8_t time) {
+void WS2812_showParams_night(float data, measDivideDots_struct divideDots, uint8_t time) {
 
 	int red, green, blue; // values of LED colors
 	getRGB(&red, &green, &blue, data, divideDots);
@@ -151,7 +151,7 @@ void WS2812_showParams_night(float data, paramsDivideDots divideDots, uint8_t ti
 	delay(100);
 }
 
-void WS2812_showParams_multi(float *data, paramsDivideDots *divideDots) {
+void WS2812_showParams_multi(float *data, measDivideDots_struct *divideDots) {
 	int red[MULTI_MODE_PARAM_NUM], green[MULTI_MODE_PARAM_NUM], blue[MULTI_MODE_PARAM_NUM]; // values of LED colors
 	for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
 		getRGB(&(red[i]), &(green[i]), &(blue[i]), data[i], divideDots[i]);
@@ -171,10 +171,11 @@ void WS2812_showParams_multi(float *data, paramsDivideDots *divideDots) {
 	delay(100);
 }
 
-void WS2812_showParams_standardTotal(float *data) {
+void WS2812_showParams_standardTotal(float *data, measDivideDots_struct *dataDivideDots) {
 	int colorsArr[DISP_PARAMS_NUM][COLORS_NUM];
 	for (int i = 0; i < DISP_PARAMS_NUM; i++) {
-		getRGB(&(colorsArr[i][0]), &(colorsArr[i][1]), &(colorsArr[i][2]), data[i], temp_divideDots); // calculating all 3 colors for all displayable parameters
+		getRGB(&(colorsArr[i][0]), &(colorsArr[i][1]), &(colorsArr[i][2]), data[i],
+			   dataDivideDots[i]); // calculating all 3 colors for all displayable parameters
 	}
 
 	int red, green, blue; // values of LED colors

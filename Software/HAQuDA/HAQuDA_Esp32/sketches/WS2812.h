@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Adafruit_NeoPixel.h>
-#include "Main.h"
+#include "HAQuDA_UI.h"
 
 #define LED_PIN 18
 #define LED_NUM_PIXELS 109
@@ -9,8 +9,6 @@
 #define LED_COLUMN_NUM 9
 #define LED_ROW_NUM 12
 #define WHITE_BRIGHTNESS_COEFF 70
-
-#define MULTI_MODE_PARAM_NUM 3
 
 #define CHRISTMAS_TREE_HALF_WIDTH 3
 #define CHRISTMAS_TREE_HEIGHT 8
@@ -28,9 +26,9 @@ void WS2812_show();
 void WS2812_setPixelColor(uint16_t pixelNum, uint32_t color);
 void WS2812_fillColor(uint32_t color);
 
-void WS2812_showParams_standard(float data, paramsDivideDots divideDots);
-void WS2812_showParams_standardTotal(float *data);
-void WS2812_showParams_multi(float *data, paramsDivideDots *divideDots);
-void WS2812_showParams_night(float data, paramsDivideDots divideDots, uint8_t time);
+void WS2812_showParams_standard(float data, measDivideDots_struct divideDots);
+void WS2812_showParams_standardTotal(float *data, measDivideDots_struct *dataDivideDots);
+void WS2812_showParams_multi(float *data, measDivideDots_struct *divideDots);
+void WS2812_showParams_night(float data, measDivideDots_struct divideDots, uint8_t time);
 
 void WS2812_ChristmasTree(int speed);
