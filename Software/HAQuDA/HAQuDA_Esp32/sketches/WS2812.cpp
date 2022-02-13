@@ -1,4 +1,5 @@
 #include "WS2812.h"
+#include "HAQuDA_UI.h"
 
 Adafruit_NeoPixel pixels(LED_NUM_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 

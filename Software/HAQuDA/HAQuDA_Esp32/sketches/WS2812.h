@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Adafruit_NeoPixel.h>
-#include "HAQuDA_UI.h"
 
 #define LED_PIN 18
 #define LED_NUM_PIXELS 109
