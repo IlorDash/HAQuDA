@@ -1,55 +1,29 @@
 #include "Arduino.h"
 
-#include "HAQuDA_WebServer.h"
+#include "HAQuDA_WiFi_handler.h"
 #include "HAQuDA_UI.h"
-#include "HAQuDA_DispManip.h"
 
-#include <BlynkSimpleEsp32.h>
-
-#include "TimeHelper.h"
 #include <SoftwareSerial.h>
 
 #include "Sensors.h"
-#include "WS2812.h"
 #include "Tasks.h"
 
 #include <EEPROM.h>
 
-
-#define WIFI_CREDS_NUM 3
+#include <BlynkSimpleEsp32.h>
 
 #define DISP_MEAS_PERIOD 300000 //=5 min in ms
 #define SENSORS_MEAS_PERIOD 2000
 
 char BlynkAuth[] = "4MdAV357utNNjm7vmCUEY2NPAdlHQMSM";
-char ssid_AP[] = "HAQuDA_ESP32";
-char pass_AP[] = "1234567!";
-
-IPAddress local_ip(192, 168, 0, 198);
-IPAddress gateway(192, 168, 0, 1);
-IPAddress subnet(255, 255, 255, 0);
-
-char *ssidArr[] = {""};
-char *passArr[] = {""};
-
-char *AP_ssid = {"HAQuDA_1"};
-char *AP_pass = {"TpF4YJ"};
-
-bool WiFiCredsFound = true;
-bool WiFiConnected = false;
 
 WidgetTerminal terminal(V0);
 
 HAQuDA_UI *myUI;
+HAQuDA_DispManip *myDispManip;
+HAQuDA_WiFi_handler *myWiFi_handler;
 
-void WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info);
-void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info);
 void UpdateVirtualPins();
-
-void connectToWiFi(char *ssidLocal, char *passLocal);
-void createAP();
-
-void dispParam_WS2812();
 void blynkPrintLog();
 
 int firstDot;
@@ -58,60 +32,15 @@ int thirdDot;
 
 bool dispFirstParam = false;
 
-void WiFi_handleConnection() {
-	wl_status_t status = WiFi.status();
-	int i = 0;
-	int j = 0;
-	while (WiFiCredsFound && (status != WL_CONNECTED) && (i < WIFI_CREDS_NUM)) {
-		WS2812_clear();
-		delay(100);
-		connectToWiFi(ssidArr[i], passArr[i]);
-		status = WiFi.status();
-		if (status != WL_CONNECTED) {
-			WS2812_setPixelColor(j, COLOR_YELLOW);
-			log_i("Connecting to %s", ssidArr[i]);
-			WiFi.reconnect();
-			uint32_t timer = millis();
-
-			while (status != WL_CONNECTED && !PeriodInRange(timer, 5000)) {
-				status = WiFi.status();
-				delay(200);
-			}
-			delay(500);
-		}
-		i++;
-		j++;
-		if (i == WIFI_CREDS_NUM) {
-			i = 0;
-		}
-		if (j > LED_NUM_PIXELS) {
-			WS2812_clear();
-			delay(100);
-			j = 0;
-		}
-	}
-}
-
-void connectToWiFi_AP() {
-	int i = 0;
-	wl_status_t status = WiFi.status();
-	while (WiFiCredsFound && (status != WL_CONNECTED) && (i < WIFI_CREDS_NUM)) {
-		connectToWiFi(ssidArr[i], passArr[i]);
-		i++;
-		status = WiFi.status();
-		if (i == WIFI_CREDS_NUM) {
-			i = 0;
-		}
-	}
-}
-
 void setup() {
+
+	myDispManip = new HAQuDA_DispManip();
+	myUI = new HAQuDA_UI(myDispManip);
+	myWiFi_handler = new HAQuDA_WiFi_handler(myUI);
+
 	Serial.begin(115200);
-
-	WiFi.mode(WIFI_AP);
-	WiFi.softAP(AP_ssid, AP_pass);
-
-	WiFi_handleConnection();
+	
+	myWiFi_handler->WiFi_handleConnection();
 
 	WS2812_begin();
 	if (!sensorsBegin()) {
@@ -120,8 +49,7 @@ void setup() {
 		while (1) {
 		}
 	}
-
-	createTasks();
+	createTasks(myUI);
 
 	terminal.println("*************************");
 	terminal.print("START LOGGING");
@@ -143,10 +71,9 @@ uint32_t dispMeasTimer = 0;
 uint32_t sensors_meas_time = 0;
 
 void loop() {
-	// server.handleClient();
-	if (!WiFiConnected) {
-		WiFi_handleConnection();
-	}
+	
+	myWiFi_handler->WiFi_handleConnection();
+	
 	if (!Blynk.connected()) {
 		Blynk.connect();
 	} else {
@@ -167,7 +94,7 @@ void loop() {
 	}
 
 	if (millis() - dispMeasTimer > DISP_MEAS_PERIOD) {
-		dispParam_WS2812();
+		myDispManip->displayData(myUI->currUI_Params);
 		dispMeasTimer = millis();
 
 		temp_meas.value = 0;
@@ -186,8 +113,6 @@ void loop() {
 		PM_2_5_meas.measNum = 0;
 	}
 }
-
- 
 
 void checkIfMeasCorrect() {
 	if (!eCO2_meas.newMeasDone) {
@@ -266,9 +191,9 @@ void blynkPrintLog() {
 
 	terminal.flush();
 
-	if (whatModeDisp == standard) {
+	if (myUI->currUI_Params.dispMode == standard) {
 		terminal.println("Display standard");
-		switch (whatParamDisp) {
+		switch (myUI->currUI_Params.dispParam) {
 			case total:
 				terminal.println("Display total quality");
 				break;
@@ -290,10 +215,10 @@ void blynkPrintLog() {
 			default:
 				terminal.println("Display none parametr");
 		}
-	} else if (whatModeDisp == multi) {
+	} else if (myUI->currUI_Params.dispMode == multi) {
 		terminal.println("Display multi");
 		for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
-			switch (multiModeStruct.paramsArr[i]) {
+			switch (myUI->currUI_Params.multiModeStruct.paramsArr[i]) {
 				case total:
 					terminal.println("Display total quality");
 					break;
@@ -316,8 +241,8 @@ void blynkPrintLog() {
 					terminal.println("Display none parametr");
 			}
 		}
-	} else if (whatModeDisp == night) {
-		switch (whatParamDisp) {
+	} else if (myUI->currUI_Params.dispMode == night) {
+		switch (myUI->currUI_Params.dispParam) {
 			case total:
 				terminal.println("Display total quality");
 				break;
@@ -340,7 +265,7 @@ void blynkPrintLog() {
 				terminal.println("Display none parametr");
 		}
 	} else {
-		switch (whatEffectDisp) {
+		switch (myUI->currUI_Params.dispEffect) {
 			case snake:
 				terminal.println("Display snake effect");
 				break;
@@ -361,56 +286,26 @@ void blynkPrintLog() {
 	terminal.flush();
 }
 
-void createAP() {
-	WiFi.mode(WIFI_AP);
-	WiFi.softAP(ssid_AP, pass_AP);
-	delay(2000);
-	WiFi.softAPConfig(local_ip, gateway, subnet);
-	// IPAddress ip_address = WiFi.softAPIP(); // IP Address of our accesspoint
-	delay(100);
-}
-
-void connectToWiFi(char *ssidLocal, char *passLocal) {
-	WiFi.mode(WIFI_STA);
-	WiFi.begin(ssidLocal, passLocal, 0, 0);
-	WiFi.onEvent(WiFiStationConnected, SYSTEM_EVENT_STA_CONNECTED);
-	WiFi.onEvent(WiFiStationDisconnected, SYSTEM_EVENT_STA_DISCONNECTED);
-
-	Blynk.config(BlynkAuth, BLYNK_DEFAULT_DOMAIN, BLYNK_DEFAULT_PORT);
-}
-
-void WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info) {
-	WS2812_fillColor(COLOR_GREEN);
-	delay(1000);
-	WS2812_clear();
-	delay(100);
-	WiFiConnected = true;
-}
-
-void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info) {
-	WiFiConnected = false;
-}
-
 BLYNK_WRITE(V1) {
 	int red = param[0].asInt();
 	int green = param[1].asInt();
 	int blue = param[2].asInt();
 
-	myUI->setStaticColor(red, green, blue);
+	myUI->ext_setStaticColor(red, green, blue);
 }
 
 BLYNK_WRITE(V2) {
-	myUI->setBrightness(param.asInt());
+	myUI->ext_setBrightness(param.asInt());
 }
 
 BLYNK_WRITE(V3) {
-	myUI->changeDispMode(param.asInt());
+	myUI->ext_changeDispMode(param.asInt());
 }
 
 BLYNK_WRITE(V4) {
-	myUI->changeDispParam(param.asInt());
+	myUI->ext_changeDispParam(param.asInt());
 }
 
 BLYNK_WRITE(V5) {
-	myUI->changeDispEffect(param.asInt());
+	myUI->ext_changeDispEffect(param.asInt());
 }
