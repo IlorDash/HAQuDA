@@ -1,6 +1,7 @@
 #include "Tasks.h"
 
 using namespace std;
+HAQuDA_UI *myUI_tasks;
 
 void WS2812_EffectsTaskCode(void *parameter) {
 	while (true) {
