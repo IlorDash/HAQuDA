@@ -5,19 +5,17 @@ using namespace std;
 void WS2812_EffectsTaskCode(void *parameter) {
 	while (true) {
 		switch (myUI_tasks->currUI_Params.dispEffect) {
-			case snake: { // Item 3
-				uint8_t tailLength = 5;
-				uint16_t SnakeSpeed = 400;
+			case snake: {
 				WS2812_clear();
 				vTaskDelay(100 / portTICK_PERIOD_MS);
 				for (int i = 0; i < LED_NUM_PIXELS; i++) {
 					int pixelNum = 0;
-					for (int j = 0; j < tailLength; j++) {
+					for (int j = 0; j < myUI_tasks->currUI_Params.effectParams.snakeTailLength; j++) {
 						pixelNum = j + i;
 						pixelNum = (pixelNum > LED_NUM_PIXELS) ? LED_NUM_PIXELS : pixelNum;
-						WS2812_setPixelColor(pixelNum, COLOR_LIME);
+						WS2812_setPixelColor(pixelNum, myUI_tasks->currUI_Params.effectParams.snakeColor);
 						WS2812_show();
-						vTaskDelay(SnakeSpeed / portTICK_PERIOD_MS);
+						vTaskDelay(myUI_tasks->currUI_Params.effectParams.snakeSpeed / portTICK_PERIOD_MS);
 					}
 					WS2812_setPixelColor(i, 0);
 					if (myUI_tasks->currUI_Params.dispEffect != snake) {
@@ -28,8 +26,7 @@ void WS2812_EffectsTaskCode(void *parameter) {
 
 				break;
 			}
-			case randomPixel: { // Item 3
-				uint16_t RandomSpeed = 400;
+			case randomPixel: {
 				WS2812_clear();
 				vTaskDelay(100 / portTICK_PERIOD_MS);
 				vector<int> pixelEnArr;
@@ -42,7 +39,7 @@ void WS2812_EffectsTaskCode(void *parameter) {
 
 					WS2812_setPixelColor(pixelNum, ((uint32_t)random(0, 255) << 16) | ((uint32_t)random(0, 255) << 8) | random(0, 255));
 					WS2812_show();
-					vTaskDelay(RandomSpeed / portTICK_PERIOD_MS);
+					vTaskDelay(myUI_tasks->currUI_Params.effectParams.randomSpeed / portTICK_PERIOD_MS);
 					if (myUI_tasks->currUI_Params.dispEffect != randomPixel) {
 						break;
 					}
@@ -50,15 +47,14 @@ void WS2812_EffectsTaskCode(void *parameter) {
 				vTaskDelay(1000 / portTICK_PERIOD_MS);
 				break;
 			}
-			case fade: { // Item 3
-				uint16_t FadeSpeed = 400;
+			case fade: { 
 				WS2812_clear();
 				vTaskDelay(100 / portTICK_PERIOD_MS);
-				WS2812_fillColor(COLOR_AQUA);
+				WS2812_fillColor(myUI_tasks->currUI_Params.effectParams.fadeColor);
 				for (int j = 100; j > 0; j = j - 2) {
 					WS2812_setBrightnessPerCent(j);
 					WS2812_show();
-					vTaskDelay(FadeSpeed / portTICK_PERIOD_MS);
+					vTaskDelay(myUI_tasks->currUI_Params.effectParams.fadeSpeed / portTICK_PERIOD_MS);
 					if (myUI_tasks->currUI_Params.dispEffect != fade) {
 						break;
 					}
