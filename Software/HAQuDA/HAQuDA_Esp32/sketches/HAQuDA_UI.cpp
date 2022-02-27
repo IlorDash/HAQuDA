@@ -23,9 +23,12 @@ HAQuDA_UI::HAQuDA_UI(HAQuDA_DispManip *currDispManip) {
 	currUI_Params.PM2_5_divideDots = {15, 20, 45};
 	currUI_Params.currentTimeBorder = {21, 9};
 	currUI_Params.brightnessPerCent = MAX_BRIGHTNESS;
+
+	currUI_Params.effectParams.snakeColor = COLOR_LIME;
+	currUI_Params.effectParams.fadeColor = COLOR_AQUA;
 }
 
-void HAQuDA_UI::setStaticColor(int red, int green, int blue) {
+void HAQuDA_UI::ext_setStaticColor(int red, int green, int blue) {
 	uint32_t color = ((uint32_t)red << 16) | ((uint32_t)green << 8) | blue;
 	WS2812_fillColor(color);
 	delay(100);
@@ -33,11 +36,11 @@ void HAQuDA_UI::setStaticColor(int red, int green, int blue) {
 	currUI_Params.dispEffect = staticColor;
 }
 
-void HAQuDA_UI::setBrightness(uint8_t newBrightnessPerCent) {
+void HAQuDA_UI::ext_setBrightness(uint8_t newBrightnessPerCent) {
 	WS2812_setBrightnessPerCent(newBrightnessPerCent);
 }
 
-void HAQuDA_UI::changeDispMode(int newDispMode) {
+void HAQuDA_UI::ext_changeDispMode(int newDispMode) {
 	bool modeChanged = false;
 	switch (newDispMode) {
 		case 1: {
@@ -68,11 +71,11 @@ void HAQuDA_UI::changeDispMode(int newDispMode) {
 	if (modeChanged) {
 		WS2812_clear();
 		delay(100);
-		dispParam_WS2812();
+		myDispManip->displayData(currUI_Params);
 	}
 }
 
-void HAQuDA_UI::changeDispParam(int newDispParam) {
+void HAQuDA_UI::ext_changeDispParam(int newDispParam) {
 	bool paramChanged = false;
 	switch (newDispParam) {
 		case 1: {
@@ -111,11 +114,11 @@ void HAQuDA_UI::changeDispParam(int newDispParam) {
 	if (paramChanged) {
 		WS2812_clear();
 		delay(100);
-		dispParam_WS2812();
+		myDispManip->displayData(currUI_Params);
 	}
 }
 
-void HAQuDA_UI::changeDispEffect(int newDispEffect) {
+void HAQuDA_UI::ext_changeDispEffect(int newDispEffect) {
 	bool effectChanged = false;
 	switch (newDispEffect) {
 		case 1: {
@@ -144,6 +147,6 @@ void HAQuDA_UI::changeDispEffect(int newDispEffect) {
 	if (effectChanged) {
 		WS2812_clear();
 		delay(100);
-		dispParam_WS2812();
+		myDispManip->displayData(currUI_Params);
 	}
 }
