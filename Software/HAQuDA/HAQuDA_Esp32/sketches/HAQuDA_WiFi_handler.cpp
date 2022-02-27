@@ -1,11 +1,11 @@
 #include "HAQuDA_WiFi_handler.h"
 
+bool HAQuDA_WiFi_handler::WiFiConnected = false;
+
 HAQuDA_WiFi_handler::HAQuDA_WiFi_handler(HAQuDA_UI *currUI_WiFi) {
 	AP_ip = new IPAddress(192, 168, 0, 198);
 	AP_gateway = new IPAddress(192, 168, 0, 1);
 	AP_subnet = new IPAddress(255, 255, 255, 0);
-
-	WiFiConnected = false;
 
 	this->myUI_WiFi = currUI_WiFi;
 }
