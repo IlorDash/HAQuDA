@@ -1,4 +1,5 @@
 #include "HAQuDA_WebServer.h"
+#include "WebPages.h"
 
 HAQuDA_WebServer webServer;
 

@@ -3,7 +3,6 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <WiFiClient.h>
-#include "WebPages.h"
 
 class HAQuDA_WebServer {
   private:
