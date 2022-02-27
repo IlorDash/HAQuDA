@@ -6,10 +6,10 @@ HAQuDA_WebServer::HAQuDA_WebServer() {
 	server.begin(80);
 }
 
-void HAQuDA_WebServer::setWiFiCreds(String ssidLocal, String passLocal) {
+void HAQuDA_WebServer::setWiFiCreds() {
 	if (server.hasArg("ssid") && server.hasArg("password")) {
-		ssidLocal = server.arg("ssid");
-		passLocal = server.arg("password");
+		String ssidLocal = server.arg("ssid");
+		String passLocal = server.arg("password");
 		WiFiCredsFound = true;
 		server.send(200, "text/html", WiFiCredsPage);
 		// server.stop();
@@ -19,12 +19,11 @@ void HAQuDA_WebServer::setWiFiCreds(String ssidLocal, String passLocal) {
 	}
 }
 
-void HAQuDA_WebServer::WebServer_init() {
-	server.on("/", setWiFiCreds);
-	server.onNotFound(handle_NotFound);
-}
-
-
 void HAQuDA_WebServer::handle_NotFound() {
 	server.send(404, "text/plain", "Not found");
+}
+
+void HAQuDA_WebServer::WebServer_init() {
+	server.on("/", [this] { setWiFiCreds(); });
+	server.onNotFound([this] { handle_NotFound(); });
 }

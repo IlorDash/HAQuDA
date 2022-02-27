@@ -7,11 +7,12 @@
 
 class HAQuDA_WebServer {
   private:
+  public:
 	WebServer server;
 	WiFiClient client;
-	void setWiFiCreds(String ssidLocal, String passLocal);
-
-  public:
 	HAQuDA_WebServer();
+	bool WiFiCredsFound = true;
 	void WebServer_init();
+	void setWiFiCreds();
+	void handle_NotFound();
 };
