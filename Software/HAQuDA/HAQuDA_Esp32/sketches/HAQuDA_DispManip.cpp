@@ -18,7 +18,7 @@ HAQuDA_DispManip::~HAQuDA_DispManip() {
 	delete timeClient;
 }
 
-dispParams HAQuDA_DispManip::checkBadParam(UI_Params currUI_Params) {
+dispParams_enum HAQuDA_DispManip::checkBadParam(UI_Params currUI_Params) {
 	if (((temp_meas.value / temp_meas.measNum) >= currUI_Params.temp_divideDots.thirdDot)
 		|| ((temp_meas.value / temp_meas.measNum) <= currUI_Params.temp_divideDots.firstDot)) {
 		return temp;
@@ -38,7 +38,7 @@ dispParams HAQuDA_DispManip::checkBadParam(UI_Params currUI_Params) {
 void HAQuDA_DispManip::standardMode(UI_Params currUI_Params) {
 	switch (currUI_Params.dispParam) {
 		case total: {
-			dispParams badParam = checkBadParam(currUI_Params);
+			dispParams_enum badParam = checkBadParam(currUI_Params);
 			switch (badParam) {
 				case temp: {
 					WS2812_showParams_standard(temp_meas.value / temp_meas.measNum, currUI_Params.temp_divideDots);

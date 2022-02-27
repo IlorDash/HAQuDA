@@ -1,6 +1,6 @@
 #pragma once
 
-#include "HAQuDA_UI.h"
+#include "HAQuDA_UI_typedefs.h"
 #include "Sensors.h"
 #include "WS2812.h"
 
@@ -14,7 +14,7 @@ class HAQuDA_DispManip {
 	WiFiUDP ntpUDP;
 	NTPClient *timeClient;
 
-	dispParams checkBadParam(UI_Params currUI_Params);
+	dispParams_enum checkBadParam(UI_Params currUI_Params);
 	uint8_t get_nightMode_hour(uint8_t curHour, UI_Params currUI_Params);
 	void standardMode(UI_Params currUI_Params);
 	void multiMode(UI_Params currUI_Params);
