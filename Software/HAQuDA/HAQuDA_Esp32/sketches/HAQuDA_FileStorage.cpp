@@ -1,23 +1,21 @@
 #include "Board.h"
-#include "FileStorage.h"
+#include "HAQuDA_FileStorage.h"
 
-FileStorage fileStorage;
-
-FileStorage::FileStorage() {
+HAQuDA_FileStorage::HAQuDA_FileStorage() {
 }
 
-FileStorage::~FileStorage() {
+HAQuDA_FileStorage::~HAQuDA_FileStorage() {
 }
 
-bool FileStorage::Start(void) {
+bool HAQuDA_FileStorage::Start(void) {
 	return SPIFFS.begin();
 }
 
-void FileStorage::Stop(void) {
+void HAQuDA_FileStorage::Stop(void) {
 	SPIFFS.end();
 }
 
-void FileStorage::ListDir(const char *dirname, uint8_t levels, FileStorage::TListDirFunction fn) {
+void HAQuDA_FileStorage::ListDir(const char *dirname, uint8_t levels, HAQuDA_FileStorage::TListDirFunction fn) {
 	File root = SPIFFS.open(dirname, FILE_READ);
 	if (!root) {
 		return;
@@ -41,21 +39,21 @@ void FileStorage::ListDir(const char *dirname, uint8_t levels, FileStorage::TLis
 	}
 }
 
-bool FileStorage::DeleteFile(const char *path) {
+bool HAQuDA_FileStorage::DeleteFile(const char *path) {
 	DisableWdt();
 	bool res = SPIFFS.remove(path);
 	EnableWdt();
 	return res;
 }
 
-bool FileStorage::Format() {
+bool HAQuDA_FileStorage::Format() {
 	DisableWdt();
 	bool res = SPIFFS.format();
 	EnableWdt();
 	return res;
 }
 
-bool FileStorage::WriteFile(const char *path, const uint8_t *data, size_t len) {
+bool HAQuDA_FileStorage::WriteFile(const char *path, const uint8_t *data, size_t len) {
 	File file = SPIFFS.open(path, FILE_WRITE);
 	if (!file) {
 		return false;
@@ -73,7 +71,7 @@ bool FileStorage::WriteFile(const char *path, const uint8_t *data, size_t len) {
 	return res;
 }
 
-bool FileStorage::AppendFile(const char *path, const uint8_t *data, size_t len) {
+bool HAQuDA_FileStorage::AppendFile(const char *path, const uint8_t *data, size_t len) {
 	File file = SPIFFS.open(path, FILE_APPEND);
 	if (!file) {
 		return false;
@@ -87,19 +85,19 @@ bool FileStorage::AppendFile(const char *path, const uint8_t *data, size_t len) 
 	return res;
 }
 
-bool FileStorage::Exists(const String &path) {
+bool HAQuDA_FileStorage::Exists(const String &path) {
 	return SPIFFS.exists(path);
 }
 
-bool FileStorage::Exists(const char *path) {
+bool HAQuDA_FileStorage::Exists(const char *path) {
 	return SPIFFS.exists(path);
 }
 
-File FileStorage::FileOpen(const String &path, const char *mode = FILE_READ) {
+File HAQuDA_FileStorage::FileOpen(const String &path, const char *mode = FILE_READ) {
 	return SPIFFS.open(path, mode);
 }
 
-bool FileStorage::ReadFile(const char *path, uint8_t *data, size_t len) {
+bool HAQuDA_FileStorage::ReadFile(const char *path, uint8_t *data, size_t len) {
 	File file = SPIFFS.open(path, FILE_READ);
 	if (!file) {
 		return false;
@@ -116,19 +114,19 @@ bool FileStorage::ReadFile(const char *path, uint8_t *data, size_t len) {
 	return res;
 }
 
-bool FileStorage::write(File &file, String &s) {
+bool HAQuDA_FileStorage::write(File &file, String &s) {
 	return file.write((uint8_t *)s.c_str(), s.length()) == s.length();
 }
 
-size_t FileStorage::FileSize(const char *path) {
+size_t HAQuDA_FileStorage::FileSize(const char *path) {
 	return SPIFFS.open(path, "r").size();
 }
 
-bool FileStorage::DeleteLogData() {
+bool HAQuDA_FileStorage::DeleteLogData() {
 	return DeleteFile(FILE_NAME_MEAS_LOG) && DeleteFile(FILE_CHECK_COUNT);
 }
 
-saveNewWiFiCredsReturnMsgs FileStorage::SaveNewWiFiCreds(TWiFiCreds newWiFiCreds) {
+saveNewWiFiCredsReturnMsgs HAQuDA_FileStorage::SaveNewWiFiCreds(TWiFiCreds newWiFiCreds) {
 	File f = SPIFFS.open(FILE_NAME_WIFI_NET, FILE_APPEND);
 	int fSize = f.size();
 	uint8_t storedWiFiCredsCnt = fSize / sizeof(TWiFiCreds);
