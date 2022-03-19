@@ -17,5 +17,13 @@
         <Version>6.12.6</Version>
       </Key>
     </Dependency>
+    <Dependency>
+      <Type>Library</Type>
+      <Key>
+        <Packager>Volodymyr Shymanskyy</Packager>
+        <Name>Blynk</Name>
+        <Version>1.0.1</Version>
+      </Key>
+    </Dependency>
   </Dependencies>
 </ArduinoDependencyCollection>

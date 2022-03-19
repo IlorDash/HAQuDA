@@ -37,7 +37,7 @@
     </AdditionalLibraryDirectories>
     <IgnoreNormalLibraryDirectories>false</IgnoreNormalLibraryDirectories>
     <OutputSubdirectory>Output\$(PlatformName.defuse)\$(ConfigurationName.defuse)</OutputSubdirectory>
-    <EnableVerboseBuild>true</EnableVerboseBuild>
+    <EnableVerboseBuild>false</EnableVerboseBuild>
     <PreprocessorMacros />
     <ExtraCompilerFlags>
       <string>-Og</string>
