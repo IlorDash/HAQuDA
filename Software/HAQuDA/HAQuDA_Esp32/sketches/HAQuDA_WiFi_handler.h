@@ -4,8 +4,8 @@
 #include "TimeHelper.h"
 #include "WS2812.h"
 #include "HAQuDA_UI.h"
+#include "FileStorage.h"
 
-#define WIFI_CREDS_NUM 3
 
 class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
   private:
@@ -21,7 +21,8 @@ class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
 	IPAddress *AP_gateway;
 	IPAddress *AP_subnet;
   public:
-	HAQuDA_WiFi_handler(HAQuDA_UI *currUI_WiFi);
+	HAQuDA_WiFi_handler(HAQuDA_UI *currUI_WiFi, FileStorage *currFS_WiFi);
+	~HAQuDA_WiFi_handler();
 	static bool WiFiConnected;
 	void WiFi_handleConnection();
 	void createAP();
