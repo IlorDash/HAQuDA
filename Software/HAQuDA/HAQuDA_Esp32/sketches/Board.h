@@ -1,5 +1,8 @@
 #pragma once
 
+#include "Arduino.h"
+#include "TimeHelper.h"
+
 #define APPLICATION_NAME "HAQuDA"
 
 #ifdef USE_WDT
