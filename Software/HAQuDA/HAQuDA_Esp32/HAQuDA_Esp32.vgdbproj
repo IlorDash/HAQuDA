@@ -31,7 +31,7 @@
         <string>sketches\HAQuDA_DispManip.h</string>
         <string>sketches\HAQuDA_UI_typedefs.h</string>
         <string>sketches\HAQuDA_WiFi_handler.h</string>
-        <string>sketches\FileStorage.h</string>
+        <string>sketches\HAQuDA_FileStorage.h</string>
       </OtherFiles>
     </ProjectModeSettings>
   </Project>
