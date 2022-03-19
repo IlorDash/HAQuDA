@@ -18,8 +18,7 @@
 
 char BlynkAuth[] = "4MdAV357utNNjm7vmCUEY2NPAdlHQMSM";
 
-WidgetTerminal terminal(V0);
-
+WidgetTerminal *terminal;
 HAQuDA_UI *myUI;
 HAQuDA_DispManip *myDispManip;
 HAQuDA_FileStorage *myFS;
@@ -35,28 +34,29 @@ int thirdDot;
 bool dispFirstParam = false;
 
 void setup() {
-
-	myDispManip = new HAQuDA_DispManip();
 	myUI = new HAQuDA_UI(myDispManip);
 	myFS = new HAQuDA_FileStorage();
 	myWiFi_handler = new HAQuDA_WiFi_handler(myUI, myFS);
 	myWiFi_handler->begin();
-	
+
+	terminal = new WidgetTerminal(V0);
+	myDispManip = new HAQuDA_DispManip();
+
 	Serial.begin(115200);
-	
+
 	myWiFi_handler->WiFi_handleConnection();
 
 	WS2812_begin();
 	if (!sensorsBegin()) {
 		WS2812_fillColor(COLOR_RED);
-		terminal.println("FATAL ERROR: Failed to begin sensors");
+		terminal->println("FATAL ERROR: Failed to begin sensors");
 		while (1) {
 		}
 	}
 	createTasks(myUI);
 
-	terminal.println("*************************");
-	terminal.print("START LOGGING");
+	terminal->println("*************************");
+	terminal->print("START LOGGING");
 
 	// pinMode(LED_BUILTIN, OUTPUT);
 
@@ -75,9 +75,9 @@ uint32_t dispMeasTimer = 0;
 uint32_t sensors_meas_time = 0;
 
 void loop() {
-	
+
 	myWiFi_handler->WiFi_handleConnection();
-	
+
 	if (!Blynk.connected()) {
 		Blynk.connect();
 	} else {
@@ -120,24 +120,24 @@ void loop() {
 
 void checkIfMeasCorrect() {
 	if (!eCO2_meas.newMeasDone) {
-		terminal.println("ERROR: Failed to get eCO2 measurment");
+		terminal->println("ERROR: Failed to get eCO2 measurment");
 	}
 	if (!TVOC_meas.newMeasDone) {
-		terminal.println("ERROR: Failed to get TVOC measurment");
+		terminal->println("ERROR: Failed to get TVOC measurment");
 	}
 	if (!PM_2_5_meas.newMeasDone) {
-		terminal.println("ERROR: Failed to get PM 2.5 measurment");
+		terminal->println("ERROR: Failed to get PM 2.5 measurment");
 	}
 	if (!temp_meas.newMeasDone) {
-		terminal.println("ERROR: Failed to get TEMP measurment");
+		terminal->println("ERROR: Failed to get TEMP measurment");
 	}
 	if (!humid_meas.newMeasDone) {
-		terminal.println("ERROR: Failed to get HUMID measurment");
+		terminal->println("ERROR: Failed to get HUMID measurment");
 	}
 	if (!O3_meas.newMeasDone) {
-		terminal.println("ERROR: Failed to get O3 measurment");
+		terminal->println("ERROR: Failed to get O3 measurment");
 	}
-	terminal.flush();
+	terminal->flush();
 
 	eCO2_meas.newMeasDone = false;
 	TVOC_meas.newMeasDone = false;
@@ -148,146 +148,146 @@ void checkIfMeasCorrect() {
 }
 
 void blynkPrintLog() {
-	terminal.println();
-	terminal.println("----------------------------");
-	terminal.print(measNum);
-	terminal.println(" - measurment");
+	terminal->println();
+	terminal->println("----------------------------");
+	terminal->print(measNum);
+	terminal->println(" - measurment");
 
 	checkIfMeasCorrect();
 
-	terminal.print("Temp: ");
-	terminal.print(temp_meas.value / temp_meas.measNum);
-	terminal.println("  C");
-	terminal.print("Humid: ");
-	terminal.print(humid_meas.value / humid_meas.measNum);
-	terminal.println("  %");
-	terminal.println();
+	terminal->print("Temp: ");
+	terminal->print(temp_meas.value / temp_meas.measNum);
+	terminal->println("  C");
+	terminal->print("Humid: ");
+	terminal->print(humid_meas.value / humid_meas.measNum);
+	terminal->println("  %");
+	terminal->println();
 
-	terminal.flush();
+	terminal->flush();
 
-	terminal.print("PM1.0: ");
-	terminal.print(PM_1_0_meas.value / PM_1_0_meas.measNum);
-	terminal.println("  ug/m3");
-	terminal.print("PM2.5: ");
-	terminal.print(PM_2_5_meas.value / PM_2_5_meas.measNum);
-	terminal.println("  ug/m3");
-	terminal.print("PM1 0: ");
-	terminal.print(PM_10_meas.value / PM_10_meas.measNum);
-	terminal.println("  ug/m3");
-	terminal.println();
+	terminal->print("PM1.0: ");
+	terminal->print(PM_1_0_meas.value / PM_1_0_meas.measNum);
+	terminal->println("  ug/m3");
+	terminal->print("PM2.5: ");
+	terminal->print(PM_2_5_meas.value / PM_2_5_meas.measNum);
+	terminal->println("  ug/m3");
+	terminal->print("PM1 0: ");
+	terminal->print(PM_10_meas.value / PM_10_meas.measNum);
+	terminal->println("  ug/m3");
+	terminal->println();
 
-	terminal.flush();
+	terminal->flush();
 
-	terminal.print("eCO2: ");
-	terminal.print(eCO2_meas.value / eCO2_meas.measNum);
-	terminal.println("  ppm");
-	terminal.println();
+	terminal->print("eCO2: ");
+	terminal->print(eCO2_meas.value / eCO2_meas.measNum);
+	terminal->println("  ppm");
+	terminal->println();
 
-	terminal.print("TVOC: ");
-	terminal.print(TVOC_meas.value / TVOC_meas.measNum);
-	terminal.println("  ppb");
-	terminal.println();
+	terminal->print("TVOC: ");
+	terminal->print(TVOC_meas.value / TVOC_meas.measNum);
+	terminal->println("  ppb");
+	terminal->println();
 
-	terminal.print("O3: ");
-	terminal.print(O3_meas.value / O3_meas.measNum);
-	terminal.println("  ppm");
-	terminal.println();
+	terminal->print("O3: ");
+	terminal->print(O3_meas.value / O3_meas.measNum);
+	terminal->println("  ppm");
+	terminal->println();
 
-	terminal.flush();
+	terminal->flush();
 
 	if (myUI->currUI_Params.dispMode == standard) {
-		terminal.println("Display standard");
+		terminal->println("Display standard");
 		switch (myUI->currUI_Params.dispParam) {
 			case total:
-				terminal.println("Display total quality");
+				terminal->println("Display total quality");
 				break;
 			case temp:
-				terminal.println("Display temperature");
+				terminal->println("Display temperature");
 				break;
 			case humid:
-				terminal.println("Display humidity");
+				terminal->println("Display humidity");
 				break;
 			case eCO2:
-				terminal.println("Display eCO2");
+				terminal->println("Display eCO2");
 				break;
 			case TVOC:
-				terminal.println("Display TVOC");
+				terminal->println("Display TVOC");
 				break;
 			case PM2_5:
-				terminal.println("Display PM2_5");
+				terminal->println("Display PM2_5");
 				break;
 			default:
-				terminal.println("Display none parametr");
+				terminal->println("Display none parametr");
 		}
 	} else if (myUI->currUI_Params.dispMode == multi) {
-		terminal.println("Display multi");
+		terminal->println("Display multi");
 		for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
 			switch (myUI->currUI_Params.multiModeStruct.paramsArr[i]) {
 				case total:
-					terminal.println("Display total quality");
+					terminal->println("Display total quality");
 					break;
 				case temp:
-					terminal.println("Display temperature");
+					terminal->println("Display temperature");
 					break;
 				case humid:
-					terminal.println("Display humidity");
+					terminal->println("Display humidity");
 					break;
 				case eCO2:
-					terminal.println("Display eCO2");
+					terminal->println("Display eCO2");
 					break;
 				case TVOC:
-					terminal.println("Display TVOC");
+					terminal->println("Display TVOC");
 					break;
 				case PM2_5:
-					terminal.println("Display PM2_5");
+					terminal->println("Display PM2_5");
 					break;
 				default:
-					terminal.println("Display none parametr");
+					terminal->println("Display none parametr");
 			}
 		}
 	} else if (myUI->currUI_Params.dispMode == night) {
 		switch (myUI->currUI_Params.dispParam) {
 			case total:
-				terminal.println("Display total quality");
+				terminal->println("Display total quality");
 				break;
 			case temp:
-				terminal.println("Display temperature");
+				terminal->println("Display temperature");
 				break;
 			case humid:
-				terminal.println("Display humidity");
+				terminal->println("Display humidity");
 				break;
 			case eCO2:
-				terminal.println("Display eCO2");
+				terminal->println("Display eCO2");
 				break;
 			case TVOC:
-				terminal.println("Display TVOC");
+				terminal->println("Display TVOC");
 				break;
 			case PM2_5:
-				terminal.println("Display PM2_5");
+				terminal->println("Display PM2_5");
 				break;
 			default:
-				terminal.println("Display none parametr");
+				terminal->println("Display none parametr");
 		}
 	} else {
 		switch (myUI->currUI_Params.dispEffect) {
 			case snake:
-				terminal.println("Display snake effect");
+				terminal->println("Display snake effect");
 				break;
 			case randomPixel:
-				terminal.println("Display random pixel effect");
+				terminal->println("Display random pixel effect");
 				break;
 			case fade:
-				terminal.println("Display fade effect");
+				terminal->println("Display fade effect");
 				break;
 			case christmasTree:
-				terminal.println("Display Christmas Tree effect");
+				terminal->println("Display Christmas Tree effect");
 				break;
 			default:
 				break;
 		}
 	}
 
-	terminal.flush();
+	terminal->flush();
 }
 
 BLYNK_WRITE(V1) {
