@@ -89,3 +89,4 @@ plot.log
 .visualgdb
 *.vgdbproj.*.user
 *.PcbDoc.htm
+*.orig
