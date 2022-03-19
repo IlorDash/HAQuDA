@@ -4,6 +4,13 @@
 #include "HAQuDA_UI_typedefs.h"
 #include "WS2812.h"
 
+#define COLOR_AQUA 0x00FFFF
+#define COLOR_LIME 0x99FF33
+#define COLOR_GREEN 0x01FF00
+#define COLOR_RED 0xFF0000
+#define COLOR_YELLOW 0xFFFF00
+#define COLOR_WHITE 0xFFFFFF
+
 class HAQuDA_UI {
   private:
 	HAQuDA_DispManip *myDispManip;
