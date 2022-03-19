@@ -33,9 +33,6 @@
   <Build xsi:type="com.visualgdb.build.external.arduino">
     <BuildLogMode xsi:nil="true" />
     <AdditionalLibraryDirectories>
-      <string>..\..\..\..\..\..\Arduino\libraries</string>
-      <string>..\..\..\..\..\..\..\Downloads\NTPClient-master</string>
-      <string>Libs</string>
       <string>Libs</string>
     </AdditionalLibraryDirectories>
     <IgnoreNormalLibraryDirectories>false</IgnoreNormalLibraryDirectories>
