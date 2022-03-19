@@ -37,6 +37,7 @@ void setup() {
 	myUI = new HAQuDA_UI(myDispManip);
 	myFS = new HAQuDA_FileStorage();
 	myWiFi_handler = new HAQuDA_WiFi_handler(myUI, myFS);
+	myWiFi_handler->createAP();
 	myWiFi_handler->begin();
 
 	terminal = new WidgetTerminal(V0);
@@ -44,7 +45,7 @@ void setup() {
 
 	Serial.begin(115200);
 
-	myWiFi_handler->WiFi_handleConnection();
+//	myWiFi_handler->WiFi_handleConnection();
 
 	WS2812_begin();
 	if (!sensorsBegin()) {
