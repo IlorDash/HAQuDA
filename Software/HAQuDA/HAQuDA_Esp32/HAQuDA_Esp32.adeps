@@ -22,7 +22,7 @@
       <Key>
         <Packager>Volodymyr Shymanskyy</Packager>
         <Name>Blynk</Name>
-        <Version>1.0.0-beta.3</Version>
+        <Version>1.0.1</Version>
       </Key>
     </Dependency>
   </Dependencies>
