@@ -33,14 +33,14 @@
   <Build xsi:type="com.visualgdb.build.external.arduino">
     <BuildLogMode xsi:nil="true" />
     <AdditionalLibraryDirectories>
-      <string>..\..\..\..\..\..\Downloads\EspSoftwareSerial-6.12.6</string>
-      <string>..\..\..\..\..\..\Arduino\libraries\Adafruit_NeoPixel</string>
       <string>..\..\..\..\..\..\Arduino\libraries</string>
       <string>..\..\..\..\..\..\..\Downloads\NTPClient-master</string>
+      <string>Libs</string>
+      <string>Libs</string>
     </AdditionalLibraryDirectories>
     <IgnoreNormalLibraryDirectories>false</IgnoreNormalLibraryDirectories>
     <OutputSubdirectory>Output\$(PlatformName.defuse)\$(ConfigurationName.defuse)</OutputSubdirectory>
-    <EnableVerboseBuild>false</EnableVerboseBuild>
+    <EnableVerboseBuild>true</EnableVerboseBuild>
     <PreprocessorMacros />
     <ExtraCompilerFlags>
       <string>-Og</string>
@@ -176,6 +176,7 @@
           <EnableNonStopMode>false</EnableNonStopMode>
           <MaxBreakpointLimit>0</MaxBreakpointLimit>
           <EnableVerboseMode>true</EnableVerboseMode>
+          <EnablePrettyPrinters>false</EnablePrettyPrinters>
         </AdditionalGDBSettings>
         <DebugMethod>
           <ID>openocd</ID>
@@ -211,7 +212,7 @@
           </Configuration>
         </DebugMethod>
         <AutoDetectRTOS>true</AutoDetectRTOS>
-        <SemihostingSupport>Auto</SemihostingSupport>
+        <SemihostingSupport>Disabled</SemihostingSupport>
         <SemihostingPollingDelay>0</SemihostingPollingDelay>
         <StepIntoEntryPoint>false</StepIntoEntryPoint>
         <ReloadFirmwareOnReset>false</ReloadFirmwareOnReset>

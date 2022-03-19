@@ -6,15 +6,7 @@
       <Key>
         <Packager>esp32</Packager>
         <Name>esp32</Name>
-        <Version>1.0.4</Version>
-      </Key>
-    </Dependency>
-    <Dependency>
-      <Type>Library</Type>
-      <Key>
-        <Packager>Volodymyr Shymanskyy</Packager>
-        <Name>Blynk</Name>
-        <Version>1.0.0-beta.3</Version>
+        <Version>1.0.6</Version>
       </Key>
     </Dependency>
     <Dependency>
