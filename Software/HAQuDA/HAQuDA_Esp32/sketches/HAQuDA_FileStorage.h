@@ -48,14 +48,14 @@ typedef struct {
 
 typedef enum { too_many_WiFi, error_reading_stored_WiFi_creds, error_saving_new_WiFi_creds, saved_new_WiFi_creds} saveNewWiFiCredsReturnMsgs;
 
-class FileStorage {
+class HAQuDA_FileStorage {
   private:
-	bool write(File &file, String &s);
 
   public:
 	typedef std::function<void(String, int)> TListDirFunction;
-	FileStorage();
-	~FileStorage();
+	bool write(File &file, String &s);
+	HAQuDA_FileStorage();
+	~HAQuDA_FileStorage();
 	bool Start(void);
 	void Stop(void);
 	void ListDir(const char *dirname, uint8_t levels, TListDirFunction fn);
@@ -73,6 +73,5 @@ class FileStorage {
 
 	saveNewWiFiCredsReturnMsgs SaveNewWiFiCreds(TWiFiCreds writeWiFiNet);
 };
-extern FileStorage fileStorage;
 
 #endif
