@@ -2,6 +2,7 @@
 
 #include "HAQuDA_WiFi_handler.h"
 #include "HAQuDA_UI.h"
+#include "HAQuDA_FileStorage.h"
 
 #include <SoftwareSerial.h>
 
@@ -21,6 +22,7 @@ WidgetTerminal terminal(V0);
 
 HAQuDA_UI *myUI;
 HAQuDA_DispManip *myDispManip;
+HAQuDA_FileStorage *myFS;
 HAQuDA_WiFi_handler *myWiFi_handler;
 
 void UpdateVirtualPins();
@@ -36,7 +38,8 @@ void setup() {
 
 	myDispManip = new HAQuDA_DispManip();
 	myUI = new HAQuDA_UI(myDispManip);
-	myWiFi_handler = new HAQuDA_WiFi_handler(myUI);
+	myFS = new HAQuDA_FileStorage();
+	myWiFi_handler = new HAQuDA_WiFi_handler(myUI, myFS);
 
 	Serial.begin(115200);
 	
