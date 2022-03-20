@@ -7,6 +7,7 @@
 class HAQuDA_WebServer {
   private:
   public:
+	void begin();
 	WebServer server;
 	WiFiClient client;
 	HAQuDA_WebServer();
