@@ -3,7 +3,7 @@
 #include <Adafruit_NeoPixel.h>
 #include "HAQuDA_UI_typedefs.h"
 
-#define LED_PIN 18
+#define LED_PIN 26
 #define LED_NUM_PIXELS 109
 #define MAX_BRIGHTNESS 150
 #define LED_COLUMN_NUM 9

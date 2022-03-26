@@ -90,7 +90,6 @@ void loop() {
 		getDHT11_meas();
 		getCCS811_meas();
 		getPM_meas();
-		getO3_meas();
 
 		measNum++;
 		blynkPrintLog();
@@ -135,9 +134,6 @@ void checkIfMeasCorrect() {
 	if (!humid_meas.newMeasDone) {
 		terminal->println("ERROR: Failed to get HUMID measurment");
 	}
-	if (!O3_meas.newMeasDone) {
-		terminal->println("ERROR: Failed to get O3 measurment");
-	}
 	terminal->flush();
 
 	eCO2_meas.newMeasDone = false;
@@ -145,7 +141,6 @@ void checkIfMeasCorrect() {
 	PM_2_5_meas.newMeasDone = false;
 	temp_meas.newMeasDone = false;
 	humid_meas.newMeasDone = false;
-	O3_meas.newMeasDone = false;
 }
 
 void blynkPrintLog() {
@@ -187,11 +182,6 @@ void blynkPrintLog() {
 	terminal->print("TVOC: ");
 	terminal->print(TVOC_meas.value / TVOC_meas.measNum);
 	terminal->println("  ppb");
-	terminal->println();
-
-	terminal->print("O3: ");
-	terminal->print(O3_meas.value / O3_meas.measNum);
-	terminal->println("  ppm");
 	terminal->println();
 
 	terminal->flush();
