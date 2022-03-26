@@ -3,6 +3,7 @@
 
 #include <functional>
 #include <Arduino.h>
+#include "Board.h"
 #include "FS.h"
 #include "SPIFFS.h"
 
@@ -26,7 +27,7 @@ const int checkPeriod = 10;
 const int checksPerAccumulation = 4;
 const int partTime = 21600;
 
-typedef struct TMeasLog {
+typedef struct {
 	uint32_t timeStamp = 0;
 	uint16_t measNum = 0;
 
@@ -38,19 +39,17 @@ typedef struct TMeasLog {
 	float temp_meas;
 	float humid_meas;
 	float O3_meas;
-};
+} TMeasLog;
 
 typedef struct {
-  public:
 	String ssid = "";
 	String password = "";
 } TWiFiCreds;
 
-typedef enum { too_many_WiFi, error_reading_stored_WiFi_creds, error_saving_new_WiFi_creds, saved_new_WiFi_creds} saveNewWiFiCredsReturnMsgs;
+typedef enum { too_many_WiFi, error_reading_stored_WiFi_creds, error_saving_new_WiFi_creds, saved_new_WiFi_creds } saveNewWiFiCredsReturnMsgs;
 
 class HAQuDA_FileStorage {
   private:
-
   public:
 	typedef std::function<void(String, int)> TListDirFunction;
 	bool write(File &file, String &s);
