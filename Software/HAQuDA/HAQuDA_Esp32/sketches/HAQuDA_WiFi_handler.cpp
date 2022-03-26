@@ -3,8 +3,8 @@
 bool HAQuDA_WiFi_handler::WiFiConnected = false;
 
 HAQuDA_WiFi_handler::HAQuDA_WiFi_handler(HAQuDA_UI *currUI_WiFi, HAQuDA_FileStorage *currFS_WiFi) {
-	AP_ip = new IPAddress(192, 168, 0, 198);
-	AP_gateway = new IPAddress(192, 168, 0, 1);
+	AP_ip = new IPAddress(192, 168, 4, 22);
+	AP_gateway = new IPAddress(192, 168, 4, 9);
 	AP_subnet = new IPAddress(255, 255, 255, 0);
 
 	this->myUI_WiFi = currUI_WiFi;
@@ -14,28 +14,8 @@ HAQuDA_WiFi_handler::HAQuDA_WiFi_handler(HAQuDA_UI *currUI_WiFi, HAQuDA_FileStor
 HAQuDA_WiFi_handler::~HAQuDA_WiFi_handler() {
 }
 
-void HAQuDA_WiFi_handler::handleSubmit() {
-	String response_success = "<h1>Success</h1>";
-	response_success += "<h2>Device will restart in 3 seconds</h2>";
-
-	String response_error = "<h1>Error</h1>";
-	response_error += "<h2><a href='/'>Go back</a>to try again";
-
-	TWiFiCreds *currWiFiCreds;
-	currWiFiCreds->ssid = String(server.arg("ssid"));
-	currWiFiCreds->password = String(server.arg("password"));
-
-	if (myFS_WiFi->WriteFile(FILE_NAME_WIFI_NET, (uint8_t *)currWiFiCreds, sizeof(currWiFiCreds))) {
-		server.send(200, "text/html", response_success);
-		// EEPROM.commit();
-		delay(3000);
-		ESP.restart();
-	} else {
-		server.send(200, "text/html", response_error);
-	}
-}
-
 bool HAQuDA_WiFi_handler::checkStoredWiFiCreds() {
+	
 }
 
 void HAQuDA_WiFi_handler::WiFi_handleConnection() {
