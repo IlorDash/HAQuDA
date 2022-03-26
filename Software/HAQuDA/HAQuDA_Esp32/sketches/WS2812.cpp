@@ -1,37 +1,38 @@
 #include "WS2812.h"
 #include "HAQuDA_UI.h"
 
-Adafruit_NeoPixel pixels(LED_NUM_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel * pixels;
 
 void WS2812_begin() {
-	pixels.begin();
-	pixels.setBrightness(MAX_BRIGHTNESS);
+	pixels = new Adafruit_NeoPixel(LED_NUM_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
+	pixels->begin();
+	pixels->setBrightness(MAX_BRIGHTNESS);
 }
 
 void WS2812_setBrightnessPerCent(uint8_t brightnessPerCent) {
 	brightnessPerCent = (brightnessPerCent > 100) ? 100 : brightnessPerCent;
 	uint16_t brightness = brightnessPerCent * MAX_BRIGHTNESS / 100;
-	pixels.setBrightness(brightness);
-	pixels.show();
+	pixels->setBrightness(brightness);
+	pixels->show();
 }
 
 void WS2812_clear() {
-	pixels.clear();
-	pixels.show();
+	pixels->clear();
+	pixels->show();
 }
 
 void WS2812_show() {
-	pixels.show();
+	pixels->show();
 }
 
 void WS2812_setPixelColor(uint16_t pixelNum, uint32_t color) {
-	pixels.setPixelColor(pixelNum, color);
-	pixels.show();
+	pixels->setPixelColor(pixelNum, color);
+	pixels->show();
 }
 
 void WS2812_fillColor(uint32_t color) {
-	pixels.fill(color, 0, LED_NUM_PIXELS);
-	pixels.show();
+	pixels->fill(color, 0, LED_NUM_PIXELS);
+	pixels->show();
 }
 
 uint8_t christmasTreeMaxWidth = 7;
@@ -59,20 +60,20 @@ void christmasLightsSnake() {
 }
 
 void drawStarOnTree(int middleColumn) {
-	pixels.setPixelColor(GetPosition(middleColumn, LED_ROW_NUM - 1), CHRISTMAS_TREE_STAR_COLOR);
-	pixels.setPixelColor(GetPosition(middleColumn, LED_ROW_NUM - 2), CHRISTMAS_TREE_STAR_COLOR);
-	pixels.setPixelColor(GetPosition(middleColumn, LED_ROW_NUM - 3), CHRISTMAS_TREE_STAR_COLOR);
-	pixels.setPixelColor(GetPosition(middleColumn - 1, LED_ROW_NUM - 2), CHRISTMAS_TREE_STAR_COLOR);
-	pixels.setPixelColor(GetPosition(middleColumn + 1, LED_ROW_NUM - 2), CHRISTMAS_TREE_STAR_COLOR);
+	pixels->setPixelColor(GetPosition(middleColumn, LED_ROW_NUM - 1), CHRISTMAS_TREE_STAR_COLOR);
+	pixels->setPixelColor(GetPosition(middleColumn, LED_ROW_NUM - 2), CHRISTMAS_TREE_STAR_COLOR);
+	pixels->setPixelColor(GetPosition(middleColumn, LED_ROW_NUM - 3), CHRISTMAS_TREE_STAR_COLOR);
+	pixels->setPixelColor(GetPosition(middleColumn - 1, LED_ROW_NUM - 2), CHRISTMAS_TREE_STAR_COLOR);
+	pixels->setPixelColor(GetPosition(middleColumn + 1, LED_ROW_NUM - 2), CHRISTMAS_TREE_STAR_COLOR);
 }
 
 void drawChristmasTree(uint8_t middleColumn) {
 
 	bool isLedStripFromUp = (middleColumn % 2 == 0);
 
-	uint32_t trunkColor = pixels.Color(190, 85, 30);
-	pixels.setPixelColor(GetPosition(middleColumn, 0), trunkColor);
-	pixels.show();
+	uint32_t trunkColor = pixels->Color(190, 85, 30);
+	pixels->setPixelColor(GetPosition(middleColumn, 0), trunkColor);
+	pixels->show();
 	delay(100);
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 
@@ -80,11 +81,11 @@ void drawChristmasTree(uint8_t middleColumn) {
 	int middleColumnOffset = globalMiddleColumn - middleColumn;
 	for (int i = 0; i < (CHRISTMAS_TREE_HEIGHT / 2); i++) {
 		for (int j = (globalMiddleColumn - CHRISTMAS_TREE_HALF_WIDTH + i); j <= (globalMiddleColumn + CHRISTMAS_TREE_HALF_WIDTH - i); j++) {
-			pixels.setPixelColor(GetPosition(j + middleColumnOffset, i), CHRISTMAS_TREE_COLOR);
-			pixels.setPixelColor(GetPosition(j + middleColumnOffset, i + 1), CHRISTMAS_TREE_COLOR);
+			pixels->setPixelColor(GetPosition(j + middleColumnOffset, i), CHRISTMAS_TREE_COLOR);
+			pixels->setPixelColor(GetPosition(j + middleColumnOffset, i + 1), CHRISTMAS_TREE_COLOR);
 		}
 	}
-	pixels.show();
+	pixels->show();
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 	drawStarOnTree(middleColumn);
 }
@@ -95,9 +96,9 @@ void WS2812_ChristmasTree(int speed) {
 	uint8_t redBackgroundIntens = 190 * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
 	uint8_t greenBackgroundIntens = 190 * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
 	uint8_t blueBackgroundIntens = 230 * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
-	uint32_t backgroundColor = pixels.Color(redBackgroundIntens, greenBackgroundIntens, blueBackgroundIntens);
-	pixels.fill(backgroundColor, 0, LED_NUM_PIXELS); // drawing christmas tree with white-blue background
-	pixels.show();
+	uint32_t backgroundColor = pixels->Color(redBackgroundIntens, greenBackgroundIntens, blueBackgroundIntens);
+	pixels->fill(backgroundColor, 0, LED_NUM_PIXELS); // drawing christmas tree with white-blue background
+	pixels->show();
 	delay(100);
 	drawChristmasTree(treeMiddleColumn);
 
@@ -107,7 +108,7 @@ void WS2812_ChristmasTree(int speed) {
 }
 
 void getRGB(int *_red, int *_green, int *_blue, float data, measDivideDots_struct divideDots) {
-	volatile float temp = pixels.getBrightness();
+	volatile float temp = pixels->getBrightness();
 	volatile float coefficient = (temp * 2) / (divideDots.thirdDot - divideDots.firstDot);
 	if ((data < divideDots.secondDot) && (data >= divideDots.firstDot)) {
 		*_blue = round(-abs(data - divideDots.firstDot) * coefficient) + MAX_BRIGHTNESS;
@@ -131,8 +132,8 @@ void getRGB(int *_red, int *_green, int *_blue, float data, measDivideDots_struc
 void WS2812_showParams_standard(float data, measDivideDots_struct divideDots) {
 	int red, green, blue; // values of LED colors
 	getRGB(&red, &green, &blue, data, divideDots);
-	pixels.fill(pixels.Color(red, green, blue), 0, LED_NUM_PIXELS);
-	pixels.show();
+	pixels->fill(pixels->Color(red, green, blue), 0, LED_NUM_PIXELS);
+	pixels->show();
 	delay(100);
 }
 
@@ -142,13 +143,13 @@ void WS2812_showParams_night(float data, measDivideDots_struct divideDots, uint8
 	getRGB(&red, &green, &blue, data, divideDots);
 
 	for (int i = 0; i < LED_COLUMN_NUM; i++) {
-		uint8_t whiteBrightness = pixels.getBrightness() * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
-		uint32_t color = (!(i % 3)) ? pixels.Color(red, green, blue) : pixels.Color(whiteBrightness, whiteBrightness, whiteBrightness);
+		uint8_t whiteBrightness = pixels->getBrightness() * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
+		uint32_t color = (!(i % 3)) ? pixels->Color(red, green, blue) : pixels->Color(whiteBrightness, whiteBrightness, whiteBrightness);
 		uint8_t pixelNum = (!(i % 3)) ? LED_ROW_NUM : time;
 		uint8_t startPixel = (!(i % 2)) ? (i * LED_ROW_NUM) : (i * LED_ROW_NUM + LED_ROW_NUM - pixelNum);
-		pixels.fill(color, startPixel, pixelNum);
+		pixels->fill(color, startPixel, pixelNum);
 	}
-	pixels.show();
+	pixels->show();
 	delay(100);
 }
 
@@ -159,16 +160,16 @@ void WS2812_showParams_multi(float *data, measDivideDots_struct *divideDots) {
 	}
 	for (int i = 0; i < LED_ROW_NUM; i++) {
 		if (!(i % 2)) {
-			pixels.fill(pixels.Color(red[0], green[0], blue[0]), i * LED_ROW_NUM + 1, 3);
-			pixels.fill(pixels.Color(red[1], green[1], blue[1]), i * LED_ROW_NUM + 5, 3);
-			pixels.fill(pixels.Color(red[2], green[2], blue[2]), i * LED_ROW_NUM + 9, 3);
+			pixels->fill(pixels->Color(red[0], green[0], blue[0]), i * LED_ROW_NUM + 1, 3);
+			pixels->fill(pixels->Color(red[1], green[1], blue[1]), i * LED_ROW_NUM + 5, 3);
+			pixels->fill(pixels->Color(red[2], green[2], blue[2]), i * LED_ROW_NUM + 9, 3);
 		} else {
-			pixels.fill(pixels.Color(red[2], green[2], blue[2]), i * LED_ROW_NUM, 3);
-			pixels.fill(pixels.Color(red[1], green[1], blue[1]), i * LED_ROW_NUM + 4, 3);
-			pixels.fill(pixels.Color(red[0], green[0], blue[0]), i * LED_ROW_NUM + 8, 3);
+			pixels->fill(pixels->Color(red[2], green[2], blue[2]), i * LED_ROW_NUM, 3);
+			pixels->fill(pixels->Color(red[1], green[1], blue[1]), i * LED_ROW_NUM + 4, 3);
+			pixels->fill(pixels->Color(red[0], green[0], blue[0]), i * LED_ROW_NUM + 8, 3);
 		}
 	}
-	pixels.show();
+	pixels->show();
 	delay(100);
 }
 
@@ -189,7 +190,7 @@ void WS2812_showParams_standardTotal(float *data, measDivideDots_struct *dataDiv
 	red /= DISP_PARAMS_NUM;
 	green /= DISP_PARAMS_NUM;
 	blue /= DISP_PARAMS_NUM;
-	pixels.fill(pixels.Color(red, green, blue), 0, LED_NUM_PIXELS);
-	pixels.show();
+	pixels->fill(pixels->Color(red, green, blue), 0, LED_NUM_PIXELS);
+	pixels->show();
 	delay(100);
 }
