@@ -22,7 +22,7 @@ class HAQuDA_DispManip {
 
   public:
 	HAQuDA_DispManip();
-
+	void startNTP();
 	void displayData(UI_Params currUI_Params);
 	~HAQuDA_DispManip();
 };
