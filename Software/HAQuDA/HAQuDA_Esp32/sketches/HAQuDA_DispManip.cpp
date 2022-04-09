@@ -1,6 +1,13 @@
 #include "HAQuDA_DispManip.h"
 
 HAQuDA_DispManip::HAQuDA_DispManip() {
+}
+
+HAQuDA_DispManip::~HAQuDA_DispManip() {
+	delete timeClient;
+}
+
+void HAQuDA_DispManip::startNTP() {
 
 	timeClient = new NTPClient(ntpUDP);
 
@@ -12,10 +19,6 @@ HAQuDA_DispManip::HAQuDA_DispManip() {
 	// GMT +3 = 10800
 	// GMT 0 = 0
 	timeClient->setTimeOffset(10800);
-}
-
-HAQuDA_DispManip::~HAQuDA_DispManip() {
-	delete timeClient;
 }
 
 dispParams_enum HAQuDA_DispManip::checkBadParam(UI_Params currUI_Params) {
@@ -144,12 +147,10 @@ void HAQuDA_DispManip::multiMode(UI_Params currUI_Params) {
 }
 
 uint8_t HAQuDA_DispManip::get_nightMode_hour(uint8_t curHour, UI_Params currUI_Params) {
-	bool isBordersInDifferentDays
-		= (currUI_Params.currentTimeBorder.timeSecondBorder < currUI_Params.currentTimeBorder.timeFirstBorder);
+	bool isBordersInDifferentDays = (currUI_Params.currentTimeBorder.timeSecondBorder < currUI_Params.currentTimeBorder.timeFirstBorder);
 
 	if (isBordersInDifferentDays) {
-		if ((curHour >= currUI_Params.currentTimeBorder.timeFirstBorder)
-			|| (curHour <= currUI_Params.currentTimeBorder.timeSecondBorder)) {
+		if ((curHour >= currUI_Params.currentTimeBorder.timeFirstBorder) || (curHour <= currUI_Params.currentTimeBorder.timeSecondBorder)) {
 			int8_t hourDiff = curHour - currUI_Params.currentTimeBorder.timeFirstBorder;
 			hourDiff += (hourDiff < 0) ? 24 : 0;
 			return hourDiff;
@@ -157,8 +158,7 @@ uint8_t HAQuDA_DispManip::get_nightMode_hour(uint8_t curHour, UI_Params currUI_P
 			return 12;
 		}
 	} else {
-		if ((curHour >= currUI_Params.currentTimeBorder.timeFirstBorder)
-			&& (curHour <= currUI_Params.currentTimeBorder.timeSecondBorder)) {
+		if ((curHour >= currUI_Params.currentTimeBorder.timeFirstBorder) && (curHour <= currUI_Params.currentTimeBorder.timeSecondBorder)) {
 			int8_t hourDiff = curHour - currUI_Params.currentTimeBorder.timeFirstBorder;
 			return hourDiff;
 		} else {

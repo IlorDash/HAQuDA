@@ -3,16 +3,23 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <WiFiClient.h>
+#include "HAQuDA_FileStorage.h"
 
 class HAQuDA_WebServer {
   private:
   public:
-	void begin();
+	HAQuDA_FileStorage *myFS_WiFi;
+	bool WiFiCredsFound = false;
+
 	WebServer server;
 	WiFiClient client;
+
+	void beginWebServer();
+	void loop();
+
 	HAQuDA_WebServer();
-	bool WiFiCredsFound = true;
+
 	void WebServer_init();
-	void setWiFiCreds();
+	void getNewWiFiCreds();
 	void handle_NotFound();
 };
