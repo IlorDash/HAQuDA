@@ -38,7 +38,7 @@ void setup() {
 	myFS = new HAQuDA_FileStorage();
 	myWiFi_handler = new HAQuDA_WiFi_handler(myUI, myFS);
 	myWiFi_handler->createAP();
-	myWiFi_handler->begin();
+	//myWiFi_handler->begin();
 
 	terminal = new WidgetTerminal(V0);
 	myDispManip = new HAQuDA_DispManip();
