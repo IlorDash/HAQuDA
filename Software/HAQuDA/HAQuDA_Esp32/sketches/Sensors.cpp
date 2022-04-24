@@ -1,12 +1,12 @@
 #include "Sensors.h"
 
-#define DHTPIN 32
+#define DHTPIN 18
 #define DHTTYPE DHT11
 
 #define ZH03B_RX_PIN 17
 #define ZH03B_TX_PIN 16
 
-#define CCS811_WAK 33
+#define CCS811_WAK 5
 
 #define PM_BUF_LEN 31 // 0x42 + 31 bytes equal to 32 bytes
 
@@ -129,7 +129,7 @@ bool getCCS811_meas() {
 	return false;
 }
 
-bool getPM_meas() {
+ bool getPM_meas() {
 	if (PMSerial.find(0x42)) {
 		PMSerial.readBytes(buf, PM_BUF_LEN);
 
@@ -181,3 +181,4 @@ bool getDHT11_meas() {
 	}
 	return true;
 }
+

@@ -1,25 +1,26 @@
 #include "Tasks.h"
 
 using namespace std;
-HAQuDA_UI *myUI_tasks;
 
 void WS2812_EffectsTaskCode(void *parameter) {
 	while (true) {
-		switch (myUI_tasks->currUI_Params.dispEffect) {
-			case snake: {
+		switch (whatEffectDisp) {
+			case snake: { // Item 3
+				uint8_t tailLength = 5;
+				uint16_t SnakeSpeed = 400;
 				WS2812_clear();
 				vTaskDelay(100 / portTICK_PERIOD_MS);
 				for (int i = 0; i < LED_NUM_PIXELS; i++) {
 					int pixelNum = 0;
-					for (int j = 0; j < myUI_tasks->currUI_Params.effectParams.snakeTailLength; j++) {
+					for (int j = 0; j < tailLength; j++) {
 						pixelNum = j + i;
 						pixelNum = (pixelNum > LED_NUM_PIXELS) ? LED_NUM_PIXELS : pixelNum;
-						WS2812_setPixelColor(pixelNum, myUI_tasks->currUI_Params.effectParams.snakeColor);
+						WS2812_setPixelColor(pixelNum, COLOR_LIME);
 						WS2812_show();
-						vTaskDelay(myUI_tasks->currUI_Params.effectParams.snakeSpeed / portTICK_PERIOD_MS);
+						vTaskDelay(SnakeSpeed / portTICK_PERIOD_MS);
 					}
 					WS2812_setPixelColor(i, 0);
-					if (myUI_tasks->currUI_Params.dispEffect != snake) {
+					if (whatEffectDisp != snake) {
 						break;
 					}
 				}
@@ -27,7 +28,8 @@ void WS2812_EffectsTaskCode(void *parameter) {
 
 				break;
 			}
-			case randomPixel: {
+			case randomPixel: { // Item 3
+				uint16_t RandomSpeed = 400;
 				WS2812_clear();
 				vTaskDelay(100 / portTICK_PERIOD_MS);
 				vector<int> pixelEnArr;
@@ -40,23 +42,24 @@ void WS2812_EffectsTaskCode(void *parameter) {
 
 					WS2812_setPixelColor(pixelNum, ((uint32_t)random(0, 255) << 16) | ((uint32_t)random(0, 255) << 8) | random(0, 255));
 					WS2812_show();
-					vTaskDelay(myUI_tasks->currUI_Params.effectParams.randomSpeed / portTICK_PERIOD_MS);
-					if (myUI_tasks->currUI_Params.dispEffect != randomPixel) {
+					vTaskDelay(RandomSpeed / portTICK_PERIOD_MS);
+					if (whatEffectDisp != randomPixel) {
 						break;
 					}
 				}
 				vTaskDelay(1000 / portTICK_PERIOD_MS);
 				break;
 			}
-			case fade: { 
+			case fade: { // Item 3
+				uint16_t FadeSpeed = 400;
 				WS2812_clear();
 				vTaskDelay(100 / portTICK_PERIOD_MS);
-				WS2812_fillColor(myUI_tasks->currUI_Params.effectParams.fadeColor);
+				WS2812_fillColor(COLOR_AQUA);
 				for (int j = 100; j > 0; j = j - 2) {
 					WS2812_setBrightnessPerCent(j);
 					WS2812_show();
-					vTaskDelay(myUI_tasks->currUI_Params.effectParams.fadeSpeed / portTICK_PERIOD_MS);
-					if (myUI_tasks->currUI_Params.dispEffect != fade) {
+					vTaskDelay(FadeSpeed / portTICK_PERIOD_MS);
+					if (whatEffectDisp != fade) {
 						break;
 					}
 				}
@@ -74,8 +77,7 @@ void WS2812_EffectsTaskCode(void *parameter) {
 	}
 }
 
-void createTasks(HAQuDA_UI *currUI) {
-	myUI_tasks = currUI;
+void createTasks() {
 	xTaskCreatePinnedToCore(WS2812_EffectsTaskCode, // Function that should be called
 							"WS2812 Effects task",  // Name of the task (for debugging)
 							2048,					// Stack size (bytes)

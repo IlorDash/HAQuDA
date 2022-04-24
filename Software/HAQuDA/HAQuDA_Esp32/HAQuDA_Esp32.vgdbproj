@@ -42,7 +42,13 @@
     <IgnoreNormalLibraryDirectories>false</IgnoreNormalLibraryDirectories>
     <OutputSubdirectory>Output\$(PlatformName.defuse)\$(ConfigurationName.defuse)</OutputSubdirectory>
     <EnableVerboseBuild>false</EnableVerboseBuild>
-    <PreprocessorMacros />
+    <PreprocessorMacros>
+      <Common>
+        <string>BLYNK_AUTH="$(BlynkAuth_uv)"</string>
+        <string>WIFI_SSID="$(WiFi_ssid_uv)"</string>
+        <string>WIFI_PASS="$(WiFi_ssid_uv)"</string>
+      </Common>
+    </PreprocessorMacros>
     <ExtraCompilerFlags>
       <string>-Og</string>
       <string>-fno-inline-functions</string>
@@ -75,7 +81,29 @@
     <Shortcuts />
     <ShowMessageAfterExecuting>true</ShowMessageAfterExecuting>
   </CustomShortcuts>
-  <UserDefinedVariables />
+  <UserDefinedVariables>
+    <BuildVariable>
+      <Label />
+      <Description>Blynk Auth</Description>
+      <Value>xxxxx</Value>
+      <Name>BlynAuth_uv</Name>
+      <PromoteToEnvironment>true</PromoteToEnvironment>
+    </BuildVariable>
+    <BuildVariable>
+      <Label />
+      <Description>WiFi pass</Description>
+      <Value>xxxxx</Value>
+      <Name>WiFi_pass_uv</Name>
+      <PromoteToEnvironment>true</PromoteToEnvironment>
+    </BuildVariable>
+    <BuildVariable>
+      <Label />
+      <Description>WiFi ssid</Description>
+      <Value>xxxxx</Value>
+      <Name>WiFi_ssid_uv</Name>
+      <PromoteToEnvironment>true</PromoteToEnvironment>
+    </BuildVariable>
+  </UserDefinedVariables>
   <ImportedPropertySheets />
   <CodeSense>
     <Enabled>True</Enabled>
@@ -177,7 +205,6 @@
           <EnableNonStopMode>false</EnableNonStopMode>
           <MaxBreakpointLimit>0</MaxBreakpointLimit>
           <EnableVerboseMode>true</EnableVerboseMode>
-          <EnablePrettyPrinters>false</EnablePrettyPrinters>
         </AdditionalGDBSettings>
         <DebugMethod>
           <ID>openocd</ID>
