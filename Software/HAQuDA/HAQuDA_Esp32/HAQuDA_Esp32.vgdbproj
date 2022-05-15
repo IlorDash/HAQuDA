@@ -46,7 +46,7 @@
       <Common>
         <string>BLYNK_AUTH="$(BlynkAuth_uv)"</string>
         <string>WIFI_SSID="$(WiFi_ssid_uv)"</string>
-        <string>WIFI_PASS="$(WiFi_ssid_uv)"</string>
+        <string>WIFI_PASS="$(WiFi_pass_uv)"</string>
       </Common>
     </PreprocessorMacros>
     <ExtraCompilerFlags>
@@ -172,7 +172,11 @@
     <VisualGDBConfiguration>
       <PlatformName>ESP32_Dev_Module</PlatformName>
       <DebugSettingsOverride xsi:type="com.visualgdb.debug.embedded">
-        <AdditionalStartupCommands />
+        <AdditionalStartupCommands>
+          <GDBPreStartupCommands />
+          <GDBStartupCommands />
+          <GDBFinalizationCommands />
+        </AdditionalStartupCommands>
         <AdditionalGDBSettings>
           <Features>
             <DisableAutoDetection>false</DisableAutoDetection>
