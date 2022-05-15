@@ -20,53 +20,15 @@ measStruct PM_10_meas;  // define PM10 value of the air detector module
 measStruct temp_meas;   // define PM10 value of the air detector module
 measStruct humid_meas;  // define PM10 value of the air detector module
 
-unsigned char buf[PM_BUF_LEN];
 byte O3_buf[9];
 
 DHT dht(DHTPIN, DHTTYPE);
 
 SoftwareSerial PMSerial;
 
-char checkValue(unsigned char *thebuf, char leng) {
-	char receiveflag = 0;
-	int receiveSum = 0;
-
-	for (int i = 0; i < (leng - 2); i++) {
-		receiveSum = receiveSum + thebuf[i];
-	}
-	receiveSum = receiveSum + 0x42;
-
-	if (receiveSum == ((thebuf[leng - 2] << 8) + thebuf[leng - 1])) // check the serial data
-	{
-		receiveSum = 0;
-		receiveflag = 1;
-	}
-	return receiveflag;
-}
-
-int transmitPM01(unsigned char *thebuf) {
-	int PM01Val;
-	PM01Val = ((thebuf[3] << 8) + thebuf[4]); // count PM1.0 value of the air detector module
-	return PM01Val;
-}
-
-// transmit PM Value to PC
-int transmitPM2_5(unsigned char *thebuf) {
-	int PM2_5Val;
-	PM2_5Val = ((thebuf[5] << 8) + thebuf[6]); // count PM2.5 value of the air detector module
-	return PM2_5Val;
-}
-
-// transmit PM Value to PC
-int transmitPM10(unsigned char *thebuf) {
-	int PM10Val;
-	PM10Val = ((thebuf[7] << 8) + thebuf[8]); // count PM10 value of the air detector module
-	return PM10Val;
-}
-
 bool sensorsBegin() {
 	PMSerial.begin(9600, SWSERIAL_8N1, ZH03B_RX_PIN, ZH03B_TX_PIN, false, 256);
-	PMSerial.setTimeout(1000);
+	PMSerial.setTimeout(100);
 
 	pinMode(CCS811_WAK, OUTPUT);
 	digitalWrite(CCS811_WAK, LOW);
@@ -129,36 +91,77 @@ bool getCCS811_meas() {
 	return false;
 }
 
- bool getPM_meas() {
-	if (PMSerial.find(0x42)) {
-		PMSerial.readBytes(buf, PM_BUF_LEN);
+const uint16_t PmSerialDataMarker = 0x4D42;
+typedef struct {
+	uint16_t length;
+	uint16_t reserv0;
+	uint16_t reserv1;
+	uint16_t reserv2;
+	uint16_t pm1_0;
+	uint16_t pm2_5;
+	uint16_t pm10;
+	uint16_t reserv3;
+	uint16_t reserv4;
+	uint16_t reserv5;
+} __attribute__((packed)) TPmSerialData, *PTPmSerialData;
 
-		if (buf[0] == 0x4d) {
-			if (checkValue(buf, PM_BUF_LEN)) {
-				PM_1_0_meas.value += transmitPM01(buf); // count PM1.0 value of the air detector module
-				PM_1_0_meas.measNum++;
-				PM_1_0_meas.newMeasDone = true;
+uint16_t calcPM_checkSum(uint8_t *buffer, int size) {
+	uint16_t sum = 0;
 
-				PM_2_5_meas.value += transmitPM2_5(buf); // count PM2.5 value of the air detector module
-				PM_2_5_meas.measNum++;
-				PM_2_5_meas.newMeasDone = true;
+	for (int i = 0; i < size; i++) {
+		sum += *buffer++;
+	}
+	return sum;
+}
 
-				PM_10_meas.value += transmitPM10(buf); // count PM10 value of the air detector module
-				PM_10_meas.measNum++;
-				PM_10_meas.newMeasDone = true;
+bool readPM_data(PTPmSerialData pPmSerialData) {
+	uint16_t checkSum;
+	if (!PMSerial.find((uint8_t *)&PmSerialDataMarker, sizeof(PmSerialDataMarker))) {
+		return false;
+	}
 
-				return true;
-			}
+	if (PMSerial.readBytes((uint8_t *)pPmSerialData, sizeof(*pPmSerialData)) != sizeof(*pPmSerialData)) {
+		return false;
+	}
+	if (pPmSerialData->length != __builtin_bswap16(sizeof(*pPmSerialData))) {
+		return false;
+	}
+	if (PMSerial.readBytes((uint8_t *)&checkSum, sizeof(checkSum)) != sizeof(checkSum)) {
+		return false;
+	}
+	uint16_t calcSum
+		= calcPM_checkSum((uint8_t *)&PmSerialDataMarker, sizeof(PmSerialDataMarker)) + calcPM_checkSum((uint8_t *)pPmSerialData, sizeof(*pPmSerialData));
+	if (calcSum != __builtin_bswap16(checkSum)) {
+		return false;
+	}
+	return true;
+}
+
+bool getPM_meas() {
+	TPmSerialData serialData;
+	uint16_t sum;
+	if (!readPM_data(&serialData)) {
+		while (PMSerial.available() > 0) {
+			char t = PMSerial.read();
 		}
+		PM_1_0_meas.newMeasDone = false;
+		PM_2_5_meas.newMeasDone = false;
+		PM_10_meas.newMeasDone = false;
+		return false;
 	}
-	while (PMSerial.available() > 0) {
-		char t = PMSerial.read();
-	}
-	PM_1_0_meas.newMeasDone = false;
-	PM_2_5_meas.newMeasDone = false;
-	PM_10_meas.newMeasDone = false;
 
-	return false;
+	PM_1_0_meas.value += __builtin_bswap16(serialData.pm1_0); // count PM1.0 value of the air detector module
+	PM_1_0_meas.measNum++;
+	PM_1_0_meas.newMeasDone = true;
+
+	PM_2_5_meas.value += __builtin_bswap16(serialData.pm2_5); // count PM2.5 value of the air detector module
+	PM_2_5_meas.measNum++;
+	PM_2_5_meas.newMeasDone = true;
+
+	PM_10_meas.value += __builtin_bswap16(serialData.pm10); // count PM10 value of the air detector module
+	PM_10_meas.measNum++;
+	PM_10_meas.newMeasDone = true;
+	return true;
 }
 
 bool getDHT11_meas() {
@@ -181,4 +184,3 @@ bool getDHT11_meas() {
 	}
 	return true;
 }
-

@@ -131,7 +131,7 @@ void connectToWiFi_AP() {
 }
 
 void setup() {
-	//Serial.begin(115200);
+	// Serial.begin(115200);
 
 	pinMode(SENS_POW, OUTPUT);
 	digitalWrite(SENS_POW, HIGH);
@@ -139,7 +139,7 @@ void setup() {
 	currentTimeBorder.timeFirstBorder = 21;
 	currentTimeBorder.timeSecondBorder = 9;
 
-	//WiFi_handleConnection();
+	WiFi_handleConnection();
 
 	WS2812_begin();
 	if (!sensorsBegin()) {
@@ -153,11 +153,11 @@ void setup() {
 
 	// Initialize a NTPClient to get time
 	timeClient.begin();
-//	// Set offset time in seconds to adjust for your timezone, for example:
-//	// GMT +1 = 3600
-//	// GMT +8 = 28800
-//	// GMT +3 = 10800
-//	// GMT 0 = 0
+	//	// Set offset time in seconds to adjust for your timezone, for example:
+	//	// GMT +1 = 3600
+	//	// GMT +8 = 28800
+	//	// GMT +3 = 10800
+	//	// GMT 0 = 0
 	timeClient.setTimeOffset(10800);
 
 	terminal.println("*************************");
@@ -172,7 +172,7 @@ void setup() {
 	multiModeStruct.divideDotsArr[0] = temp_divideDots;
 	multiModeStruct.divideDotsArr[1] = eCO2_divideDots;
 	multiModeStruct.divideDotsArr[2] = PM2_5_divideDots;
-	
+
 	dispParam_WS2812();
 }
 
@@ -459,7 +459,7 @@ void blynkPrintLog() {
 	terminal.println();
 
 	terminal.flush();
-	
+
 	terminal.print("PM1.0: ");
 	terminal.print(PM_1_0_meas.value / PM_1_0_meas.measNum);
 	terminal.println("  ug/m3");
@@ -477,7 +477,6 @@ void blynkPrintLog() {
 	terminal.print(eCO2_meas.value / eCO2_meas.measNum);
 	terminal.println("  ppm");
 	terminal.println();
-	
 
 	terminal.print("TVOC: ");
 	terminal.print(TVOC_meas.value / TVOC_meas.measNum);
