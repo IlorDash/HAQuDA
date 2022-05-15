@@ -8,8 +8,6 @@
 
 #define CCS811_WAK 5
 
-#define PM_BUF_LEN 31 // 0x42 + 31 bytes equal to 32 bytes
-
 Adafruit_CCS811 CCS811;
 
 measStruct eCO2_meas;
