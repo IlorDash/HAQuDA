@@ -86,7 +86,7 @@
       <Label />
       <Description>Blynk Auth</Description>
       <Value>xxxxx</Value>
-      <Name>BlynAuth_uv</Name>
+      <Name>BlynkAuth_uv</Name>
       <PromoteToEnvironment>true</PromoteToEnvironment>
     </BuildVariable>
     <BuildVariable>
