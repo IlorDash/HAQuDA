@@ -9,6 +9,8 @@
 
 #define SENS_POW 23
 
+#define BUILTIN_LED 2
+
 typedef enum { snake, randomPixel, fade, christmasTree, noneEffect } dispEffects;
 
 typedef struct {

@@ -133,6 +133,9 @@ void connectToWiFi_AP() {
 void setup() {
 	// Serial.begin(115200);
 
+	pinMode(BUILTIN_LED, OUTPUT);
+	digitalWrite(BUILTIN_LED, HIGH);
+
 	pinMode(SENS_POW, OUTPUT);
 	digitalWrite(SENS_POW, HIGH);
 
@@ -146,6 +149,10 @@ void setup() {
 		WS2812_fillColor(COLOR_RED);
 		terminal.println("FATAL ERROR: Failed to begin sensors");
 		while (1) {
+			digitalWrite(BUILTIN_LED, HIGH);
+			delay(10);
+			digitalWrite(BUILTIN_LED, LOW);
+			delay(1000);
 		}
 	}
 
@@ -193,6 +200,9 @@ void loop() {
 	vTaskDelay(100);
 
 	if ((millis() - sensors_meas_time) > SENSORS_MEAS_PERIOD) {
+		digitalWrite(BUILTIN_LED, HIGH);
+		vTaskDelay(10);
+		digitalWrite(BUILTIN_LED, LOW);
 		getDHT11_meas();
 		getCCS811_meas();
 		getPM_meas();
