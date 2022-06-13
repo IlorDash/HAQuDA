@@ -24,12 +24,6 @@
         <string>sketches\Sensors.h</string>
         <string>sketches\WS2812.h</string>
         <string>sketches\Tasks.h</string>
-        <string>sketches\HAQuDA_WebServer.h</string>
-        <string>sketches\HAQuDA_UI.h</string>
-        <string>sketches\HAQuDA_DispManip.h</string>
-        <string>sketches\HAQuDA_UI_typedefs.h</string>
-        <string>sketches\HAQuDA_WiFi_handler.h</string>
-        <string>sketches\HAQuDA_FileStorage.h</string>
         <string>sketches\Main.h</string>
       </OtherFiles>
     </ProjectModeSettings>
