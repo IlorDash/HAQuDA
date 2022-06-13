@@ -249,7 +249,9 @@ dispParams checkBadParam() {
 	return noneParam;
 }
 
-void standardDispParam_WS2818() {
+void standardDispParam_WS2812() {
+	WS2812_clear();
+	
 	switch (whatParamDisp) {
 		case total: {
 			dispParams badParam = checkBadParam();
@@ -337,7 +339,7 @@ uint8_t get_nightMode_hour(uint8_t curHour) {
 	return 12;
 }
 
-void nightDispParam_WS2818() {
+void nightDispParam_WS2812() {
 	while (!timeClient.update()) {
 		timeClient.forceUpdate();
 	}
@@ -358,7 +360,8 @@ void nightDispParam_WS2818() {
 	curHour = formattedDate.substring(splitT + 1, splitColon).toInt();
 
 	uint8_t nightMode_hour = get_nightMode_hour(curHour);
-
+	WS2812_clear();
+	
 	if (whatParamDisp == temp) {
 		WS2812_showParams_night(temp_meas.value / temp_meas.measNum, temp_divideDots, nightMode_hour);
 		temp_meas.value = 0;
@@ -382,44 +385,49 @@ void nightDispParam_WS2818() {
 	}
 }
 
+void multiDispParam_WS2812() {
+	for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
+		switch (multiModeStruct.paramsArr[i]) {
+			case temp: {
+				multiModeStruct.dataArr[i] = temp_meas.value / temp_meas.measNum;
+				break;
+			}
+			case humid: {
+				multiModeStruct.dataArr[i] = humid_meas.value / humid_meas.measNum;
+				break;
+			}
+			case eCO2: {
+				multiModeStruct.dataArr[i] = eCO2_meas.value / eCO2_meas.measNum;
+				break;
+			}
+			case PM2_5: {
+				multiModeStruct.dataArr[i] = PM_2_5_meas.value / PM_2_5_meas.measNum;
+				break;
+			}
+			case TVOC: {
+				multiModeStruct.dataArr[i] = TVOC_meas.value / TVOC_meas.measNum;
+				break;
+			}
+			default:
+				break;
+		}
+	}
+	WS2812_clear();
+	WS2812_showParams_multi(multiModeStruct.dataArr, multiModeStruct.divideDotsArr);
+}
+
 void dispParam_WS2812() {
 	switch (whatModeDisp) {
 		case standard: {
-			standardDispParam_WS2818();
+			standardDispParam_WS2812();
 			break;
 		}
 		case multi: {
-			for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
-				switch (multiModeStruct.paramsArr[i]) {
-					case temp: {
-						multiModeStruct.dataArr[i] = temp_meas.value / temp_meas.measNum;
-						break;
-					}
-					case humid: {
-						multiModeStruct.dataArr[i] = humid_meas.value / humid_meas.measNum;
-						break;
-					}
-					case eCO2: {
-						multiModeStruct.dataArr[i] = eCO2_meas.value / eCO2_meas.measNum;
-						break;
-					}
-					case PM2_5: {
-						multiModeStruct.dataArr[i] = PM_2_5_meas.value / PM_2_5_meas.measNum;
-						break;
-					}
-					case TVOC: {
-						multiModeStruct.dataArr[i] = TVOC_meas.value / TVOC_meas.measNum;
-						break;
-					}
-					default:
-						break;
-				}
-			}
-			WS2812_showParams_multi(multiModeStruct.dataArr, multiModeStruct.divideDotsArr);
+			multiDispParam_WS2812();
 			break;
 		}
 		case night: {
-			nightDispParam_WS2818();
+			nightDispParam_WS2812();
 			break;
 		}
 		default:
@@ -651,6 +659,10 @@ BLYNK_WRITE(V1) {
 
 BLYNK_WRITE(V2) {
 	WS2812_setBrightnessPerCent(param.asInt());
+
+	if (whatModeDisp == night) { // fix bug when white columns are off with brightness < 22%
+		nightDispParam_WS2812();
+	}
 }
 
 BLYNK_WRITE(V3) {

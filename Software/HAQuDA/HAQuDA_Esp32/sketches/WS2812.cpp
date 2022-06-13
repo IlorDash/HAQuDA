@@ -141,9 +141,16 @@ void WS2812_showParams_night(float data, paramsDivideDots divideDots, uint8_t ti
 	getRGB(&red, &green, &blue, data, divideDots);
 	uint8_t whiteBrightness = pixels.getBrightness() * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
 	whiteBrightness = (whiteBrightness > 0) ? whiteBrightness : 1;
+
+	uint8_t measLedRowNum = LED_ROW_NUM;
+	if (((whiteBrightness * pixels.getBrightness()) >> 8) < MIN_BRIGHTNESS) { // fix bug when white columns are off with brightness < 22%
+		whiteBrightness = (MIN_BRIGHTNESS << 8) / pixels.getBrightness() + 1;
+		measLedRowNum = LED_ROW_NUM / 2;
+	}
+	
 	for (int i = 0; i < LED_COLUMN_NUM; i++) {
 		uint32_t color = (!(i % 3)) ? pixels.Color(red, green, blue) : pixels.Color(whiteBrightness, whiteBrightness, whiteBrightness);
-		uint8_t pixelNum = (!(i % 3)) ? LED_ROW_NUM : time;
+		uint8_t pixelNum = (!(i % 3)) ? measLedRowNum : time;
 		uint8_t startPixel = (!(i % 2)) ? (i * LED_ROW_NUM) : (i * LED_ROW_NUM + LED_ROW_NUM - pixelNum);
 		pixels.fill(color, startPixel, pixelNum);
 	}
