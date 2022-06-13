@@ -1,5 +1,3 @@
-
-#include "Board.h"
 #include "TimeHelper.h"
 
 uint32_t IRAM_ATTR GetDuration(uint32_t watchedTime) {
