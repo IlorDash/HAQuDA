@@ -22,26 +22,29 @@
         <string>sketches\TimeHelper.h</string>
         <string>sketches\Board.h</string>
         <string>sketches\WebPages.h</string>
-        <string>sketches\winsen_ze25o3.h</string>
         <string>sketches\Sensors.h</string>
         <string>sketches\WS2812.h</string>
         <string>sketches\Tasks.h</string>
         <string>sketches\Main.h</string>
+        <string>sketches\winsen_ze25o3.h</string>
       </OtherFiles>
     </ProjectModeSettings>
   </Project>
   <Build xsi:type="com.visualgdb.build.external.arduino">
     <BuildLogMode xsi:nil="true" />
     <AdditionalLibraryDirectories>
-      <string>..\..\..\..\..\..\Downloads\EspSoftwareSerial-6.12.6</string>
-      <string>..\..\..\..\..\..\Arduino\libraries\Adafruit_NeoPixel</string>
-      <string>..\..\..\..\..\..\Arduino\libraries</string>
-      <string>..\..\..\..\..\..\..\Downloads\NTPClient-master</string>
+      <string>Libs</string>
     </AdditionalLibraryDirectories>
     <IgnoreNormalLibraryDirectories>false</IgnoreNormalLibraryDirectories>
     <OutputSubdirectory>Output\$(PlatformName.defuse)\$(ConfigurationName.defuse)</OutputSubdirectory>
     <EnableVerboseBuild>false</EnableVerboseBuild>
-    <PreprocessorMacros />
+    <PreprocessorMacros>
+      <Common>
+        <string>BLYNK_AUTH="$(BlynkAuth_uv)"</string>
+        <string>WIFI_SSID="$(WiFi_ssid_uv)"</string>
+        <string>WIFI_PASS="$(WiFi_pass_uv)"</string>
+      </Common>
+    </PreprocessorMacros>
     <ExtraCompilerFlags>
       <string>-Og</string>
       <string>-fno-inline-functions</string>
@@ -74,7 +77,29 @@
     <Shortcuts />
     <ShowMessageAfterExecuting>true</ShowMessageAfterExecuting>
   </CustomShortcuts>
-  <UserDefinedVariables />
+  <UserDefinedVariables>
+    <BuildVariable>
+      <Label />
+      <Description>Blynk Auth</Description>
+      <Value>xxxxx</Value>
+      <Name>BlynkAuth_uv</Name>
+      <PromoteToEnvironment>true</PromoteToEnvironment>
+    </BuildVariable>
+    <BuildVariable>
+      <Label />
+      <Description>WiFi pass</Description>
+      <Value>xxxxx</Value>
+      <Name>WiFi_pass_uv</Name>
+      <PromoteToEnvironment>true</PromoteToEnvironment>
+    </BuildVariable>
+    <BuildVariable>
+      <Label />
+      <Description>WiFi ssid</Description>
+      <Value>xxxxx</Value>
+      <Name>WiFi_ssid_uv</Name>
+      <PromoteToEnvironment>true</PromoteToEnvironment>
+    </BuildVariable>
+  </UserDefinedVariables>
   <ImportedPropertySheets />
   <CodeSense>
     <Enabled>True</Enabled>
@@ -211,7 +236,7 @@
           </Configuration>
         </DebugMethod>
         <AutoDetectRTOS>true</AutoDetectRTOS>
-        <SemihostingSupport>Auto</SemihostingSupport>
+        <SemihostingSupport>Disabled</SemihostingSupport>
         <SemihostingPollingDelay>0</SemihostingPollingDelay>
         <StepIntoEntryPoint>false</StepIntoEntryPoint>
         <ReloadFirmwareOnReset>false</ReloadFirmwareOnReset>
