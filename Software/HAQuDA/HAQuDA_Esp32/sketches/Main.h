@@ -1,7 +1,5 @@
 #pragma once
 
-#define WIFI_CREDS_NUM 3
-
 #define DISP_MEAS_PERIOD 300000 //=5 min in ms
 #define SENSORS_MEAS_PERIOD 2000
 

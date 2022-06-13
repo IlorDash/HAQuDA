@@ -17,16 +17,16 @@
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 
-char BlynkAuth[] = "4MdAV357utNNjm7vmCUEY2NPAdlHQMSM";
+char *BlynkAuth = BLYNK_AUTH;
 char ssid_AP[] = "HAQuDA_ESP32";
 char pass_AP[] = "1234567!";
 
 IPAddress local_ip(192, 168, 0, 198);
-IPAddress gateway(192, 168, 0, 1);
+IPAddress gateway(192, 168, 0, 1); 
 IPAddress subnet(255, 255, 255, 0);
 
-char *ssidArr[WIFI_CREDS_NUM] = {"ENTER", "YOUR", "SSIDs"};
-char *passArr[WIFI_CREDS_NUM] = {"ENTER!", "YOUR!", "PASSWORDs"};
+char *ssid = WIFI_SSID;
+char *pass = WIFI_PASS;
 
 enum dispParams { total, eCO2, TVOC, PM2_5, temp, humid, noneParam };
 dispParams whatParamDisp = noneParam;
@@ -85,12 +85,11 @@ bool dispFirstParam = false;
 
 void WiFi_handleConnection() {
 	wl_status_t status = WiFi.status();
-	int i = 0;
 	int j = 0;
-	while (WiFiCredsFound && (status != WL_CONNECTED) && (i < WIFI_CREDS_NUM)) {
+	while (WiFiCredsFound && (status != WL_CONNECTED)) {
 		WS2812_clear();
 		delay(100);
-		connectToWiFi(ssidArr[i], passArr[i]);
+		connectToWiFi(ssid, pass);
 		status = WiFi.status();
 		if (status != WL_CONNECTED) {
 			WS2812_setPixelColor(j, COLOR_YELLOW);
@@ -102,13 +101,9 @@ void WiFi_handleConnection() {
 				status = WiFi.status();
 				delay(200);
 			}
-			delay(500);
+			delay(200);
 		}
-		i++;
 		j++;
-		if (i == WIFI_CREDS_NUM) {
-			i = 0;
-		}
 		if (j > LED_NUM_PIXELS) {
 			WS2812_clear();
 			delay(100);
@@ -118,15 +113,10 @@ void WiFi_handleConnection() {
 }
 
 void connectToWiFi_AP() {
-	int i = 0;
 	wl_status_t status = WiFi.status();
-	while (WiFiCredsFound && (status != WL_CONNECTED) && (i < WIFI_CREDS_NUM)) {
-		connectToWiFi(ssidArr[i], passArr[i]);
-		i++;
+	while (WiFiCredsFound && (status != WL_CONNECTED)) {
+		connectToWiFi(ssid, pass);
 		status = WiFi.status();
-		if (i == WIFI_CREDS_NUM) {
-			i = 0;
-		}
 	}
 }
 
@@ -160,19 +150,17 @@ void setup() {
 	terminal.println("*************************");
 	terminal.print("START LOGGING");
 
-	// pinMode(LED_BUILTIN, OUTPUT);
+	whatModeDisp = multi;
 
-	// createAP();
+	multiModeStruct.paramsArr[0] = temp;
+	multiModeStruct.paramsArr[1] = eCO2;
+	multiModeStruct.paramsArr[2] = PM2_5;
 
-	// Start web server-
+	multiModeStruct.divideDotsArr[0] = temp_divideDots;
+	multiModeStruct.divideDotsArr[1] = eCO2_divideDots;
+	multiModeStruct.divideDotsArr[2] = PM2_5_divideDots;
 
-	// Serial.print("AP IP address: ");
-	// Serial.println(ip_address);
-
-	// server.on("/", setWiFiCreds);
-	// server.onNotFound(handle_NotFound);
-	// server.begin();
-	// Serial.println("HTTP server started");
+	dispParam_WS2812();
 }
 
 uint16_t measNum = 0;
@@ -239,7 +227,9 @@ dispParams checkBadParam() {
 	return noneParam;
 }
 
-void standardDispParam_WS2818() {
+void standardDispParam_WS2812() {
+	WS2812_clear();
+	
 	switch (whatParamDisp) {
 		case total: {
 			dispParams badParam = checkBadParam();
@@ -327,7 +317,7 @@ uint8_t get_nightMode_hour(uint8_t curHour) {
 	return 12;
 }
 
-void nightDispParam_WS2818() {
+void nightDispParam_WS2812() {
 	while (!timeClient.update()) {
 		timeClient.forceUpdate();
 	}
@@ -348,6 +338,7 @@ void nightDispParam_WS2818() {
 	curHour = formattedDate.substring(splitT + 1, splitColon).toInt();
 
 	uint8_t nightMode_hour = get_nightMode_hour(curHour);
+	WS2812_clear();
 
 	if (whatParamDisp == temp) {
 		WS2812_showParams_night(temp_meas.value / temp_meas.measNum, temp_divideDots, nightMode_hour);
@@ -372,44 +363,50 @@ void nightDispParam_WS2818() {
 	}
 }
 
+void multiDispParam_WS2812() {
+	for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
+		switch (multiModeStruct.paramsArr[i]) {
+			case temp: {
+				multiModeStruct.dataArr[i] = temp_meas.value / temp_meas.measNum;
+				break;
+			}
+			case humid: {
+				multiModeStruct.dataArr[i] = humid_meas.value / humid_meas.measNum;
+				break;
+			}
+			case eCO2: {
+				multiModeStruct.dataArr[i] = eCO2_meas.value / eCO2_meas.measNum;
+				break;
+			}
+			case PM2_5: {
+				multiModeStruct.dataArr[i] = PM_2_5_meas.value / PM_2_5_meas.measNum;
+				break;
+			}
+			case TVOC: {
+				multiModeStruct.dataArr[i] = TVOC_meas.value / TVOC_meas.measNum;
+				break;
+			}
+			default:
+				break;
+		}
+	}
+	WS2812_clear();
+	WS2812_showParams_multi(multiModeStruct.dataArr, multiModeStruct.divideDotsArr);
+
+}
+
 void dispParam_WS2812() {
 	switch (whatModeDisp) {
 		case standard: {
-			standardDispParam_WS2818();
+			standardDispParam_WS2812();
 			break;
 		}
 		case multi: {
-			for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
-				switch (multiModeStruct.paramsArr[i]) {
-					case temp: {
-						multiModeStruct.dataArr[i] = temp_meas.value / temp_meas.measNum;
-						break;
-					}
-					case humid: {
-						multiModeStruct.dataArr[i] = humid_meas.value / humid_meas.measNum;
-						break;
-					}
-					case eCO2: {
-						multiModeStruct.dataArr[i] = eCO2_meas.value / eCO2_meas.measNum;
-						break;
-					}
-					case PM2_5: {
-						multiModeStruct.dataArr[i] = PM_2_5_meas.value / PM_2_5_meas.measNum;
-						break;
-					}
-					case TVOC: {
-						multiModeStruct.dataArr[i] = TVOC_meas.value / TVOC_meas.measNum;
-						break;
-					}
-					default:
-						break;
-				}
-			}
-			WS2812_showParams_multi(multiModeStruct.dataArr, multiModeStruct.divideDotsArr);
+			multiDispParam_WS2812();
 			break;
 		}
 		case night: {
-			nightDispParam_WS2818();
+			nightDispParam_WS2812();
 			break;
 		}
 		default:
@@ -651,6 +648,10 @@ BLYNK_WRITE(V1) {
 
 BLYNK_WRITE(V2) {
 	WS2812_setBrightnessPerCent(param.asInt());
+	
+	if (whatModeDisp == night) {		//fix bug when white columns are off with brightness < 22%
+		nightDispParam_WS2812();
+	}
 }
 
 BLYNK_WRITE(V3) {
