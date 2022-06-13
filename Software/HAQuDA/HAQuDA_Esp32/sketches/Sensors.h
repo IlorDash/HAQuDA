@@ -2,7 +2,6 @@
 
 #include "winsen_ze25o3.h"
 #include <Adafruit_CCS811.h>
-#include <Adafruit_SSD1306.h>
 #include <DHT.h>
 
 typedef struct {
