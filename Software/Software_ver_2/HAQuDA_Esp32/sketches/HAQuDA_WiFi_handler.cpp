@@ -7,30 +7,32 @@ HAQuDA_WiFi_handler::HAQuDA_WiFi_handler(HAQuDA_UI *currUI_WiFi, HAQuDA_FileStor
 	AP_gateway = new IPAddress(192, 168, 4, 9);
 	AP_subnet = new IPAddress(255, 255, 255, 0);
 
-	this->myUI_WiFi = currUI_WiFi;
+	this->myUI_ptr = currUI_WiFi;
 	this->myFS_WiFi = currFS_WiFi;
 }
 
-HAQuDA_WiFi_handler::~HAQuDA_WiFi_handler() {
-}
-
-bool HAQuDA_WiFi_handler::checkStoredWiFiCreds() {
-	
+void HAQuDA_WiFi_handler::WiFi_connect() {
+	if (checkStoredWiFiCreds()) {
+		if (!tryConnectToWiFi()) {
+		}
+	} else {
+		createAP();
+	}
 }
 
 void HAQuDA_WiFi_handler::WiFi_handleConnection() {
+
 	if (WiFiConnected) {
 		return;
 	}
 
-	myUI_WiFi->currUI_Params.dispMode = effect;
-	myUI_WiFi->currUI_Params.effectParams.snakeColor = COLOR_AQUA;
-	myUI_WiFi->currUI_Params.effectParams.snakeSpeed = 200; // start up connection effect
-	myUI_WiFi->currUI_Params.dispEffect = snake;
+	myUI_ptr->currUI_Params.dispMode = effect;
+	myUI_ptr->currUI_Params.effectParams.snakeColor = COLOR_AQUA;
+	myUI_ptr->currUI_Params.effectParams.snakeSpeed = 200; // start up connection effect
+	myUI_ptr->currUI_Params.dispEffect = snake;
 
 	wl_status_t status = WiFi.status();
-	int i = 0;
-	while (WiFiCredsFound && (status != WL_CONNECTED) && (i < MAX_WIFI_CREDS_NUM)) {
+	while (WiFiCredsFound && (status != WL_CONNECTED)) {
 		// connectToWiFi(ssidArr[i], passArr[i]);
 		status = WiFi.status();
 		if (status != WL_CONNECTED) {
@@ -41,10 +43,13 @@ void HAQuDA_WiFi_handler::WiFi_handleConnection() {
 				status = WiFi.status();
 				delay(200);
 			}
-			delay(500);
+			delay(100);
 		}
-		i++;
 	}
+}
+
+bool HAQuDA_WiFi_handler::checkStoredWiFiCreds() {
+	return false;
 }
 
 void HAQuDA_WiFi_handler::createAP() {
@@ -53,12 +58,28 @@ void HAQuDA_WiFi_handler::createAP() {
 	delay(2000);
 	WiFi.softAPConfig(*AP_ip, *AP_gateway, *AP_subnet);
 	delay(100);
+
+	HAQuDA_WebServer::beginWebServer();
+}
+
+bool HAQuDA_WiFi_handler::tryConnectToWiFi() {
+	bool connect_result = false;
+	// while ((FS != end) && (!connect_result)) {
+	char *ssid, *pass;
+		//ssid, pass = FS.read
+	int i = 0;
+	while ((i < reconnectAttempts) && !connect_result) {
+		connect_result = connectToWiFi(ssid, pass);
+		i++;
+	}
+	//}
+	return connect_result;
 }
 
 bool HAQuDA_WiFi_handler::connectToWiFi(char *ssidLocal, char *passLocal) {
 	WiFi.mode(WIFI_STA);
 	WiFi.begin(ssidLocal, passLocal, 0, 0);
-
+	
 	WiFi.onEvent(WiFiStationConnected, SYSTEM_EVENT_STA_CONNECTED);
 	WiFi.onEvent(WiFiStationDisconnected, SYSTEM_EVENT_STA_DISCONNECTED);
 	return (WiFi.status() == WL_CONNECTED);
@@ -75,4 +96,8 @@ void HAQuDA_WiFi_handler::WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_
 
 void HAQuDA_WiFi_handler::WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info) {
 	WiFiConnected = false;
+}
+
+
+HAQuDA_WiFi_handler::~HAQuDA_WiFi_handler() {
 }
