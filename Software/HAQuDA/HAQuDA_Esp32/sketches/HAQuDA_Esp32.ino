@@ -85,9 +85,8 @@ bool dispFirstParam = false;
 
 void WiFi_handleConnection() {
 	wl_status_t status = WiFi.status();
-	int i = 0;
 	int j = 0;
-	while (WiFiCredsFound && (status != WL_CONNECTED) && (i < WIFI_CREDS_NUM)) {
+	while (WiFiCredsFound && (status != WL_CONNECTED)) {
 		WS2812_clear();
 		delay(100);
 		connectToWiFi(ssid, pass);
@@ -104,11 +103,7 @@ void WiFi_handleConnection() {
 			}
 			delay(500);
 		}
-		i++;
 		j++;
-		if (i == WIFI_CREDS_NUM) {
-			i = 0;
-		}
 		if (j > LED_NUM_PIXELS) {
 			WS2812_clear();
 			delay(100);
@@ -118,15 +113,10 @@ void WiFi_handleConnection() {
 }
 
 void connectToWiFi_AP() {
-	int i = 0;
 	wl_status_t status = WiFi.status();
-	while (WiFiCredsFound && (status != WL_CONNECTED) && (i < WIFI_CREDS_NUM)) {
+	while (WiFiCredsFound && (status != WL_CONNECTED)) {
 		connectToWiFi(ssid, pass);
-		i++;
 		status = WiFi.status();
-		if (i == WIFI_CREDS_NUM) {
-			i = 0;
-		}
 	}
 }
 
