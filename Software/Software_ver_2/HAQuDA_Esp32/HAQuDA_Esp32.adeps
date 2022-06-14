@@ -12,6 +12,22 @@
     <Dependency>
       <Type>Library</Type>
       <Key>
+        <Packager>Me-No-Dev</Packager>
+        <Name>ESP Async WebServer</Name>
+        <Version>1.2.3</Version>
+      </Key>
+    </Dependency>
+    <Dependency>
+      <Type>Library</Type>
+      <Key>
+        <Packager>Me-No-Dev</Packager>
+        <Name>AsyncTCP</Name>
+        <Version>1.1.1</Version>
+      </Key>
+    </Dependency>
+    <Dependency>
+      <Type>Library</Type>
+      <Key>
         <Packager>Dirk Kaar, Peter Lerup</Packager>
         <Name>EspSoftwareSerial</Name>
         <Version>6.12.6</Version>
