@@ -16,7 +16,7 @@
 #define DISP_MEAS_PERIOD 300000 //=5 min in ms
 #define SENSORS_MEAS_PERIOD 2000
 
-char BlynkAuth[] = "4MdAV357utNNjm7vmCUEY2NPAdlHQMSM";
+char BlynkAuth[] = BLYNK_AUTH;
 
 WidgetTerminal *terminal;
 HAQuDA_UI *myUI;
