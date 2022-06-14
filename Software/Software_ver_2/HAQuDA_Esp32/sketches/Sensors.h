@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Adafruit_CCS811.h>
-#include <Adafruit_SSD1306.h>
 #include <DHT.h>
 #include <SoftwareSerial.h>
 
