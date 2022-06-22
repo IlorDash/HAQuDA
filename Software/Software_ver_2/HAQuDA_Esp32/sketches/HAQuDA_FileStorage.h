@@ -21,6 +21,10 @@
 #define FILE_NAME_BOUNDS "/bounds"
 #define FILE_NAME_WIFI_NET "/WiFiNetworks"
 
+#define WEB_SERVER_INDEX_PAGE "/index.html"
+#define WEB_SERVER_STYLE "/style.css"
+#define WEB_SERVER_WIFI_MANAGER_PAGE "/wifi_manager.html"
+
 #define MAX_WIFI_CREDS_NUM 10
 
 const int checkPeriod = 10;
@@ -50,18 +54,23 @@ typedef enum { too_many_WiFi, error_reading_stored_WiFi_creds, error_saving_new_
 
 class HAQuDA_FileStorage {
   private:
+	bool SPIFFS_status;
+
   public:
 	typedef std::function<void(String, int)> TListDirFunction;
 	bool write(File &file, String &s);
+	
 	HAQuDA_FileStorage();
 	~HAQuDA_FileStorage();
+
+	bool getStatus();
 	bool Start(void);
 	void Stop(void);
 	void ListDir(const char *dirname, uint8_t levels, TListDirFunction fn);
 	bool DeleteFile(const char *path);
 	bool Format();
 	bool WriteFile(const char *path, const uint8_t *data = NULL, size_t len = 0);
-	bool AppendFile(const char *path, const uint8_t *data, size_t len);
+	static bool AppendFile(const char *path, const uint8_t *data, size_t len);
 	bool Exists(const String &path);
 	bool Exists(const char *path);
 	File FileOpen(const String &path, const char *mode);

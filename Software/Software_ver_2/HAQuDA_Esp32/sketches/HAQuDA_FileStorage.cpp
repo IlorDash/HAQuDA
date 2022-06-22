@@ -3,14 +3,22 @@
 HAQuDA_FileStorage::HAQuDA_FileStorage() {
 }
 
-HAQuDA_FileStorage::~HAQuDA_FileStorage() {
-}
-
 bool HAQuDA_FileStorage::Start(void) {
-	return SPIFFS.begin();
+	SPIFFS_status = SPIFFS.begin(false);
+	if (!SPIFFS_status) {
+		while (true) {
+		}
+		log_i("An error has occurred while mounting SPIFFS");
+	}
+	log_i("SPIFFS mounted successfully");
+	return SPIFFS_status;
 }
 
-void HAQuDA_FileStorage::Stop(void) {
+bool HAQuDA_FileStorage::getStatus() {
+	return SPIFFS_status;
+}
+
+void HAQuDA_FileStorage::Stop() {
 	SPIFFS.end();
 }
 
@@ -171,4 +179,7 @@ saveNewWiFiCredsReturnMsgs HAQuDA_FileStorage::SaveNewWiFiCreds(TWiFiCreds newWi
 		f.close();
 	}
 	return saved_new_WiFi_creds;
+}
+
+HAQuDA_FileStorage::~HAQuDA_FileStorage() {
 }
