@@ -1,6 +1,6 @@
 #include "HAQuDA_UI.h"
 
-HAQuDA_UI::HAQuDA_UI(HAQuDA_DispManip *currDispManip) {
+HAQuDA_UI::HAQuDA_UI(HAQuDA_DispManip &currDispManip) {
 	this->myDispManip = currDispManip;
 
 	currUI_Params.dispMode = multi;
@@ -71,7 +71,7 @@ void HAQuDA_UI::ext_changeDispMode(int newDispMode) {
 	if (modeChanged) {
 		WS2812_clear();
 		delay(100);
-		myDispManip->displayData(currUI_Params);
+		myDispManip.displayData(currUI_Params);
 	}
 }
 
@@ -114,7 +114,7 @@ void HAQuDA_UI::ext_changeDispParam(int newDispParam) {
 	if (paramChanged) {
 		WS2812_clear();
 		delay(100);
-		myDispManip->displayData(currUI_Params);
+		myDispManip.displayData(currUI_Params);
 	}
 }
 
@@ -147,6 +147,6 @@ void HAQuDA_UI::ext_changeDispEffect(int newDispEffect) {
 	if (effectChanged) {
 		WS2812_clear();
 		delay(100);
-		myDispManip->displayData(currUI_Params);
+		myDispManip.displayData(currUI_Params);
 	}
 }

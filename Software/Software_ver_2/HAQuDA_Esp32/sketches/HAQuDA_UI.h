@@ -13,11 +13,11 @@
 
 class HAQuDA_UI {
   private:
-	HAQuDA_DispManip *myDispManip;
+	HAQuDA_DispManip myDispManip;
 
   public:
 	UI_Params currUI_Params;
-	HAQuDA_UI(HAQuDA_DispManip *currDispManip);
+	HAQuDA_UI(HAQuDA_DispManip &currDispManip);
 	void ext_setStaticColor(int red, int green, int blue);
 	void ext_setBrightness(uint8_t newBrightnessPerCent);
 	void ext_changeDispMode(int newDispMode);
