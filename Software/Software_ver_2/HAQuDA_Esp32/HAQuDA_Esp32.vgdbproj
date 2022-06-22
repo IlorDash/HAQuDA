@@ -45,6 +45,8 @@
     <PreprocessorMacros>
       <Common>
         <string>BLYNK_AUTH="$(BlynkAuth_uv)"</string>
+        <string> AP_SSID="$(AP_ssid_uv)"</string>
+        <string> AP_PASS="$(AP_pass_uv)"</string>
       </Common>
     </PreprocessorMacros>
     <ExtraCompilerFlags>
@@ -75,6 +77,67 @@
       <BackgroundMode xsi:nil="true" />
     </CustomBreakCommand>
   </CustomDebug>
+  <DeviceTerminalSettings>
+    <Connection xsi:type="com.sysprogs.terminal.connection.serial">
+      <ComPortName>COM8</ComPortName>
+      <AdvancedSettings>
+        <BaudRate>115200</BaudRate>
+        <DataBits>8</DataBits>
+        <Parity>None</Parity>
+        <StopBits>One</StopBits>
+        <FlowControl>None</FlowControl>
+      </AdvancedSettings>
+    </Connection>
+    <LastConnectionTime>0</LastConnectionTime>
+    <EchoTypedCharacters>false</EchoTypedCharacters>
+    <ClearContentsWhenReconnecting>false</ClearContentsWhenReconnecting>
+    <ReconnectAutomatically>false</ReconnectAutomatically>
+    <DisplayMode>ASCII</DisplayMode>
+    <Colors>
+      <Background>
+        <Alpha>255</Alpha>
+        <Red>0</Red>
+        <Green>0</Green>
+        <Blue>0</Blue>
+      </Background>
+      <Disconnected>
+        <Alpha>255</Alpha>
+        <Red>169</Red>
+        <Green>169</Green>
+        <Blue>169</Blue>
+      </Disconnected>
+      <Text>
+        <Alpha>255</Alpha>
+        <Red>211</Red>
+        <Green>211</Green>
+        <Blue>211</Blue>
+      </Text>
+      <Echo>
+        <Alpha>255</Alpha>
+        <Red>144</Red>
+        <Green>238</Green>
+        <Blue>144</Blue>
+      </Echo>
+      <Inactive>
+        <Alpha>255</Alpha>
+        <Red>169</Red>
+        <Green>169</Green>
+        <Blue>169</Blue>
+      </Inactive>
+    </Colors>
+    <HexSettings>
+      <MaximumBytesPerLine>16</MaximumBytesPerLine>
+      <ShowTextView>true</ShowTextView>
+      <BreaksAroundEcho>true</BreaksAroundEcho>
+      <AutoSend>true</AutoSend>
+      <SendAsHex>true</SendAsHex>
+      <TimeoutForAutoBreak>0</TimeoutForAutoBreak>
+    </HexSettings>
+    <LineEnding>LF</LineEnding>
+    <TreatLFAsCRLF>false</TreatLFAsCRLF>
+    <KeepOpenAfterExit>true</KeepOpenAfterExit>
+    <ShowAfterProgramming>true</ShowAfterProgramming>
+  </DeviceTerminalSettings>
   <CustomShortcuts>
     <Shortcuts />
     <ShowMessageAfterExecuting>true</ShowMessageAfterExecuting>
@@ -85,6 +148,20 @@
       <Description />
       <Value>xxxxx</Value>
       <Name>BlynkAuth_uv</Name>
+      <PromoteToEnvironment>false</PromoteToEnvironment>
+    </BuildVariable>
+    <BuildVariable>
+      <Label />
+      <Description />
+      <Value>xxxxx</Value>
+      <Name>AP_ssid_uv</Name>
+      <PromoteToEnvironment>false</PromoteToEnvironment>
+    </BuildVariable>
+    <BuildVariable>
+      <Label />
+      <Description />
+      <Value>xxxxx</Value>
+      <Name>AP_pass_uv</Name>
       <PromoteToEnvironment>false</PromoteToEnvironment>
     </BuildVariable>
   </UserDefinedVariables>
@@ -217,7 +294,7 @@
             <CheckFLASHSize>true</CheckFLASHSize>
             <FLASHSettings>
               <Size>size4MB</Size>
-              <Frequency>freq80M</Frequency>
+              <Frequency>freq40M</Frequency>
               <Mode>DIO</Mode>
             </FLASHSettings>
             <PatchBootloader>true</PatchBootloader>
@@ -240,7 +317,7 @@
       </DebugSettingsOverride>
       <BuildSettingsExtension xsi:type="com.visualgdb.build.external.arduino.extension">
         <BoardID>esp32:esp32:esp32</BoardID>
-        <COMPort>COM3</COMPort>
+        <COMPort>COM8</COMPort>
         <Properties>
           <Entries>
             <KeyValue>
@@ -257,11 +334,11 @@
             </KeyValue>
             <KeyValue>
               <Key>FlashMode</Key>
-              <Value>dio</Value>
+              <Value>qio</Value>
             </KeyValue>
             <KeyValue>
               <Key>FlashFreq</Key>
-              <Value>40</Value>
+              <Value>80</Value>
             </KeyValue>
             <KeyValue>
               <Key>FlashSize</Key>

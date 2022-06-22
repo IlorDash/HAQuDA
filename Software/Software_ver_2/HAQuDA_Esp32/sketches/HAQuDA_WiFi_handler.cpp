@@ -2,15 +2,6 @@
 
 bool HAQuDA_WiFi_handler::WiFiConnected = false;
 
-HAQuDA_WiFi_handler::HAQuDA_WiFi_handler(HAQuDA_UI *currUI_WiFi, HAQuDA_FileStorage *currFS_WiFi) {
-	AP_ip = new IPAddress(192, 168, 4, 22);
-	AP_gateway = new IPAddress(192, 168, 4, 9);
-	AP_subnet = new IPAddress(255, 255, 255, 0);
-
-	this->myUI_ptr = currUI_WiFi;
-	this->myFS_WiFi = currFS_WiFi;
-}
-
 void HAQuDA_WiFi_handler::WiFi_connect() {
 	if (checkStoredWiFiCreds()) {
 		if (!tryConnectToWiFi()) {
@@ -18,6 +9,7 @@ void HAQuDA_WiFi_handler::WiFi_connect() {
 	} else {
 		createAP();
 	}
+	HAQuDA_WebServer::beginWebServer();
 }
 
 void HAQuDA_WiFi_handler::WiFi_handleConnection() {
@@ -26,10 +18,10 @@ void HAQuDA_WiFi_handler::WiFi_handleConnection() {
 		return;
 	}
 
-	myUI_ptr->currUI_Params.dispMode = effect;
-	myUI_ptr->currUI_Params.effectParams.snakeColor = COLOR_AQUA;
-	myUI_ptr->currUI_Params.effectParams.snakeSpeed = 200; // start up connection effect
-	myUI_ptr->currUI_Params.dispEffect = snake;
+	_myUI.currUI_Params.dispMode = effect;
+	_myUI.currUI_Params.effectParams.snakeColor = COLOR_AQUA;
+	_myUI.currUI_Params.effectParams.snakeSpeed = 200; // start up connection effect
+	_myUI.currUI_Params.dispEffect = snake;
 
 	wl_status_t status = WiFi.status();
 	while (WiFiCredsFound && (status != WL_CONNECTED)) {
@@ -56,10 +48,8 @@ void HAQuDA_WiFi_handler::createAP() {
 	WiFi.mode(WIFI_AP);
 	WiFi.softAP(AP_ssid, AP_pass);
 	delay(2000);
-	WiFi.softAPConfig(*AP_ip, *AP_gateway, *AP_subnet);
+	WiFi.softAPConfig(AP_ip, AP_gateway, AP_subnet);
 	delay(100);
-
-	HAQuDA_WebServer::beginWebServer();
 }
 
 bool HAQuDA_WiFi_handler::tryConnectToWiFi() {

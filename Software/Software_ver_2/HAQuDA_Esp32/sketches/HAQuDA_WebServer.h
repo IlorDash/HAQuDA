@@ -6,25 +6,28 @@
 #include "HAQuDA_FileStorage.h"
 
 #define WIFI_CREDS_PARAMS_NUM 4
+#define SSID_PARAM_NAME "ssid"
+#define PASS_PARAM_NAME "pass"
+#define STATIC_IP_ARG "static_ip"
+#define GATEWAY_ARG "gateway"
+
+
 
 class HAQuDA_WebServer {
   private:
   protected:
-	HAQuDA_FileStorage *myFS_WiFi;
+	HAQuDA_FileStorage _myFS;
 	bool WiFiCredsFound = false;
-
+	bool newWiFiCredsFound = false;
 	AsyncWebServer server = AsyncWebServer(80);
 
 	void beginWebServer();
 
-	HAQuDA_WebServer();
+	HAQuDA_WebServer(HAQuDA_FileStorage &curr_FS) : _myFS(curr_FS){};
 	~HAQuDA_WebServer();
 
-	bool foundNameInParamsArrOrder(String name);
-	bool checkCorrectParams(AsyncWebServerRequest *request);
-	int getParamVal(AsyncWebServerRequest *request, String param);
-
-	void WebServer_init();
-	void handle_NewWiFiCreds(AsyncWebServerRequest *request);
-	void handle_NotFound(AsyncWebServerRequest *request);
+	void WebServerResponds_init();
+	static void handle_NewWiFiCreds(AsyncWebServerRequest *request);
+	static void handle_NotFound(AsyncWebServerRequest *request);
+	void loop();
 };
