@@ -1,24 +1,19 @@
 #include "HAQuDA_DispManip.h"
 
-HAQuDA_DispManip::HAQuDA_DispManip() {
-}
-
 HAQuDA_DispManip::~HAQuDA_DispManip() {
-	delete timeClient;
+	//delete timeClient;
 }
 
 void HAQuDA_DispManip::startNTP() {
 
-	timeClient = new NTPClient(ntpUDP);
-
 	// Initialize a NTPClient to get time
-	timeClient->begin();
+	timeClient.begin();
 	// Set offset time in seconds to adjust for your timezone, for example:
 	// GMT +1 = 3600
 	// GMT +8 = 28800
 	// GMT +3 = 10800
 	// GMT 0 = 0
-	timeClient->setTimeOffset(10800);
+	timeClient.setTimeOffset(10800);
 }
 
 dispParams_enum HAQuDA_DispManip::checkBadParam(UI_Params currUI_Params) {
@@ -169,8 +164,8 @@ uint8_t HAQuDA_DispManip::get_nightMode_hour(uint8_t curHour, UI_Params currUI_P
 }
 
 void HAQuDA_DispManip::nightMode(UI_Params currUI_Params) {
-	while (!timeClient->update()) {
-		timeClient->forceUpdate();
+	while (!timeClient.update()) {
+		timeClient.forceUpdate();
 	}
 	// The formattedDate comes with the following format:
 	// 2018-05-28T16:00:13Z
@@ -179,7 +174,7 @@ void HAQuDA_DispManip::nightMode(UI_Params currUI_Params) {
 	String formattedDate;
 	uint8_t curHour;
 
-	formattedDate = timeClient->getFormattedDate();
+	formattedDate = timeClient.getFormattedDate();
 	Serial.println(formattedDate);
 
 	// Extract date

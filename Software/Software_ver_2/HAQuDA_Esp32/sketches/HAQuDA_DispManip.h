@@ -12,7 +12,7 @@ class HAQuDA_DispManip {
   private:
 	// Define NTP Client to get time
 	WiFiUDP ntpUDP;
-	NTPClient *timeClient;
+	NTPClient timeClient;
 
 	dispParams_enum checkBadParam(UI_Params currUI_Params);
 	uint8_t get_nightMode_hour(uint8_t curHour, UI_Params currUI_Params);
@@ -21,7 +21,7 @@ class HAQuDA_DispManip {
 	void nightMode(UI_Params currUI_Params);
 
   public:
-	HAQuDA_DispManip();
+	HAQuDA_DispManip() : timeClient(ntpUDP){};
 	void startNTP();
 	void displayData(UI_Params currUI_Params);
 	~HAQuDA_DispManip();
