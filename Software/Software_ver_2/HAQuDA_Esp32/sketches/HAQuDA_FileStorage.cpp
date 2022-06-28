@@ -4,43 +4,39 @@ HAQuDA_FileStorage::HAQuDA_FileStorage() {
 }
 
 bool HAQuDA_FileStorage::Start(void) {
-	SPIFFS_status = SPIFFS.begin(false);
-	if (!SPIFFS_status) {
-		while (true) {
-		}
-		log_i("An error has occurred while mounting SPIFFS");
-	}
-	log_i("SPIFFS mounted successfully");
-	return SPIFFS_status;
-}
-
-bool HAQuDA_FileStorage::getStatus() {
-	return SPIFFS_status;
+	return SPIFFS.begin(true);
 }
 
 void HAQuDA_FileStorage::Stop() {
 	SPIFFS.end();
 }
 
-void HAQuDA_FileStorage::ListDir(const char *dirname, uint8_t levels, HAQuDA_FileStorage::TListDirFunction fn) {
+void HAQuDA_FileStorage::ListDir(const char *dirname, uint8_t levels) {
+	Serial.printf("Listing directory: %s\r\n", dirname);
+
 	File root = SPIFFS.open(dirname, FILE_READ);
 	if (!root) {
+		Serial.println("- failed to open directory");
 		return;
 	}
 	if (!root.isDirectory()) {
+		Serial.println(" - not a directory");
 		return;
 	}
 
 	File file = root.openNextFile();
 	while (file) {
 		if (file.isDirectory()) {
+			Serial.print("  DIR : ");
+			Serial.println(file.name());
 			if (levels) {
-				ListDir(file.name(), levels - 1, fn);
+				ListDir(file.name(), levels - 1);
 			}
 		} else {
-		}
-		if (fn) {
-			fn(file.name(), file.size());
+			Serial.print("  FILE: ");
+			Serial.print(file.name());
+			Serial.print("\tSIZE: ");
+			Serial.println(file.size());
 		}
 		file = root.openNextFile();
 	}
@@ -121,6 +117,22 @@ bool HAQuDA_FileStorage::ReadFile(const char *path, uint8_t *data, size_t len) {
 	return res;
 }
 
+void HAQuDA_FileStorage::ReadFileInSerial(const char *path) {
+	Serial.printf("Reading file: %s\r\n", path);
+
+	File file = SPIFFS.open(path, FILE_READ);
+	if (!file || file.isDirectory()) {
+		Serial.println("- failed to open file for reading");
+		return;
+	}
+
+	Serial.println("- read from file:");
+	while (file.available()) {
+		Serial.write(file.read());
+	}
+	file.close();
+}
+
 bool HAQuDA_FileStorage::write(File &file, String &s) {
 	return file.write((uint8_t *)s.c_str(), s.length()) == s.length();
 }
@@ -171,15 +183,56 @@ saveNewWiFiCredsReturnMsgs HAQuDA_FileStorage::SaveNewWiFiCreds(TWiFiCreds newWi
 		}
 		if (newWiFiCredsExists) {
 			f.seek(index * sizeof(TWiFiCreds));
-			//Serial.println("Rewriting WiFi " + String(newWiFiCreds.ssid) + " found at " + String(index));
-		}
-		if (f.write((uint8_t *)&newWiFiCreds, sizeof(TWiFiCreds)) != sizeof(TWiFiCreds)) {
+			if (f.write((uint8_t *)&newWiFiCreds, sizeof(TWiFiCreds)) != sizeof(TWiFiCreds)) {
+				f.close();
+				return error_saving_new_WiFi_creds;
+			}
+			f.close();
+			return re_writed_WiFi_creds;
+		} else if (f.write((uint8_t *)&newWiFiCreds, sizeof(TWiFiCreds)) != sizeof(TWiFiCreds)) {
+			f.close();
 			return error_saving_new_WiFi_creds;
 		}
-		f.close();
 	}
+	f.close();
 	return saved_new_WiFi_creds;
 }
 
+bool HAQuDA_FileStorage::storedWiFiCredsExists() {
+	File f = SPIFFS.open(FILE_NAME_WIFI_NET, FILE_APPEND);
+	int fSize = f.size();
+	f.close();
+	return (fSize / sizeof(TWiFiCreds)) > 0;
+}
+
+TWiFiCreds HAQuDA_FileStorage::getstoredWiFiCreds(int num) {
+	TWiFiCreds WiFiCreds;
+
+	File f = SPIFFS.open(FILE_NAME_WIFI_NET, FILE_READ);
+	int fSize = f.size();
+	int count = fSize / sizeof(TWiFiCreds);
+	if (num > count) {
+		f.close();
+		return WiFiCreds;
+	}
+	f.seek(num * sizeof(TWiFiCreds));
+	if (f.read((uint8_t *)&WiFiCreds, sizeof(TWiFiCreds)) != sizeof(TWiFiCreds)) {
+		TWiFiCreds WiFiCredsError;
+		f.close();
+		return WiFiCredsError;
+	}
+	f.close();
+	return WiFiCreds;
+
+}
+
+int HAQuDA_FileStorage::getstoredWiFiCredsNum() {
+	File f = SPIFFS.open(FILE_NAME_WIFI_NET, FILE_READ);
+	int fSize = f.size();
+	return fSize / sizeof(TWiFiCreds);
+	f.close();
+}
+
 HAQuDA_FileStorage::~HAQuDA_FileStorage() {
+	SPIFFS.end();
 }
