@@ -23,7 +23,7 @@ class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
 	bool tryConnectToWiFi();
 	bool checkStoredWiFiCreds();
 	void createAP();
-	bool connectToWiFi(char *ssidLocal, char *passLocal);
+	bool connectToWiFi(const char *ssidLocal, const char *passLocal);
   public:
 	HAQuDA_WiFi_handler(HAQuDA_UI &currUI, HAQuDA_FileStorage &currFS) : _myUI(currUI), HAQuDA_WebServer(currFS){};
 	~HAQuDA_WiFi_handler();
