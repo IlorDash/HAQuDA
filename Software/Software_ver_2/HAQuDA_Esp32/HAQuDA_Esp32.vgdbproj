@@ -350,7 +350,7 @@
             </KeyValue>
             <KeyValue>
               <Key>DebugLevel</Key>
-              <Value>none</Value>
+              <Value>info</Value>
             </KeyValue>
           </Entries>
         </Properties>
