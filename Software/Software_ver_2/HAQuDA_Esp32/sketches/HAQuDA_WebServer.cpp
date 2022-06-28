@@ -31,19 +31,53 @@ void HAQuDA_WebServer::handle_NewWiFiCreds(AsyncWebServerRequest *request) {
 		request->send(200, "text/html", response_error);
 		return;
 	}
-	
-	log_i("Saving WiFi net with SSID = %s\r\n", ssidNew.c_str());
 
-	if (HAQuDA_FileStorage::AppendFile(FILE_NAME_WIFI_NET, (uint8_t *)(&newWiFiCreds), sizeof(newWiFiCreds))) {
-		String response_success = "<h1>Success</h1>";
-		response_success += "<h2>Device will restart in 3 seconds</h2>";
-		request->send(200, "text/html", response_success);
-		delay(3000);
-		ESP.restart();
-	} else {
-		String response_error = "<h1>Error writing new WiFi creds in file system</h1>";
-		response_error += "<h2><a href='/'>Go back</a>to try again";
-		request->send(200, "text/html", response_error);
+	log_i("Saving WiFi net with SSID = %s\r\n", newWiFiCreds.ssid.c_str());
+
+	saveNewWiFiCredsReturnMsgs saveNewWiFiCredsMsg = HAQuDA_FileStorage::SaveNewWiFiCreds(newWiFiCreds);
+
+	switch (saveNewWiFiCredsMsg) {
+		case too_many_WiFi: {
+			String response_error = "<h1>Error writing new WiFi creds in file system</h1>";
+			response_error += "<h2>Too many WiFi credentials</h2>";
+			response_error += "<h2><a href='/'>Go back</a>to try again";
+			request->send(200, "text/html", response_error);
+			break;
+		}
+		case error_reading_stored_WiFi_creds: {
+			String response_error = "<h1>Error writing new WiFi creds in file system</h1>";
+			response_error += "<h2>Error reading stored WiFi credentials</h2>";
+			response_error += "<h2><a href='/'>Go back</a>to try again";
+			request->send(200, "text/html", response_error);
+			break;
+		}
+		case error_saving_new_WiFi_creds: {
+			String response_error = "<h1>Error writing new WiFi creds in file system</h1>";
+			response_error += "<h2>Error saving stored WiFi credentials</h2>";
+			response_error += "<h2><a href='/'>Go back</a>to try again";
+			request->send(200, "text/html", response_error);
+			break;
+		}
+		case re_writed_WiFi_creds: {
+			String response_success = "<h1>Success</h1>";
+			response_success += "<h2>Re-writed WiFi credentials</h2>";
+			response_success += "<h2>Device will restart in 3 seconds</h2>";
+			request->send(200, "text/html", response_success);
+			delay(3000);
+			ESP.restart();
+			break;
+		}
+		case saved_new_WiFi_creds: {
+			String response_success = "<h1>Success</h1>";
+			response_success += "<h2>Saved new WiFi credentials</h2>";
+			response_success += "<h2>Device will restart in 3 seconds</h2>";
+			request->send(200, "text/html", response_success);
+			delay(3000);
+			ESP.restart();
+			break;
+		}
+		default:
+			break;
 	}
 }
 
