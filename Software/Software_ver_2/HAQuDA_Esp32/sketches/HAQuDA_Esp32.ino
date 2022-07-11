@@ -39,10 +39,10 @@ void setup() {
 		return;
 	}
 	log_i("SPIFFS mounted successfully");
-	myFS.ListDir("/", 0);
-	myFS.ReadFileInSerial(FILE_NAME_WIFI_NET);
+	//myFS.ListDir("/", 0);
+	//myFS.ReadFileInSerial(FILE_NAME_WIFI_NET);
 
-	//myWiFi_handler.WiFi_connect();
+	myWiFi_handler.WiFi_connect();
 
 	/*WS2812_begin();
 	if (!sensorsBegin()) {

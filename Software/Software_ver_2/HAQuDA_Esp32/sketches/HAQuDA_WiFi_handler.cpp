@@ -3,7 +3,7 @@
 bool HAQuDA_WiFi_handler::WiFiConnected = false;
 
 void HAQuDA_WiFi_handler::WiFi_connect() {
-	if (checkStoredWiFiCreds()) {
+	if (_myFS.storedWiFiCredsExists()) {
 		if (!tryConnectToWiFi()) {
 		}
 	} else {
@@ -53,26 +53,34 @@ void HAQuDA_WiFi_handler::createAP() {
 }
 
 bool HAQuDA_WiFi_handler::tryConnectToWiFi() {
-	bool connect_result = false;
-	// while ((FS != end) && (!connect_result)) {
-	char *ssid, *pass;
-		//ssid, pass = FS.read
-	int i = 0;
-	while ((i < reconnectAttempts) && !connect_result) {
-		connect_result = connectToWiFi(ssid, pass);
-		i++;
+	bool connected = false;
+	int WiFiCredsNum = _myFS.getstoredWiFiCredsNum();
+	TWiFiCreds WiFiCreds;
+	for (int i = 0; i < WiFiCredsNum; i++) {
+		_myFS.getstoredWiFiCreds(i);
+		if (!strlen(WiFiCreds.ssid)) {
+			continue;
+		}
+		int j = 0;
+		while ((j < reconnectAttempts) && !connected) {
+			connected = connectToWiFi(WiFiCreds.ssid, WiFiCreds.password);
+			j++;
+		}
+		if (connected) {
+			return connected;
+		}
 	}
-	//}
-	return connect_result;
+	return connected;
 }
 
-bool HAQuDA_WiFi_handler::connectToWiFi(char *ssidLocal, char *passLocal) {
-	WiFi.mode(WIFI_STA);
-	WiFi.begin(ssidLocal, passLocal, 0, 0);
-	
-	WiFi.onEvent(WiFiStationConnected, SYSTEM_EVENT_STA_CONNECTED);
-	WiFi.onEvent(WiFiStationDisconnected, SYSTEM_EVENT_STA_DISCONNECTED);
-	return (WiFi.status() == WL_CONNECTED);
+bool HAQuDA_WiFi_handler::connectToWiFi(const char *ssidLocal, const char *passLocal) {
+	//	WiFi.mode(WIFI_STA);
+	//	WiFi.begin(ssidLocal, passLocal, 0, 0);
+	//
+	//	WiFi.onEvent(WiFiStationConnected, SYSTEM_EVENT_STA_CONNECTED);
+	//	WiFi.onEvent(WiFiStationDisconnected, SYSTEM_EVENT_STA_DISCONNECTED);
+	//	return (WiFi.status() == WL_CONNECTED);
+	return false;
 	// Blynk.config(BlynkAuth, BLYNK_DEFAULT_DOMAIN, BLYNK_DEFAULT_PORT);
 }
 
@@ -87,7 +95,6 @@ void HAQuDA_WiFi_handler::WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_
 void HAQuDA_WiFi_handler::WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info) {
 	WiFiConnected = false;
 }
-
 
 HAQuDA_WiFi_handler::~HAQuDA_WiFi_handler() {
 }
