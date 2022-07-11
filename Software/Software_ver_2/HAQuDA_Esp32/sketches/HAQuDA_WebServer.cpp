@@ -17,14 +17,16 @@ void HAQuDA_WebServer::handle_NewWiFiCreds(AsyncWebServerRequest *request) {
 		AsyncWebParameter *p = request->getParam(i);
 		if (p->isPost()) {
 			if (p->name() == SSID_PARAM_NAME) {
-				newWiFiCreds.ssid = p->value();
+				//newWiFiCreds.ssid = p->value().c_str();
+				strcpy(newWiFiCreds.ssid, p->value().c_str());
 			} else if (p->name() == PASS_PARAM_NAME) {
-				newWiFiCreds.password = p->value();
+				//newWiFiCreds.password = p->value().c_str();
+				strcpy(newWiFiCreds.password, p->value().c_str());
 			}
-		}
+		} 
 	}
 
-	if (!newWiFiCreds.password.length() || !newWiFiCreds.ssid.length()) {
+	if (!strlen(newWiFiCreds.password) || !strlen(newWiFiCreds.ssid)) {
 		// If one of the creds is missing, go back to form page
 		String response_error = "<h1>Error check WiFi creds</h1>";
 		response_error += "<h2><a href='/'>Go back</a>to try again";
@@ -32,7 +34,7 @@ void HAQuDA_WebServer::handle_NewWiFiCreds(AsyncWebServerRequest *request) {
 		return;
 	}
 
-	log_i("Saving WiFi net with SSID = %s\r\n", newWiFiCreds.ssid.c_str());
+	log_i("Saving WiFi net with SSID = %s\r\n", newWiFiCreds.ssid);
 
 	saveNewWiFiCredsReturnMsgs saveNewWiFiCredsMsg = HAQuDA_FileStorage::SaveNewWiFiCreds(newWiFiCreds);
 

@@ -46,8 +46,8 @@ typedef struct {
 } TMeasLog;
 
 typedef struct {
-	String ssid = "";
-	String password = "";
+	char ssid[32] = "";
+	char password[32] = "";
 } TWiFiCreds;
 
 typedef enum { 
