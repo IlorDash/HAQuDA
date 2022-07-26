@@ -86,7 +86,6 @@ class HAQuDA_FileStorage {
 	bool DeleteLogData(void);
 
 	static saveNewWiFiCredsReturnMsgs SaveNewWiFiCreds(TWiFiCreds writeWiFiNet);
-	bool storedWiFiCredsExists();
 	TWiFiCreds getstoredWiFiCreds(int num);
 	int getstoredWiFiCredsNum();
 };

@@ -198,13 +198,6 @@ saveNewWiFiCredsReturnMsgs HAQuDA_FileStorage::SaveNewWiFiCreds(TWiFiCreds newWi
 	return saved_new_WiFi_creds;
 }
 
-bool HAQuDA_FileStorage::storedWiFiCredsExists() {
-	File f = SPIFFS.open(FILE_NAME_WIFI_NET, FILE_APPEND);
-	int fSize = f.size();
-	f.close();
-	return (fSize / sizeof(TWiFiCreds)) > 0;
-}
-
 TWiFiCreds HAQuDA_FileStorage::getstoredWiFiCreds(int num) {
 	TWiFiCreds WiFiCreds;
 
@@ -229,8 +222,8 @@ TWiFiCreds HAQuDA_FileStorage::getstoredWiFiCreds(int num) {
 int HAQuDA_FileStorage::getstoredWiFiCredsNum() {
 	File f = SPIFFS.open(FILE_NAME_WIFI_NET, FILE_READ);
 	int fSize = f.size();
-	return fSize / sizeof(TWiFiCreds);
 	f.close();
+	return fSize / sizeof(TWiFiCreds);
 }
 
 HAQuDA_FileStorage::~HAQuDA_FileStorage() {
