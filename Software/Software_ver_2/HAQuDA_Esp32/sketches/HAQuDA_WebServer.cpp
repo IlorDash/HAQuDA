@@ -6,9 +6,6 @@ void HAQuDA_WebServer::beginWebServer() {
 	server.begin();
 }
 
-AsyncWebParameter *foo;
-int bar;
-
 void HAQuDA_WebServer::handle_NewWiFiCreds(AsyncWebServerRequest *request) {
 
 	int params_cnt = request->params();
@@ -17,13 +14,13 @@ void HAQuDA_WebServer::handle_NewWiFiCreds(AsyncWebServerRequest *request) {
 		AsyncWebParameter *p = request->getParam(i);
 		if (p->isPost()) {
 			if (p->name() == SSID_PARAM_NAME) {
-				//newWiFiCreds.ssid = p->value().c_str();
+				// newWiFiCreds.ssid = p->value().c_str();
 				strcpy(newWiFiCreds.ssid, p->value().c_str());
 			} else if (p->name() == PASS_PARAM_NAME) {
-				//newWiFiCreds.password = p->value().c_str();
+				// newWiFiCreds.password = p->value().c_str();
 				strcpy(newWiFiCreds.password, p->value().c_str());
 			}
-		} 
+		}
 	}
 
 	if (!strlen(newWiFiCreds.password) || !strlen(newWiFiCreds.ssid)) {
@@ -36,7 +33,7 @@ void HAQuDA_WebServer::handle_NewWiFiCreds(AsyncWebServerRequest *request) {
 
 	log_i("Saving WiFi net with SSID = %s\r\n", newWiFiCreds.ssid);
 
-	saveNewWiFiCredsReturnMsgs saveNewWiFiCredsMsg = HAQuDA_FileStorage::SaveNewWiFiCreds(newWiFiCreds);
+	saveNewWiFiCredsReturnMsgs saveNewWiFiCredsMsg = HAQuDA_FileStorage::SaveNew_WiFiCreds(newWiFiCreds);
 
 	switch (saveNewWiFiCredsMsg) {
 		case too_many_WiFi: {
@@ -50,14 +47,14 @@ void HAQuDA_WebServer::handle_NewWiFiCreds(AsyncWebServerRequest *request) {
 			String response_error = "<h1>Error writing new WiFi creds in file system</h1>";
 			response_error += "<h2>Error reading stored WiFi credentials</h2>";
 			response_error += "<h2><a href='/'>Go back</a>to try again";
-			request->send(200, "text/html", response_error);
+			request->send(500, "text/html", response_error);
 			break;
 		}
 		case error_saving_new_WiFi_creds: {
 			String response_error = "<h1>Error writing new WiFi creds in file system</h1>";
 			response_error += "<h2>Error saving stored WiFi credentials</h2>";
 			response_error += "<h2><a href='/'>Go back</a>to try again";
-			request->send(200, "text/html", response_error);
+			request->send(500, "text/html", response_error);
 			break;
 		}
 		case re_writed_WiFi_creds: {
@@ -83,6 +80,21 @@ void HAQuDA_WebServer::handle_NewWiFiCreds(AsyncWebServerRequest *request) {
 	}
 }
 
+void HAQuDA_WebServer::delete_WiFiCreds(AsyncWebServerRequest *request) {
+	bool res = HAQuDA_FileStorage::DeleteFile(FILE_NAME_WIFI_NET);
+	if (res) {
+		request->send(200, "text/html", "Deleted all WiFi credentials");
+	} else {
+		request->send(500, "text/html", "Error while deleting WiFi credentials");
+	}
+}
+
+void HAQuDA_WebServer::show_WiFiCreds(AsyncWebServerRequest *request) {
+	HAQuDA_FileStorage::ReadFileInSerial(FILE_NAME_WIFI_NET);
+	uint8_t *buff;
+	HAQuDA_FileStorage::ReadFileFrom(FILE_NAME_WIFI_NET, sizeof(TWiFiCreds), buff, sizeof(TWiFiCreds));
+}
+
 void HAQuDA_WebServer::loop() {
 	if (newWiFiCredsFound) {
 	}
@@ -98,6 +110,8 @@ void HAQuDA_WebServer::WebServerResponds_init() {
 
 	server.on("/wifi_manager", HTTP_GET, [](AsyncWebServerRequest *request) { request->send(200, "text/html", WiFiManagerPage); });
 
+	server.on("/delete_wifi_creds", HTTP_GET, HAQuDA_WebServer::delete_WiFiCreds);
+	server.on("/show_wifi_creds", HTTP_GET, HAQuDA_WebServer::show_WiFiCreds);
 	server.on("/add_wifi_creds", HTTP_POST, HAQuDA_WebServer::handle_NewWiFiCreds);
 	server.onNotFound(HAQuDA_WebServer::handle_NotFound);
 }

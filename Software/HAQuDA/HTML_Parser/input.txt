@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html>
 <head>
-    <title>ESP Wi-Fi Manager</title>
+    <title>HAQuDA WEB SERVER</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
 html {
@@ -30,26 +30,30 @@ body {
 </head>
 <body>
     <div class="topnav">
-        <h1>ESP Wi-Fi Manager</h1>
+        <h1>HAQuDA WEB SERVER</h1>
     </div>
-    <div class="content">
-        <div class="card-grid">
-            <div class="card">
-                <form action="/add_wifi_creds" method="POST">
-                    <p>
-                        <label for="ssid">SSID</label>
-                        <input type="text" id="ssid" name="ssid"><br>
-                        <label for="pass">Password</label>
-                        <input type="text" id="pass" name="pass"><br>
-                        <label for="ip">IP Address</label>
-                        <input type="text" id="static_ip" name="static_ip" value="192.168.1.200"><br>
-                        <label for="gateway">Gateway Address</label>
-                        <input type="text" id="gateway" name="gateway" value="192.168.1.1"><br>
-                        <input type="submit" value="Submit">
-                    </p>
-                </form>
-            </div>
-        </div>
+    <div>
+        <h2>Hello, world!</h2>
+            <p class="text">
+                <a href="wifi_manager">Add WiFi credentials</a>
+            </p>
     </div>
+	
+	 <div>
+        <p>Delete stored WiFi credentials</p>
+            <form action="/delete_wifi_creds" method="POST">
+				<button name="Delete">Delete</button>
+			</form>
+    </div>
+	
+	<div>
+        <p>Show stored WiFi credentials</p>
+            <form action="/show_wifi_creds" method="GET">
+				<button name="Show" value="wifi_creds">Show</button>
+			</form>
+    </div>
+	
+	
+	
 </body>
 </html>

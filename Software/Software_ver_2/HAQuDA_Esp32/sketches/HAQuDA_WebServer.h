@@ -29,5 +29,7 @@ class HAQuDA_WebServer {
 	void WebServerResponds_init();
 	static void handle_NewWiFiCreds(AsyncWebServerRequest *request);
 	static void handle_NotFound(AsyncWebServerRequest *request);
+	static void delete_WiFiCreds(AsyncWebServerRequest *request);
+	static void show_WiFiCreds(AsyncWebServerRequest *request);
 	void loop();
 };
