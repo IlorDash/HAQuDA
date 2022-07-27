@@ -39,8 +39,8 @@ void setup() {
 		return;
 	}
 	log_i("SPIFFS mounted successfully");
-	//myFS.ListDir("/", 0);
-	//myFS.ReadFileInSerial(FILE_NAME_WIFI_NET);
+	myFS.ListDir("/", 0);
+	myFS.DeleteFile(FILE_NAME_WIFI_NET);
 
 	myWiFi_handler.WiFi_connect();
 
@@ -63,7 +63,7 @@ uint32_t sensors_meas_time = 0;
 
 void loop() {
 
-	//myWiFi_handler.WiFi_handleConnection();
+	// myWiFi_handler.WiFi_handleConnection();
 
 	int i = 0;
 	i++;
@@ -107,7 +107,7 @@ void loop() {
 	}*/
 }
 //
-//void checkIfMeasCorrect() {
+// void checkIfMeasCorrect() {
 //	if (!eCO2_meas.newMeasDone) {
 //		terminal.println("ERROR: Failed to get eCO2 measurment");
 //	}
@@ -132,7 +132,7 @@ void loop() {
 //	humid_meas.newMeasDone = false;
 //}
 //
-//void blynkPrintLog() {
+// void blynkPrintLog() {
 //	terminal.println();
 //	terminal.println("----------------------------");
 //	terminal.print(measNum);
@@ -270,7 +270,7 @@ void loop() {
 //	terminal.flush();
 //}
 //
-//BLYNK_WRITE(V1) {
+// BLYNK_WRITE(V1) {
 //	int red = param[0].asInt();
 //	int green = param[1].asInt();
 //	int blue = param[2].asInt();
@@ -278,18 +278,18 @@ void loop() {
 //	//myUI.ext_setStaticColor(red, green, blue);
 //}
 //
-//BLYNK_WRITE(V2) {
+// BLYNK_WRITE(V2) {
 //	//myUI.ext_setBrightness(param.asInt());
 //}
 //
-//BLYNK_WRITE(V3) {
+// BLYNK_WRITE(V3) {
 //	//myUI.ext_changeDispMode(param.asInt());
 //}
 //
-//BLYNK_WRITE(V4) {
+// BLYNK_WRITE(V4) {
 //	//myUI.ext_changeDispParam(param.asInt());
 //}
 //
-//BLYNK_WRITE(V5) {
+// BLYNK_WRITE(V5) {
 //	//myUI.ext_changeDispEffect(param.asInt());
 //}

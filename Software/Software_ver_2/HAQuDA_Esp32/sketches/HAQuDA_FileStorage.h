@@ -2,6 +2,7 @@
 #define _FILESTORAGE_h
 
 #include <functional>
+#include <stdio.h>
 #include <Arduino.h>
 #include "Board.h"
 #include "FS.h"
@@ -26,6 +27,7 @@
 #define WEB_SERVER_WIFI_MANAGER_PAGE "/wifi_manager.html"
 
 #define MAX_WIFI_CREDS_NUM 10
+#define MAX_SHOW_WIFI_CREDS_BUFF_LEN 1000
 
 const int checkPeriod = 10;
 const int checksPerAccumulation = 4;
@@ -45,17 +47,22 @@ typedef struct {
 	float O3_meas;
 } TMeasLog;
 
+//typedef struct {
+//	char ssid[32] = "";
+//	char password[32] = "";
+//} __attribute__((__packed__)) TWiFiCreds;
+
 typedef struct {
 	char ssid[32] = "";
 	char password[32] = "";
 } TWiFiCreds;
 
-typedef enum { 
-	too_many_WiFi, 
-	error_reading_stored_WiFi_creds, 
-	error_saving_new_WiFi_creds, 
+typedef enum {
+	too_many_WiFi,
+	error_reading_stored_WiFi_creds,
+	error_saving_new_WiFi_creds,
 	re_writed_WiFi_creds,
-	saved_new_WiFi_creds 
+	saved_new_WiFi_creds
 } saveNewWiFiCredsReturnMsgs;
 
 class HAQuDA_FileStorage {
@@ -72,22 +79,22 @@ class HAQuDA_FileStorage {
 	bool Start(void);
 	void Stop(void);
 	void ListDir(const char *dirname, uint8_t levels);
-	bool DeleteFile(const char *path);
+	static bool DeleteFile(const char *path);
 	bool Format();
 	bool WriteFile(const char *path, const uint8_t *data = NULL, size_t len = 0);
 	bool AppendFile(const char *path, const uint8_t *data, size_t len);
 	bool Exists(const String &path);
 	bool Exists(const char *path);
 	File FileOpen(const String &path, const char *mode);
-	bool ReadFile(const char *path, uint8_t *data, size_t len);
-	void ReadFileInSerial(const char *path);
+
+	static void ReadFileInSerial(const char *path);
+	static bool ReadFileFrom(const char *path, const int bias, uint8_t *data, size_t len);
+	const String Read_WiFiCreds();
 	size_t FileSize(const char *path);
 
-	bool DeleteLogData(void);
-
-	static saveNewWiFiCredsReturnMsgs SaveNewWiFiCreds(TWiFiCreds writeWiFiNet);
-	TWiFiCreds getstoredWiFiCreds(int num);
-	int getstoredWiFiCredsNum();
+	static saveNewWiFiCredsReturnMsgs SaveNew_WiFiCreds(TWiFiCreds writeWiFiNet);
+	TWiFiCreds GetStored_WiFi(int num);
+	int GetStored_WiFiCredsNum();
 };
 
 #endif

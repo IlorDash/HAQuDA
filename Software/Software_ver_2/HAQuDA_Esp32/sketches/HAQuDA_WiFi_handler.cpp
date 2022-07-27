@@ -3,13 +3,15 @@
 bool HAQuDA_WiFi_handler::WiFiConnected = false;
 
 void HAQuDA_WiFi_handler::WiFi_connect() {
-	if (_myFS.storedWiFiCredsExists()) {
-		if (!tryConnectToWiFi()) {
+	if (_myFS.GetStored_WiFiCredsNum()) {
+		if (tryConnectToWiFi()) {
+			return;
 		}
-	} else {
-		createAP();
 	}
+
+	createAP();
 	HAQuDA_WebServer::beginWebServer();
+	return;
 }
 
 void HAQuDA_WiFi_handler::WiFi_handleConnection() {
@@ -54,10 +56,10 @@ void HAQuDA_WiFi_handler::createAP() {
 
 bool HAQuDA_WiFi_handler::tryConnectToWiFi() {
 	bool connected = false;
-	int WiFiCredsNum = _myFS.getstoredWiFiCredsNum();
+	int WiFiCredsNum = _myFS.GetStored_WiFiCredsNum();
 	TWiFiCreds WiFiCreds;
 	for (int i = 0; i < WiFiCredsNum; i++) {
-		_myFS.getstoredWiFiCreds(i);
+		WiFiCreds = _myFS.GetStored_WiFi(i);
 		if (!strlen(WiFiCreds.ssid)) {
 			continue;
 		}
@@ -74,14 +76,13 @@ bool HAQuDA_WiFi_handler::tryConnectToWiFi() {
 }
 
 bool HAQuDA_WiFi_handler::connectToWiFi(const char *ssidLocal, const char *passLocal) {
-	//	WiFi.mode(WIFI_STA);
-	//	WiFi.begin(ssidLocal, passLocal, 0, 0);
-	//
-	//	WiFi.onEvent(WiFiStationConnected, SYSTEM_EVENT_STA_CONNECTED);
-	//	WiFi.onEvent(WiFiStationDisconnected, SYSTEM_EVENT_STA_DISCONNECTED);
-	//	return (WiFi.status() == WL_CONNECTED);
-	return false;
-	// Blynk.config(BlynkAuth, BLYNK_DEFAULT_DOMAIN, BLYNK_DEFAULT_PORT);
+	WiFi.mode(WIFI_STA);
+	WiFi.begin(ssidLocal, passLocal, 0, 0);
+
+	WiFi.onEvent(WiFiStationConnected, SYSTEM_EVENT_STA_CONNECTED);
+	WiFi.onEvent(WiFiStationDisconnected, SYSTEM_EVENT_STA_DISCONNECTED);
+	//Blynk.config(BlynkAuth, BLYNK_DEFAULT_DOMAIN, BLYNK_DEFAULT_PORT);
+	return (WiFi.status() == WL_CONNECTED);
 }
 
 void HAQuDA_WiFi_handler::WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info) {
