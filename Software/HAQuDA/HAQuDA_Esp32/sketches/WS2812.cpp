@@ -124,6 +124,10 @@ void getRGB(int *_red, int *_green, int *_blue, float data, paramsDivideDots div
 		*_blue = 0;
 		*_green = 0;
 		*_red = MAX_BRIGHTNESS;
+	} else {
+		*_blue = 0;
+		*_green = 0;
+		*_red = 0;
 	}
 }
 
@@ -147,7 +151,7 @@ void WS2812_showParams_night(float data, paramsDivideDots divideDots, uint8_t ti
 		whiteBrightness = (MIN_BRIGHTNESS << 8) / pixels.getBrightness() + 1;
 		measLedRowNum = LED_ROW_NUM / 2;
 	}
-	
+
 	for (int i = 0; i < LED_COLUMN_NUM; i++) {
 		uint32_t color = (!(i % 3)) ? pixels.Color(red, green, blue) : pixels.Color(whiteBrightness, whiteBrightness, whiteBrightness);
 		uint8_t pixelNum = (!(i % 3)) ? measLedRowNum : time;
