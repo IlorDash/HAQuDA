@@ -4,6 +4,8 @@
 #include <DHT.h>
 #include <SoftwareSerial.h>
 
+#define FIRST_MEAS_TIMEOUT 10000
+
 typedef struct {
 	float value;
 	uint16_t measNum;

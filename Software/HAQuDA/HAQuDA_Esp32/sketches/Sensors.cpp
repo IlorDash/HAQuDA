@@ -66,6 +66,15 @@ bool sensorsBegin() {
 
 	dht.begin();
 
+	uint32_t fisrtDispMeasTimer = millis();
+
+	while ((!temp_meas.newMeasDone || !eCO2_meas.newMeasDone || !PM_2_5_meas.newMeasDone) && (millis() - fisrtDispMeasTimer) < FIRST_MEAS_TIMEOUT) {
+		vTaskDelay(500);
+		getDHT11_meas();
+		getCCS811_meas();
+		getPM_meas();
+	}
+
 	return true;
 }
 

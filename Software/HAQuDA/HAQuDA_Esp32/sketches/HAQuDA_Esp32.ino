@@ -170,12 +170,12 @@ void setup() {
 	multiModeStruct.divideDotsArr[1] = eCO2_divideDots;
 	multiModeStruct.divideDotsArr[2] = PM2_5_divideDots;
 
+	dispParam_WS2812();
 }
 
 uint16_t measNum = 0;
 uint32_t dispMeasTimer = 0;
 uint32_t sensors_meas_time = 0;
-bool firstDisp = true;
 
 void loop() {
 	server.handleClient();
@@ -203,8 +203,7 @@ void loop() {
 		sensors_meas_time = millis();
 	}
 
-	if (((millis() - dispMeasTimer) > DISP_MEAS_PERIOD) || firstDisp) {
-		firstDisp = false;
+	if ((millis() - dispMeasTimer) > DISP_MEAS_PERIOD) {
 		dispParam_WS2812();
 		dispMeasTimer = millis();
 
@@ -242,7 +241,7 @@ dispParams checkBadParam() {
 
 void standardDispParam_WS2812() {
 	WS2812_clear();
-	
+
 	switch (whatParamDisp) {
 		case total: {
 			dispParams badParam = checkBadParam();
@@ -352,7 +351,7 @@ void nightDispParam_WS2812() {
 
 	uint8_t nightMode_hour = get_nightMode_hour(curHour);
 	WS2812_clear();
-	
+
 	if (whatParamDisp == temp) {
 		WS2812_showParams_night(temp_meas.value / temp_meas.measNum, temp_divideDots, nightMode_hour);
 		temp_meas.value = 0;
