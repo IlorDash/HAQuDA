@@ -65,6 +65,7 @@ bool sensorsBegin() {
 	}
 
 	dht.begin();
+
 	return true;
 }
 
@@ -114,17 +115,21 @@ uint16_t calcPM_checkSum(uint8_t *buffer, int size) {
 
 bool readPM_data(PTPmSerialData pPmSerialData) {
 	uint16_t checkSum;
-	if (!PMSerial.find((uint8_t *)&PmSerialDataMarker, sizeof(PmSerialDataMarker))) {
+	bool findMarker_result = PMSerial.find((uint8_t *)&PmSerialDataMarker, sizeof(PmSerialDataMarker));
+	if (!findMarker_result) {
 		return false;
 	}
 
-	if (PMSerial.readBytes((uint8_t *)pPmSerialData, sizeof(*pPmSerialData)) != sizeof(*pPmSerialData)) {
+	int readData_result = PMSerial.readBytes((uint8_t *)pPmSerialData, sizeof(*pPmSerialData));
+	if (readData_result != sizeof(*pPmSerialData)) {
 		return false;
 	}
 	if (pPmSerialData->length != __builtin_bswap16(sizeof(*pPmSerialData))) {
 		return false;
 	}
-	if (PMSerial.readBytes((uint8_t *)&checkSum, sizeof(checkSum)) != sizeof(checkSum)) {
+
+	int readChecksum_result = PMSerial.readBytes((uint8_t *)&checkSum, sizeof(checkSum));
+	if (readChecksum_result != sizeof(checkSum)) {
 		return false;
 	}
 	uint16_t calcSum
@@ -138,7 +143,8 @@ bool readPM_data(PTPmSerialData pPmSerialData) {
 bool getPM_meas() {
 	TPmSerialData serialData;
 	uint16_t sum;
-	if (!readPM_data(&serialData)) {
+	bool readPM_result = readPM_data(&serialData);
+	if (!readPM_result) {
 		while (PMSerial.available() > 0) {
 			char t = PMSerial.read();
 		}
