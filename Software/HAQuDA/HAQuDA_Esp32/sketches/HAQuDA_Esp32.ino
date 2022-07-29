@@ -170,12 +170,12 @@ void setup() {
 	multiModeStruct.divideDotsArr[1] = eCO2_divideDots;
 	multiModeStruct.divideDotsArr[2] = PM2_5_divideDots;
 
-	dispParam_WS2812();
 }
 
 uint16_t measNum = 0;
 uint32_t dispMeasTimer = 0;
 uint32_t sensors_meas_time = 0;
+bool firstDisp = true;
 
 void loop() {
 	server.handleClient();
@@ -203,7 +203,8 @@ void loop() {
 		sensors_meas_time = millis();
 	}
 
-	if (millis() - dispMeasTimer > DISP_MEAS_PERIOD) {
+	if (((millis() - dispMeasTimer) > DISP_MEAS_PERIOD) || firstDisp) {
+		firstDisp = false;
 		dispParam_WS2812();
 		dispMeasTimer = millis();
 
