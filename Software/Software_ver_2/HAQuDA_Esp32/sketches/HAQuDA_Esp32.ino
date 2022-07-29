@@ -31,6 +31,8 @@ int thirdDot;
 
 bool dispFirstParam = false;
 
+char *foo;
+
 void setup() {
 	Serial.begin(115200);
 
@@ -40,8 +42,8 @@ void setup() {
 	}
 	log_i("SPIFFS mounted successfully");
 	myFS.ListDir("/", 0);
-	myFS.DeleteFile(FILE_NAME_WIFI_NET);
 
+	myFS.ReadFileFrom(FILE_NAME_WIFI_NET, 0, (uint8_t *) foo, sizeof(TWiFiCreds));
 	myWiFi_handler.WiFi_connect();
 
 	/*WS2812_begin();
