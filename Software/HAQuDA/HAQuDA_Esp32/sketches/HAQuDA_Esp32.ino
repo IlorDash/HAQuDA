@@ -659,8 +659,6 @@ BLYNK_WRITE(V3) {
 	switch (param.asInt()) {
 		case 1: {
 			whatModeDisp = standard;
-			WS2812_clear();
-			delay(100);
 			break;
 		}
 		case 2: {
@@ -674,97 +672,74 @@ BLYNK_WRITE(V3) {
 			multiModeStruct.divideDotsArr[1] = eCO2_divideDots;
 			multiModeStruct.divideDotsArr[2] = PM2_5_divideDots;
 
-			WS2812_clear();
-			delay(100);
 			break;
 		}
 		case 3: {
 			whatModeDisp = night;
-			WS2812_clear();
-			delay(100);
 			break;
 		}
 		default:
 			whatModeDisp = noneMode;
 	}
-	dispParam_WS2812();
 	whatEffectDisp = noneEffect;
+	vTaskDelay(1000 / portTICK_PERIOD_MS);
+	dispParam_WS2812();
 }
 
 BLYNK_WRITE(V4) {
 	switch (param.asInt()) {
 		case 1: {
 			whatParamDisp = temp;
-			WS2812_clear();
-			delay(100);
 			break;
 		}
 		case 2: {
 			whatParamDisp = humid;
-			WS2812_clear();
-			delay(100);
 			break;
 		}
 		case 3: {
 			whatParamDisp = eCO2;
-			WS2812_clear();
-			delay(100);
 			break;
 		}
 		case 4: {
 			whatParamDisp = TVOC;
-			WS2812_clear();
-			delay(100);
 			break;
 		}
 		case 5: {
 			whatParamDisp = PM2_5;
-			WS2812_clear();
-			delay(100);
 			break;
 		}
 		case 6: {
 			whatParamDisp = total;
-			WS2812_clear();
-			delay(100);
 			break;
 		}
 		default:
 			whatParamDisp = noneParam;
 	}
-	dispParam_WS2812();
 	whatEffectDisp = noneEffect;
+	delay(200);
+	dispParam_WS2812();
 }
 
 BLYNK_WRITE(V5) {
 	switch (param.asInt()) {
 		case 1: { // Item 3
 			whatEffectDisp = snake;
-			WS2812_clear();
-			delay(100);
 			break;
 		}
 		case 2: { // Item 3
 			whatEffectDisp = randomPixel;
-			WS2812_clear();
-			delay(100);
 			break;
 		}
 		case 3: { // Item 1
 			whatEffectDisp = fade;
-			WS2812_clear();
-			delay(100);
 			break;
 		}
 		case 4: { // Item 2
 			whatEffectDisp = christmasTree;
-			WS2812_clear();
-			delay(100);
 			break;
 		}
 		default:
 			whatEffectDisp = noneEffect;
 	}
-	dispParam_WS2812();
-	whatParamDisp = noneParam;
+	whatModeDisp = noneMode;
 }
