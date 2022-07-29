@@ -27,7 +27,8 @@
 #define WEB_SERVER_WIFI_MANAGER_PAGE "/wifi_manager.html"
 
 #define MAX_WIFI_CREDS_NUM 10
-#define MAX_SHOW_WIFI_CREDS_BUFF_LEN 1000
+#define WIFI_SSID_LEN 32
+#define WIFI_PASS_LEN 32
 
 const int checkPeriod = 10;
 const int checksPerAccumulation = 4;
@@ -47,15 +48,10 @@ typedef struct {
 	float O3_meas;
 } TMeasLog;
 
-//typedef struct {
-//	char ssid[32] = "";
-//	char password[32] = "";
-//} __attribute__((__packed__)) TWiFiCreds;
-
 typedef struct {
-	char ssid[32] = "";
-	char password[32] = "";
-} TWiFiCreds;
+	char ssid[WIFI_SSID_LEN] = "";
+	char password[WIFI_PASS_LEN] = "";
+} __attribute__((__packed__)) TWiFiCreds;
 
 typedef enum {
 	too_many_WiFi,
@@ -86,15 +82,15 @@ class HAQuDA_FileStorage {
 	bool Exists(const String &path);
 	bool Exists(const char *path);
 	File FileOpen(const String &path, const char *mode);
-
+	static size_t FileSize(const char *path);
+	
 	static void ReadFileInSerial(const char *path);
 	static bool ReadFileFrom(const char *path, const int bias, uint8_t *data, size_t len);
 	const String Read_WiFiCreds();
-	size_t FileSize(const char *path);
 
 	static saveNewWiFiCredsReturnMsgs SaveNew_WiFiCreds(TWiFiCreds writeWiFiNet);
 	TWiFiCreds GetStored_WiFi(int num);
-	int GetStored_WiFiCredsNum();
+	static int GetStored_WiFiCredsNum();
 };
 
 #endif
