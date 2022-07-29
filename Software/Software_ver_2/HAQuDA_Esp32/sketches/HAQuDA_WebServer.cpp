@@ -91,8 +91,20 @@ void HAQuDA_WebServer::delete_WiFiCreds(AsyncWebServerRequest *request) {
 
 void HAQuDA_WebServer::show_WiFiCreds(AsyncWebServerRequest *request) {
 	HAQuDA_FileStorage::ReadFileInSerial(FILE_NAME_WIFI_NET);
-	uint8_t *buff;
-	HAQuDA_FileStorage::ReadFileFrom(FILE_NAME_WIFI_NET, sizeof(TWiFiCreds), buff, sizeof(TWiFiCreds));
+	char *bar;
+	int WiFiCredsNum = HAQuDA_FileStorage::GetStored_WiFiCredsNum();
+	if (WiFiCredsNum == 0) {
+		request->send(200, "text/html", "WiFi credentials are empty");
+	} else {
+		HAQuDA_FileStorage::ReadFileFrom(FILE_NAME_WIFI_NET, 0, (uint8_t *)bar, sizeof(TWiFiCreds));
+		//		char buff[WIFI_SSID_LEN + WIFI_PASS_LEN] = {""};
+		//		String answer = "";
+		//		for (int i = 0; i < WiFiCredsNum; i++) {
+		//			HAQuDA_FileStorage::ReadFileFrom(FILE_NAME_WIFI_NET, sizeof(TWiFiCreds) * i, (uint8_t *)buff, sizeof(TWiFiCreds));
+		//			answer += buff;
+		//		}
+		request->send(200, "text/html", "answer");
+	}
 }
 
 void HAQuDA_WebServer::loop() {
@@ -110,8 +122,8 @@ void HAQuDA_WebServer::WebServerResponds_init() {
 
 	server.on("/wifi_manager", HTTP_GET, [](AsyncWebServerRequest *request) { request->send(200, "text/html", WiFiManagerPage); });
 
-	server.on("/delete_wifi_creds", HTTP_GET, HAQuDA_WebServer::delete_WiFiCreds);
-	server.on("/show_wifi_creds", HTTP_GET, HAQuDA_WebServer::show_WiFiCreds);
+	server.on("/delete_wifi_creds", HTTP_POST, HAQuDA_WebServer::delete_WiFiCreds);
+	server.on("/show_wifi_creds", HTTP_POST, HAQuDA_WebServer::show_WiFiCreds);
 	server.on("/add_wifi_creds", HTTP_POST, HAQuDA_WebServer::handle_NewWiFiCreds);
 	server.onNotFound(HAQuDA_WebServer::handle_NotFound);
 }
