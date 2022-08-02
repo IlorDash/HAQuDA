@@ -50,10 +50,11 @@ typedef struct {
 
 typedef struct {
 	char ssid[WIFI_SSID_LEN] = "";
-	char password[WIFI_PASS_LEN] = "";
+	char pass[WIFI_PASS_LEN] = "";
 } __attribute__((__packed__)) TWiFiCreds;
 
 typedef enum {
+	error_opening_file,
 	too_many_WiFi,
 	error_reading_stored_WiFi_creds,
 	error_saving_new_WiFi_creds,

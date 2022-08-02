@@ -95,7 +95,8 @@ bool HAQuDA_FileStorage::ReadFileFrom(const char *path, const int bias, uint8_t 
 		res = false;
 	} else {
 		uint8_t *d;
-		if (len <= file.size()) {
+		size_t fSize = file.size();
+		if (len <= fSize) {
 			int fileReadRes = file.read(d, bias + len);
 			if (fileReadRes == (bias + len)) {
 				res = true;
@@ -135,57 +136,80 @@ size_t HAQuDA_FileStorage::FileSize(const char *path) {
 }
 
 saveNewWiFiCredsReturnMsgs HAQuDA_FileStorage::SaveNew_WiFiCreds(TWiFiCreds newWiFiCreds) {
-	saveNewWiFiCredsReturnMsgs returnMsg;
 
 	int fSize = FileSize(FILE_NAME_WIFI_NET);
 	uint8_t storedWiFiCredsCnt = fSize / sizeof(TWiFiCreds);
-
-	File f = SPIFFS.open(FILE_NAME_WIFI_NET, FILE_APPEND);
 	if (storedWiFiCredsCnt >= MAX_WIFI_CREDS_NUM) {
-		returnMsg = too_many_WiFi;
+		return too_many_WiFi;
+	}
+
+	File file = SPIFFS.open(FILE_NAME_WIFI_NET, FILE_APPEND);
+	if (!file) {
+		return error_opening_file;
+	}
+
+	bool newWiFiCredsExists = false;
+	int index = 0;
+	if (fSize <= 0) {
+		file.close();
+		file = SPIFFS.open(FILE_NAME_WIFI_NET, FILE_WRITE);
+
+		if (!file) {
+			return error_opening_file;
+		}
 	} else {
-		bool newWiFiCredsExists = false;
-		int index = 0;
-		if (fSize <= 0) {
-			f.close();
-			f = SPIFFS.open(FILE_NAME_WIFI_NET, FILE_WRITE);
-		} else {
-			f.close();
-			f = SPIFFS.open(FILE_NAME_WIFI_NET, FILE_READ);
-			int count = fSize / sizeof(TWiFiCreds);
-			TWiFiCreds readWiFiNet;
-			while (index < count && !newWiFiCredsExists) {
-				if (f.read((uint8_t *)&readWiFiNet, sizeof(TWiFiCreds)) != sizeof(TWiFiCreds)) {
-					return error_reading_stored_WiFi_creds;
-				}
-				if (readWiFiNet.ssid == newWiFiCreds.ssid) {
-					newWiFiCredsExists = true;
-				} else {
-					index++;
-				}
+		file.close();
+		file = SPIFFS.open(FILE_NAME_WIFI_NET, FILE_READ);
+
+		if (!file) {
+			return error_opening_file;
+		}
+
+		TWiFiCreds readWiFiCreds;
+		while ((index < storedWiFiCredsCnt) && !newWiFiCredsExists) {
+			size_t fileReadRes = file.read((uint8_t *)&readWiFiCreds, sizeof(TWiFiCreds));
+			if (fileReadRes != sizeof(TWiFiCreds)) {
+				return error_reading_stored_WiFi_creds;
 			}
-			f.close();
-			if (newWiFiCredsExists) {
-				f = SPIFFS.open(FILE_NAME_WIFI_NET, FILE_WRITE);
+			if (readWiFiCreds.ssid == newWiFiCreds.ssid) {
+				newWiFiCredsExists = true;
 			} else {
-				f = SPIFFS.open(FILE_NAME_WIFI_NET, FILE_APPEND);
+				index++;
 			}
 		}
-		if (newWiFiCredsExists) {
-			f.seek(index * sizeof(TWiFiCreds));
-			if (f.write((uint8_t *)&newWiFiCreds, sizeof(TWiFiCreds)) != sizeof(TWiFiCreds)) {
-				f.close();
-				return error_saving_new_WiFi_creds;
-			}
-			f.close();
-			return re_writed_WiFi_creds;
-		} else if (f.write((uint8_t *)&newWiFiCreds, sizeof(TWiFiCreds)) != sizeof(TWiFiCreds)) {
-			f.close();
+		file.close();
+	}
+	if (newWiFiCredsExists) {
+		file = SPIFFS.open(FILE_NAME_WIFI_NET, FILE_WRITE);
+
+		if (!file) {
+			return error_opening_file;
+		}
+
+		file.seek(index * sizeof(TWiFiCreds));
+		size_t fileWriteRes = file.write((uint8_t *)&newWiFiCreds, sizeof(TWiFiCreds));
+		if (fileWriteRes != sizeof(TWiFiCreds)) {
+			file.close();
+			return error_saving_new_WiFi_creds;
+		}
+		file.close();
+		return re_writed_WiFi_creds;
+	} else {
+		file = SPIFFS.open(FILE_NAME_WIFI_NET, FILE_APPEND);
+
+		if (!file) {
+			return error_opening_file;
+		}
+
+		size_t fileWriteRes = file.write((uint8_t *)&newWiFiCreds, sizeof(TWiFiCreds));
+		if (fileWriteRes != sizeof(TWiFiCreds)) {
+			file.close();
 			return error_saving_new_WiFi_creds;
 		}
 	}
-	f.close();
-	return returnMsg;
+
+	file.close();
+	return saved_new_WiFi_creds;
 }
 
 TWiFiCreds HAQuDA_FileStorage::GetStored_WiFi(int num) {
