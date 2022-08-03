@@ -64,12 +64,10 @@ typedef enum {
 
 class HAQuDA_FileStorage {
   private:
-	bool SPIFFS_status;
+	static bool checkStoredWiFiCredsCntLimit();
+	static bool getWiFiCredsWriteIndex(uint16_t *index, const TWiFiCreds newWiFiCreds);
 
   public:
-	typedef std::function<void(String, int)> TListDirFunction;
-	bool write(File &file, String &s);
-
 	HAQuDA_FileStorage();
 	~HAQuDA_FileStorage();
 
@@ -78,15 +76,15 @@ class HAQuDA_FileStorage {
 	void ListDir(const char *dirname, uint8_t levels);
 	static bool DeleteFile(const char *path);
 	bool Format();
-	bool WriteFile(const char *path, const uint8_t *data = NULL, size_t len = 0);
-	bool AppendFile(const char *path, const uint8_t *data, size_t len);
+	static bool WriteFile(const char *path, const uint8_t *data = NULL, size_t len = 0);
+	static bool WriteFile(const char *path, const uint16_t fromPos, const uint8_t *data, size_t len);
+	static bool AppendFile(const char *path, const uint8_t *data, size_t len);
 	bool Exists(const String &path);
 	bool Exists(const char *path);
-	File FileOpen(const String &path, const char *mode);
 	static size_t FileSize(const char *path);
-	
+
 	static void ReadFileInSerial(const char *path);
-	static bool ReadFileFrom(const char *path, const int bias, uint8_t *data, size_t len);
+	static bool ReadFileFrom(const char *path, const int fromPos, uint8_t *data, size_t len);
 	const String Read_WiFiCreds();
 
 	static saveNewWiFiCredsReturnMsgs SaveNew_WiFiCreds(TWiFiCreds writeWiFiNet);
