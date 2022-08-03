@@ -65,7 +65,7 @@ bool HAQuDA_WiFi_handler::tryConnectToWiFi() {
 		}
 		int j = 0;
 		while ((j < reconnectAttempts) && !connected) {
-			connected = connectToWiFi(WiFiCreds.ssid, WiFiCreds.password);
+			connected = connectToWiFi(WiFiCreds.ssid, WiFiCreds.pass);
 			j++;
 		}
 		if (connected) {

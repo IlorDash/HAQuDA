@@ -18,12 +18,12 @@ void HAQuDA_WebServer::handle_NewWiFiCreds(AsyncWebServerRequest *request) {
 				strcpy(newWiFiCreds.ssid, p->value().c_str());
 			} else if (p->name() == PASS_PARAM_NAME) {
 				// newWiFiCreds.password = p->value().c_str();
-				strcpy(newWiFiCreds.password, p->value().c_str());
+				strcpy(newWiFiCreds.pass, p->value().c_str());
 			}
 		}
 	}
 
-	if (!strlen(newWiFiCreds.password) || !strlen(newWiFiCreds.ssid)) {
+	if (!strlen(newWiFiCreds.pass) || !strlen(newWiFiCreds.ssid)) {
 		// If one of the creds is missing, go back to form page
 		String response_error = "<h1>Error check WiFi creds</h1>";
 		response_error += "<h2><a href='/'>Go back</a>to try again";
