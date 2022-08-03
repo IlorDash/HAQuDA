@@ -14,6 +14,7 @@
 #define DISP_MEAS_PERIOD 300000 //=5 min in ms
 #define SENSORS_MEAS_PERIOD 2000
 
+
 char BlynkAuth[] = BLYNK_AUTH;
 
 WidgetTerminal terminal(V0);
@@ -31,32 +32,29 @@ int thirdDot;
 
 bool dispFirstParam = false;
 
-char *foo;
-
 void setup() {
 	Serial.begin(115200);
-
+	
+	WS2812_begin();
+	createTasks(&myUI);
+	
 	if (!myFS.Start()) {
 		log_e("SPIFFS not mounted!");
 		return;
 	}
 	log_i("SPIFFS mounted successfully");
-	myFS.ListDir("/", 0);
 
-	myFS.ReadFileFrom(FILE_NAME_WIFI_NET, 0, (uint8_t *) foo, sizeof(TWiFiCreds));
 	myWiFi_handler.WiFi_connect();
 
-	/*WS2812_begin();
-	if (!sensorsBegin()) {
-		WS2812_fillColor(COLOR_RED);
-		terminal.println("FATAL ERROR: Failed to begin sensors");
-		while (1) {
-		}
-	}
-	createTasks(myUI);
-
-	terminal.println("*************************");
-	terminal.print("START LOGGING");*/
+//	if (!sensorsBegin()) {
+//		WS2812_fillColor(COLOR_RED);
+//		terminal.println("FATAL ERROR: Failed to begin sensors");
+//		while (1) {
+//		}
+//	}
+//
+//	terminal.println("*************************");
+//	terminal.print("START LOGGING");
 }
 
 uint16_t measNum = 0;
@@ -65,11 +63,8 @@ uint32_t sensors_meas_time = 0;
 
 void loop() {
 
-	// myWiFi_handler.WiFi_handleConnection();
-
-	int i = 0;
-	i++;
-	/*
+	myWiFi_handler.WiFi_handleConnection();
+	
 	/*if (!Blynk.connected()) {
 		Blynk.connect();
 	} else {
