@@ -2,6 +2,7 @@
 
 using namespace std;
 HAQuDA_UI *myUI_tasks;
+uint8_t builtIn_LED;
 
 void WS2812_EffectsTaskCode(void *parameter) {
 	while (true) {
@@ -48,7 +49,7 @@ void WS2812_EffectsTaskCode(void *parameter) {
 				vTaskDelay(1000 / portTICK_PERIOD_MS);
 				break;
 			}
-			case fade: { 
+			case fade: {
 				WS2812_clear();
 				vTaskDelay(100 / portTICK_PERIOD_MS);
 				WS2812_fillColor(myUI_tasks->currUI_Params.effectParams.fadeColor);
@@ -74,8 +75,56 @@ void WS2812_EffectsTaskCode(void *parameter) {
 	}
 }
 
+void WS2812_ErrorDispTaskCode(void *parameter) {
+	while (true) {
+		switch (HAQuDA_ErrorHandler::currErrorToDisp) {
+			case failedToConnectToWiFi: {
+				WS2812_clear();
+				vTaskDelay(100 / portTICK_PERIOD_MS);
+				for (int i = 0; i < LED_COLUMN_NUM; i++) {
+					for (int j = (i % 2); j < LED_ROW_NUM; j += 2) {
+						uint8_t pixelNum = i * LED_ROW_NUM + j;
+						WS2812_setPixelColor(pixelNum, COLOR_RED);
+					}
+				}
+				WS2812_show();
+				vTaskDelay(500 / portTICK_PERIOD_MS);
+				break;
+			}
+
+			case failedToCreateAP: {
+				WS2812_clear();
+				vTaskDelay(100 / portTICK_PERIOD_MS);
+				for (int i = 0; i < LED_COLUMN_NUM; i += 2) {
+					for (int j = 0; j < LED_ROW_NUM; j++) {
+						uint8_t pixelNum = i * LED_ROW_NUM + j;
+						WS2812_setPixelColor(pixelNum, COLOR_RED);
+					}
+				}
+				WS2812_show();
+				vTaskDelay(500 / portTICK_PERIOD_MS);
+				break;
+			}
+			default:
+				break;
+		}
+	}
+}
+
+void BuiltIn_LED_Blink_TaskCode(void *parameter) {
+	while (true) {
+		if (builtIn_LED >= 0) {
+			digitalWrite(builtIn_LED, HIGH);
+			vTaskDelay(1000 / portTICK_PERIOD_MS);
+			digitalWrite(builtIn_LED, LOW);
+			vTaskDelay(500 / portTICK_PERIOD_MS);
+		}
+	}
+}
+
 void createTasks(HAQuDA_UI *currUI) {
 	myUI_tasks = currUI;
+	builtIn_LED = atoi(BUILTIN_LED);
 	xTaskCreatePinnedToCore(WS2812_EffectsTaskCode, // Function that should be called
 							"WS2812 Effects task",  // Name of the task (for debugging)
 							2048,					// Stack size (bytes)
@@ -83,5 +132,23 @@ void createTasks(HAQuDA_UI *currUI) {
 							1,						// Task priority
 							NULL,					// Task handler
 							1						// Task core
+	);
+
+	xTaskCreatePinnedToCore(WS2812_ErrorDispTaskCode, // Function that should be called
+							"WS2812 Error Disp task", // Name of the task (for debugging)
+							2048,					  // Stack size (bytes)
+							NULL,					  // Parameter to pass
+							1,						  // Task priority
+							NULL,					  // Task handler
+							1						  // Task core
+	);
+
+	xTaskCreatePinnedToCore(BuiltIn_LED_Blink_TaskCode, // Function that should be called
+							"BuiltIn LED Blink task", // Name of the task (for debugging)
+							1024,					  // Stack size (bytes)
+							NULL,					  // Parameter to pass
+							2,						  // Task priority
+							NULL,					  // Task handler
+							1						  // Task core
 	);
 }
