@@ -31,6 +31,7 @@
         <string>sketches\HAQuDA_UI_typedefs.h</string>
         <string>sketches\HAQuDA_WiFi_handler.h</string>
         <string>sketches\HAQuDA_FileStorage.h</string>
+        <string>sketches\HAQuDA_ErrorHandler.h</string>
       </OtherFiles>
     </ProjectModeSettings>
   </Project>
@@ -47,6 +48,7 @@
         <string>BLYNK_AUTH="$(BlynkAuth_uv)"</string>
         <string> AP_SSID="$(AP_ssid_uv)"</string>
         <string> AP_PASS="$(AP_pass_uv)"</string>
+        <string> BUILTIN_LED="$(BuiltIn_LED_uv)"</string>
       </Common>
     </PreprocessorMacros>
     <ExtraCompilerFlags>
@@ -148,6 +150,13 @@
       <Description />
       <Value>xxxxx</Value>
       <Name>BlynkAuth_uv</Name>
+      <PromoteToEnvironment>false</PromoteToEnvironment>
+    </BuildVariable>
+    <BuildVariable>
+      <Label />
+      <Description />
+      <Value>-1</Value>
+      <Name>BuiltIn_LED_uv</Name>
       <PromoteToEnvironment>false</PromoteToEnvironment>
     </BuildVariable>
     <BuildVariable>
