@@ -11,13 +11,10 @@
 #define STATIC_IP_ARG "static_ip"
 #define GATEWAY_ARG "gateway"
 
-
-
 class HAQuDA_WebServer {
   private:
   protected:
 	HAQuDA_FileStorage _myFS;
-	bool WiFiCredsFound = false;
 	bool newWiFiCredsFound = false;
 	AsyncWebServer server = AsyncWebServer(80);
 
