@@ -21,7 +21,7 @@ WidgetTerminal terminal(V0);
 HAQuDA_DispManip myDispManip;
 HAQuDA_FileStorage myFS;
 HAQuDA_UI myUI(myDispManip);
-HAQuDA_WiFi_handler myWiFi_handler(myUI, myFS);
+HAQuDA_WiFi_handler *myWiFi_handler;
 
 void UpdateVirtualPins();
 void blynkPrintLog();
@@ -34,7 +34,8 @@ bool dispFirstParam = false;
 
 void setup() {
 	Serial.begin(115200);
-	
+	myWiFi_handler = new HAQuDA_WiFi_handler(&myUI, &myFS);
+
 	WS2812_begin();
 	createTasks(&myUI);
 	
@@ -44,7 +45,7 @@ void setup() {
 	}
 	log_i("SPIFFS mounted successfully");
 
-	myWiFi_handler.WiFi_connect();
+	myWiFi_handler->WiFi_connect();
 
 //	if (!sensorsBegin()) {
 //		WS2812_fillColor(COLOR_RED);
@@ -63,7 +64,7 @@ uint32_t sensors_meas_time = 0;
 
 void loop() {
 
-	myWiFi_handler.WiFi_handleConnection();
+	myWiFi_handler->WiFi_handleConnection();
 	
 	/*if (!Blynk.connected()) {
 		Blynk.connect();
