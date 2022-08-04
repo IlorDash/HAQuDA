@@ -23,6 +23,7 @@ void WS2812_setBrightnessPerCent(uint8_t brightness);
 
 void WS2812_clear();
 void WS2812_show();
+void WS2812_show(uint16_t delay);
 void WS2812_setPixelColor(uint16_t pixelNum, uint32_t color);
 void WS2812_fillColor(uint32_t color);
 
