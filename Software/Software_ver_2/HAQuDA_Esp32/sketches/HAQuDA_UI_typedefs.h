@@ -14,7 +14,7 @@ typedef struct {
 } measDivideDots_struct;
 
 typedef enum { total, eCO2, TVOC, PM2_5, temp, humid, noneParam } dispParams_enum;
-typedef enum { standard, multi, night, effect, noneMode } dispMode_enum;
+typedef enum { standard, multi, night, noneMode } dispMode_enum;
 
 typedef struct {
 	dispParams_enum paramsArr[MULTI_MODE_PARAM_NUM];
@@ -28,30 +28,27 @@ typedef struct {
 } nightModeTimeBorder_struct;
 
 typedef struct {
-	uint16_t snakeSpeed = 400; // in ms - delay between movements
-	uint8_t snakeTailLength = 5;
+	uint16_t snakeSpeed; // in ms - delay between movements
+	uint8_t snakeTailLength;
 	uint32_t snakeColor;
 
-	uint16_t randomSpeed = 400; // in ms - delay between LED ignition
+	uint16_t randomSpeed; // in ms - delay between LED ignition
 
-	uint16_t fadeSpeed = 400; // in ms - delay between reducing brightness steps
+	uint16_t fadeSpeed; // in ms - delay between reducing brightness steps
 	uint32_t fadeColor;
 } effectsParams_struct;
 
 typedef struct {
 	dispMode_enum dispMode;
-	dispParams_enum dispParam;
 
-	dispEffect_enum dispEffect;
-	effectsParams_struct effectParams;
+	dispParams_enum dispParam;
 
 	multiModeParamDisp_struct multiModeStruct;
 
-	measDivideDots_struct temp_divideDots = {20, 26, 30};
-	measDivideDots_struct humid_divideDots = {40, 60, 80};
-	measDivideDots_struct eCO2_divideDots = {400, 1000, 5000};
-	measDivideDots_struct TVOC_divideDots = {220, 660, 1000};
-	measDivideDots_struct PM2_5_divideDots = {15, 20, 45};
-	nightModeTimeBorder_struct currentTimeBorder = {21, 9};
-	uint8_t brightnessPerCent;
-} UI_Params;
+	measDivideDots_struct temp_divideDots;
+	measDivideDots_struct humid_divideDots;
+	measDivideDots_struct eCO2_divideDots;
+	measDivideDots_struct TVOC_divideDots;
+	measDivideDots_struct PM2_5_divideDots;
+	nightModeTimeBorder_struct currentTimeBorder;
+} UI_Disp_Params;

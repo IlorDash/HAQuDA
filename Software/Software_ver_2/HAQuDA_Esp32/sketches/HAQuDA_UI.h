@@ -2,6 +2,7 @@
 
 #include "HAQuDA_DispManip.h"
 #include "HAQuDA_UI_typedefs.h"
+#include "HAQuDA_ErrorHandler.h"
 #include "WS2812.h"
 
 #define COLOR_AQUA 0x00FFFF
@@ -16,7 +17,16 @@ class HAQuDA_UI {
 	HAQuDA_DispManip myDispManip;
 
   public:
-	UI_Params currUI_Params;
+
+	static errorTypes_enum dispError;
+
+	static dispEffect_enum dispEffect;
+	effectsParams_struct effectParams;
+
+	UI_Disp_Params currUI_Disp_Params;
+
+	uint8_t brightnessPerCent;
+
 	HAQuDA_UI(HAQuDA_DispManip &currDispManip);
 	void ext_setStaticColor(int red, int green, int blue);
 	void ext_setBrightness(uint8_t newBrightnessPerCent);
