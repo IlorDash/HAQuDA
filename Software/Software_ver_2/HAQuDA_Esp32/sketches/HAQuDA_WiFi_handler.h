@@ -6,7 +6,7 @@
 #include "HAQuDA_UI.h"
 #include "HAQuDA_ErrorHandler.h"
 
-#define CONNECT_WIFI_TIMEOUT 1000
+#define CONNECT_WIFI_TIMEOUT 3000
 
 class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
   private:
@@ -25,6 +25,7 @@ class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
 	bool checkStoredWiFiCreds();
 	bool createAP();
 	bool connectToWiFi(const char *ssidLocal, const char *passLocal);
+	void waitUntilWiFiConnected();
 
   public:
 	HAQuDA_WiFi_handler(HAQuDA_UI *currUI, HAQuDA_FileStorage *currFS) : _myUI(currUI), HAQuDA_WebServer(currFS){};

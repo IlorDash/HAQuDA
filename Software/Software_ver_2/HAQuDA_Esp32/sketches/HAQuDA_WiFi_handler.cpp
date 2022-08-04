@@ -3,18 +3,26 @@
 bool HAQuDA_WiFi_handler::WiFiConnected = false;
 
 bool HAQuDA_WiFi_handler::WiFi_connect() {
+
+	WiFi.onEvent(WiFiStationConnected, SYSTEM_EVENT_STA_CONNECTED);
+	WiFi.onEvent(WiFiStationDisconnected, SYSTEM_EVENT_STA_DISCONNECTED);
+	// Blynk.config(BlynkAuth, BLYNK_DEFAULT_DOMAIN, BLYNK_DEFAULT_PORT);
+	vTaskDelay(500 / portTICK_PERIOD_MS);
+
 	if (_myFS->GetStored_WiFiCredsNum()) {
+
 		if (connectToStoredWiFi()) {
 			return true;
 		} else {
-			HAQuDA_ErrorHandler::currErrorToDisp = failedToConnectToWiFi;
+			HAQuDA_UI::dispEffect = noneEffect;
+			HAQuDA_UI::dispError = failedToConnectToWiFi;
 			vTaskDelay(3000 / portTICK_PERIOD_MS);
-			return false;
 		}
 	}
 
 	if (!createAP()) {
-		HAQuDA_ErrorHandler::currErrorToDisp = failedToCreateAP;
+		HAQuDA_UI::dispEffect = noneEffect;
+		HAQuDA_UI::dispError = failedToCreateAP;
 		vTaskDelay(3000 / portTICK_PERIOD_MS);
 		return false;
 	}
@@ -28,18 +36,17 @@ void HAQuDA_WiFi_handler::WiFi_handleConnection() {
 		return;
 	}
 
-	HAQuDA_ErrorHandler::currErrorToDisp = none;
+	HAQuDA_UI::dispError = noneError;
+	vTaskDelay(100 / portTICK_PERIOD_MS);
 
-	_myUI->currUI_Params.dispMode = effect;
-	_myUI->currUI_Params.effectParams.snakeColor = COLOR_AQUA;
-	_myUI->currUI_Params.effectParams.snakeSpeed = 200; // start up connection effect
-	_myUI->currUI_Params.dispEffect = snake;
+	_myUI->effectParams.snakeColor = COLOR_AQUA;
+	_myUI->effectParams.snakeSpeed = 200; // start up connection effect
+	HAQuDA_UI::dispEffect = snake;
+	vTaskDelay(100 / portTICK_PERIOD_MS);
 
 	while (!WiFiConnected) {
 		connectToStoredWiFi();
 	}
-
-	_myUI->currUI_Params.dispEffect = noneEffect;
 }
 
 bool HAQuDA_WiFi_handler::checkStoredWiFiCreds() {
@@ -63,8 +70,16 @@ bool HAQuDA_WiFi_handler::createAP() {
 
 	return true;
 }
-wl_status_t foo;
-bool HAQuDA_WiFi_handler:: connectToStoredWiFi() {
+
+void HAQuDA_WiFi_handler::waitUntilWiFiConnected() {
+	uint32_t timer = millis();
+	while (!WiFiConnected && !PeriodInRange(timer, CONNECT_WIFI_TIMEOUT)) {
+		WiFiConnected = (WiFi.status() == WL_CONNECTED);
+		vTaskDelay(100 / portTICK_PERIOD_MS);
+	}
+}
+
+bool HAQuDA_WiFi_handler::connectToStoredWiFi() {
 	int WiFiCredsNum = _myFS->GetStored_WiFiCredsNum();
 	TWiFiCreds WiFiCreds;
 
@@ -77,16 +92,9 @@ bool HAQuDA_WiFi_handler:: connectToStoredWiFi() {
 		connectToWiFi(WiFiCreds.ssid, WiFiCreds.pass);
 		while ((j < reconnectAttempts) && !WiFiConnected) {
 			WiFi.reconnect();
-			foo = WiFi.status();
-			WiFiConnected = (WiFi.status() == WL_CONNECTED);
-			if (foo == WL_CONNECTED) {
-				int bar = 0;
-			}
-			//			uint32_t timer = millis();
-			//			while (!connected && !PeriodInRange(timer, CONNECT_WIFI_TIMEOUT)) {
-			//				connected = (WiFi.status() == WL_CONNECTED);
-			//				delay(200);
-			//			}
+
+			waitUntilWiFiConnected();
+
 			j++;
 		}
 		if (WiFiConnected) {
@@ -104,30 +112,22 @@ bool HAQuDA_WiFi_handler::connectToWiFi(const char *ssidLocal, const char *passL
 		return false;
 	}
 
-	uint32_t timer = millis();
-
-	while (!WiFiConnected && !PeriodInRange(timer, CONNECT_WIFI_TIMEOUT)) {
-		WiFiConnected = (WiFi.status() == WL_CONNECTED);
-		vTaskDelay(100);
-	}
+	waitUntilWiFiConnected();
 
 	if (!WiFiConnected) {
 		return false;
 	}
-
-	WiFi.onEvent(WiFiStationConnected, SYSTEM_EVENT_STA_CONNECTED);
-	WiFi.onEvent(WiFiStationDisconnected, SYSTEM_EVENT_STA_DISCONNECTED);
-	// Blynk.config(BlynkAuth, BLYNK_DEFAULT_DOMAIN, BLYNK_DEFAULT_PORT);
-	delay(500);
 	return true;
 }
 
 void HAQuDA_WiFi_handler::WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info) {
-	WS2812_fillColor(COLOR_GREEN);
-	delay(1000);
-	WS2812_clear();
-	delay(100);
+	HAQuDA_UI::dispEffect = noneEffect;
 	WiFiConnected = true;
+	vTaskDelay(100 / portTICK_PERIOD_MS);
+	WS2812_fillColor(COLOR_GREEN);
+	vTaskDelay(1000 / portTICK_PERIOD_MS);
+	WS2812_clear();
+	vTaskDelay(100 / portTICK_PERIOD_MS);
 }
 
 void HAQuDA_WiFi_handler::WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info) {
