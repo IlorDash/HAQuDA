@@ -1,16 +1,16 @@
 #pragma once
 
 typedef enum {
-	none,
+	noneError,
 	failedToConnectToWiFi,
 	failedToCreateAP
-} ErrorTypes;
+} errorTypes_enum;
 
 class HAQuDA_ErrorHandler {
   private:
 
   public:
-	static ErrorTypes currErrorToDisp;
+
 	HAQuDA_ErrorHandler();
 	~HAQuDA_ErrorHandler();
 };
