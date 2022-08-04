@@ -14,13 +14,13 @@
 class HAQuDA_WebServer {
   private:
   protected:
-	HAQuDA_FileStorage _myFS;
+	HAQuDA_FileStorage *_myFS;
 	bool newWiFiCredsFound = false;
 	AsyncWebServer server = AsyncWebServer(80);
 
 	void beginWebServer();
 
-	HAQuDA_WebServer(HAQuDA_FileStorage &curr_FS) : _myFS(curr_FS){};
+	HAQuDA_WebServer(HAQuDA_FileStorage *curr_FS) : _myFS(curr_FS){};
 	~HAQuDA_WebServer();
 
 	void WebServerResponds_init();
