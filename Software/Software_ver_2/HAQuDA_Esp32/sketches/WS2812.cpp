@@ -6,6 +6,9 @@ Adafruit_NeoPixel * pixels;
 void WS2812_begin() {
 	pixels = new Adafruit_NeoPixel(LED_NUM_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 	pixels->begin();
+	pixels->clear();
+	pixels->show();
+	vTaskDelay(200 / portTICK_PERIOD_MS);
 	pixels->setBrightness(MAX_BRIGHTNESS);
 }
 
@@ -14,15 +17,18 @@ void WS2812_setBrightnessPerCent(uint8_t brightnessPerCent) {
 	uint16_t brightness = brightnessPerCent * MAX_BRIGHTNESS / 100;
 	pixels->setBrightness(brightness);
 	pixels->show();
+	vTaskDelay(200 / portTICK_PERIOD_MS);
 }
 
 void WS2812_clear() {
 	pixels->clear();
 	pixels->show();
+	vTaskDelay(200 / portTICK_PERIOD_MS);
 }
 
 void WS2812_show() {
 	pixels->show();
+	vTaskDelay(200 / portTICK_PERIOD_MS);
 }
 
 void WS2812_setPixelColor(uint16_t pixelNum, uint32_t color) {
@@ -74,7 +80,6 @@ void drawChristmasTree(uint8_t middleColumn) {
 	uint32_t trunkColor = pixels->Color(190, 85, 30);
 	pixels->setPixelColor(GetPosition(middleColumn, 0), trunkColor);
 	pixels->show();
-	delay(100);
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 
 	int globalMiddleColumn = LED_COLUMN_NUM / 2;
@@ -99,10 +104,10 @@ void WS2812_ChristmasTree(int speed) {
 	uint32_t backgroundColor = pixels->Color(redBackgroundIntens, greenBackgroundIntens, blueBackgroundIntens);
 	pixels->fill(backgroundColor, 0, LED_NUM_PIXELS); // drawing christmas tree with white-blue background
 	pixels->show();
-	delay(100);
+	vTaskDelay(100 / portTICK_PERIOD_MS);
 	drawChristmasTree(treeMiddleColumn);
 
-	delay(100);
+	vTaskDelay(100 / portTICK_PERIOD_MS);
 
 	uint8_t lightsEffect = rand() % 3;
 }
