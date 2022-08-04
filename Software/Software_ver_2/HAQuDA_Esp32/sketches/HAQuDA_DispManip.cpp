@@ -16,7 +16,7 @@ void HAQuDA_DispManip::startNTP() {
 	timeClient.setTimeOffset(10800);
 }
 
-dispParams_enum HAQuDA_DispManip::checkBadParam(UI_Params currUI_Params) {
+dispParams_enum HAQuDA_DispManip::checkBadParam(UI_Disp_Params currUI_Params) {
 	if (((temp_meas.value / temp_meas.measNum) >= currUI_Params.temp_divideDots.thirdDot)
 		|| ((temp_meas.value / temp_meas.measNum) <= currUI_Params.temp_divideDots.firstDot)) {
 		return temp;
@@ -33,7 +33,7 @@ dispParams_enum HAQuDA_DispManip::checkBadParam(UI_Params currUI_Params) {
 	return noneParam;
 }
 
-void HAQuDA_DispManip::standardMode(UI_Params currUI_Params) {
+void HAQuDA_DispManip::standardMode(UI_Disp_Params currUI_Params) {
 	switch (currUI_Params.dispParam) {
 		case total: {
 			dispParams_enum badParam = checkBadParam(currUI_Params);
@@ -111,7 +111,7 @@ void HAQuDA_DispManip::standardMode(UI_Params currUI_Params) {
 	}
 }
 
-void HAQuDA_DispManip::multiMode(UI_Params currUI_Params) {
+void HAQuDA_DispManip::multiMode(UI_Disp_Params currUI_Params) {
 	for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
 		switch (currUI_Params.multiModeStruct.paramsArr[i]) {
 			case temp: {
@@ -141,7 +141,7 @@ void HAQuDA_DispManip::multiMode(UI_Params currUI_Params) {
 	WS2812_showParams_multi(currUI_Params.multiModeStruct.dataArr, currUI_Params.multiModeStruct.divideDotsArr);
 }
 
-uint8_t HAQuDA_DispManip::get_nightMode_hour(uint8_t curHour, UI_Params currUI_Params) {
+uint8_t HAQuDA_DispManip::get_nightMode_hour(uint8_t curHour, UI_Disp_Params currUI_Params) {
 	bool isBordersInDifferentDays = (currUI_Params.currentTimeBorder.timeSecondBorder < currUI_Params.currentTimeBorder.timeFirstBorder);
 
 	if (isBordersInDifferentDays) {
@@ -163,7 +163,7 @@ uint8_t HAQuDA_DispManip::get_nightMode_hour(uint8_t curHour, UI_Params currUI_P
 	return 12;
 }
 
-void HAQuDA_DispManip::nightMode(UI_Params currUI_Params) {
+void HAQuDA_DispManip::nightMode(UI_Disp_Params currUI_Params) {
 	while (!timeClient.update()) {
 		timeClient.forceUpdate();
 	}
@@ -221,7 +221,7 @@ void HAQuDA_DispManip::nightMode(UI_Params currUI_Params) {
 	}
 }
 
-void HAQuDA_DispManip::displayData(UI_Params currUI_Params) {
+void HAQuDA_DispManip::displayData(UI_Disp_Params currUI_Params) {
 	switch (currUI_Params.dispMode) {
 		case standard: {
 			standardMode(currUI_Params);
