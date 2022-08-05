@@ -11,7 +11,7 @@ void HAQuDA_FileStorage::Stop() {
 	SPIFFS.end();
 }
 
-void HAQuDA_FileStorage::ListDir(const char *dirname, uint8_t levels) {
+void HAQuDA_FileStorage::ListDir(const char *dirname, const uint8_t levels) {
 	Serial.printf("Listing directory: %s\r\n", dirname);
 
 	File root = SPIFFS.open(dirname, FILE_READ);
@@ -56,58 +56,103 @@ bool HAQuDA_FileStorage::Format() {
 	return res;
 }
 
-bool HAQuDA_FileStorage::WriteFile(const char *path, const uint8_t *data, size_t len) {
+bool HAQuDA_FileStorage::WriteFile(const char *path, const uint8_t *data, const size_t len) {
+	if (data == nullptr) {
+		return false;
+	}
+	if (len <= 0) {
+		return false;
+	}
+
 	File file = SPIFFS.open(path, FILE_WRITE);
 	if (!file) {
 		return false;
 	}
-	bool res = false;
-	if (len > 0) {
-		if (file.write(data, len) == len) {
-			res = true;
-		} else {
-		}
-	} else {
-		res = true;
+	if (file.write(data, len) != len) {
+		file.close();
+		return false;
 	}
+
 	file.close();
-	return res;
+	return true;
 }
 
 bool HAQuDA_FileStorage::WriteFile(const char *path, const uint16_t fromPos, const uint8_t *data, size_t len) {
+	if (data == nullptr) {
+		return false;
+	}
+
+	if (len <= 0) {
+		return false;
+	}
+
 	File file = SPIFFS.open(path, FILE_WRITE);
 	if (!file) {
 		return false;
 	}
-	bool res = false;
 	file.seek(fromPos);
-	if (len > 0) {
-		if (file.write(data, len) == len) {
-			res = true;
-		} else {
-		}
-	} else {
-		res = true;
+
+	if (file.write(data, len) != len) {
+		file.close();
+		return false;
 	}
 	file.close();
-	return res;
+	return true;
 }
 
 bool HAQuDA_FileStorage::AppendFile(const char *path, const uint8_t *data, size_t len) {
+	if (data == nullptr) {
+		return false;
+	}
+
+	if (len <= 0) {
+		return false;
+	}
+	
 	File file = SPIFFS.open(path, FILE_APPEND);
 	if (!file) {
 		return false;
 	}
 	bool res = false;
-	if (file.write(data, len) == len) {
-		res = true;
-	} else {
+	if (file.write(data, len) != len) {
+		file.close();
+		return false;
 	}
 	file.close();
-	return res;
+	return true;
 }
 
-bool HAQuDA_FileStorage::ReadFileFrom(const char *path, const int fromPos, uint8_t *data, size_t len) {
+bool HAQuDA_FileStorage::ReadFile(const char *path, uint8_t *data, size_t len) {
+	if (data == nullptr) {
+		return false;
+	}
+	
+	File file = SPIFFS.open(path, FILE_READ);
+
+	if (!file) {
+		return false;
+	}
+	size_t fSize = file.size();
+	if (len > fSize) {
+		file.close();
+		return false;
+	}
+
+	size_t fileReadRes = file.read(data, len);
+
+	if (fileReadRes != len) {
+		file.close();
+		return false;
+	}
+	file.close();
+	return true;
+}
+
+bool HAQuDA_FileStorage::ReadFile(const char *path, const int fromPos, uint8_t *data, size_t len) {
+	if (data == nullptr) {
+		return false;
+	}
+	
 	File file = SPIFFS.open(path, FILE_READ);
 
 	if (!file) {
@@ -115,14 +160,16 @@ bool HAQuDA_FileStorage::ReadFileFrom(const char *path, const int fromPos, uint8
 	}
 	size_t readSize = len + fromPos;
 	size_t fSize = file.size();
-	if (readSize <= fSize) {
+	file.seek(fromPos);
+	if (readSize > fSize) {
+		file.close();
+		return false;
+	}
 
-		size_t fileReadRes = file.read(data, readSize);
+	size_t fileReadRes = file.read(data, len);
 
-		if (fileReadRes != readSize) {
-			return false;
-		}
-	} else {
+	if (fileReadRes != len) {
+		file.close();
 		return false;
 	}
 
@@ -214,20 +261,9 @@ saveNewWiFiCredsReturnMsgs HAQuDA_FileStorage::SaveNew_WiFiCreds(TWiFiCreds newW
 TWiFiCreds HAQuDA_FileStorage::GetStored_WiFi(int num) {
 	TWiFiCreds WiFiCreds;
 
-	File f = SPIFFS.open(FILE_NAME_WIFI_NET, FILE_READ);
-	int fSize = f.size();
-	int count = fSize / sizeof(TWiFiCreds);
-	if (num > count) {
-		f.close();
-		return WiFiCreds;
-	}
-	f.seek(num * sizeof(TWiFiCreds));
-	if (f.read((uint8_t *)&WiFiCreds, sizeof(TWiFiCreds)) != sizeof(TWiFiCreds)) {
-		TWiFiCreds WiFiCredsError;
-		f.close();
-		return WiFiCredsError;
-	}
-	f.close();
+	uint8_t pos = num * sizeof(TWiFiCreds);
+
+	ReadFile(FILE_NAME_WIFI_NET, pos, (uint8_t *)&WiFiCreds, sizeof(TWiFiCreds));
 	return WiFiCreds;
 }
 

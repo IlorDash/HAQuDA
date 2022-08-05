@@ -73,18 +73,19 @@ class HAQuDA_FileStorage {
 
 	bool Start(void);
 	void Stop(void);
-	void ListDir(const char *dirname, uint8_t levels);
+	void ListDir(const char *dirname, const uint8_t levels);
 	static bool DeleteFile(const char *path);
 	bool Format();
-	static bool WriteFile(const char *path, const uint8_t *data = NULL, size_t len = 0);
-	static bool WriteFile(const char *path, const uint16_t fromPos, const uint8_t *data, size_t len);
-	static bool AppendFile(const char *path, const uint8_t *data, size_t len);
+	static bool WriteFile(const char *path, const uint8_t *data, const size_t len);
+	static bool WriteFile(const char *path, const uint16_t fromPos, const uint8_t *data, const size_t len);
+	static bool AppendFile(const char *path, const uint8_t *data, const size_t len);
 	bool Exists(const String &path);
 	bool Exists(const char *path);
 	static size_t FileSize(const char *path);
 
 	static void ReadFileInSerial(const char *path);
-	static bool ReadFileFrom(const char *path, const int fromPos, uint8_t *data, size_t len);
+	static bool ReadFile(const char *path, uint8_t *data, const size_t len);
+	static bool ReadFile(const char *path, const int fromPos, uint8_t *data, const size_t len);
 	const String Read_WiFiCreds();
 
 	static saveNewWiFiCredsReturnMsgs SaveNew_WiFiCreds(TWiFiCreds writeWiFiNet);
