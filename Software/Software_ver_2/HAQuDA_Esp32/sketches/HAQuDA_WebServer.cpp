@@ -96,7 +96,7 @@ void HAQuDA_WebServer::show_WiFiCreds(AsyncWebServerRequest *request) {
 	if (WiFiCredsNum == 0) {
 		request->send(200, "text/html", "WiFi credentials are empty");
 	} else {
-		HAQuDA_FileStorage::ReadFileFrom(FILE_NAME_WIFI_NET, 0, (uint8_t *)bar, sizeof(TWiFiCreds));
+		HAQuDA_FileStorage::ReadFile(FILE_NAME_WIFI_NET, (uint8_t *)bar, sizeof(TWiFiCreds));
 		//		char buff[WIFI_SSID_LEN + WIFI_PASS_LEN] = {""};
 		//		String answer = "";
 		//		for (int i = 0; i < WiFiCredsNum; i++) {
