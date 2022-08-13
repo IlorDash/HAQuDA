@@ -14,15 +14,15 @@ bool HAQuDA_WiFi_handler::WiFi_connect() {
 		if (connectToStoredWiFi()) {
 			return true;
 		} else {
-			HAQuDA_UI::dispEffect = noneEffect;
-			HAQuDA_UI::dispError = failedToConnectToWiFi;
+			HAQuDA_DisplayInterface::displayEffect = noneEffect;
+			HAQuDA_DisplayInterface::displayError = failedToConnectToWiFi;
 			vTaskDelay(3000 / portTICK_PERIOD_MS);
 		}
 	}
 
 	if (!createAP()) {
-		HAQuDA_UI::dispEffect = noneEffect;
-		HAQuDA_UI::dispError = failedToCreateAP;
+		HAQuDA_DisplayInterface::displayEffect = noneEffect;
+		HAQuDA_DisplayInterface::displayError = failedToCreateAP;
 		vTaskDelay(3000 / portTICK_PERIOD_MS);
 		return false;
 	}
@@ -36,12 +36,12 @@ void HAQuDA_WiFi_handler::WiFi_handleConnection() {
 		return;
 	}
 
-	HAQuDA_UI::dispError = noneError;
+	HAQuDA_DisplayInterface::displayError = noneError;
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 
-	_myUI->effectParams.snakeColor = COLOR_AQUA;
-	_myUI->effectParams.snakeSpeed = 200; // start up connection effect
-	HAQuDA_UI::dispEffect = snake;
+	_myDisplayInterface->snakeEffectParams.snakeColor = COLOR_AQUA;
+	_myDisplayInterface->snakeEffectParams.snakeSpeed = 200; // start up connection effect
+	HAQuDA_DisplayInterface::displayEffect = snake;
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 
 	while (!WiFiConnected) {
@@ -121,7 +121,7 @@ bool HAQuDA_WiFi_handler::connectToWiFi(const char *ssidLocal, const char *passL
 }
 
 void HAQuDA_WiFi_handler::WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info) {
-	HAQuDA_UI::dispEffect = noneEffect;
+	HAQuDA_DisplayInterface::displayEffect = noneEffect;
 	WiFiConnected = true;
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 	WS2812_fillColor(COLOR_GREEN);
