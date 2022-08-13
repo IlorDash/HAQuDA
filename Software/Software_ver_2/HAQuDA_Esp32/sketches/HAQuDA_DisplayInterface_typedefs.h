@@ -3,6 +3,7 @@
 #include "Arduino.h"
 
 #define MULTI_MODE_PARAM_NUM 3
+#define DIVIDE_DOTS_NUM 3
 #define DISP_PARAMS_NUM 5
 
 typedef enum {effect , meas, error, none } whatDisplay_enum;
