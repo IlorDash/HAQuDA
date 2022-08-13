@@ -1,7 +1,7 @@
 #include "Arduino.h"
 
 #include "HAQuDA_WiFi_handler.h"
-#include "HAQuDA_UI.h"
+#include "HAQuDA_DisplayInterface.h"
 #include "HAQuDA_FileStorage.h"
 
 #include <SoftwareSerial.h>
@@ -14,13 +14,17 @@
 #define DISP_MEAS_PERIOD 300000 //=5 min in ms
 #define SENSORS_MEAS_PERIOD 2000
 
+#define T_SENSOR_1 32
+#define T_SENSOR_2 27
+#define T_SENSOR_3 33
+#define T_SENSOR_4 4
 
 char BlynkAuth[] = BLYNK_AUTH;
 
 WidgetTerminal terminal(V0);
-HAQuDA_DispManip myDispManip;
+HAQuDA_DisplayManip myDispManip;
 HAQuDA_FileStorage myFS;
-HAQuDA_UI myUI(myDispManip);
+HAQuDA_DisplayInterface myUI(myDispManip);
 HAQuDA_WiFi_handler *myWiFi_handler;
 
 void UpdateVirtualPins();
@@ -38,7 +42,7 @@ void setup() {
 
 	WS2812_begin();
 	createTasks(&myUI);
-	
+
 	if (!myFS.Start()) {
 		log_e("SPIFFS not mounted!");
 		return;
@@ -47,25 +51,43 @@ void setup() {
 
 	myWiFi_handler->WiFi_connect();
 
-//	if (!sensorsBegin()) {
-//		WS2812_fillColor(COLOR_RED);
-//		terminal.println("FATAL ERROR: Failed to begin sensors");
-//		while (1) {
-//		}
-//	}
-//
-//	terminal.println("*************************");
-//	terminal.print("START LOGGING");
+	//	if (!sensorsBegin()) {
+	//		WS2812_fillColor(COLOR_RED);
+	//		terminal.println("FATAL ERROR: Failed to begin sensors");
+	//		while (1) {
+	//		}
+	//	}
+	//
+	//	terminal.println("*************************");
+	//	terminal.print("START LOGGING");
 }
 
 uint16_t measNum = 0;
 uint32_t dispMeasTimer = 0;
 uint32_t sensors_meas_time = 0;
 
+int sens_val_1;
+int sens_val_2;
+int sens_val_3;
+int sens_val_4;
+
 void loop() {
 
-	myWiFi_handler->WiFi_handleConnection();
+	sens_val_1 = touchRead(T_SENSOR_1);
+	sens_val_2 = touchRead(T_SENSOR_2);
+	sens_val_3 = touchRead(T_SENSOR_3);
+	sens_val_4 = touchRead(T_SENSOR_4);
 	
+
+	if (sens_val_1 || sens_val_2 || sens_val_3 || sens_val_4) {
+		sens_val_1 = 0;
+		sens_val_2 = 0;
+		sens_val_3 = 0;
+		sens_val_4 = 0;
+	}
+
+	myWiFi_handler->WiFi_handleConnection();
+
 	/*if (!Blynk.connected()) {
 		Blynk.connect();
 	} else {
