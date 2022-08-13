@@ -1,10 +1,10 @@
 #pragma once
 
 #include "WS2812.h"
-#include "HAQuDA_UI.h"
+#include "HAQuDA_DisplayInterface.h"
 #include <vector>
 
-extern HAQuDA_UI *myUI_tasks;
+extern HAQuDA_DisplayInterface *myDisplayInterface_tasks;
 
-void createTasks(HAQuDA_UI *currUI);
+void createTasks(HAQuDA_DisplayInterface *currUI);
 void deleteTasks();
