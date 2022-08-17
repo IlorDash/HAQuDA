@@ -132,9 +132,10 @@ void setup() {
 	currentTimeBorder.timeFirstBorder = 21;
 	currentTimeBorder.timeSecondBorder = 9;
 
+	WS2812_begin();
+	
 	WiFi_handleConnection();
 
-	WS2812_begin();
 	if (!sensorsBegin()) {
 		WS2812_fillColor(COLOR_RED);
 		terminal.println("FATAL ERROR: Failed to begin sensors");
