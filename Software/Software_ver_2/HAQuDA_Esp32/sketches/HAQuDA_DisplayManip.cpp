@@ -5,17 +5,16 @@ HAQuDA_DisplayManip::~HAQuDA_DisplayManip() {
 }
 
 void HAQuDA_DisplayManip::startNTP() {
- timeClient(ntpUDP){}
-	
-	
+	timeClient = new NTPClient(ntpUDP);
+
 	// Initialize a NTPClient to get time
-	timeClient.begin();
+	timeClient->begin();
 	// Set offset time in seconds to adjust for your timezone, for example:
 	// GMT +1 = 3600
 	// GMT +8 = 28800
 	// GMT +3 = 10800
 	// GMT 0 = 0
-	timeClient.setTimeOffset(10800);
+	timeClient->setTimeOffset(10800);
 }
 
 displayParams_enum HAQuDA_DisplayManip::checkBadParam(displayMeasParams_struct currDisplayMeasParams) {
@@ -41,23 +40,23 @@ void HAQuDA_DisplayManip::standardMode(displayMeasParams_struct currDisplayMeasP
 			displayParams_enum badParam = checkBadParam(currDisplayMeasParams);
 			switch (badParam) {
 				case temp: {
-					WS2812_showParams_standard(temp_meas.value / temp_meas.measNum, currDisplayMeasParams.temp_divideDots);
+					HAQuDA_DisplayManip::showMeas_standard(temp_meas.value / temp_meas.measNum, currDisplayMeasParams.temp_divideDots);
 					break;
 				}
 				case humid: {
-					WS2812_showParams_standard(humid_meas.value / humid_meas.measNum, currDisplayMeasParams.humid_divideDots);
+					HAQuDA_DisplayManip::showMeas_standard(humid_meas.value / humid_meas.measNum, currDisplayMeasParams.humid_divideDots);
 					break;
 				}
 				case eCO2: {
-					WS2812_showParams_standard(eCO2_meas.value / eCO2_meas.measNum, currDisplayMeasParams.eCO2_divideDots);
+					HAQuDA_DisplayManip::showMeas_standard(eCO2_meas.value / eCO2_meas.measNum, currDisplayMeasParams.eCO2_divideDots);
 					break;
 				}
 				case TVOC: {
-					WS2812_showParams_standard(TVOC_meas.value / TVOC_meas.measNum, currDisplayMeasParams.TVOC_divideDots);
+					HAQuDA_DisplayManip::showMeas_standard(TVOC_meas.value / TVOC_meas.measNum, currDisplayMeasParams.TVOC_divideDots);
 					break;
 				}
 				case PM2_5: {
-					WS2812_showParams_standard(PM_2_5_meas.value / PM_2_5_meas.measNum, currDisplayMeasParams.PM2_5_divideDots);
+					HAQuDA_DisplayManip::showMeas_standard(PM_2_5_meas.value / PM_2_5_meas.measNum, currDisplayMeasParams.PM2_5_divideDots);
 					break;
 				}
 				case noneParam: {
@@ -79,7 +78,7 @@ void HAQuDA_DisplayManip::standardMode(displayMeasParams_struct currDisplayMeasP
 					measValuesArr[4] = PM_2_5_meas.value / PM_2_5_meas.measNum;
 					measDivideDots[4] = currDisplayMeasParams.PM2_5_divideDots;
 
-					WS2812_showParams_standardTotal(measValuesArr, measDivideDots);
+					HAQuDA_DisplayManip::showMeas_total(measValuesArr, sizeof(measValuesArr), measDivideDots, sizeof(measDivideDots));
 					break;
 				}
 				default:
@@ -88,23 +87,23 @@ void HAQuDA_DisplayManip::standardMode(displayMeasParams_struct currDisplayMeasP
 			break;
 		}
 		case temp: {
-			WS2812_showParams_standard(temp_meas.value / temp_meas.measNum, currDisplayMeasParams.temp_divideDots);
+			HAQuDA_DisplayManip::showMeas_standard(temp_meas.value / temp_meas.measNum, currDisplayMeasParams.temp_divideDots);
 			break;
 		}
 		case humid: {
-			WS2812_showParams_standard(humid_meas.value / humid_meas.measNum, currDisplayMeasParams.humid_divideDots);
+			HAQuDA_DisplayManip::showMeas_standard(humid_meas.value / humid_meas.measNum, currDisplayMeasParams.humid_divideDots);
 			break;
 		}
 		case eCO2: {
-			WS2812_showParams_standard(eCO2_meas.value / eCO2_meas.measNum, currDisplayMeasParams.eCO2_divideDots);
+			HAQuDA_DisplayManip::showMeas_standard(eCO2_meas.value / eCO2_meas.measNum, currDisplayMeasParams.eCO2_divideDots);
 			break;
 		}
 		case TVOC: {
-			WS2812_showParams_standard(TVOC_meas.value / TVOC_meas.measNum, currDisplayMeasParams.TVOC_divideDots);
+			HAQuDA_DisplayManip::showMeas_standard(TVOC_meas.value / TVOC_meas.measNum, currDisplayMeasParams.TVOC_divideDots);
 			break;
 		}
 		case PM2_5: {
-			WS2812_showParams_standard(PM_2_5_meas.value / PM_2_5_meas.measNum, currDisplayMeasParams.PM2_5_divideDots);
+			HAQuDA_DisplayManip::showMeas_standard(PM_2_5_meas.value / PM_2_5_meas.measNum, currDisplayMeasParams.PM2_5_divideDots);
 			break;
 		}
 
@@ -113,50 +112,70 @@ void HAQuDA_DisplayManip::standardMode(displayMeasParams_struct currDisplayMeasP
 	}
 }
 
-void HAQuDA_DisplayManip::multiMode(displayMeasParams_struct currDisplayMeasParams) {
+void HAQuDA_DisplayManip::multiMode(multiModeParamDisplay_struct multiModeParams) {
 	for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
-		switch (currDisplayMeasParams.multiModeStruct.paramsArr[i]) {
+		switch (multiModeParams.paramsArr[i]) {
 			case temp: {
-				currDisplayMeasParams.multiModeStruct.dataArr[i] = temp_meas.value / temp_meas.measNum;
+				multiModeParams.dataArr[i] = temp_meas.value / temp_meas.measNum;
 				break;
 			}
 			case humid: {
-				currDisplayMeasParams.multiModeStruct.dataArr[i] = humid_meas.value / humid_meas.measNum;
+				multiModeParams.dataArr[i] = humid_meas.value / humid_meas.measNum;
 				break;
 			}
 			case eCO2: {
-				currDisplayMeasParams.multiModeStruct.dataArr[i] = eCO2_meas.value / eCO2_meas.measNum;
+				multiModeParams.dataArr[i] = eCO2_meas.value / eCO2_meas.measNum;
 				break;
 			}
 			case PM2_5: {
-				currDisplayMeasParams.multiModeStruct.dataArr[i] = PM_2_5_meas.value / PM_2_5_meas.measNum;
+				multiModeParams.dataArr[i] = PM_2_5_meas.value / PM_2_5_meas.measNum;
 				break;
 			}
 			case TVOC: {
-				currDisplayMeasParams.multiModeStruct.dataArr[i] = TVOC_meas.value / TVOC_meas.measNum;
+				multiModeParams.dataArr[i] = TVOC_meas.value / TVOC_meas.measNum;
 				break;
 			}
 			default:
 				break;
 		}
 	}
-	WS2812_showParams_multi(currDisplayMeasParams.multiModeStruct.dataArr, currDisplayMeasParams.multiModeStruct.divideDotsArr);
+	HAQuDA_DisplayManip::showMeas_multi(multiModeParams.dataArr, sizeof(multiModeParams.dataArr), multiModeParams.divideDotsArr,
+										sizeof(multiModeParams.divideDotsArr));
 }
 
-uint8_t HAQuDA_DisplayManip::get_nightMode_hour(uint8_t curHour, displayMeasParams_struct currDisplayMeasParams) {
-	bool isBordersInDifferentDays = (currDisplayMeasParams.currentTimeBorder.timeSecondBorder < currDisplayMeasParams.currentTimeBorder.timeFirstBorder);
+uint8_t HAQuDA_DisplayManip::get_nightMode_hour(nightModeTimeBorder_struct timeBorder) {
+	while (!timeClient->update()) {
+		timeClient->forceUpdate();
+	}
+	// The formattedDate comes with the following format:
+	// 2018-05-28T16:00:13Z
+	// We need to extract date and time
+	// Variables to save date and time
+	String formattedDate;
+	uint8_t curHour;
+
+	formattedDate = timeClient->getFormattedDate();
+	Serial.println(formattedDate);
+
+	// Extract date
+	int splitT = formattedDate.indexOf("T");
+	int splitColon = formattedDate.indexOf(":");
+	// Extract time
+	curHour = formattedDate.substring(splitT + 1, splitColon).toInt();
+
+	bool isBordersInDifferentDays = (timeBorder.timeSecondBorder < timeBorder.timeFirstBorder);
 
 	if (isBordersInDifferentDays) {
-		if ((curHour >= currDisplayMeasParams.currentTimeBorder.timeFirstBorder) || (curHour <= currDisplayMeasParams.currentTimeBorder.timeSecondBorder)) {
-			int8_t hourDiff = curHour - currDisplayMeasParams.currentTimeBorder.timeFirstBorder;
+		if ((curHour >= timeBorder.timeFirstBorder) || (curHour <= timeBorder.timeSecondBorder)) {
+			int8_t hourDiff = curHour - timeBorder.timeFirstBorder;
 			hourDiff += (hourDiff < 0) ? 24 : 0;
 			return hourDiff;
 		} else {
 			return 12;
 		}
 	} else {
-		if ((curHour >= currDisplayMeasParams.currentTimeBorder.timeFirstBorder) && (curHour <= currDisplayMeasParams.currentTimeBorder.timeSecondBorder)) {
-			int8_t hourDiff = curHour - currDisplayMeasParams.currentTimeBorder.timeFirstBorder;
+		if ((curHour >= timeBorder.timeFirstBorder) && (curHour <= timeBorder.timeSecondBorder)) {
+			int8_t hourDiff = curHour - timeBorder.timeFirstBorder;
 			return hourDiff;
 		} else {
 			return 12;
@@ -166,54 +185,35 @@ uint8_t HAQuDA_DisplayManip::get_nightMode_hour(uint8_t curHour, displayMeasPara
 }
 
 void HAQuDA_DisplayManip::nightMode(displayMeasParams_struct currDisplayMeasParams) {
-	while (!timeClient.update()) {
-		timeClient.forceUpdate();
-	}
-	// The formattedDate comes with the following format:
-	// 2018-05-28T16:00:13Z
-	// We need to extract date and time
-	// Variables to save date and time
-	String formattedDate;
-	uint8_t curHour;
-
-	formattedDate = timeClient.getFormattedDate();
-	Serial.println(formattedDate);
-
-	// Extract date
-	int splitT = formattedDate.indexOf("T");
-	int splitColon = formattedDate.indexOf(":");
-	// Extract time
-	curHour = formattedDate.substring(splitT + 1, splitColon).toInt();
-
-	uint8_t nightMode_hour = get_nightMode_hour(curHour, currDisplayMeasParams);
+	uint8_t nightMode_hour = get_nightMode_hour(currDisplayMeasParams.currentTimeBorder);
 
 	switch (currDisplayMeasParams.displayParam) {
 		case temp: {
-			WS2812_showParams_night(temp_meas.value / temp_meas.measNum, currDisplayMeasParams.temp_divideDots, nightMode_hour);
+			HAQuDA_DisplayManip::showMeas_night(temp_meas.value / temp_meas.measNum, currDisplayMeasParams.temp_divideDots, nightMode_hour);
 			temp_meas.value = 0;
 			temp_meas.measNum = 0;
 			break;
 		}
 		case humid: {
-			WS2812_showParams_night(humid_meas.value / humid_meas.measNum, currDisplayMeasParams.humid_divideDots, nightMode_hour);
+			HAQuDA_DisplayManip::showMeas_night(humid_meas.value / humid_meas.measNum, currDisplayMeasParams.humid_divideDots, nightMode_hour);
 			humid_meas.value = 0;
 			humid_meas.measNum = 0;
 			break;
 		}
 		case eCO2: {
-			WS2812_showParams_night(eCO2_meas.value / eCO2_meas.measNum, currDisplayMeasParams.eCO2_divideDots, nightMode_hour);
+			HAQuDA_DisplayManip::showMeas_night(eCO2_meas.value / eCO2_meas.measNum, currDisplayMeasParams.eCO2_divideDots, nightMode_hour);
 			eCO2_meas.value = 0;
 			eCO2_meas.measNum = 0;
 			break;
 		}
 		case TVOC: {
-			WS2812_showParams_night(TVOC_meas.value / TVOC_meas.measNum, currDisplayMeasParams.TVOC_divideDots, nightMode_hour);
+			HAQuDA_DisplayManip::showMeas_night(TVOC_meas.value / TVOC_meas.measNum, currDisplayMeasParams.TVOC_divideDots, nightMode_hour);
 			TVOC_meas.value = 0;
 			TVOC_meas.measNum = 0;
 			break;
 		}
 		case PM2_5: {
-			WS2812_showParams_night(PM_2_5_meas.value / PM_2_5_meas.measNum, currDisplayMeasParams.PM2_5_divideDots, nightMode_hour);
+			HAQuDA_DisplayManip::showMeas_night(PM_2_5_meas.value / PM_2_5_meas.measNum, currDisplayMeasParams.PM2_5_divideDots, nightMode_hour);
 			PM_2_5_meas.value = 0;
 			PM_2_5_meas.measNum = 0;
 			break;
@@ -230,7 +230,7 @@ void HAQuDA_DisplayManip::displayData(displayMeasParams_struct currDisplayMeasPa
 			break;
 		}
 		case multi: {
-			multiMode(currDisplayMeasParams);
+			multiMode(currDisplayMeasParams.multiModeStruct);
 			break;
 		}
 		case night: {
@@ -242,7 +242,8 @@ void HAQuDA_DisplayManip::displayData(displayMeasParams_struct currDisplayMeasPa
 	}
 }
 
-void HAQuDA_DisplayManip::getMeasRGB(uint8_t *_red, uint8_t *_green, uint8_t *_blue, uint8_t brightness, float data, measDivideDots_struct divideDots) {
+void HAQuDA_DisplayManip::getMeasRGB(uint8_t *_red, uint8_t *_green, uint8_t *_blue, const uint8_t brightness, const float data,
+									 const measDivideDots_struct divideDots) {
 	float coefficient = (brightness * 2) / (divideDots.thirdDot - divideDots.firstDot);
 	if ((data < divideDots.secondDot) && (data >= divideDots.firstDot)) {
 		*_blue = round(-abs(data - divideDots.firstDot) * coefficient) + MAX_BRIGHTNESS;
@@ -265,14 +266,16 @@ void HAQuDA_DisplayManip::getMeasRGB(uint8_t *_red, uint8_t *_green, uint8_t *_b
 
 void HAQuDA_DisplayManip::showMeas_standard(float data, measDivideDots_struct divideDots) {
 	uint8_t red, green, blue; // values of LED colors
-	getMeasRGB(&red, &green, &blue, data, divideDots);
+	uint8_t brightness = WS2812_getBrightness();
+	getMeasRGB(&red, &green, &blue, brightness, data, divideDots);
 	WS2812_fillColor(WS2812_getColor(red, green, blue));
 }
 
-void HAQuDA_DisplayManip::showMeas_night(float data, measDivideDots_struct divideDots, uint8_t brightness, uint8_t time) {
+void HAQuDA_DisplayManip::showMeas_night(float data, measDivideDots_struct divideDots, uint8_t time) {
 
-	int red, green, blue; // values of LED colors
-	getMeasRGB(&red, &green, &blue, data, divideDots);
+	uint8_t red, green, blue; // values of LED colors
+	uint8_t brightness = WS2812_getBrightness();
+	getMeasRGB(&red, &green, &blue, brightness, data, divideDots);
 
 	for (int i = 0; i < LED_COLUMN_NUM; i++) {
 		uint8_t whiteBrightness = brightness * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
@@ -290,9 +293,10 @@ void HAQuDA_DisplayManip::showMeas_multi(float *data, uint8_t dataSize, measDivi
 	if (divideDotsSize != DIVIDE_DOTS_NUM) {
 		return;
 	}
-	int red[MULTI_MODE_PARAM_NUM], green[MULTI_MODE_PARAM_NUM], blue[MULTI_MODE_PARAM_NUM]; // values of LED colors
+	uint8_t red[MULTI_MODE_PARAM_NUM], green[MULTI_MODE_PARAM_NUM], blue[MULTI_MODE_PARAM_NUM]; // values of LED colors
+	uint8_t brightness = WS2812_getBrightness();
 	for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
-		getMeasRGB(&(red[i]), &(green[i]), &(blue[i]), data[i], divideDots[i]);
+		getMeasRGB(&(red[i]), &(green[i]), &(blue[i]), brightness, data[i], divideDots[i]);
 	}
 	for (int i = 0; i < LED_ROW_NUM; i++) {
 		if (!(i % 2)) {
@@ -307,21 +311,21 @@ void HAQuDA_DisplayManip::showMeas_multi(float *data, uint8_t dataSize, measDivi
 	}
 }
 
-void HAQuDA_DisplayManip::showMeas_standardTotal(float *data, uint8_t dataSize, measDivideDots_struct *dataDivideDots, uint8_t divideDotsSize) {
+void HAQuDA_DisplayManip::showMeas_total(float *data, uint8_t dataSize, measDivideDots_struct *dataDivideDots, uint8_t divideDotsSize) {
 	if (dataSize != MULTI_MODE_PARAM_NUM) {
 		return;
 	}
 	if (divideDotsSize != DIVIDE_DOTS_NUM) {
 		return;
 	}
-	int colorsArr[DISP_PARAMS_NUM][COLORS_NUM];
+	uint8_t colorsArr[DISP_PARAMS_NUM][COLORS_NUM];
+	uint8_t brightness = WS2812_getBrightness();
 	for (int i = 0; i < DISP_PARAMS_NUM; i++) {
-		getMeasRGB(&(colorsArr[i][0]), &(colorsArr[i][1]), &(colorsArr[i][2]), data[i],
-			   dataDivideDots[i]); // calculating all 3 colors for all displayable parameters
+		getMeasRGB(&(colorsArr[i][0]), &(colorsArr[i][1]), &(colorsArr[i][2]), brightness, data[i],
+				   dataDivideDots[i]); // calculating all 3 colors for all displayable parameters
 	}
 
-	int red, green, blue; // values of LED colors
-
+	uint8_t red, green, blue; // values of LED colors
 	for (int i = 0; i < DISP_PARAMS_NUM; i++) {
 		red += colorsArr[i][0];
 		green += colorsArr[i][1]; // calculating mean of colors of all displayable parameters
@@ -387,8 +391,8 @@ void HAQuDA_DisplayManip::showEffect_ChristmasTree(uint8_t speed, uint8_t treeMi
 	uint32_t backgroundColor = WS2812_getColor(redBackground, greenBackground, blueBackground);
 	WS2812_fillColor(backgroundColor); // drawing christmas tree with white-blue background
 
-	drawTreeTrunk(treeMiddleColumn);
-	drawTreeTop(treeMiddleColumn);
-	drawStarOnTree(treeMiddleColumn);
+	HAQuDA_DisplayManip::drawTreeTrunk(treeMiddleColumn);
+	HAQuDA_DisplayManip::drawTreeTop(treeMiddleColumn);
+	HAQuDA_DisplayManip::drawStarOnTree(treeMiddleColumn);
 	// uint8_t lightsEffect = rand() % 3;
 }
