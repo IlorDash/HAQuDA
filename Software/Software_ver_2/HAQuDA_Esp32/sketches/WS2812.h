@@ -19,6 +19,7 @@
 void WS2812_begin();
 
 void WS2812_setBrightnessPerCent(uint8_t brightness);
+uint8_t WS2812_getBrightness();
 
 void WS2812_clear();
 void WS2812_show();
