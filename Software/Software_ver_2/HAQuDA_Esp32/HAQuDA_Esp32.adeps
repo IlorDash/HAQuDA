@@ -28,6 +28,14 @@
     <Dependency>
       <Type>Library</Type>
       <Key>
+        <Packager>Ayush Sharma</Packager>
+        <Name>WebSerial</Name>
+        <Version>1.3.0</Version>
+      </Key>
+    </Dependency>
+    <Dependency>
+      <Type>Library</Type>
+      <Key>
         <Packager>Dirk Kaar, Peter Lerup</Packager>
         <Name>EspSoftwareSerial</Name>
         <Version>6.12.6</Version>

@@ -14,17 +14,16 @@
 #define DISP_MEAS_PERIOD 300000 //=5 min in ms
 #define SENSORS_MEAS_PERIOD 2000
 
-#define T_SENSOR_1 32
-#define T_SENSOR_2 27
-#define T_SENSOR_3 33
-#define T_SENSOR_4 4
+#define TOUCH_9 32
+#define TOUCH_7 27
+#define TOUCH_8 33
+#define TOUCH_0 4
 
 char BlynkAuth[] = BLYNK_AUTH;
 
 WidgetTerminal terminal(V0);
-HAQuDA_DisplayManip myDispManip;
 HAQuDA_FileStorage myFS;
-HAQuDA_DisplayInterface myUI(myDispManip);
+HAQuDA_DisplayInterface myDisplayInterface;
 HAQuDA_WiFi_handler *myWiFi_handler;
 
 void UpdateVirtualPins();
@@ -36,12 +35,15 @@ int thirdDot;
 
 bool dispFirstParam = false;
 
+#define TOUCH_THRESH_NO_USE (0)
+esp_err_t ans;
+
 void setup() {
 	Serial.begin(115200);
-	myWiFi_handler = new HAQuDA_WiFi_handler(&myUI, &myFS);
+	myWiFi_handler = new HAQuDA_WiFi_handler(&myDisplayInterface, &myFS);
 
 	WS2812_begin();
-	createTasks(&myUI);
+	createTasks(&myDisplayInterface);
 
 	if (!myFS.Start()) {
 		log_e("SPIFFS not mounted!");
@@ -51,6 +53,10 @@ void setup() {
 
 	myWiFi_handler->WiFi_connect();
 
+	//ans = touch_pad_init();
+	//ans = touch_pad_set_voltage(TOUCH_HVOLT_2V7, TOUCH_LVOLT_0V5, TOUCH_HVOLT_ATTEN_1V);
+	//ans = touch_pad_config(TOUCH_PAD_NUM8, TOUCH_THRESH_NO_USE);
+	//ans = touch_pad_config(TOUCH_PAD_NUM9, TOUCH_THRESH_NO_USE);
 	//	if (!sensorsBegin()) {
 	//		WS2812_fillColor(COLOR_RED);
 	//		terminal.println("FATAL ERROR: Failed to begin sensors");
@@ -66,28 +72,31 @@ uint16_t measNum = 0;
 uint32_t dispMeasTimer = 0;
 uint32_t sensors_meas_time = 0;
 
-int sens_val_1;
-int sens_val_2;
-int sens_val_3;
-int sens_val_4;
-
+uint16_t touch_val_9 = 0, touch_val_7 = 0, touch_val_8 = 0, touch_val_0 = 0;
+uint8_t TTP223_val = 0;
+char strToSerial[64] = {};
 void loop() {
 
-	sens_val_1 = touchRead(T_SENSOR_1);
-	sens_val_2 = touchRead(T_SENSOR_2);
-	sens_val_3 = touchRead(T_SENSOR_3);
-	sens_val_4 = touchRead(T_SENSOR_4);
-	
+	//ans = touch_pad_read_raw_data(TOUCH_PAD_NUM9, &touch_val_9);
+	//ans = touch_pad_read_raw_data(TOUCH_PAD_NUM8, &touch_val_8);
 
-	if (sens_val_1 || sens_val_2 || sens_val_3 || sens_val_4) {
-		sens_val_1 = 0;
-		sens_val_2 = 0;
-		sens_val_3 = 0;
-		sens_val_4 = 0;
+	 touch_val_9 = touchRead(TOUCH_9);
+	 touch_val_7 = touchRead(TOUCH_7);
+	 touch_val_8 = touchRead(TOUCH_8);
+	 touch_val_0 = touchRead(TOUCH_0);
+
+	 if (touch_val_9 || touch_val_7 || touch_val_8 || touch_val_0) {
+		 touch_val_9 = touch_val_9;
+		 touch_val_7 = touch_val_7;
+		 touch_val_8 = touch_val_8;
+		 touch_val_0 = touch_val_0;
 	}
 
-	myWiFi_handler->WiFi_handleConnection();
+	sprintf(strToSerial, "TTP223 value: %d  TOUCH9: %d  TOUCH7: %d  TOUCH8: %d  TOUCH0: %d  ", TTP223_val, touch_val_9, touch_val_7, touch_val_8, touch_val_0);
+	vTaskDelay(1000);
+	myWiFi_handler->WebSerialPrint(strToSerial);
 
+	myWiFi_handler->WiFi_handleConnection();
 	/*if (!Blynk.connected()) {
 		Blynk.connect();
 	} else {
@@ -107,7 +116,7 @@ void loop() {
 	}
 
 	if (millis() - dispMeasTimer > DISP_MEAS_PERIOD) {
-		myDispManip->displayData(myUI->currUI_Params);
+		myDispManip->displayData(myDisplayInterface->currUI_Params);
 		dispMeasTimer = millis();
 
 		temp_meas.value = 0;
@@ -195,9 +204,9 @@ void loop() {
 //
 //	terminal.flush();
 //
-//	/*if (myUI.currUI_Params.dispMode == standard) {
+//	/*if (myDisplayInterface.currUI_Params.dispMode == standard) {
 //		terminal.println("Display standard");
-//		switch (myUI.currUI_Params.dispParam) {
+//		switch (myDisplayInterface.currUI_Params.dispParam) {
 //			case total:
 //				terminal.println("Display total quality");
 //				break;
@@ -219,10 +228,10 @@ void loop() {
 //			default:
 //				terminal.println("Display none parametr");
 //		}
-//	} else if (myUI.currUI_Params.dispMode == multi) {
+//	} else if (myDisplayInterface.currUI_Params.dispMode == multi) {
 //		terminal.println("Display multi");
 //		for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
-//			switch (myUI.currUI_Params.multiModeStruct.paramsArr[i]) {
+//			switch (myDisplayInterface.currUI_Params.multiModeStruct.paramsArr[i]) {
 //				case total:
 //					terminal.println("Display total quality");
 //					break;
@@ -245,8 +254,8 @@ void loop() {
 //					terminal.println("Display none parametr");
 //			}
 //		}
-//	} else if (myUI.currUI_Params.dispMode == night) {
-//		switch (myUI.currUI_Params.dispParam) {
+//	} else if (myDisplayInterface.currUI_Params.dispMode == night) {
+//		switch (myDisplayInterface.currUI_Params.dispParam) {
 //			case total:
 //				terminal.println("Display total quality");
 //				break;
@@ -269,7 +278,7 @@ void loop() {
 //				terminal.println("Display none parametr");
 //		}
 //	} else {
-//		switch (myUI.currUI_Params.dispEffect) {
+//		switch (myDisplayInterface.currUI_Params.dispEffect) {
 //			case snake:
 //				terminal.println("Display snake effect");
 //				break;
@@ -295,21 +304,21 @@ void loop() {
 //	int green = param[1].asInt();
 //	int blue = param[2].asInt();
 //
-//	//myUI.ext_setStaticColor(red, green, blue);
+//	//myDisplayInterface.ext_setStaticColor(red, green, blue);
 //}
 //
 // BLYNK_WRITE(V2) {
-//	//myUI.ext_setBrightness(param.asInt());
+//	//myDisplayInterface.ext_setBrightness(param.asInt());
 //}
 //
 // BLYNK_WRITE(V3) {
-//	//myUI.ext_changeDispMode(param.asInt());
+//	//myDisplayInterface.ext_changeDispMode(param.asInt());
 //}
 //
 // BLYNK_WRITE(V4) {
-//	//myUI.ext_changeDispParam(param.asInt());
+//	//myDisplayInterface.ext_changeDispParam(param.asInt());
 //}
 //
 // BLYNK_WRITE(V5) {
-//	//myUI.ext_changeDispEffect(param.asInt());
+//	//myDisplayInterface.ext_changeDispEffect(param.asInt());
 //}
