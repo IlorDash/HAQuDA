@@ -13,9 +13,6 @@
 #define COLOR_WHITE 0xFFFFFF
 
 class HAQuDA_DisplayInterface {
-  private:
-	HAQuDA_DisplayManip myDisplayManip;
-
   public:
 	static whatDisplay_enum whatDisplay;
 
@@ -31,7 +28,7 @@ class HAQuDA_DisplayInterface {
 
 	uint8_t brightnessPerCent;
 
-	HAQuDA_DisplayInterface(HAQuDA_DisplayManip &currDisplayManip);
+	HAQuDA_DisplayInterface();
 	void ext_setStaticColor(int red, int green, int blue);
 	void ext_setBrightness(uint8_t newBrightnessPerCent);
 	void ext_changeDisplayMode(int newDisplayMode);

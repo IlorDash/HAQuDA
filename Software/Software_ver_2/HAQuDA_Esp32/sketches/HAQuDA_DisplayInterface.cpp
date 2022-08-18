@@ -4,8 +4,7 @@ whatDisplay_enum HAQuDA_DisplayInterface::whatDisplay = none;
 displayEffect_enum HAQuDA_DisplayInterface::displayEffect = noneEffect;
 errorTypes_enum HAQuDA_DisplayInterface::displayError = noneError;
 
-HAQuDA_DisplayInterface::HAQuDA_DisplayInterface(HAQuDA_DisplayManip &currDisplayManip) {
-	this->myDisplayManip = currDisplayManip;
+HAQuDA_DisplayInterface::HAQuDA_DisplayInterface() {
 
 	whatDisplay = meas;
 
@@ -82,7 +81,7 @@ void HAQuDA_DisplayInterface::ext_changeDisplayMode(int newDisplayMode) {
 	if (modeChanged) {
 		WS2812_clear();
 		delay(100);
-		myDisplayManip.displayData(displayMeasParams);
+		HAQuDA_DisplayManip::displayData(displayMeasParams);
 	}
 }
 
@@ -125,7 +124,7 @@ void HAQuDA_DisplayInterface::ext_changeDisplayParam(int newDisplayParam) {
 	if (paramChanged) {
 		WS2812_clear();
 		delay(100);
-		myDisplayManip.displayData(displayMeasParams);
+		HAQuDA_DisplayManip::displayData(displayMeasParams);
 	}
 }
 
@@ -158,6 +157,6 @@ void HAQuDA_DisplayInterface::ext_changeDisplayEffect(int newDisplayEffect) {
 	if (effectChanged) {
 		WS2812_clear();
 		delay(100);
-		myDisplayManip.displayData(displayMeasParams);
+		HAQuDA_DisplayManip::displayData(displayMeasParams);
 	}
 }
