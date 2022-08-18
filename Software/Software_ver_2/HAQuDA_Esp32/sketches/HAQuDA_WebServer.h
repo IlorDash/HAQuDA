@@ -3,6 +3,7 @@
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
 #include <AsyncTCP.h>
+#include <WebSerial.h>
 #include "HAQuDA_FileStorage.h"
 
 #define WIFI_CREDS_PARAMS_NUM 4
@@ -28,5 +29,7 @@ class HAQuDA_WebServer {
 	static void handle_NotFound(AsyncWebServerRequest *request);
 	static void delete_WiFiCreds(AsyncWebServerRequest *request);
 	static void show_WiFiCreds(AsyncWebServerRequest *request);
-	void loop();
+
+  public:
+	void WebSerialPrint(const char *str);
 };

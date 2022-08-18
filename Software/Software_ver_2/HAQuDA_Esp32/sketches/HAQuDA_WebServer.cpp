@@ -2,6 +2,7 @@
 #include "WebPages.h"
 
 void HAQuDA_WebServer::beginWebServer() {
+	WebSerial.begin(&server);
 	WebServerResponds_init();
 	server.begin();
 }
@@ -107,11 +108,6 @@ void HAQuDA_WebServer::show_WiFiCreds(AsyncWebServerRequest *request) {
 	}
 }
 
-void HAQuDA_WebServer::loop() {
-	if (newWiFiCredsFound) {
-	}
-}
-
 void HAQuDA_WebServer::handle_NotFound(AsyncWebServerRequest *request) {
 	request->send(404);
 }
@@ -126,6 +122,11 @@ void HAQuDA_WebServer::WebServerResponds_init() {
 	server.on("/show_wifi_creds", HTTP_POST, HAQuDA_WebServer::show_WiFiCreds);
 	server.on("/add_wifi_creds", HTTP_POST, HAQuDA_WebServer::handle_NewWiFiCreds);
 	server.onNotFound(HAQuDA_WebServer::handle_NotFound);
+}
+
+void HAQuDA_WebServer::WebSerialPrint(const char* str) {
+	WebSerial.println(str);
+	WebSerial.println("");
 }
 
 HAQuDA_WebServer::~HAQuDA_WebServer() {
