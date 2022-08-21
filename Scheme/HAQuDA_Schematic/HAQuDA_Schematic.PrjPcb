@@ -31,7 +31,7 @@ ReportSuppressedErrorsInMessages=0
 FSMCodingStyle=eFMSDropDownList_OneProcess
 FSMEncodingStyle=eFMSDropDownList_OneHot
 IsProjectConflictPreventionWarningsEnabled=1
-OutputPath=Project Outputs for HAQuDA_Schematic
+OutputPath=
 LogFolderPath=
 ManagedProjectGUID=
 IncludeDesignInRelease=0
@@ -143,82 +143,86 @@ GenerateClassCluster=0
 DocumentUniqueId=
 
 [GeneratedDocument1]
-DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board-RectHoles.TXT
+DocumentPath=
 DItemRevisionGUID=
 
 [GeneratedDocument2]
-DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board-RoundHoles.TXT
+DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board-RectHoles.TXT
 DItemRevisionGUID=
 
 [GeneratedDocument3]
-DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board-SlotHoles.TXT
+DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board-RoundHoles.TXT
 DItemRevisionGUID=
 
 [GeneratedDocument4]
-DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.DRR
+DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board-SlotHoles.TXT
 DItemRevisionGUID=
 
 [GeneratedDocument5]
-DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.EXTREP
+DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.DRR
 DItemRevisionGUID=
 
 [GeneratedDocument6]
-DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GBL
+DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.EXTREP
 DItemRevisionGUID=
 
 [GeneratedDocument7]
-DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GBO
+DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GBL
 DItemRevisionGUID=
 
 [GeneratedDocument8]
-DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GBP
+DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GBO
 DItemRevisionGUID=
 
 [GeneratedDocument9]
-DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GBS
+DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GBP
 DItemRevisionGUID=
 
 [GeneratedDocument10]
-DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GM1
+DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GBS
 DItemRevisionGUID=
 
 [GeneratedDocument11]
-DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GM2
+DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GM1
 DItemRevisionGUID=
 
 [GeneratedDocument12]
-DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GM13
+DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GM2
 DItemRevisionGUID=
 
 [GeneratedDocument13]
-DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GM15
+DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GM13
 DItemRevisionGUID=
 
 [GeneratedDocument14]
-DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GTL
+DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GM15
 DItemRevisionGUID=
 
 [GeneratedDocument15]
-DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GTO
+DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GTL
 DItemRevisionGUID=
 
 [GeneratedDocument16]
-DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GTP
+DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GTO
 DItemRevisionGUID=
 
 [GeneratedDocument17]
-DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GTS
+DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GTP
 DItemRevisionGUID=
 
 [GeneratedDocument18]
-DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.LDP
+DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.GTS
 DItemRevisionGUID=
 
 [GeneratedDocument19]
-DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.REP
+DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.LDP
 DItemRevisionGUID=
 
 [GeneratedDocument20]
+DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.REP
+DItemRevisionGUID=
+
+[GeneratedDocument21]
 DocumentPath=Project Outputs for HAQuDA_Schematic\HAQuDA_board.RUL
 DItemRevisionGUID=
 
@@ -269,7 +273,7 @@ SCH_HasExpandLogicalToPhysicalSheets=-1
 SaveSettingsToOutJob=0
 
 [Generic_EDE]
-OutputDir=Project Outputs for HAQuDA_Schematic
+OutputDir=
 
 [OutputGroup1]
 Name=Netlist Outputs
