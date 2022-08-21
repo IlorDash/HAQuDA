@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------------------------
-Gerber File Extension Report For: HAQuDA_upper_PCB.GBR   04-Feb-22  00:30:36
+Gerber File Extension Report For: HAQuDA_upper_PCB.GBR   21-Aug-22  22:22:11
 ------------------------------------------------------------------------------------------
 
 
@@ -13,6 +13,4 @@ Layer Extension     Layer Description
 .GBS                Bottom Solder                           
 .GBO                Bottom Overlay                          
 .GM1                Mechanical 1                            
-.GM13               Mechanical 13                           
-.GM15               Mechanical 15                           
 ------------------------------------------------------------------------------------------

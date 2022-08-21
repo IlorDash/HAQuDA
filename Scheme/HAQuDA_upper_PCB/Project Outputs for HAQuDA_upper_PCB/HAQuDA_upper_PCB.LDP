@@ -1,2 +1,4 @@
-Layer Pairs Export File for PCB: C:\Users\Ilya\Documents\Projects\ESP32\HAQuDA\Scheme\HAQuDA_upper_PCB\HAQuDA_upper_PCB.PcbDoc
-LayersSetName=Top_Bot_Thru_Holes|DrillFile=haquda_upper_pcb.txt|DrillLayers=gtl,gbl
+Layer Pairs Export File for PCB: C:\Users\Ilya\Documents\Projects\ESP32\HAQuDa\Scheme\HAQuDA_upper_PCB\HAQuDA_upper_PCB.PcbDoc
+LayersSetName=Top_Bot_Plated_Thru_Holes|DrillFile=haquda_upper_pcb-roundholes-plated.txt|DrillLayers=gtl,gbl
+LayersSetName=Top_Bot_NonPlated_Thru_Holes|DrillFile=haquda_upper_pcb-roundholes-nonplated.txt|DrillLayers=gtl,gbl
+LayersSetName=Top_Bot_NonPlated_Slot_Holes|DrillFile=haquda_upper_pcb-slotholes-nonplated.txt|DrillLayers=gtl,gbl
