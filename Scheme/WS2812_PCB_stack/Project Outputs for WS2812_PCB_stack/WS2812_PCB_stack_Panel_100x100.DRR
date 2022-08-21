@@ -1,15 +1,16 @@
 ----------------------------------------------------------------------------------------------------------------------------------
-NCDrill File Report For: WS2812_PCB_stack_Panel_100x100.PcbDoc   07-Feb-22  09:47:35
+NCDrill File Report For: WS2812_PCB_stack_Panel_100x100.PcbDoc   21-Aug-22  22:29:38
 ----------------------------------------------------------------------------------------------------------------------------------
 
 Layer Pair : Top Layer to Bottom Layer
-ASCII RoundHoles File : WS2812_PCB_stack_Panel_100x100.TXT
+ASCII Plated RoundHoles File : WS2812_PCB_stack_Panel_100x100-Plated.TXT
 
 Tool       Hole Size               Hole Tolerance               Hole Type       Hole Count   Plated         Tool Travel
 ----------------------------------------------------------------------------------------------------------------------------------
-T1      0.4mm (16mil)                                             Round             264       PTH        629.02mm (24.76inch)
-T2      0.6mm (24mil)                                             Round             288       PTH        1076.30mm (42.37inch)
+T1      0.3mm (12mil)                                             Round             24        PTH        298.44mm (11.75inch)
+T2      0.4mm (16mil)                                             Round             168       PTH        512.96mm (20.20inch)
+T3      0.6mm (24mil)                                             Round             288       PTH        1076.30mm (42.37inch)
 ----------------------------------------------------------------------------------------------------------------------------------
-Totals                                                                              552
+Totals                                                                              480
 
-Total Processing Time (hh:mm:ss) : 00:00:01
+Total Processing Time (hh:mm:ss) : 00:00:00

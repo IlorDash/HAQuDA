@@ -3,7 +3,7 @@ Source PCB Design WS2812_PCB_stack_Panel_100x100.PcbDoc contains embedded board 
 Output: NC Drill Files
 Type  : NC Drill
 From  : Project [WS2812_PCB_stack.PrjPcb]
-   Generated File[WS2812_PCB_stack_Panel_100x100.TXT]
+   Generated File[WS2812_PCB_stack_Panel_100x100-Plated.TXT]
    Generated File[WS2812_PCB_stack_Panel_100x100.LDP]
    Generated File[WS2812_PCB_stack_Panel_100x100.DRR]
 
@@ -11,4 +11,4 @@ From  : Project [WS2812_PCB_stack.PrjPcb]
 Files Generated   : 3
 Documents Printed : 0
 
-Finished Output Generation At 09:47:36 On 07-Feb-22
+Finished Output Generation At 22:29:38 On 21-Aug-22
