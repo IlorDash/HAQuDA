@@ -2,30 +2,6 @@
 FileName = HAQuDA_upper_PCB.GBR
 AutoAperture = True
 *************************************************************
-Generating : Mechanical 1
-      File : HAQuDA_upper_PCB.GM1
-
-    Adding Layer      : Mechanical 1
-
-
-Used DCodes :
-    D120
-*************************************************************
-
-*************************************************************
-Generating : Bottom Overlay
-      File : HAQuDA_upper_PCB.GBO
-
-    Adding Layer      : Bottom Overlay
-
-
-Used DCodes :
-    D10
-    D79
-    D119
-*************************************************************
-
-*************************************************************
 Generating : Bottom Solder
       File : HAQuDA_upper_PCB.GBS
 
@@ -50,6 +26,7 @@ Used DCodes :
     D21
     D22
     D23
+    D80
     D81
     D82
     D83
@@ -87,7 +64,6 @@ Used DCodes :
     D115
     D116
     D117
-    D118
 *************************************************************
 
 *************************************************************
@@ -118,14 +94,14 @@ Used DCodes :
 *************************************************************
 
 *************************************************************
-Generating : Top Overlay
-      File : HAQuDA_upper_PCB.GTO
+Generating : Mechanical 1
+      File : HAQuDA_upper_PCB.GM1
 
-    Adding Layer      : Top Overlay
+    Adding Layer      : Mechanical 1
 
 
 Used DCodes :
-    D10
+    D119
 *************************************************************
 
 *************************************************************
@@ -194,7 +170,6 @@ Used DCodes :
     D77
     D78
     D79
-    D80
 *************************************************************
 
 *************************************************************
@@ -246,6 +221,29 @@ Used DCodes :
     D59
     D60
     D61
-    D62
+*************************************************************
+
+*************************************************************
+Generating : Top Overlay
+      File : HAQuDA_upper_PCB.GTO
+
+    Adding Layer      : Top Overlay
+
+
+Used DCodes :
+    D10
+*************************************************************
+
+*************************************************************
+Generating : Bottom Overlay
+      File : HAQuDA_upper_PCB.GBO
+
+    Adding Layer      : Bottom Overlay
+
+
+Used DCodes :
+    D10
+    D78
+    D118
 *************************************************************
 
