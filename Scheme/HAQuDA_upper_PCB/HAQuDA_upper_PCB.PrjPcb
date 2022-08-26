@@ -31,7 +31,7 @@ ReportSuppressedErrorsInMessages=0
 FSMCodingStyle=eFMSDropDownList_OneProcess
 FSMEncodingStyle=eFMSDropDownList_OneHot
 IsProjectConflictPreventionWarningsEnabled=0
-OutputPath=
+OutputPath=Project Outputs for HAQuDA_upper_PCB
 LogFolderPath=
 ManagedProjectGUID=
 IncludeDesignInRelease=0
@@ -177,66 +177,70 @@ GenerateClassCluster=0
 DocumentUniqueId=FOHFWQXU
 
 [GeneratedDocument1]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB-RectHoles.TXT
+DocumentPath=
 DItemRevisionGUID=
 
 [GeneratedDocument2]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.DRR
+DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB-RectHoles.TXT
 DItemRevisionGUID=
 
 [GeneratedDocument3]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.EXTREP
+DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.DRR
 DItemRevisionGUID=
 
 [GeneratedDocument4]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GBL
+DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.EXTREP
 DItemRevisionGUID=
 
 [GeneratedDocument5]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GBO
+DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GBL
 DItemRevisionGUID=
 
 [GeneratedDocument6]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GBS
+DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GBO
 DItemRevisionGUID=
 
 [GeneratedDocument7]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GM1
+DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GBS
 DItemRevisionGUID=
 
 [GeneratedDocument8]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GM13
+DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GM1
 DItemRevisionGUID=
 
 [GeneratedDocument9]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GM15
+DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GM13
 DItemRevisionGUID=
 
 [GeneratedDocument10]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GTL
+DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GM15
 DItemRevisionGUID=
 
 [GeneratedDocument11]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GTO
+DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GTL
 DItemRevisionGUID=
 
 [GeneratedDocument12]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GTS
+DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GTO
 DItemRevisionGUID=
 
 [GeneratedDocument13]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.LDP
+DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GTS
 DItemRevisionGUID=
 
 [GeneratedDocument14]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.REP
+DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.LDP
 DItemRevisionGUID=
 
 [GeneratedDocument15]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.RUL
+DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.REP
 DItemRevisionGUID=
 
 [GeneratedDocument16]
+DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.RUL
+DItemRevisionGUID=
+
+[GeneratedDocument17]
 DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.TXT
 DItemRevisionGUID=
 
@@ -287,7 +291,7 @@ SCH_HasExpandLogicalToPhysicalSheets=-1
 SaveSettingsToOutJob=0
 
 [Generic_EDE]
-OutputDir=
+OutputDir=Project Outputs for HAQuDA_upper_PCB
 
 [OutputGroup1]
 Name=Netlist Outputs
