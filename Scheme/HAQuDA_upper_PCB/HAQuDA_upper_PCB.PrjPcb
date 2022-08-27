@@ -109,40 +109,6 @@ GenerateClassCluster=0
 DocumentUniqueId=QNXHQLGE
 
 [Document5]
-DocumentPath=CAMtastic6.Cam
-AnnotationEnabled=1
-AnnotateStartValue=1
-AnnotationIndexControlEnabled=0
-AnnotateSuffix=
-AnnotateScope=All
-AnnotateOrder=-1
-DoLibraryUpdate=1
-DoDatabaseUpdate=1
-ClassGenCCAutoEnabled=1
-ClassGenCCAutoRoomEnabled=1
-ClassGenNCAutoScope=None
-DItemRevisionGUID=
-GenerateClassCluster=0
-DocumentUniqueId=
-
-[Document6]
-DocumentPath=CAMtastic7.Cam
-AnnotationEnabled=1
-AnnotateStartValue=1
-AnnotationIndexControlEnabled=0
-AnnotateSuffix=
-AnnotateScope=All
-AnnotateOrder=-1
-DoLibraryUpdate=1
-DoDatabaseUpdate=1
-ClassGenCCAutoEnabled=1
-ClassGenCCAutoRoomEnabled=1
-ClassGenNCAutoScope=None
-DItemRevisionGUID=
-GenerateClassCluster=0
-DocumentUniqueId=
-
-[Document7]
 DocumentPath=..\HAQuDA_Schematic\HaQuDA_PcbLib.PcbLib
 AnnotationEnabled=1
 AnnotateStartValue=1
@@ -159,7 +125,7 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=RWHXAOMT
 
-[Document8]
+[Document6]
 DocumentPath=..\HAQuDA_Schematic\HaQuDA_Schlib.SchLib
 AnnotationEnabled=1
 AnnotateStartValue=1
@@ -175,74 +141,6 @@ ClassGenNCAutoScope=None
 DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=FOHFWQXU
-
-[GeneratedDocument1]
-DocumentPath=
-DItemRevisionGUID=
-
-[GeneratedDocument2]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB-RectHoles.TXT
-DItemRevisionGUID=
-
-[GeneratedDocument3]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.DRR
-DItemRevisionGUID=
-
-[GeneratedDocument4]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.EXTREP
-DItemRevisionGUID=
-
-[GeneratedDocument5]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GBL
-DItemRevisionGUID=
-
-[GeneratedDocument6]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GBO
-DItemRevisionGUID=
-
-[GeneratedDocument7]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GBS
-DItemRevisionGUID=
-
-[GeneratedDocument8]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GM1
-DItemRevisionGUID=
-
-[GeneratedDocument9]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GM13
-DItemRevisionGUID=
-
-[GeneratedDocument10]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GM15
-DItemRevisionGUID=
-
-[GeneratedDocument11]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GTL
-DItemRevisionGUID=
-
-[GeneratedDocument12]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GTO
-DItemRevisionGUID=
-
-[GeneratedDocument13]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.GTS
-DItemRevisionGUID=
-
-[GeneratedDocument14]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.LDP
-DItemRevisionGUID=
-
-[GeneratedDocument15]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.REP
-DItemRevisionGUID=
-
-[GeneratedDocument16]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.RUL
-DItemRevisionGUID=
-
-[GeneratedDocument17]
-DocumentPath=Project Outputs for HAQuDA_upper_PCB\HAQuDA_upper_PCB.TXT
-DItemRevisionGUID=
 
 [Configuration1]
 Name=Sources
