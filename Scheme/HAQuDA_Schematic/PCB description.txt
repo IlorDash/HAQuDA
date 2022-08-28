@@ -1,1 +1,1 @@
-Rounded rectangle slots (2.2 x 10.2 mm) around the board circle must be NON-PLATED
+Rounded rectangle slots (2.2 x 10.2 mm) around the board circle must be NON-PLATED. I placed in archive photos of each layers, how PCB must looks like
