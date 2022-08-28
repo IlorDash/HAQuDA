@@ -1,9 +1,9 @@
 *************************************************************
-FileName = WS2812_PCB_stack_Panel_100x100.GBR
+FileName = WS2812_PCB_stack_Panel_9_pcs.GBR
 AutoAperture = True
 *************************************************************
 Generating : Bottom Layer
-      File : WS2812_PCB_stack_Panel_100x100.GBL
+      File : WS2812_PCB_stack_Panel_9_pcs.GBL
 
     Adding Layer      : Bottom Layer
 
@@ -23,7 +23,7 @@ Used DCodes :
 
 *************************************************************
 Generating : Top Layer
-      File : WS2812_PCB_stack_Panel_100x100.GTL
+      File : WS2812_PCB_stack_Panel_9_pcs.GTL
 
     Adding Layer      : Top Layer
 
@@ -45,7 +45,7 @@ Used DCodes :
 
 *************************************************************
 Generating : Top Overlay
-      File : WS2812_PCB_stack_Panel_100x100.GTO
+      File : WS2812_PCB_stack_Panel_9_pcs.GTO
 
     Adding Layer      : Top Overlay
 
@@ -57,7 +57,7 @@ Used DCodes :
 
 *************************************************************
 Generating : Top Solder
-      File : WS2812_PCB_stack_Panel_100x100.GTS
+      File : WS2812_PCB_stack_Panel_9_pcs.GTS
 
     Adding Layer      : Top Solder
 
@@ -80,7 +80,7 @@ Used DCodes :
 
 *************************************************************
 Generating : Bottom Solder
-      File : WS2812_PCB_stack_Panel_100x100.GBS
+      File : WS2812_PCB_stack_Panel_9_pcs.GBS
 
     Adding Layer      : Bottom Solder
 
@@ -98,7 +98,7 @@ Used DCodes :
 
 *************************************************************
 Generating : Bottom Overlay
-      File : WS2812_PCB_stack_Panel_100x100.GBO
+      File : WS2812_PCB_stack_Panel_9_pcs.GBO
 
     Adding Layer      : Bottom Overlay
 
@@ -110,12 +110,13 @@ Used DCodes :
 
 *************************************************************
 Generating : Mechanical 1
-      File : WS2812_PCB_stack_Panel_100x100.GM1
+      File : WS2812_PCB_stack_Panel_9_pcs.GM1
 
     Adding Layer      : Mechanical 1
 
 
 Used DCodes :
+    D22
     D33
 *************************************************************
 
