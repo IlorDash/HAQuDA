@@ -1,0 +1,14 @@
+Output: NC Drill Files
+Type  : NC Drill
+From  : Project [HAQuDA_upper_PCB.PrjPcb]
+   Generated File[HAQuDA_upper_PCB_Ver_2-RoundHoles-Plated.TXT]
+   Generated File[HAQuDA_upper_PCB_Ver_2-RoundHoles-NonPlated.TXT]
+   Generated File[HAQuDA_upper_PCB_Ver_2-SlotHoles-NonPlated.TXT]
+   Generated File[HAQuDA_upper_PCB_Ver_2.LDP]
+   Generated File[HAQuDA_upper_PCB_Ver_2.DRR]
+
+
+Files Generated   : 5
+Documents Printed : 0
+
+Finished Output Generation At 18:32:12 On 28-Aug-22
