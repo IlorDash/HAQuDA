@@ -1,0 +1,142 @@
+*************************************************************
+FileName = WS2812_PCB_stack_Ver_2_Panel_9_pcs.GBR
+AutoAperture = True
+*************************************************************
+Generating : Bottom Layer
+      File : WS2812_PCB_stack_Ver_2_Panel_9_pcs.GBL
+
+    Adding Layer      : Bottom Layer
+
+    Adding Layer      : Multi-Layer
+
+
+Used DCodes :
+    D10
+    D11
+    D12
+    D18
+    D19
+    D20
+*************************************************************
+
+*************************************************************
+Generating : Top Layer
+      File : WS2812_PCB_stack_Ver_2_Panel_9_pcs.GTL
+
+    Adding Layer      : Top Layer
+
+    Adding Layer      : Multi-Layer
+
+
+Used DCodes :
+    D10
+    D11
+    D12
+    D13
+    D14
+    D15
+    D16
+    D17
+    D18
+    D19
+    D20
+*************************************************************
+
+*************************************************************
+Generating : Top Overlay
+      File : WS2812_PCB_stack_Ver_2_Panel_9_pcs.GTO
+
+    Adding Layer      : Top Overlay
+
+
+Used DCodes :
+    D21
+    D22
+*************************************************************
+
+*************************************************************
+Generating : Top Solder
+      File : WS2812_PCB_stack_Ver_2_Panel_9_pcs.GTS
+
+    Adding Layer      : Top Solder
+
+    Adding Layer      : Top Layer
+
+    Adding Layer      : Multi-Layer
+
+
+Used DCodes :
+    D23
+    D24
+    D25
+    D26
+    D27
+    D28
+    D29
+*************************************************************
+
+*************************************************************
+Generating : Bottom Solder
+      File : WS2812_PCB_stack_Ver_2_Panel_9_pcs.GBS
+
+    Adding Layer      : Bottom Solder
+
+    Adding Layer      : Bottom Layer
+
+    Adding Layer      : Multi-Layer
+
+
+Used DCodes :
+    D23
+    D24
+    D25
+    D28
+    D29
+*************************************************************
+
+*************************************************************
+Generating : Bottom Overlay
+      File : WS2812_PCB_stack_Ver_2_Panel_9_pcs.GBO
+
+    Adding Layer      : Bottom Overlay
+
+
+Used DCodes :
+    D30
+*************************************************************
+
+*************************************************************
+Generating : Mechanical 1
+      File : WS2812_PCB_stack_Ver_2_Panel_9_pcs.GM1
+
+    Adding Layer      : Mechanical 1
+
+
+Used DCodes :
+    D22
+    D31
+*************************************************************
+
+*************************************************************
+Generating : Mechanical 13
+      File : WS2812_PCB_stack_Ver_2_Panel_9_pcs.GM13
+
+    Adding Layer      : Mechanical 13
+
+
+Used DCodes :
+    D31
+*************************************************************
+
+*************************************************************
+Generating : Mechanical 15
+      File : WS2812_PCB_stack_Ver_2_Panel_9_pcs.GM15
+
+    Adding Layer      : Mechanical 15
+
+
+Used DCodes :
+    D31
+    D32
+*************************************************************
+
