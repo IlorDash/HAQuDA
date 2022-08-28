@@ -1,0 +1,5 @@
+Layer Pairs Export File for PCB: C:\Users\Ilya\Documents\Projects\ESP32\HAQuDa\Scheme\HAQuDA_Schematic\HAQuDA_board_Ver_2.PcbDoc
+LayersSetName=Top_Bot_Plated_Thru_Holes|DrillFile=haquda_board_ver_2-roundholes-plated.txt|DrillLayers=gtl,gbl
+LayersSetName=Top_Bot_Plated_Slot_Holes|DrillFile=haquda_board_ver_2-slotholes-plated.txt|DrillLayers=gtl,gbl
+LayersSetName=Top_Bot_NonPlated_Thru_Holes|DrillFile=haquda_board_ver_2-roundholes-nonplated.txt|DrillLayers=gtl,gbl
+LayersSetName=Top_Bot_NonPlated_Slot_Holes|DrillFile=haquda_board_ver_2-slotholes-nonplated.txt|DrillLayers=gtl,gbl
