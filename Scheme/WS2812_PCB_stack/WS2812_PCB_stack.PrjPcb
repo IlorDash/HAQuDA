@@ -31,7 +31,7 @@ ReportSuppressedErrorsInMessages=0
 FSMCodingStyle=eFMSDropDownList_OneProcess
 FSMEncodingStyle=eFMSDropDownList_OneHot
 IsProjectConflictPreventionWarningsEnabled=0
-OutputPath=Project Outputs for WS2812_PCB_stack
+OutputPath=
 LogFolderPath=
 ManagedProjectGUID=
 IncludeDesignInRelease=0
@@ -160,66 +160,62 @@ GenerateClassCluster=0
 DocumentUniqueId=
 
 [GeneratedDocument1]
-DocumentPath=
-DItemRevisionGUID=
-
-[GeneratedDocument2]
 DocumentPath=Project Outputs for WS2812_PCB_stack\WS2812_PCB_stack_Ver_2_Panel_9_pcs-Plated.TXT
 DItemRevisionGUID=
 
-[GeneratedDocument3]
+[GeneratedDocument2]
 DocumentPath=Project Outputs for WS2812_PCB_stack\WS2812_PCB_stack_Ver_2_Panel_9_pcs.DRR
 DItemRevisionGUID=
 
-[GeneratedDocument4]
+[GeneratedDocument3]
 DocumentPath=Project Outputs for WS2812_PCB_stack\WS2812_PCB_stack_Ver_2_Panel_9_pcs.EXTREP
 DItemRevisionGUID=
 
-[GeneratedDocument5]
+[GeneratedDocument4]
 DocumentPath=Project Outputs for WS2812_PCB_stack\WS2812_PCB_stack_Ver_2_Panel_9_pcs.GBL
 DItemRevisionGUID=
 
-[GeneratedDocument6]
+[GeneratedDocument5]
 DocumentPath=Project Outputs for WS2812_PCB_stack\WS2812_PCB_stack_Ver_2_Panel_9_pcs.GBO
 DItemRevisionGUID=
 
-[GeneratedDocument7]
+[GeneratedDocument6]
 DocumentPath=Project Outputs for WS2812_PCB_stack\WS2812_PCB_stack_Ver_2_Panel_9_pcs.GBS
 DItemRevisionGUID=
 
-[GeneratedDocument8]
+[GeneratedDocument7]
 DocumentPath=Project Outputs for WS2812_PCB_stack\WS2812_PCB_stack_Ver_2_Panel_9_pcs.GM1
 DItemRevisionGUID=
 
-[GeneratedDocument9]
+[GeneratedDocument8]
 DocumentPath=Project Outputs for WS2812_PCB_stack\WS2812_PCB_stack_Ver_2_Panel_9_pcs.GM13
 DItemRevisionGUID=
 
-[GeneratedDocument10]
+[GeneratedDocument9]
 DocumentPath=Project Outputs for WS2812_PCB_stack\WS2812_PCB_stack_Ver_2_Panel_9_pcs.GM15
 DItemRevisionGUID=
 
-[GeneratedDocument11]
+[GeneratedDocument10]
 DocumentPath=Project Outputs for WS2812_PCB_stack\WS2812_PCB_stack_Ver_2_Panel_9_pcs.GTL
 DItemRevisionGUID=
 
-[GeneratedDocument12]
+[GeneratedDocument11]
 DocumentPath=Project Outputs for WS2812_PCB_stack\WS2812_PCB_stack_Ver_2_Panel_9_pcs.GTO
 DItemRevisionGUID=
 
-[GeneratedDocument13]
+[GeneratedDocument12]
 DocumentPath=Project Outputs for WS2812_PCB_stack\WS2812_PCB_stack_Ver_2_Panel_9_pcs.GTS
 DItemRevisionGUID=
 
-[GeneratedDocument14]
+[GeneratedDocument13]
 DocumentPath=Project Outputs for WS2812_PCB_stack\WS2812_PCB_stack_Ver_2_Panel_9_pcs.LDP
 DItemRevisionGUID=
 
-[GeneratedDocument15]
+[GeneratedDocument14]
 DocumentPath=Project Outputs for WS2812_PCB_stack\WS2812_PCB_stack_Ver_2_Panel_9_pcs.REP
 DItemRevisionGUID=
 
-[GeneratedDocument16]
+[GeneratedDocument15]
 DocumentPath=Project Outputs for WS2812_PCB_stack\WS2812_PCB_stack_Ver_2_Panel_9_pcs.RUL
 DItemRevisionGUID=
 
@@ -270,7 +266,7 @@ SCH_HasExpandLogicalToPhysicalSheets=-1
 SaveSettingsToOutJob=0
 
 [Generic_EDE]
-OutputDir=Project Outputs for WS2812_PCB_stack
+OutputDir=
 
 [OutputGroup1]
 Name=Netlist Outputs
