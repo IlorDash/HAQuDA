@@ -2,6 +2,19 @@
 FileName = HAQuDA_upper_PCB.GBR
 AutoAperture = True
 *************************************************************
+Generating : Bottom Overlay
+      File : HAQuDA_upper_PCB.GBO
+
+    Adding Layer      : Bottom Overlay
+
+
+Used DCodes :
+    D10
+    D78
+    D118
+*************************************************************
+
+*************************************************************
 Generating : Bottom Solder
       File : HAQuDA_upper_PCB.GBS
 
@@ -64,33 +77,6 @@ Used DCodes :
     D115
     D116
     D117
-*************************************************************
-
-*************************************************************
-Generating : Top Solder
-      File : HAQuDA_upper_PCB.GTS
-
-    Adding Layer      : Top Solder
-
-    Adding Layer      : Top Layer
-
-    Adding Layer      : Multi-Layer
-
-
-Used DCodes :
-    D11
-    D12
-    D13
-    D14
-    D15
-    D16
-    D17
-    D18
-    D19
-    D20
-    D21
-    D22
-    D23
 *************************************************************
 
 *************************************************************
@@ -224,6 +210,33 @@ Used DCodes :
 *************************************************************
 
 *************************************************************
+Generating : Top Solder
+      File : HAQuDA_upper_PCB.GTS
+
+    Adding Layer      : Top Solder
+
+    Adding Layer      : Top Layer
+
+    Adding Layer      : Multi-Layer
+
+
+Used DCodes :
+    D11
+    D12
+    D13
+    D14
+    D15
+    D16
+    D17
+    D18
+    D19
+    D20
+    D21
+    D22
+    D23
+*************************************************************
+
+*************************************************************
 Generating : Top Overlay
       File : HAQuDA_upper_PCB.GTO
 
@@ -232,18 +245,5 @@ Generating : Top Overlay
 
 Used DCodes :
     D10
-*************************************************************
-
-*************************************************************
-Generating : Bottom Overlay
-      File : HAQuDA_upper_PCB.GBO
-
-    Adding Layer      : Bottom Overlay
-
-
-Used DCodes :
-    D10
-    D78
-    D118
 *************************************************************
 
