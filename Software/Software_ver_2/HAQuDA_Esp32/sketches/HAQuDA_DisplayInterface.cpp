@@ -29,13 +29,21 @@ HAQuDA_DisplayInterface::HAQuDA_DisplayInterface() {
 	
 	brightnessPerCent = MAX_BRIGHTNESS;
 
-	snakeEffectParams.snakeColor = COLOR_LIME;
-	snakeEffectParams.snakeSpeed = 200;
-	snakeEffectParams.snakeTailLength = 5;
+	growEffectParams.color = COLOR_AQUA;
+	growEffectParams.speed = 200;
 
-	randomSpeed = 200;
+	snakeEffectParams.color = COLOR_LIME;
+	snakeEffectParams.speed = 200;
+	snakeEffectParams.tailLength = 5;
 
-	fadeEffectParams.fadeColor = COLOR_AQUA;
+	randomEffectParams.speed = 200;
+	randomEffectParams.pauseTime = 1000;
+
+	fadeEffectParams.color = COLOR_AQUA;
+	fadeEffectParams.speed = 200;
+	fadeEffectParams.startBrightness = 100;
+	fadeEffectParams.stopBrightness = 0;
+	fadeEffectParams.step = 2;
 }
 
 void HAQuDA_DisplayInterface::ext_setStaticColor(int red, int green, int blue) {
