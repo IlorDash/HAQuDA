@@ -269,7 +269,7 @@ void HAQuDA_DisplayManip::getMeasRGB(uint8_t *_red, uint8_t *_green, uint8_t *_b
 void HAQuDA_DisplayManip::showMeas_standard(float data, measDivideDots_struct divideDots) {
 	WS2812_clear();
 	vTaskDelay(100);
-	
+
 	uint8_t red, green, blue; // values of LED colors
 	uint8_t brightness = WS2812_getBrightness();
 	getMeasRGB(&red, &green, &blue, brightness, data, divideDots);
@@ -279,7 +279,7 @@ void HAQuDA_DisplayManip::showMeas_standard(float data, measDivideDots_struct di
 void HAQuDA_DisplayManip::showMeas_night(float data, measDivideDots_struct divideDots, uint8_t time) {
 	WS2812_clear();
 	vTaskDelay(100);
-	
+
 	uint8_t red, green, blue; // values of LED colors
 	uint8_t brightness = WS2812_getBrightness();
 	getMeasRGB(&red, &green, &blue, brightness, data, divideDots);
@@ -303,7 +303,7 @@ void HAQuDA_DisplayManip::showMeas_multi(float *data, uint8_t dataSize, measDivi
 
 	WS2812_clear();
 	vTaskDelay(100);
-	
+
 	uint8_t red[MULTI_MODE_PARAM_NUM], green[MULTI_MODE_PARAM_NUM], blue[MULTI_MODE_PARAM_NUM]; // values of LED colors
 	uint8_t brightness = WS2812_getBrightness();
 	for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
@@ -356,6 +356,7 @@ void HAQuDA_DisplayManip::showEffectGrow(const growEffectsParams_struct params, 
 			uint8_t pixelNum = GetLedNum(i, j);
 			WS2812_setPixelColor(pixelNum, COLOR_RED);
 			WS2812_show();
+
 			if (*effect != grow) {
 				break;
 			}
@@ -371,6 +372,7 @@ void HAQuDA_DisplayManip::showEffectSnake(const snakeEffectsParams_struct params
 			pixelNum = j + i;
 			pixelNum = (pixelNum > LED_NUM_PIXELS) ? LED_NUM_PIXELS : pixelNum;
 			WS2812_setPixelColor(pixelNum, params.color);
+
 			if (*effect != snake) {
 				break;
 			}
@@ -386,11 +388,11 @@ void HAQuDA_DisplayManip::showEffectRandom(const randomEffectsParams_struct para
 	for (int i = 0; i < LED_NUM_PIXELS; i++) {
 		int pixelNum = random(0, LED_NUM_PIXELS);
 		while (find(pixelEnArr.begin(), pixelEnArr.end(), pixelNum) != pixelEnArr.end()) {
+			pixelNum = random(0, LED_NUM_PIXELS);
+
 			if (*effect != randomPixel) {
 				break;
 			}
-
-			pixelNum = random(0, LED_NUM_PIXELS);
 		}
 		pixelEnArr.push_back(pixelNum);
 
