@@ -45,6 +45,10 @@ void setup() {
 	WS2812_begin();
 	createTasks(&myDisplayInterface);
 
+	HAQuDA_DisplayInterface::displayEffect = snake; // start up connection effect
+	
+	vTaskDelay(100 / portTICK_PERIOD_MS);
+
 	if (!myFS.Start()) {
 		log_e("SPIFFS not mounted!");
 		return;
