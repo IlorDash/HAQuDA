@@ -73,5 +73,6 @@ void HAQuDA_DisplayInterface::ChangeDisplayMeasParam(uint8_t newDisplayMeasParam
 }
 
 void HAQuDA_DisplayInterface::ChangeDisplayEffect(uint8_t newDisplayEffect_num) {
+	DisplayMode = effect;
 	DisplayEffectParams.effect = static_cast<displayEffectMode_enum>(newDisplayEffect_num);
 }
