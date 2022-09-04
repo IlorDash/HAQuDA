@@ -2,7 +2,7 @@
 
 #include "Arduino.h"
 
-typedef enum { effect, meas, none } displayMode_enum;
+typedef enum { effect, meas, error, none } displayMode_enum;
 
 /*******************************************************/
 
@@ -46,7 +46,6 @@ typedef struct {
 } displayEffectParams_struct;
 
 /*******************************************************/
-
 
 /*******************************************************/
 
