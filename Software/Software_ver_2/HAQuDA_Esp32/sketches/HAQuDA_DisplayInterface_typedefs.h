@@ -2,13 +2,15 @@
 
 #include "Arduino.h"
 
-#define MULTI_MODE_PARAM_NUM 3
-#define DIVIDE_DOTS_NUM 3
-#define DISP_PARAMS_NUM 5
+typedef enum { effect, meas, none } displayMode_enum;
 
-typedef enum { effect, meas, error, none } whatDisplay_enum;
+/*******************************************************/
 
-typedef enum { snake, grow, randomPixel, fade, christmasTree, staticColor, noneEffect } displayEffect_enum;
+/*****/
+/***************TYPEDEFS FOR EFFECTS********************/
+/*****/
+
+typedef enum { snake, grow, randomPixel, fade, christmasTree, staticColor, noneEffect } displayEffectMode_enum;
 
 typedef struct {
 	uint16_t speed; // in ms - delay between movements
@@ -34,7 +36,29 @@ typedef struct {
 	uint16_t pauseTime; // in ms - pause after all LED ignited
 } randomEffectsParams_struct;
 
-typedef enum { standard, multi, night, noneMode } displayMode_enum;
+typedef struct {
+	displayEffectMode_enum effect;
+
+	snakeEffectsParams_struct snakeParams;
+	growEffectsParams_struct growParams;
+	fadeEffectsParams_struct fadeParams;
+	randomEffectsParams_struct randomParams;
+} displayEffectParams_struct;
+
+/*******************************************************/
+
+
+/*******************************************************/
+
+/*****/
+/***************TYPEDEFS FOR MEASURES********************/
+/*****/
+
+#define MULTI_MODE_PARAM_NUM 3
+#define DIVIDE_DOTS_NUM 3
+#define DISP_PARAMS_NUM 5
+
+typedef enum { standard, multi, night, noneMode } displayMeasMode_enum;
 
 typedef enum { total, eCO2, TVOC, PM2_5, temp, humid, noneParam } displayParams_enum;
 
@@ -56,7 +80,7 @@ typedef struct {
 } nightModeTimeBorder_struct;
 
 typedef struct {
-	displayMode_enum displayMode;
+	displayMeasMode_enum displayMode;
 
 	displayParams_enum displayParam;
 
@@ -69,3 +93,5 @@ typedef struct {
 	measDivideDots_struct PM2_5_divideDots;
 	nightModeTimeBorder_struct currentTimeBorder;
 } displayMeasParams_struct;
+
+/*******************************************************/
