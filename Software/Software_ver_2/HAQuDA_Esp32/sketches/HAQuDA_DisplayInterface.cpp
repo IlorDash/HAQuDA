@@ -1,170 +1,77 @@
 #include "HAQuDA_DisplayInterface.h"
 
-whatDisplay_enum HAQuDA_DisplayInterface::whatDisplay = none;
-displayEffect_enum HAQuDA_DisplayInterface::displayEffect = noneEffect;
-errorTypes_enum HAQuDA_DisplayInterface::displayError = noneError;
-
 HAQuDA_DisplayInterface::HAQuDA_DisplayInterface() {
 
-	whatDisplay = meas;
+	DisplayMode = none;
 
-	displayMeasParams.displayMode = multi;
+	DisplayMeasParams.displayParam = noneParam;
 
-	displayMeasParams.displayParam = noneParam;
-	
-	displayMeasParams.multiModeStruct.paramsArr[0] = temp;
-	displayMeasParams.multiModeStruct.paramsArr[1] = eCO2;
-	displayMeasParams.multiModeStruct.paramsArr[2] = PM2_5;
-	
-	displayMeasParams.temp_divideDots = {20, 26, 30};
-	displayMeasParams.humid_divideDots = {40, 60, 80};
-	displayMeasParams.eCO2_divideDots = {400, 1000, 5000};
-	displayMeasParams.TVOC_divideDots = {220, 660, 1000};
-	displayMeasParams.PM2_5_divideDots = {15, 20, 45};
-	displayMeasParams.currentTimeBorder = {21, 9};
+	DisplayMeasParams.multiModeStruct.paramsArr[0] = noneParam;
+	DisplayMeasParams.multiModeStruct.paramsArr[1] = noneParam;
+	DisplayMeasParams.multiModeStruct.paramsArr[2] = noneParam;
 
-	displayMeasParams.multiModeStruct.divideDotsArr[0] = displayMeasParams.temp_divideDots;
-	displayMeasParams.multiModeStruct.divideDotsArr[1] = displayMeasParams.eCO2_divideDots;
-	displayMeasParams.multiModeStruct.divideDotsArr[2] = displayMeasParams.PM2_5_divideDots;
-	
+	DisplayMeasParams.temp_divideDots = {20, 26, 30};
+	DisplayMeasParams.humid_divideDots = {40, 60, 80};
+	DisplayMeasParams.eCO2_divideDots = {400, 1000, 5000};
+	DisplayMeasParams.TVOC_divideDots = {220, 660, 1000};
+	DisplayMeasParams.PM2_5_divideDots = {15, 20, 45};
+	DisplayMeasParams.currentTimeBorder = {21, 9};
+
+	DisplayMeasParams.multiModeStruct.divideDotsArr[0] = DisplayMeasParams.temp_divideDots;
+	DisplayMeasParams.multiModeStruct.divideDotsArr[1] = DisplayMeasParams.eCO2_divideDots;
+	DisplayMeasParams.multiModeStruct.divideDotsArr[2] = DisplayMeasParams.PM2_5_divideDots;
+
 	brightnessPerCent = MAX_BRIGHTNESS;
 
-	growEffectParams.color = COLOR_AQUA;
-	growEffectParams.speed = 200;
+	DisplayEffectParams.growParams.color = COLOR_AQUA;
+	DisplayEffectParams.growParams.speed = 200;
 
-	snakeEffectParams.color = COLOR_LIME;
-	snakeEffectParams.speed = 200;
-	snakeEffectParams.tailLength = 5;
+	DisplayEffectParams.snakeParams.color = COLOR_LIME;
+	DisplayEffectParams.snakeParams.speed = 200;
+	DisplayEffectParams.snakeParams.tailLength = 5;
 
-	randomEffectParams.speed = 200;
-	randomEffectParams.pauseTime = 1000;
+	DisplayEffectParams.randomParams.speed = 200;
+	DisplayEffectParams.randomParams.pauseTime = 1000;
 
-	fadeEffectParams.color = COLOR_AQUA;
-	fadeEffectParams.speed = 200;
-	fadeEffectParams.startBrightness = 100;
-	fadeEffectParams.stopBrightness = 0;
-	fadeEffectParams.step = 2;
+	DisplayEffectParams.fadeParams.color = COLOR_AQUA;
+	DisplayEffectParams.fadeParams.speed = 200;
+	DisplayEffectParams.fadeParams.startBrightness = 100;
+	DisplayEffectParams.fadeParams.stopBrightness = 0;
+	DisplayEffectParams.fadeParams.step = 2;
 }
 
-void HAQuDA_DisplayInterface::ext_setStaticColor(int red, int green, int blue) {
+void HAQuDA_DisplayInterface::SetStaticColor(int red, int green, int blue) {
+	DisplayMode = effect;
+
 	uint32_t color = ((uint32_t)red << 16) | ((uint32_t)green << 8) | blue;
 	WS2812_fillColor(color);
-	delay(100);
-	displayMeasParams.displayMode = noneMode;
-	displayEffect = staticColor;
+	vTaskDelay(100);
 }
 
-void HAQuDA_DisplayInterface::ext_setBrightness(uint8_t newBrightnessPerCent) {
+void HAQuDA_DisplayInterface::SetBrightness(uint8_t newBrightnessPerCent) {
 	WS2812_setBrightnessPerCent(newBrightnessPerCent);
 }
 
-void HAQuDA_DisplayInterface::ext_changeDisplayMode(int newDisplayMode) {
-	bool modeChanged = false;
-	switch (newDisplayMode) {
-		case 1: {
-			displayMeasParams.displayMode = standard;
-			modeChanged = true;
-			break;
-		}
-		case 2: {
-			displayMeasParams.displayMode = multi;
-			modeChanged = true;
-			break;
-		}
-		case 3: {
-			displayMeasParams.displayMode = night;
+void HAQuDA_DisplayInterface::ChangeDisplayMeasMode(uint8_t newDisplayMeasMode_num) {
+	DisplayMode = meas;
+	displayMeasMode_enum newDisplayMeasMode = static_cast<displayMeasMode_enum>(newDisplayMeasMode_num);
 
-			modeChanged = true;
-			break;
-		}
-		case 4: {
-			displayMeasParams.displayMode = noneMode;
-
-			modeChanged = true;
-			break;
-		}
-		default:
-			displayMeasParams.displayMode = noneMode;
+	if (newDisplayMeasMode != DisplayMeasParams.displayMode) {
+		HAQuDA_DisplayManip::displayMeas(DisplayMeasParams);
 	}
-	if (modeChanged) {
-		WS2812_clear();
-		delay(100);
-		HAQuDA_DisplayManip::displayData(displayMeasParams);
-	}
+	DisplayMeasParams.displayMode = newDisplayMeasMode;
 }
 
-void HAQuDA_DisplayInterface::ext_changeDisplayParam(int newDisplayParam) {
-	bool paramChanged = false;
-	switch (newDisplayParam) {
-		case 1: {
-			displayMeasParams.displayParam = temp;
-			paramChanged = true;
-			break;
-		}
-		case 2: {
-			displayMeasParams.displayParam = humid;
-			paramChanged = true;
-			break;
-		}
-		case 3: {
-			displayMeasParams.displayParam = eCO2;
-			paramChanged = true;
-			break;
-		}
-		case 4: {
-			displayMeasParams.displayParam = TVOC;
-			paramChanged = true;
-			break;
-		}
-		case 5: {
-			displayMeasParams.displayParam = PM2_5;
-			paramChanged = true;
-			break;
-		}
-		case 6: {
-			displayMeasParams.displayParam = total;
-			paramChanged = true;
-			break;
-		}
-		default:
-			displayMeasParams.displayParam = noneParam;
+void HAQuDA_DisplayInterface::ChangeDisplayMeasParam(uint8_t newDisplayMeasParamn_num) {
+	displayParams_enum newDisplayMeasParam = static_cast<displayParams_enum>(newDisplayMeasParamn_num);
+
+	if (newDisplayMeasParam != DisplayMeasParams.displayParam) {
+		HAQuDA_DisplayManip::displayMeas(DisplayMeasParams);
 	}
-	if (paramChanged) {
-		WS2812_clear();
-		delay(100);
-		HAQuDA_DisplayManip::displayData(displayMeasParams);
-	}
+
+	DisplayMeasParams.displayParam = newDisplayMeasParam;
 }
 
-void HAQuDA_DisplayInterface::ext_changeDisplayEffect(int newDisplayEffect) {
-	bool effectChanged = false;
-	switch (newDisplayEffect) {
-		case 1: {
-			displayEffect = snake;
-			effectChanged = true;
-			break;
-		}
-		case 2: {
-			displayEffect = randomPixel;
-			effectChanged = true;
-			break;
-		}
-		case 3: {
-			displayEffect = fade;
-			effectChanged = true;
-			break;
-		}
-		case 4: {
-			displayEffect = christmasTree;
-			effectChanged = true;
-			break;
-		}
-		default:
-			displayEffect = noneEffect;
-	}
-	if (effectChanged) {
-		WS2812_clear();
-		delay(100);
-		HAQuDA_DisplayManip::displayData(displayMeasParams);
-	}
+void HAQuDA_DisplayInterface::ChangeDisplayEffect(uint8_t newDisplayEffect_num) {
+	DisplayEffectParams.effect = static_cast<displayEffectMode_enum>(newDisplayEffect_num);
 }

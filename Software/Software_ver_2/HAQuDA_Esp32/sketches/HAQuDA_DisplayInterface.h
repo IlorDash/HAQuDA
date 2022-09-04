@@ -7,25 +7,20 @@
 
 class HAQuDA_DisplayInterface {
   public:
-	static whatDisplay_enum whatDisplay;
+	static displayMode_enum DisplayMode;
 
-	static errorTypes_enum displayError;
-
-	static displayEffect_enum displayEffect;
-
-	static growEffectsParams_struct growEffectParams;
-	static snakeEffectsParams_struct snakeEffectParams;
-	static fadeEffectsParams_struct fadeEffectParams;
-	static randomEffectsParams_struct randomEffectParams;
-
-	displayMeasParams_struct displayMeasParams;
+	static displayEffectParams_struct DisplayEffectParams;
+	
+	displayMeasParams_struct DisplayMeasParams;
 
 	uint8_t brightnessPerCent;
 
 	HAQuDA_DisplayInterface();
-	void ext_setStaticColor(int red, int green, int blue);
-	void ext_setBrightness(uint8_t newBrightnessPerCent);
-	void ext_changeDisplayMode(int newDisplayMode);
-	void ext_changeDisplayParam(int newDisplayParam);
-	void ext_changeDisplayEffect(int newDisplayEffect);
+	void SetStaticColor(int red, int green, int blue);
+	void SetBrightness(uint8_t newBrightnessPerCent);
+	
+	void ChangeDisplayMeasMode(uint8_t newDisplayMeasMode_num);
+	void ChangeDisplayMeasParam(uint8_t newDisplayMeasParamn_num);
+
+	void ChangeDisplayEffect(uint8_t newDisplayEffect_num);
 };
