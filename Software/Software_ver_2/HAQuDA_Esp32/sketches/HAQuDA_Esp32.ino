@@ -46,7 +46,7 @@ void setup() {
 	createTasks(&myDisplayInterface);
 
 	HAQuDA_DisplayInterface::displayEffect = snake; // start up connection effect
-	
+
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 
 	if (!myFS.Start()) {
@@ -57,10 +57,19 @@ void setup() {
 
 	myWiFi_handler->WiFi_connect();
 
-	//ans = touch_pad_init();
-	//ans = touch_pad_set_voltage(TOUCH_HVOLT_2V7, TOUCH_LVOLT_0V5, TOUCH_HVOLT_ATTEN_1V);
-	//ans = touch_pad_config(TOUCH_PAD_NUM8, TOUCH_THRESH_NO_USE);
-	//ans = touch_pad_config(TOUCH_PAD_NUM9, TOUCH_THRESH_NO_USE);
+	if (HAQuDA_WiFi_handler::WiFiConnected) {
+
+		myDisplayInterface.DisplayMeasParams.displayMode = multi;
+
+		myDisplayInterface.DisplayMeasParams.displayParam = noneParam;
+
+		myDisplayInterface.DisplayMeasParams.multiModeStruct.paramsArr[0] = temp;
+		myDisplayInterface.DisplayMeasParams.multiModeStruct.paramsArr[1] = eCO2;
+		myDisplayInterface.DisplayMeasParams.multiModeStruct.paramsArr[2] = PM2_5;
+
+		HAQuDA_DisplayInterface::DisplayMode = meas;
+	}
+
 	//	if (!sensorsBegin()) {
 	//		WS2812_fillColor(COLOR_RED);
 	//		terminal.println("FATAL ERROR: Failed to begin sensors");
@@ -81,19 +90,19 @@ uint8_t TTP223_val = 0;
 char strToSerial[64] = {};
 void loop() {
 
-	//ans = touch_pad_read_raw_data(TOUCH_PAD_NUM9, &touch_val_9);
-	//ans = touch_pad_read_raw_data(TOUCH_PAD_NUM8, &touch_val_8);
+	// ans = touch_pad_read_raw_data(TOUCH_PAD_NUM9, &touch_val_9);
+	// ans = touch_pad_read_raw_data(TOUCH_PAD_NUM8, &touch_val_8);
 
-	 touch_val_9 = touchRead(TOUCH_9);
-	 touch_val_7 = touchRead(TOUCH_7);
-	 touch_val_8 = touchRead(TOUCH_8);
-	 touch_val_0 = touchRead(TOUCH_0);
+	touch_val_9 = touchRead(TOUCH_9);
+	touch_val_7 = touchRead(TOUCH_7);
+	touch_val_8 = touchRead(TOUCH_8);
+	touch_val_0 = touchRead(TOUCH_0);
 
-	 if (touch_val_9 || touch_val_7 || touch_val_8 || touch_val_0) {
-		 touch_val_9 = touch_val_9;
-		 touch_val_7 = touch_val_7;
-		 touch_val_8 = touch_val_8;
-		 touch_val_0 = touch_val_0;
+	if (touch_val_9 || touch_val_7 || touch_val_8 || touch_val_0) {
+		touch_val_9 = touch_val_9;
+		touch_val_7 = touch_val_7;
+		touch_val_8 = touch_val_8;
+		touch_val_0 = touch_val_0;
 	}
 
 	sprintf(strToSerial, "TTP223 value: %d  TOUCH9: %d  TOUCH7: %d  TOUCH8: %d  TOUCH0: %d  ", TTP223_val, touch_val_9, touch_val_7, touch_val_8, touch_val_0);
