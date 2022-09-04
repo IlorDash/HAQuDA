@@ -4,16 +4,16 @@
 HAQuDA_DisplayInterface *myDisplayInterface_tasks;
 uint8_t builtIn_LED;
 
-void WS2812_ErrorDispTaskCode(void *parameter) {
+void WS2812_ErrorDisplayTaskCode(void *parameter) {
 	while (true) {
-		switch (HAQuDA_DisplayInterface::displayError) {
+		switch (HAQuDA_ErrorHandler::CurrentError) {
 			case failedToConnectToWiFi: {
-				HAQuDA_DisplayManip::showEffectGrow(HAQuDA_ErrorHandler::failedToConnectToWiFi_displayParams, &HAQuDA_ErrorHandler::errorEffectDisp);
+				HAQuDA_DisplayManip::showEffectGrow(HAQuDA_ErrorHandler::failedToConnectToWiFi_displayParams, &(HAQuDA_ErrorHandler::errorEffectDisp));
 				break;
 			}
 
 			case failedToCreateAP: {
-				HAQuDA_DisplayManip::showEffectSnake(HAQuDA_ErrorHandler::failedToCreateAP_displayParams, &HAQuDA_ErrorHandler::errorEffectDisp);
+				HAQuDA_DisplayManip::showEffectSnake(HAQuDA_ErrorHandler::failedToCreateAP_displayParams, &(HAQuDA_ErrorHandler::errorEffectDisp));
 			}
 			default:
 				break;
@@ -32,17 +32,20 @@ void BuiltIn_LED_Blink_TaskCode(void *parameter) {
 
 void WS2812_EffectsTaskCode(void *parameter) {
 	while (true) {
-		switch (HAQuDA_DisplayInterface::displayEffect) {
+		switch (HAQuDA_DisplayInterface::DisplayEffectParams.effect) {
 			case snake: {
-				HAQuDA_DisplayManip::showEffectSnake(HAQuDA_DisplayInterface::snakeEffectParams, &HAQuDA_DisplayInterface::displayEffect);
+				HAQuDA_DisplayManip::showEffectSnake(HAQuDA_DisplayInterface::DisplayEffectParams.snakeParams,
+													 &(HAQuDA_DisplayInterface::DisplayEffectParams.effect));
 				break;
 			}
 			case randomPixel: {
-				HAQuDA_DisplayManip::showEffectRandom(HAQuDA_DisplayInterface::randomEffectParams, &HAQuDA_DisplayInterface::displayEffect);
+				HAQuDA_DisplayManip::showEffectRandom(HAQuDA_DisplayInterface::DisplayEffectParams.randomParams,
+													  &(HAQuDA_DisplayInterface::DisplayEffectParams.effect));
 				break;
 			}
 			case fade: {
-				HAQuDA_DisplayManip::showEffectFade(HAQuDA_DisplayInterface::fadeEffectParams, &HAQuDA_DisplayInterface::displayEffect);
+				HAQuDA_DisplayManip::showEffectFade(HAQuDA_DisplayInterface::DisplayEffectParams.fadeParams,
+													&(HAQuDA_DisplayInterface::DisplayEffectParams.effect));
 				break;
 			}
 			case christmasTree: {
@@ -69,13 +72,13 @@ void createTasks(HAQuDA_DisplayInterface *currUI) {
 							1						// Task core
 	);
 
-	xTaskCreatePinnedToCore(WS2812_ErrorDispTaskCode, // Function that should be called
-							"WS2812 Error Disp task", // Name of the task (for debugging)
-							2048,					  // Stack size (bytes)
-							NULL,					  // Parameter to pass
-							1,						  // Task priority
-							NULL,					  // Task handler
-							1						  // Task core
+	xTaskCreatePinnedToCore(WS2812_ErrorDisplayTaskCode, // Function that should be called
+							"WS2812 Error Disp task",	// Name of the task (for debugging)
+							2048,						 // Stack size (bytes)
+							NULL,						 // Parameter to pass
+							1,							 // Task priority
+							NULL,						 // Task handler
+							1							 // Task core
 	);
 
 	xTaskCreatePinnedToCore(BuiltIn_LED_Blink_TaskCode, // Function that should be called
