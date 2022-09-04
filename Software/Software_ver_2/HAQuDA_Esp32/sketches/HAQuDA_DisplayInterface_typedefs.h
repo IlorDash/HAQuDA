@@ -6,20 +6,33 @@
 #define DIVIDE_DOTS_NUM 3
 #define DISP_PARAMS_NUM 5
 
-typedef enum {effect , meas, error, none } whatDisplay_enum;
+typedef enum { effect, meas, error, none } whatDisplay_enum;
 
-typedef enum { snake, randomPixel, fade, christmasTree, staticColor, noneEffect } displayEffect_enum;
+typedef enum { snake, grow, randomPixel, fade, christmasTree, staticColor, noneEffect } displayEffect_enum;
 
 typedef struct {
-	uint16_t snakeSpeed; // in ms - delay between movements
-	uint8_t snakeTailLength;
-	uint32_t snakeColor;
+	uint16_t speed; // in ms - delay between movements
+	uint8_t tailLength;
+	uint32_t color;
 } snakeEffectsParams_struct;
 
 typedef struct {
-	uint16_t fadeSpeed; // in ms - delay between reducing brightness steps
-	uint32_t fadeColor;
+	uint16_t speed; // in ms - delay between movements
+	uint32_t color;
+} growEffectsParams_struct;
+
+typedef struct {
+	uint16_t speed; // in ms - delay between reducing brightness steps
+	uint32_t color;
+	uint8_t startBrightness; // percent
+	uint8_t stopBrightness;  // percent
+	uint8_t step;
 } fadeEffectsParams_struct;
+
+typedef struct {
+	uint16_t speed;		// in ms - delay between LED ignition
+	uint16_t pauseTime; // in ms - pause after all LED ignited
+} randomEffectsParams_struct;
 
 typedef enum { standard, multi, night, noneMode } displayMode_enum;
 
