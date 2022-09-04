@@ -49,12 +49,12 @@ class HAQuDA_DisplayManip {
   public:
 	HAQuDA_DisplayManip();
 	static void startNTP();
-	static void displayData(displayMeasParams_struct currUI_Params);
+	static void displayMeas(displayMeasParams_struct currUI_Params);
 
-	static void showEffectGrow(const growEffectsParams_struct params, const displayEffect_enum *effect);
-	static void showEffectSnake(const snakeEffectsParams_struct params, const displayEffect_enum *effect);
-	static void showEffectRandom(const randomEffectsParams_struct params, const displayEffect_enum *effect);
-	static void showEffectFade(const fadeEffectsParams_struct params, const displayEffect_enum *effect);
+	static void showEffectGrow(const growEffectsParams_struct params, const displayEffectMode_enum *effect);
+	static void showEffectSnake(const snakeEffectsParams_struct params, const displayEffectMode_enum *effect);
+	static void showEffectRandom(const randomEffectsParams_struct params, const displayEffectMode_enum *effect);
+	static void showEffectFade(const fadeEffectsParams_struct params, const displayEffectMode_enum *effect);
 	static void showEffectChristmasTree(uint8_t speed, uint8_t treeMiddleColumn);
 
 	~HAQuDA_DisplayManip();

@@ -19,7 +19,7 @@ void HAQuDA_DisplayManip::startNTP() {
 	timeClient->setTimeOffset(10800);
 }
 
-void HAQuDA_DisplayManip::displayData(displayMeasParams_struct currDisplayMeasParams) {
+void HAQuDA_DisplayManip::displayMeas(displayMeasParams_struct currDisplayMeasParams) {
 	switch (currDisplayMeasParams.displayMode) {
 		case standard: {
 			standardMode(currDisplayMeasParams);
@@ -267,6 +267,9 @@ void HAQuDA_DisplayManip::getMeasRGB(uint8_t *_red, uint8_t *_green, uint8_t *_b
 }
 
 void HAQuDA_DisplayManip::showMeas_standard(float data, measDivideDots_struct divideDots) {
+	WS2812_clear();
+	vTaskDelay(100);
+	
 	uint8_t red, green, blue; // values of LED colors
 	uint8_t brightness = WS2812_getBrightness();
 	getMeasRGB(&red, &green, &blue, brightness, data, divideDots);
@@ -274,7 +277,9 @@ void HAQuDA_DisplayManip::showMeas_standard(float data, measDivideDots_struct di
 }
 
 void HAQuDA_DisplayManip::showMeas_night(float data, measDivideDots_struct divideDots, uint8_t time) {
-
+	WS2812_clear();
+	vTaskDelay(100);
+	
 	uint8_t red, green, blue; // values of LED colors
 	uint8_t brightness = WS2812_getBrightness();
 	getMeasRGB(&red, &green, &blue, brightness, data, divideDots);
@@ -295,6 +300,10 @@ void HAQuDA_DisplayManip::showMeas_multi(float *data, uint8_t dataSize, measDivi
 	if (divideDotsSize != DIVIDE_DOTS_NUM) {
 		return;
 	}
+
+	WS2812_clear();
+	vTaskDelay(100);
+	
 	uint8_t red[MULTI_MODE_PARAM_NUM], green[MULTI_MODE_PARAM_NUM], blue[MULTI_MODE_PARAM_NUM]; // values of LED colors
 	uint8_t brightness = WS2812_getBrightness();
 	for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
@@ -339,7 +348,7 @@ void HAQuDA_DisplayManip::showMeas_total(float *data, uint8_t dataSize, measDivi
 	WS2812_fillColor(WS2812_getColor(red, green, blue), 0, LED_NUM_PIXELS);
 }
 
-void HAQuDA_DisplayManip::showEffectGrow(const growEffectsParams_struct params, const displayEffect_enum *effect) {
+void HAQuDA_DisplayManip::showEffectGrow(const growEffectsParams_struct params, const displayEffectMode_enum *effect) {
 	WS2812_clear();
 
 	for (uint8_t i = 0; i < LED_ROW_NUM; i++) {
@@ -354,7 +363,7 @@ void HAQuDA_DisplayManip::showEffectGrow(const growEffectsParams_struct params, 
 	}
 }
 
-void HAQuDA_DisplayManip::showEffectSnake(const snakeEffectsParams_struct params, const displayEffect_enum *effect) {
+void HAQuDA_DisplayManip::showEffectSnake(const snakeEffectsParams_struct params, const displayEffectMode_enum *effect) {
 	WS2812_clear();
 	for (int i = 0; i < LED_NUM_PIXELS; i++) {
 		int pixelNum = 0;
@@ -371,7 +380,7 @@ void HAQuDA_DisplayManip::showEffectSnake(const snakeEffectsParams_struct params
 	}
 }
 
-void HAQuDA_DisplayManip::showEffectRandom(const randomEffectsParams_struct params, const displayEffect_enum *effect) {
+void HAQuDA_DisplayManip::showEffectRandom(const randomEffectsParams_struct params, const displayEffectMode_enum *effect) {
 	WS2812_clear();
 	std::vector<int> pixelEnArr;
 	for (int i = 0; i < LED_NUM_PIXELS; i++) {
@@ -391,7 +400,7 @@ void HAQuDA_DisplayManip::showEffectRandom(const randomEffectsParams_struct para
 	vTaskDelay(params.pauseTime / portTICK_PERIOD_MS);
 }
 
-void HAQuDA_DisplayManip::showEffectFade(const fadeEffectsParams_struct params, const displayEffect_enum *effect) {
+void HAQuDA_DisplayManip::showEffectFade(const fadeEffectsParams_struct params, const displayEffectMode_enum *effect) {
 	WS2812_clear();
 	WS2812_fillColor(params.color);
 	for (int j = params.startBrightness; j > params.stopBrightness; j = j - params.step) {
