@@ -7,6 +7,13 @@
 #include <WiFiUdp.h>
 #include <NTPClient.h>
 
+#define COLOR_AQUA 0x00FFFF
+#define COLOR_LIME 0x99FF33
+#define COLOR_GREEN 0x01FF00
+#define COLOR_RED 0xFF0000
+#define COLOR_YELLOW 0xFFFF00
+#define COLOR_WHITE 0xFFFFFF
+
 class HAQuDA_DisplayManip {
   private:
 	// Define NTP Client to get time
@@ -43,6 +50,12 @@ class HAQuDA_DisplayManip {
 	HAQuDA_DisplayManip();
 	static void startNTP();
 	static void displayData(displayMeasParams_struct currUI_Params);
-	static void showEffect_ChristmasTree(uint8_t speed, uint8_t treeMiddleColumn);
+
+	static void showEffectGrow(const growEffectsParams_struct params, const displayEffect_enum *effect);
+	static void showEffectSnake(const snakeEffectsParams_struct params, const displayEffect_enum *effect);
+	static void showEffectRandom(const randomEffectsParams_struct params, const displayEffect_enum *effect);
+	static void showEffectFade(const fadeEffectsParams_struct params, const displayEffect_enum *effect);
+	static void showEffectChristmasTree(uint8_t speed, uint8_t treeMiddleColumn);
+
 	~HAQuDA_DisplayManip();
 };

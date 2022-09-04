@@ -1,5 +1,7 @@
 #include "HAQuDA_DisplayManip.h"
 
+#include <vector>
+
 HAQuDA_DisplayManip::~HAQuDA_DisplayManip() {
 	// delete timeClient;
 }
@@ -15,6 +17,25 @@ void HAQuDA_DisplayManip::startNTP() {
 	// GMT +3 = 10800
 	// GMT 0 = 0
 	timeClient->setTimeOffset(10800);
+}
+
+void HAQuDA_DisplayManip::displayData(displayMeasParams_struct currDisplayMeasParams) {
+	switch (currDisplayMeasParams.displayMode) {
+		case standard: {
+			standardMode(currDisplayMeasParams);
+			break;
+		}
+		case multi: {
+			multiMode(currDisplayMeasParams.multiModeStruct);
+			break;
+		}
+		case night: {
+			nightMode(currDisplayMeasParams);
+			break;
+		}
+		default:
+			break;
+	}
 }
 
 displayParams_enum HAQuDA_DisplayManip::checkBadParam(displayMeasParams_struct currDisplayMeasParams) {
@@ -223,25 +244,6 @@ void HAQuDA_DisplayManip::nightMode(displayMeasParams_struct currDisplayMeasPara
 	}
 }
 
-void HAQuDA_DisplayManip::displayData(displayMeasParams_struct currDisplayMeasParams) {
-	switch (currDisplayMeasParams.displayMode) {
-		case standard: {
-			standardMode(currDisplayMeasParams);
-			break;
-		}
-		case multi: {
-			multiMode(currDisplayMeasParams.multiModeStruct);
-			break;
-		}
-		case night: {
-			nightMode(currDisplayMeasParams);
-			break;
-		}
-		default:
-			break;
-	}
-}
-
 void HAQuDA_DisplayManip::getMeasRGB(uint8_t *_red, uint8_t *_green, uint8_t *_blue, const uint8_t brightness, const float data,
 									 const measDivideDots_struct divideDots) {
 	float coefficient = (brightness * 2) / (divideDots.thirdDot - divideDots.firstDot);
@@ -337,6 +339,69 @@ void HAQuDA_DisplayManip::showMeas_total(float *data, uint8_t dataSize, measDivi
 	WS2812_fillColor(WS2812_getColor(red, green, blue), 0, LED_NUM_PIXELS);
 }
 
+void HAQuDA_DisplayManip::showEffectGrow(const growEffectsParams_struct params, const displayEffect_enum *effect) {
+	WS2812_clear();
+
+	for (uint8_t i = 0; i < LED_ROW_NUM; i++) {
+		for (uint8_t j = 0; j < LED_COLUMN_NUM; j++) {
+			uint8_t pixelNum = GetLedNum(i, j);
+			WS2812_setPixelColor(pixelNum, COLOR_RED);
+			WS2812_show();
+			if (*effect != grow) {
+				break;
+			}
+		}
+	}
+}
+
+void HAQuDA_DisplayManip::showEffectSnake(const snakeEffectsParams_struct params, const displayEffect_enum *effect) {
+	WS2812_clear();
+	for (int i = 0; i < LED_NUM_PIXELS; i++) {
+		int pixelNum = 0;
+		for (int j = 0; j < params.tailLength; j++) {
+			pixelNum = j + i;
+			pixelNum = (pixelNum > LED_NUM_PIXELS) ? LED_NUM_PIXELS : pixelNum;
+			WS2812_setPixelColor(pixelNum, params.color);
+			if (*effect != snake) {
+				break;
+			}
+		}
+		WS2812_setPixelColor(i, 0);
+		WS2812_show(params.speed);
+	}
+}
+
+void HAQuDA_DisplayManip::showEffectRandom(const randomEffectsParams_struct params, const displayEffect_enum *effect) {
+	WS2812_clear();
+	std::vector<int> pixelEnArr;
+	for (int i = 0; i < LED_NUM_PIXELS; i++) {
+		int pixelNum = random(0, LED_NUM_PIXELS);
+		while (find(pixelEnArr.begin(), pixelEnArr.end(), pixelNum) != pixelEnArr.end()) {
+			if (*effect != randomPixel) {
+				break;
+			}
+
+			pixelNum = random(0, LED_NUM_PIXELS);
+		}
+		pixelEnArr.push_back(pixelNum);
+
+		WS2812_setPixelColor(pixelNum, ((uint32_t)random(0, 255) << 16) | ((uint32_t)random(0, 255) << 8) | random(0, 255));
+		WS2812_show(params.speed);
+	}
+	vTaskDelay(params.pauseTime / portTICK_PERIOD_MS);
+}
+
+void HAQuDA_DisplayManip::showEffectFade(const fadeEffectsParams_struct params, const displayEffect_enum *effect) {
+	WS2812_clear();
+	WS2812_fillColor(params.color);
+	for (int j = params.startBrightness; j > params.stopBrightness; j = j - params.step) {
+		WS2812_setBrightnessPerCent(j);
+		if (*effect != fade) {
+			break;
+		}
+	}
+}
+
 uint8_t HAQuDA_DisplayManip::GetLedNum(int x, int y) {
 	int n;
 
@@ -384,7 +449,7 @@ void HAQuDA_DisplayManip::drawTreeTop(uint8_t middleColumn) {
 	}
 }
 
-void HAQuDA_DisplayManip::showEffect_ChristmasTree(uint8_t speed, uint8_t treeMiddleColumn) {
+void HAQuDA_DisplayManip::showEffectChristmasTree(uint8_t speed, uint8_t treeMiddleColumn) {
 	uint8_t redBackground = redBackgroundIntensity * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
 	uint8_t greenBackground = greenBackgroundIntensity * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
 	uint8_t blueBackground = blueBackgroundIntensity * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
