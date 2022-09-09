@@ -2,7 +2,7 @@
 
 #include "HAQuDA_WebServer.h"
 #include "TimeHelper.h"
-#include "HAQuDA_DisplayInterface.h"
+#include "HAQuDA_DisplayManip.h"
 #include "HAQuDA_ErrorHandler.h"
 
 #define CONNECT_WIFI_TIMEOUT 3000
@@ -11,7 +11,6 @@ class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
   private:
 	char *AP_ssid = AP_SSID;
 	char *AP_pass = AP_PASS;
-	HAQuDA_DisplayInterface *_myDisplayInterface;
 	HAQuDA_ErrorHandler *_myErrorHandler;
 
 	static void WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info);
@@ -28,8 +27,7 @@ class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
 	void waitUntilWiFiConnected();
 
   public:
-	HAQuDA_WiFi_handler(HAQuDA_DisplayInterface *currUI, HAQuDA_FileStorage *currFS, HAQuDA_ErrorHandler *currErrorHandler)
-		: _myDisplayInterface(currUI), HAQuDA_WebServer(currFS), _myErrorHandler(currErrorHandler){};
+	HAQuDA_WiFi_handler(HAQuDA_FileStorage *currFS, HAQuDA_ErrorHandler *currErrorHandler) : HAQuDA_WebServer(currFS), _myErrorHandler(currErrorHandler){};
 	~HAQuDA_WiFi_handler();
 	static bool WiFiConnected;
 	bool WiFi_connect();

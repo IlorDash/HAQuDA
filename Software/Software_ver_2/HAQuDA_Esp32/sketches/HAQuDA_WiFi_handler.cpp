@@ -37,11 +37,14 @@ void HAQuDA_WiFi_handler::WiFi_handleConnection() {
 	HAQuDA_ErrorHandler::CurrentError = noneError;
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 
-	HAQuDA_DisplayInterface::DisplayEffectParams.snakeParams.color = COLOR_AQUA;
-	HAQuDA_DisplayInterface::DisplayEffectParams.snakeParams.speed = 200; // start up connection effect
-	HAQuDA_DisplayInterface::DisplayEffectParams.snakeParams.tailLength = 5;
-	HAQuDA_DisplayInterface::DisplayEffectParams.effect = snake;
-	HAQuDA_DisplayInterface::DisplayMode = effect;
+	displayEffectParams_struct startUpEffect;
+
+	startUpEffect.snakeParams.color = COLOR_AQUA;
+	startUpEffect.snakeParams.speed = 200; // start up connection effect
+	startUpEffect.snakeParams.tailLength = 5;
+	startUpEffect.effect = snake;
+	HAQuDA_DisplayManip::SetDisplayEffectParams(startUpEffect);
+
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 
 	while (!WiFiConnected) {
@@ -121,12 +124,13 @@ bool HAQuDA_WiFi_handler::connectToWiFi(const char *ssidLocal, const char *passL
 }
 
 void HAQuDA_WiFi_handler::WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info) {
-	HAQuDA_DisplayInterface::DisplayMode = none;
+	HAQuDA_DisplayManip::SetDisplayMode(none);
 	WiFiConnected = true;
 	vTaskDelay(100 / portTICK_PERIOD_MS);
-	WS2812_fillColor(COLOR_GREEN);
+
+	HAQuDA_DisplayManip::ShowStaticColor(COLOR_GREEN);
 	vTaskDelay(1000 / portTICK_PERIOD_MS);
-	WS2812_clear();
+	HAQuDA_DisplayManip::ShowStaticColor(0, 0, 0);
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 }
 
