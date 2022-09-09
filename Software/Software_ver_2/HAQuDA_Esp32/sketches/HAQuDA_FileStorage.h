@@ -38,14 +38,14 @@ typedef struct {
 	uint32_t timeStamp = 0;
 	uint16_t measNum = 0;
 
-	float eCO2_meas;
-	float TVOC_meas;
-	float PM_1_0_meas;
-	float PM_2_5_meas;
-	float PM_10_meas;
-	float temp_meas;
-	float humid_meas;
-	float O3_meas;
+	float eCO2_log;
+	float TVOC_log;
+	float PM_1_0_log;
+	float PM_2_5_log;
+	float PM_10_log;
+	float temp_log;
+	float humid_log;
+	float O3_log;
 } TMeasLog;
 
 typedef struct {
