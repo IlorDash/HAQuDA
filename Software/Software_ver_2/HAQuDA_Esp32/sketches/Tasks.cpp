@@ -1,19 +1,19 @@
 #include "Tasks.h"
 #include "HAQuDA_ErrorHandler.h"
 
-HAQuDA_DisplayInterface *myDisplayInterface_tasks;
+HAQuDA_DisplayManip *myDisplayManip_tasks;
 uint8_t builtIn_LED;
 
 void WS2812_ErrorDisplayTaskCode(void *parameter) {
 	while (true) {
 		switch (HAQuDA_ErrorHandler::CurrentError) {
 			case failedToConnectToWiFi: {
-				HAQuDA_DisplayManip::showEffectGrow(HAQuDA_ErrorHandler::failedToConnectToWiFi_displayParams, &(HAQuDA_ErrorHandler::errorEffectDisp));
+				HAQuDA_DisplayManip::ShowEffectGrow(HAQuDA_ErrorHandler::failedToConnectToWiFi_displayParams);
 				break;
 			}
 
 			case failedToCreateAP: {
-				HAQuDA_DisplayManip::showEffectSnake(HAQuDA_ErrorHandler::failedToCreateAP_displayParams, &(HAQuDA_ErrorHandler::errorEffectDisp));
+				HAQuDA_DisplayManip::ShowEffectSnake(HAQuDA_ErrorHandler::failedToCreateAP_displayParams);
 			}
 			default:
 				break;
@@ -32,20 +32,17 @@ void BuiltIn_LED_Blink_TaskCode(void *parameter) {
 
 void WS2812_EffectsTaskCode(void *parameter) {
 	while (true) {
-		switch (HAQuDA_DisplayInterface::DisplayEffectParams.effect) {
+		switch (HAQuDA_DisplayManip::GetDisplayEffect()) {
 			case snake: {
-				HAQuDA_DisplayManip::showEffectSnake(HAQuDA_DisplayInterface::DisplayEffectParams.snakeParams,
-													 &(HAQuDA_DisplayInterface::DisplayEffectParams.effect));
+				HAQuDA_DisplayManip::ShowEffectSnake();
 				break;
 			}
 			case randomPixel: {
-				HAQuDA_DisplayManip::showEffectRandom(HAQuDA_DisplayInterface::DisplayEffectParams.randomParams,
-													  &(HAQuDA_DisplayInterface::DisplayEffectParams.effect));
+				HAQuDA_DisplayManip::ShowEffectRandom();
 				break;
 			}
 			case fade: {
-				HAQuDA_DisplayManip::showEffectFade(HAQuDA_DisplayInterface::DisplayEffectParams.fadeParams,
-													&(HAQuDA_DisplayInterface::DisplayEffectParams.effect));
+				HAQuDA_DisplayManip::ShowEffectFade();
 				break;
 			}
 			case christmasTree: {
@@ -58,8 +55,7 @@ void WS2812_EffectsTaskCode(void *parameter) {
 	}
 }
 
-void createTasks(HAQuDA_DisplayInterface *currUI) {
-	myDisplayInterface_tasks = currUI;
+void createTasks() {
 	builtIn_LED = atoi(BUILTIN_LED);
 	pinMode(builtIn_LED, OUTPUT);
 
