@@ -1,14 +1,86 @@
 #include "HAQuDA_DisplayManip.h"
-
+#include "WS2812.h"
+#include "Sensors.h"
 #include <vector>
 
-HAQuDA_DisplayManip::~HAQuDA_DisplayManip() {
-	// delete timeClient;
+displayMode_enum HAQuDA_DisplayManip::DisplayMode = none;
+bool HAQuDA_DisplayManip::stopEffect = false;
+
+displayEffectParams_struct HAQuDA_DisplayManip::DisplayEffectParams;
+
+displayMeasParams_struct HAQuDA_DisplayManip::DisplayMeasParams;
+
+HAQuDA_DisplayManip::HAQuDA_DisplayManip() {
 }
 
-void HAQuDA_DisplayManip::startNTP() {
-	timeClient = new NTPClient(ntpUDP);
+void HAQuDA_DisplayManip::SetBrightness(uint8_t newBrightnessPerCent) {
+	WS2812_setBrightnessPerCent(newBrightnessPerCent);
+}
 
+void HAQuDA_DisplayManip::SetDisplayMode(displayMode_enum newDisplayMode) {
+	DisplayMode = newDisplayMode;
+}
+
+void HAQuDA_DisplayManip::SetDisplayMeasMode(displayMeasMode_enum newDisplayMeasMode) {
+	DisplayMode = meas;
+
+	if (newDisplayMeasMode != DisplayMeasParams.mode) {
+		showMeas();
+	}
+	DisplayMeasParams.mode = newDisplayMeasMode;
+}
+
+void HAQuDA_DisplayManip::SetDisplayMeasParam(displayParams_enum newDisplayMeasParam) {
+	DisplayMode = meas;
+
+	if (newDisplayMeasParam != DisplayMeasParams.displayParam) {
+		showMeas();
+	}
+
+	DisplayMeasParams.displayParam = newDisplayMeasParam;
+}
+
+void HAQuDA_DisplayManip::SetDisplayEffect(displayEffectMode_enum newDisplayEffect) {
+	DisplayMode = effect;
+
+	if (newDisplayEffect != DisplayEffectParams.effect) {
+		stopEffect = true;
+	}
+
+	DisplayEffectParams.effect = newDisplayEffect;
+}
+
+void HAQuDA_DisplayManip::SetDisplayEffectParams(displayEffectParams_struct newDisplayEffectParams) {
+	DisplayMode = effect;
+
+	if (newDisplayEffectParams.effect != DisplayEffectParams.effect) {
+		stopEffect = true;
+	}
+
+	DisplayEffectParams = newDisplayEffectParams;
+}
+
+uint8_t HAQuDA_DisplayManip::GetBrightness() {
+	return WS2812_getBrightness();
+}
+
+displayMode_enum HAQuDA_DisplayManip::GetDisplayMode() {
+	return DisplayMode;
+}
+
+displayMeasMode_enum HAQuDA_DisplayManip::GetDisplayMeasMode() {
+	return DisplayMeasParams.mode;
+}
+
+displayParams_enum HAQuDA_DisplayManip::GetDisplayMeasParam() {
+	return DisplayMeasParams.displayParam;
+}
+
+displayEffectMode_enum HAQuDA_DisplayManip::GetDisplayEffect() {
+	return DisplayEffectParams.effect;
+}
+
+void HAQuDA_DisplayManip::StartNTP() {
 	// Initialize a NTPClient to get time
 	timeClient->begin();
 	// Set offset time in seconds to adjust for your timezone, for example:
@@ -19,18 +91,111 @@ void HAQuDA_DisplayManip::startNTP() {
 	timeClient->setTimeOffset(10800);
 }
 
-void HAQuDA_DisplayManip::displayMeas(displayMeasParams_struct currDisplayMeasParams) {
-	switch (currDisplayMeasParams.displayMode) {
+void HAQuDA_DisplayManip::ShowStaticColor(uint32_t color) {
+	DisplayMode = effect;
+	WS2812_fillColor(color);
+	vTaskDelay(100);
+}
+
+void HAQuDA_DisplayManip::ShowStaticColor(int red, int green, int blue) {
+	DisplayMode = effect;
+
+	uint32_t color = ((uint32_t)red << 16) | ((uint32_t)green << 8) | blue;
+	WS2812_fillColor(color);
+	vTaskDelay(100);
+}
+
+void HAQuDA_DisplayManip::ShowEffectGrow(const growEffectsParams_struct params) {
+	WS2812_clear();
+
+	for (uint8_t i = 0; i < LED_ROW_NUM; i++) {
+		for (uint8_t j = 0; j < LED_COLUMN_NUM; j++) {
+			uint8_t pixelNum = GetLedNum(i, j);
+			WS2812_setPixelColor(pixelNum, COLOR_RED);
+			WS2812_show();
+
+			if (stopEffect) {
+				break;
+			}
+		}
+	}
+}
+
+void HAQuDA_DisplayManip::ShowEffectSnake(const snakeEffectsParams_struct params) {
+	WS2812_clear();
+	for (int i = 0; i < LED_NUM_PIXELS; i++) {
+		int pixelNum = 0;
+		for (int j = 0; j < params.tailLength; j++) {
+			pixelNum = j + i;
+			pixelNum = (pixelNum > LED_NUM_PIXELS) ? LED_NUM_PIXELS : pixelNum;
+			WS2812_setPixelColor(pixelNum, params.color);
+
+			if (stopEffect) {
+				break;
+			}
+		}
+		WS2812_setPixelColor(i, 0);
+		WS2812_show(params.speed);
+	}
+}
+
+void HAQuDA_DisplayManip::ShowEffectRandom(const randomEffectsParams_struct params) {
+	WS2812_clear();
+	std::vector<int> pixelEnArr;
+	for (int i = 0; i < LED_NUM_PIXELS; i++) {
+		int pixelNum = random(0, LED_NUM_PIXELS);
+		while (find(pixelEnArr.begin(), pixelEnArr.end(), pixelNum) != pixelEnArr.end()) {
+			pixelNum = random(0, LED_NUM_PIXELS);
+
+			if (stopEffect) {
+				break;
+			}
+		}
+		pixelEnArr.push_back(pixelNum);
+
+		WS2812_setPixelColor(pixelNum, ((uint32_t)random(0, 255) << 16) | ((uint32_t)random(0, 255) << 8) | random(0, 255));
+		WS2812_show(params.speed);
+	}
+	vTaskDelay(params.pauseTime / portTICK_PERIOD_MS);
+}
+
+void HAQuDA_DisplayManip::ShowEffectFade(const fadeEffectsParams_struct params) {
+	WS2812_clear();
+	WS2812_fillColor(params.color);
+	for (int j = params.startBrightness; j > params.stopBrightness; j = j - params.step) {
+		WS2812_setBrightnessPerCent(j);
+
+		if (stopEffect) {
+			break;
+		}
+	}
+}
+/*
+void HAQuDA_DisplayManip::ShowEffectChristmasTree(uint8_t speed, uint8_t treeMiddleColumn) {
+	uint8_t redBackground = redBackgroundIntensity * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
+	uint8_t greenBackground = greenBackgroundIntensity * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
+	uint8_t blueBackground = blueBackgroundIntensity * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
+	uint32_t backgroundColor = WS2812_getColor(redBackground, greenBackground, blueBackground);
+	WS2812_fillColor(backgroundColor); // drawing christmas tree with white-blue background
+
+	HAQuDA_DisplayManip::drawTreeTrunk(treeMiddleColumn);
+	HAQuDA_DisplayManip::drawTreeTop(treeMiddleColumn);
+	HAQuDA_DisplayManip::drawStarOnTree(treeMiddleColumn);
+	// uint8_t lightsEffect = rand() % 3;
+}
+*/
+void HAQuDA_DisplayManip::showMeas() {
+	switch (DisplayMeasParams.mode) {
 		case standard: {
-			standardMode(currDisplayMeasParams);
+			standardMode();
 			break;
 		}
 		case multi: {
-			multiMode(currDisplayMeasParams.multiModeStruct);
+			multiMode(DisplayMeasParams.multiModeStruct);
 			break;
 		}
 		case night: {
-			nightMode(currDisplayMeasParams);
+			nightMode();
 			break;
 		}
 		default:
@@ -38,46 +203,46 @@ void HAQuDA_DisplayManip::displayMeas(displayMeasParams_struct currDisplayMeasPa
 	}
 }
 
-displayParams_enum HAQuDA_DisplayManip::checkBadParam(displayMeasParams_struct currDisplayMeasParams) {
-	if (((temp_meas.value / temp_meas.measNum) >= currDisplayMeasParams.temp_divideDots.thirdDot)
-		|| ((temp_meas.value / temp_meas.measNum) <= currDisplayMeasParams.temp_divideDots.firstDot)) {
+displayParams_enum HAQuDA_DisplayManip::checkBadParam(displayMeasParams_struct DisplayMeasParams) {
+	if (((temp_meas.value / temp_meas.measNum) >= DisplayMeasParams.temp_divideDots.thirdDot)
+		|| ((temp_meas.value / temp_meas.measNum) <= DisplayMeasParams.temp_divideDots.firstDot)) {
 		return temp;
-	} else if (((humid_meas.value / humid_meas.measNum) >= currDisplayMeasParams.humid_divideDots.thirdDot)
-			   || ((humid_meas.value / humid_meas.measNum) <= currDisplayMeasParams.humid_divideDots.firstDot)) {
+	} else if (((humid_meas.value / humid_meas.measNum) >= DisplayMeasParams.humid_divideDots.thirdDot)
+			   || ((humid_meas.value / humid_meas.measNum) <= DisplayMeasParams.humid_divideDots.firstDot)) {
 		return humid;
-	} else if ((eCO2_meas.value / eCO2_meas.measNum) >= currDisplayMeasParams.eCO2_divideDots.thirdDot) {
+	} else if ((eCO2_meas.value / eCO2_meas.measNum) >= DisplayMeasParams.eCO2_divideDots.thirdDot) {
 		return eCO2;
-	} else if ((TVOC_meas.value / TVOC_meas.measNum) >= currDisplayMeasParams.TVOC_divideDots.thirdDot) {
+	} else if ((TVOC_meas.value / TVOC_meas.measNum) >= DisplayMeasParams.TVOC_divideDots.thirdDot) {
 		return TVOC;
-	} else if ((PM_2_5_meas.value / PM_2_5_meas.measNum) >= currDisplayMeasParams.PM2_5_divideDots.thirdDot) {
+	} else if ((PM_2_5_meas.value / PM_2_5_meas.measNum) >= DisplayMeasParams.PM2_5_divideDots.thirdDot) {
 		return PM2_5;
 	}
 	return noneParam;
 }
 
-void HAQuDA_DisplayManip::standardMode(displayMeasParams_struct currDisplayMeasParams) {
-	switch (currDisplayMeasParams.displayParam) {
+void HAQuDA_DisplayManip::standardMode() {
+	switch (DisplayMeasParams.displayParam) {
 		case total: {
-			displayParams_enum badParam = checkBadParam(currDisplayMeasParams);
+			displayParams_enum badParam = checkBadParam(DisplayMeasParams);
 			switch (badParam) {
 				case temp: {
-					HAQuDA_DisplayManip::showMeas_standard(temp_meas.value / temp_meas.measNum, currDisplayMeasParams.temp_divideDots);
+					showMeas_standard(temp_meas.value / temp_meas.measNum, DisplayMeasParams.temp_divideDots);
 					break;
 				}
 				case humid: {
-					HAQuDA_DisplayManip::showMeas_standard(humid_meas.value / humid_meas.measNum, currDisplayMeasParams.humid_divideDots);
+					showMeas_standard(humid_meas.value / humid_meas.measNum, DisplayMeasParams.humid_divideDots);
 					break;
 				}
 				case eCO2: {
-					HAQuDA_DisplayManip::showMeas_standard(eCO2_meas.value / eCO2_meas.measNum, currDisplayMeasParams.eCO2_divideDots);
+					showMeas_standard(eCO2_meas.value / eCO2_meas.measNum, DisplayMeasParams.eCO2_divideDots);
 					break;
 				}
 				case TVOC: {
-					HAQuDA_DisplayManip::showMeas_standard(TVOC_meas.value / TVOC_meas.measNum, currDisplayMeasParams.TVOC_divideDots);
+					showMeas_standard(TVOC_meas.value / TVOC_meas.measNum, DisplayMeasParams.TVOC_divideDots);
 					break;
 				}
 				case PM2_5: {
-					HAQuDA_DisplayManip::showMeas_standard(PM_2_5_meas.value / PM_2_5_meas.measNum, currDisplayMeasParams.PM2_5_divideDots);
+					showMeas_standard(PM_2_5_meas.value / PM_2_5_meas.measNum, DisplayMeasParams.PM2_5_divideDots);
 					break;
 				}
 				case noneParam: {
@@ -85,19 +250,19 @@ void HAQuDA_DisplayManip::standardMode(displayMeasParams_struct currDisplayMeasP
 					measDivideDots_struct measDivideDots[DISP_PARAMS_NUM];
 
 					measValuesArr[0] = temp_meas.value / temp_meas.measNum;
-					measDivideDots[0] = currDisplayMeasParams.temp_divideDots;
+					measDivideDots[0] = DisplayMeasParams.temp_divideDots;
 
 					measValuesArr[1] = humid_meas.value / humid_meas.measNum;
-					measDivideDots[1] = currDisplayMeasParams.humid_divideDots;
+					measDivideDots[1] = DisplayMeasParams.humid_divideDots;
 
 					measValuesArr[2] = eCO2_meas.value / eCO2_meas.measNum;
-					measDivideDots[2] = currDisplayMeasParams.eCO2_divideDots;
+					measDivideDots[2] = DisplayMeasParams.eCO2_divideDots;
 
 					measValuesArr[3] = TVOC_meas.value / TVOC_meas.measNum;
-					measDivideDots[3] = currDisplayMeasParams.TVOC_divideDots;
+					measDivideDots[3] = DisplayMeasParams.TVOC_divideDots;
 
 					measValuesArr[4] = PM_2_5_meas.value / PM_2_5_meas.measNum;
-					measDivideDots[4] = currDisplayMeasParams.PM2_5_divideDots;
+					measDivideDots[4] = DisplayMeasParams.PM2_5_divideDots;
 
 					HAQuDA_DisplayManip::showMeas_total(measValuesArr, sizeof(measValuesArr), measDivideDots, sizeof(measDivideDots));
 					break;
@@ -108,23 +273,23 @@ void HAQuDA_DisplayManip::standardMode(displayMeasParams_struct currDisplayMeasP
 			break;
 		}
 		case temp: {
-			HAQuDA_DisplayManip::showMeas_standard(temp_meas.value / temp_meas.measNum, currDisplayMeasParams.temp_divideDots);
+			HAQuDA_DisplayManip::showMeas_standard(temp_meas.value / temp_meas.measNum, DisplayMeasParams.temp_divideDots);
 			break;
 		}
 		case humid: {
-			HAQuDA_DisplayManip::showMeas_standard(humid_meas.value / humid_meas.measNum, currDisplayMeasParams.humid_divideDots);
+			HAQuDA_DisplayManip::showMeas_standard(humid_meas.value / humid_meas.measNum, DisplayMeasParams.humid_divideDots);
 			break;
 		}
 		case eCO2: {
-			HAQuDA_DisplayManip::showMeas_standard(eCO2_meas.value / eCO2_meas.measNum, currDisplayMeasParams.eCO2_divideDots);
+			HAQuDA_DisplayManip::showMeas_standard(eCO2_meas.value / eCO2_meas.measNum, DisplayMeasParams.eCO2_divideDots);
 			break;
 		}
 		case TVOC: {
-			HAQuDA_DisplayManip::showMeas_standard(TVOC_meas.value / TVOC_meas.measNum, currDisplayMeasParams.TVOC_divideDots);
+			HAQuDA_DisplayManip::showMeas_standard(TVOC_meas.value / TVOC_meas.measNum, DisplayMeasParams.TVOC_divideDots);
 			break;
 		}
 		case PM2_5: {
-			HAQuDA_DisplayManip::showMeas_standard(PM_2_5_meas.value / PM_2_5_meas.measNum, currDisplayMeasParams.PM2_5_divideDots);
+			HAQuDA_DisplayManip::showMeas_standard(PM_2_5_meas.value / PM_2_5_meas.measNum, DisplayMeasParams.PM2_5_divideDots);
 			break;
 		}
 
@@ -205,36 +370,36 @@ uint8_t HAQuDA_DisplayManip::get_nightMode_hour(nightModeTimeBorder_struct timeB
 	return 12;
 }
 
-void HAQuDA_DisplayManip::nightMode(displayMeasParams_struct currDisplayMeasParams) {
-	uint8_t nightMode_hour = get_nightMode_hour(currDisplayMeasParams.currentTimeBorder);
+void HAQuDA_DisplayManip::nightMode() {
+	uint8_t nightMode_hour = get_nightMode_hour(DisplayMeasParams.currentTimeBorder);
 
-	switch (currDisplayMeasParams.displayParam) {
+	switch (DisplayMeasParams.displayParam) {
 		case temp: {
-			HAQuDA_DisplayManip::showMeas_night(temp_meas.value / temp_meas.measNum, currDisplayMeasParams.temp_divideDots, nightMode_hour);
+			HAQuDA_DisplayManip::showMeas_night(temp_meas.value / temp_meas.measNum, DisplayMeasParams.temp_divideDots, nightMode_hour);
 			temp_meas.value = 0;
 			temp_meas.measNum = 0;
 			break;
 		}
 		case humid: {
-			HAQuDA_DisplayManip::showMeas_night(humid_meas.value / humid_meas.measNum, currDisplayMeasParams.humid_divideDots, nightMode_hour);
+			HAQuDA_DisplayManip::showMeas_night(humid_meas.value / humid_meas.measNum, DisplayMeasParams.humid_divideDots, nightMode_hour);
 			humid_meas.value = 0;
 			humid_meas.measNum = 0;
 			break;
 		}
 		case eCO2: {
-			HAQuDA_DisplayManip::showMeas_night(eCO2_meas.value / eCO2_meas.measNum, currDisplayMeasParams.eCO2_divideDots, nightMode_hour);
+			HAQuDA_DisplayManip::showMeas_night(eCO2_meas.value / eCO2_meas.measNum, DisplayMeasParams.eCO2_divideDots, nightMode_hour);
 			eCO2_meas.value = 0;
 			eCO2_meas.measNum = 0;
 			break;
 		}
 		case TVOC: {
-			HAQuDA_DisplayManip::showMeas_night(TVOC_meas.value / TVOC_meas.measNum, currDisplayMeasParams.TVOC_divideDots, nightMode_hour);
+			HAQuDA_DisplayManip::showMeas_night(TVOC_meas.value / TVOC_meas.measNum, DisplayMeasParams.TVOC_divideDots, nightMode_hour);
 			TVOC_meas.value = 0;
 			TVOC_meas.measNum = 0;
 			break;
 		}
 		case PM2_5: {
-			HAQuDA_DisplayManip::showMeas_night(PM_2_5_meas.value / PM_2_5_meas.measNum, currDisplayMeasParams.PM2_5_divideDots, nightMode_hour);
+			HAQuDA_DisplayManip::showMeas_night(PM_2_5_meas.value / PM_2_5_meas.measNum, DisplayMeasParams.PM2_5_divideDots, nightMode_hour);
 			PM_2_5_meas.value = 0;
 			PM_2_5_meas.measNum = 0;
 			break;
@@ -348,74 +513,6 @@ void HAQuDA_DisplayManip::showMeas_total(float *data, uint8_t dataSize, measDivi
 	WS2812_fillColor(WS2812_getColor(red, green, blue), 0, LED_NUM_PIXELS);
 }
 
-
-
-
-void HAQuDA_DisplayManip::showEffectGrow(const growEffectsParams_struct params, const displayEffectMode_enum *effect) {
-	WS2812_clear();
-
-	for (uint8_t i = 0; i < LED_ROW_NUM; i++) {
-		for (uint8_t j = 0; j < LED_COLUMN_NUM; j++) {
-			uint8_t pixelNum = GetLedNum(i, j);
-			WS2812_setPixelColor(pixelNum, COLOR_RED);
-			WS2812_show();
-
-			if (*effect != grow) {
-				break;
-			}
-		}
-	}
-}
-
-void HAQuDA_DisplayManip::showEffectSnake(const snakeEffectsParams_struct params, const displayEffectMode_enum *effect) {
-	WS2812_clear();
-	for (int i = 0; i < LED_NUM_PIXELS; i++) {
-		int pixelNum = 0;
-		for (int j = 0; j < params.tailLength; j++) {
-			pixelNum = j + i;
-			pixelNum = (pixelNum > LED_NUM_PIXELS) ? LED_NUM_PIXELS : pixelNum;
-			WS2812_setPixelColor(pixelNum, params.color);
-
-			if (*effect != snake) {
-				break;
-			}
-		}
-		WS2812_setPixelColor(i, 0);
-		WS2812_show(params.speed);
-	}
-}
-
-void HAQuDA_DisplayManip::showEffectRandom(const randomEffectsParams_struct params, const displayEffectMode_enum *effect) {
-	WS2812_clear();
-	std::vector<int> pixelEnArr;
-	for (int i = 0; i < LED_NUM_PIXELS; i++) {
-		int pixelNum = random(0, LED_NUM_PIXELS);
-		while (find(pixelEnArr.begin(), pixelEnArr.end(), pixelNum) != pixelEnArr.end()) {
-			pixelNum = random(0, LED_NUM_PIXELS);
-
-			if (*effect != randomPixel) {
-				break;
-			}
-		}
-		pixelEnArr.push_back(pixelNum);
-
-		WS2812_setPixelColor(pixelNum, ((uint32_t)random(0, 255) << 16) | ((uint32_t)random(0, 255) << 8) | random(0, 255));
-		WS2812_show(params.speed);
-	}
-	vTaskDelay(params.pauseTime / portTICK_PERIOD_MS);
-}
-
-void HAQuDA_DisplayManip::showEffectFade(const fadeEffectsParams_struct params, const displayEffectMode_enum *effect) {
-	WS2812_clear();
-	WS2812_fillColor(params.color);
-	for (int j = params.startBrightness; j > params.stopBrightness; j = j - params.step) {
-		WS2812_setBrightnessPerCent(j);
-		if (*effect != fade) {
-			break;
-		}
-	}
-}
-
 uint8_t HAQuDA_DisplayManip::GetLedNum(int x, int y) {
 	int n;
 
@@ -429,7 +526,7 @@ uint8_t HAQuDA_DisplayManip::GetLedNum(int x, int y) {
 	}
 	return n + LED_ROW_NUM * x;
 }
-
+/*
 void HAQuDA_DisplayManip::christmasLightsSnake() {
 	uint8_t startColumn = LED_COLUMN_NUM - 1;
 
@@ -462,16 +559,8 @@ void HAQuDA_DisplayManip::drawTreeTop(uint8_t middleColumn) {
 		}
 	}
 }
+*/
 
-void HAQuDA_DisplayManip::showEffectChristmasTree(uint8_t speed, uint8_t treeMiddleColumn) {
-	uint8_t redBackground = redBackgroundIntensity * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
-	uint8_t greenBackground = greenBackgroundIntensity * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
-	uint8_t blueBackground = blueBackgroundIntensity * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
-	uint32_t backgroundColor = WS2812_getColor(redBackground, greenBackground, blueBackground);
-	WS2812_fillColor(backgroundColor); // drawing christmas tree with white-blue background
-
-	HAQuDA_DisplayManip::drawTreeTrunk(treeMiddleColumn);
-	HAQuDA_DisplayManip::drawTreeTop(treeMiddleColumn);
-	HAQuDA_DisplayManip::drawStarOnTree(treeMiddleColumn);
-	// uint8_t lightsEffect = rand() % 3;
+HAQuDA_DisplayManip::~HAQuDA_DisplayManip() {
+	delete timeClient;
 }
