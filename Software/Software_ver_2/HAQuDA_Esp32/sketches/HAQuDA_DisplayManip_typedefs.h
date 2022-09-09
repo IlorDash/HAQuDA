@@ -2,6 +2,13 @@
 
 #include "Arduino.h"
 
+#define COLOR_AQUA 0x00FFFF
+#define COLOR_LIME 0x99FF33
+#define COLOR_GREEN 0x01FF00
+#define COLOR_RED 0xFF0000
+#define COLOR_YELLOW 0xFFFF00
+#define COLOR_WHITE 0xFFFFFF
+
 typedef enum { effect, meas, error, none } displayMode_enum;
 
 /*******************************************************/
@@ -36,14 +43,31 @@ typedef struct {
 	uint16_t pauseTime; // in ms - pause after all LED ignited
 } randomEffectsParams_struct;
 
-typedef struct {
+struct displayEffectParams_struct {
 	displayEffectMode_enum effect;
 
 	snakeEffectsParams_struct snakeParams;
 	growEffectsParams_struct growParams;
 	fadeEffectsParams_struct fadeParams;
 	randomEffectsParams_struct randomParams;
-} displayEffectParams_struct;
+	displayEffectParams_struct() {
+		growParams.color = COLOR_AQUA;
+		growParams.speed = 200;
+
+		snakeParams.color = COLOR_LIME;
+		snakeParams.speed = 200;
+		snakeParams.tailLength = 5;
+
+		randomParams.speed = 200;
+		randomParams.pauseTime = 1000;
+
+		fadeParams.color = COLOR_AQUA;
+		fadeParams.speed = 200;
+		fadeParams.startBrightness = 100;
+		fadeParams.stopBrightness = 0;
+		fadeParams.step = 2;
+	}
+};
 
 /*******************************************************/
 
@@ -78,8 +102,8 @@ typedef struct {
 	uint8_t timeSecondBorder;
 } nightModeTimeBorder_struct;
 
-typedef struct {
-	displayMeasMode_enum displayMode;
+struct displayMeasParams_struct {
+	displayMeasMode_enum mode;
 
 	displayParams_enum displayParam;
 
@@ -91,6 +115,27 @@ typedef struct {
 	measDivideDots_struct TVOC_divideDots;
 	measDivideDots_struct PM2_5_divideDots;
 	nightModeTimeBorder_struct currentTimeBorder;
-} displayMeasParams_struct;
+
+	displayMeasParams_struct() {
+		mode = noneMode;
+
+		displayParam = noneParam;
+
+		temp_divideDots = {20, 26, 30};
+		humid_divideDots = {40, 60, 80};
+		eCO2_divideDots = {400, 1000, 5000};
+		TVOC_divideDots = {220, 660, 1000};
+		PM2_5_divideDots = {15, 20, 45};
+		currentTimeBorder = {21, 9};
+
+		multiModeStruct.paramsArr[0] = temp;
+		multiModeStruct.paramsArr[1] = eCO2;
+		multiModeStruct.paramsArr[2] = PM2_5;
+
+		multiModeStruct.divideDotsArr[0] = temp_divideDots;
+		multiModeStruct.divideDotsArr[1] = eCO2_divideDots;
+		multiModeStruct.divideDotsArr[2] = PM2_5_divideDots;
+	}
+};
 
 /*******************************************************/
