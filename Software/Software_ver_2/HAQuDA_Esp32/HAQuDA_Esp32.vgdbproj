@@ -29,8 +29,7 @@
         <string>sketches\HAQuDA_WiFi_handler.h</string>
         <string>sketches\HAQuDA_FileStorage.h</string>
         <string>sketches\HAQuDA_ErrorHandler.h</string>
-        <string>sketches\HAQuDA_DisplayInterface.h</string>
-        <string>sketches\HAQuDA_DisplayInterface_typedefs.h</string>
+        <string>sketches\HAQuDA_DisplayManip_typedefs.h</string>
         <string>sketches\HAQuDA_DisplayManip.h</string>
       </OtherFiles>
     </ProjectModeSettings>

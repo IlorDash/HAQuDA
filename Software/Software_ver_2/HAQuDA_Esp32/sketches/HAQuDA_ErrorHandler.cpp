@@ -1,17 +1,13 @@
 #include "HAQuDA_ErrorHandler.h"
 
+displayEffectMode_enum HAQuDA_ErrorHandler::errorEffectDisp = noneEffect;
+growEffectsParams_struct HAQuDA_ErrorHandler::failedToConnectToWiFi_displayParams = {.color = COLOR_RED, .speed = 200};
+
+snakeEffectsParams_struct HAQuDA_ErrorHandler::failedToCreateAP_displayParams = {.color = COLOR_RED, .speed = 200, .tailLength = 1};
+
+errorTypes_enum HAQuDA_ErrorHandler::CurrentError = noneError;
 
 HAQuDA_ErrorHandler::HAQuDA_ErrorHandler() {
-	failedToConnectToWiFi_displayParams.color = COLOR_RED;
-	failedToConnectToWiFi_displayParams.speed = 200;
-
-	failedToCreateAP_displayParams.color = COLOR_RED;
-	failedToCreateAP_displayParams.speed = 200;
-	failedToCreateAP_displayParams.tailLength = 1;
-
-	errorEffectDisp = noneEffect;
-	
-	CurrentError = noneError;
 }
 
 void HAQuDA_ErrorHandler::FailedToConnectToWiFi() {

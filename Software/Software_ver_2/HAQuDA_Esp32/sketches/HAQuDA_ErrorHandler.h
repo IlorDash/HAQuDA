@@ -1,5 +1,5 @@
 #pragma once
-#include "HAQuDA_DisplayInterface_typedefs.h"
+#include "HAQuDA_DisplayManip_typedefs.h"
 typedef enum { failedToConnectToWiFi, failedToCreateAP, noneError } errorTypes_enum;
 
 #define COLOR_RED 0xFF0000

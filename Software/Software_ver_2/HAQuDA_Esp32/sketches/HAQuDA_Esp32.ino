@@ -1,7 +1,7 @@
 #include "Arduino.h"
 
 #include "HAQuDA_WiFi_handler.h"
-#include "HAQuDA_DisplayInterface.h"
+#include "HAQuDA_DisplayManip.h"
 #include "HAQuDA_FileStorage.h"
 
 #include <SoftwareSerial.h>
@@ -23,8 +23,8 @@ char BlynkAuth[] = BLYNK_AUTH;
 
 WidgetTerminal terminal(V0);
 HAQuDA_FileStorage myFS;
-HAQuDA_DisplayInterface myDisplayInterface;
 HAQuDA_WiFi_handler *myWiFi_handler;
+HAQuDA_ErrorHandler myError_handler;
 
 void UpdateVirtualPins();
 void blynkPrintLog();
@@ -40,12 +40,12 @@ esp_err_t ans;
 
 void setup() {
 	Serial.begin(115200);
-	myWiFi_handler = new HAQuDA_WiFi_handler(&myDisplayInterface, &myFS);
+	myWiFi_handler = new HAQuDA_WiFi_handler(&myFS, &myError_handler);
 
 	WS2812_begin();
-	createTasks(&myDisplayInterface);
+	createTasks();
 
-	HAQuDA_DisplayInterface::displayEffect = snake; // start up connection effect
+	HAQuDA_DisplayManip::SetDisplayEffect(snake); // start up connection effect
 
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 
@@ -59,15 +59,7 @@ void setup() {
 
 	if (HAQuDA_WiFi_handler::WiFiConnected) {
 
-		myDisplayInterface.DisplayMeasParams.displayMode = multi;
-
-		myDisplayInterface.DisplayMeasParams.displayParam = noneParam;
-
-		myDisplayInterface.DisplayMeasParams.multiModeStruct.paramsArr[0] = temp;
-		myDisplayInterface.DisplayMeasParams.multiModeStruct.paramsArr[1] = eCO2;
-		myDisplayInterface.DisplayMeasParams.multiModeStruct.paramsArr[2] = PM2_5;
-
-		HAQuDA_DisplayInterface::DisplayMode = meas;
+		HAQuDA_DisplayManip::SetDisplayMeasMode(multi);
 	}
 
 	//	if (!sensorsBegin()) {
