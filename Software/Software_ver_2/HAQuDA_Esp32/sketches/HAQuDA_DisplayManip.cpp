@@ -348,6 +348,9 @@ void HAQuDA_DisplayManip::showMeas_total(float *data, uint8_t dataSize, measDivi
 	WS2812_fillColor(WS2812_getColor(red, green, blue), 0, LED_NUM_PIXELS);
 }
 
+
+
+
 void HAQuDA_DisplayManip::showEffectGrow(const growEffectsParams_struct params, const displayEffectMode_enum *effect) {
 	WS2812_clear();
 

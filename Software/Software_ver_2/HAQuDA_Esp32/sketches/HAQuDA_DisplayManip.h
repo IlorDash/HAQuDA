@@ -16,6 +16,14 @@
 
 class HAQuDA_DisplayManip {
   private:
+	static displayMode_enum DisplayMode;
+
+	static displayEffectParams_struct DisplayEffectParams;
+
+	displayMeasParams_struct DisplayMeasParams;
+
+	uint8_t brightnessPerCent;
+	
 	// Define NTP Client to get time
 	static WiFiUDP ntpUDP;
 	static NTPClient *timeClient;

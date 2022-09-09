@@ -7,13 +7,6 @@
 
 class HAQuDA_DisplayInterface {
   public:
-	static displayMode_enum DisplayMode;
-
-	static displayEffectParams_struct DisplayEffectParams;
-	
-	displayMeasParams_struct DisplayMeasParams;
-
-	uint8_t brightnessPerCent;
 
 	HAQuDA_DisplayInterface();
 	void SetStaticColor(int red, int green, int blue);
