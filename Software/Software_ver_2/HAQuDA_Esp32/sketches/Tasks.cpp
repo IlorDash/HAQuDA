@@ -6,7 +6,12 @@ uint8_t builtIn_LED;
 
 void WS2812_ErrorDisplayTaskCode(void *parameter) {
 	while (true) {
-		switch (HAQuDA_ErrorHandler::CurrentError) {
+		errorTypes_enum e = HAQuDA_ErrorHandler::GetCurrentError();
+		switch (e) {
+			case failedToStartFS: {
+				HAQuDA_DisplayManip::ShowEffectFade(HAQuDA_ErrorHandler::failedToStartFS_displayParams);
+				break;
+			}
 			case failedToConnectToWiFi: {
 				HAQuDA_DisplayManip::ShowEffectGrow(HAQuDA_ErrorHandler::failedToConnectToWiFi_displayParams);
 				break;
@@ -14,7 +19,14 @@ void WS2812_ErrorDisplayTaskCode(void *parameter) {
 
 			case failedToCreateAP: {
 				HAQuDA_DisplayManip::ShowEffectSnake(HAQuDA_ErrorHandler::failedToCreateAP_displayParams);
+				break;
 			}
+
+			case failedToStartSensors: {
+				HAQuDA_DisplayManip::ShowEffectUpDown(HAQuDA_ErrorHandler::failedToStartSensors_displayParams);
+				break;
+			}
+
 			default:
 				break;
 		}
@@ -32,6 +44,7 @@ void BuiltIn_LED_Blink_TaskCode(void *parameter) {
 
 void WS2812_EffectsTaskCode(void *parameter) {
 	while (true) {
+		HAQuDA_DisplayManip::stopEffect = false;
 		switch (HAQuDA_DisplayManip::GetDisplayEffect()) {
 			case snake: {
 				HAQuDA_DisplayManip::ShowEffectSnake();
