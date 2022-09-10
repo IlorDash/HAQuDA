@@ -1,21 +1,31 @@
 #pragma once
 #include "HAQuDA_DisplayManip_typedefs.h"
-typedef enum { failedToConnectToWiFi, failedToCreateAP, noneError } errorTypes_enum;
 
-#define COLOR_RED 0xFF0000
+typedef enum { failedToStartFS, failedToConnectToWiFi, failedToCreateAP, failedToStartSensors, noneError } errorTypes_enum;
+
+#define DEFAULT_ERROR_DISPLAY_TIME 5000 // 5 sec
 
 class HAQuDA_ErrorHandler {
-  public:
 	static displayEffectMode_enum errorEffectDisp;
+
+	static errorTypes_enum CurrentError;
+
+  public:
 	static growEffectsParams_struct failedToConnectToWiFi_displayParams;
 	static snakeEffectsParams_struct failedToCreateAP_displayParams;
-	
-	static errorTypes_enum CurrentError;
-	
+
+	static fadeEffectsParams_struct failedToStartFS_displayParams;
+
+	static upDownEffectsParams_struct failedToStartSensors_displayParams;
+
 	HAQuDA_ErrorHandler();
+
+	static errorTypes_enum GetCurrentError();
 
 	void FailedToConnectToWiFi();
 	void FailedToCreateAP();
+	void FailedToStartFS();
+	void FailedToStartSensors();
 
 	~HAQuDA_ErrorHandler();
 };
