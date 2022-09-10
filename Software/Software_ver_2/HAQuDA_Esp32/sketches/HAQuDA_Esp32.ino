@@ -3,6 +3,7 @@
 #include "HAQuDA_WiFi_handler.h"
 #include "HAQuDA_DisplayManip.h"
 #include "HAQuDA_FileStorage.h"
+#include "HAQuDA_ErrorHandler.h"
 
 #include <SoftwareSerial.h>
 
@@ -24,7 +25,8 @@ char BlynkAuth[] = BLYNK_AUTH;
 WidgetTerminal terminal(V0);
 HAQuDA_FileStorage myFS;
 HAQuDA_WiFi_handler *myWiFi_handler;
-HAQuDA_ErrorHandler myError_handler;
+HAQuDA_ErrorHandler myErrorHandler;
+HAQuDA_DisplayManip myDisplayManip;
 
 void UpdateVirtualPins();
 void blynkPrintLog();
@@ -40,34 +42,45 @@ esp_err_t ans;
 
 void setup() {
 	Serial.begin(115200);
-	myWiFi_handler = new HAQuDA_WiFi_handler(&myFS, &myError_handler);
+	myWiFi_handler = new HAQuDA_WiFi_handler(&myFS);
 
 	WS2812_begin();
 	createTasks();
 
 	HAQuDA_DisplayManip::SetDisplayEffect(snake); // start up connection effect
 
-	vTaskDelay(100 / portTICK_PERIOD_MS);
-
 	if (!myFS.Start()) {
-		log_e("SPIFFS not mounted!");
-		return;
+		myErrorHandler.FailedToStartFS();
+		while (true) {
+		}
 	}
-	log_i("SPIFFS mounted successfully");
 
-	myWiFi_handler->WiFi_connect();
+	if (!myWiFi_handler->Connect()) {
+		HAQuDA_DisplayManip::SetDisplayMode(error);
+		myErrorHandler.FailedToConnectToWiFi();
+		vTaskDelay(DEFAULT_ERROR_DISPLAY_TIME / portTICK_PERIOD_MS);
 
-	if (HAQuDA_WiFi_handler::WiFiConnected) {
-
+		if (!myWiFi_handler->CreateAP()) {
+			HAQuDA_DisplayManip::SetDisplayMode(error);
+			myErrorHandler.FailedToCreateAP();
+			vTaskDelay(DEFAULT_ERROR_DISPLAY_TIME / portTICK_PERIOD_MS);
+			while (true) {
+			}
+		}
+		HAQuDA_DisplayManip::SetDisplayMode(none);
+	} else {
 		HAQuDA_DisplayManip::SetDisplayMeasMode(multi);
 	}
 
-	//	if (!sensorsBegin()) {
-	//		WS2812_fillColor(COLOR_RED);
-	//		terminal.println("FATAL ERROR: Failed to begin sensors");
-	//		while (1) {
-	//		}
-	//	}
+	if (!sensorsBegin()) {
+		myErrorHandler.FailedToStartSensors();
+		vTaskDelay(DEFAULT_ERROR_DISPLAY_TIME / portTICK_PERIOD_MS);
+		/****************************************/
+		//	REBOOOOOOT ESP32
+		//	OR
+		//	REBOOOOOOOT SENSORS
+		/****************************************/
+	}
 	//
 	//	terminal.println("*************************");
 	//	terminal.print("START LOGGING");
@@ -85,23 +98,22 @@ void loop() {
 	// ans = touch_pad_read_raw_data(TOUCH_PAD_NUM9, &touch_val_9);
 	// ans = touch_pad_read_raw_data(TOUCH_PAD_NUM8, &touch_val_8);
 
-	touch_val_9 = touchRead(TOUCH_9);
-	touch_val_7 = touchRead(TOUCH_7);
-	touch_val_8 = touchRead(TOUCH_8);
-	touch_val_0 = touchRead(TOUCH_0);
+	//	touch_val_9 = touchRead(TOUCH_9);
+	//	touch_val_7 = touchRead(TOUCH_7);
+	//	touch_val_8 = touchRead(TOUCH_8);
+	//	touch_val_0 = touchRead(TOUCH_0);
+	//
+	//	if (touch_val_9 || touch_val_7 || touch_val_8 || touch_val_0) {
+	//		touch_val_9 = touch_val_9;
+	//		touch_val_7 = touch_val_7;
+	//		touch_val_8 = touch_val_8;
+	//		touch_val_0 = touch_val_0;
+	//	}
+	//
+	//	sprintf(strToSerial, "TTP223 value: %d  TOUCH9: %d  TOUCH7: %d  TOUCH8: %d  TOUCH0: %d  ", TTP223_val, touch_val_9, touch_val_7, touch_val_8,
+	// touch_val_0); 	vTaskDelay(1000); 	myWiFi_handler->WebSerialPrint(strToSerial);
 
-	if (touch_val_9 || touch_val_7 || touch_val_8 || touch_val_0) {
-		touch_val_9 = touch_val_9;
-		touch_val_7 = touch_val_7;
-		touch_val_8 = touch_val_8;
-		touch_val_0 = touch_val_0;
-	}
-
-	sprintf(strToSerial, "TTP223 value: %d  TOUCH9: %d  TOUCH7: %d  TOUCH8: %d  TOUCH0: %d  ", TTP223_val, touch_val_9, touch_val_7, touch_val_8, touch_val_0);
-	vTaskDelay(1000);
-	myWiFi_handler->WebSerialPrint(strToSerial);
-
-	myWiFi_handler->WiFi_handleConnection();
+	myWiFi_handler->HandleConnection();
 	/*if (!Blynk.connected()) {
 		Blynk.connect();
 	} else {
