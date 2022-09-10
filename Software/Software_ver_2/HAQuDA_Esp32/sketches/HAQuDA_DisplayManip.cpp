@@ -4,59 +4,159 @@
 #include <vector>
 
 displayMode_enum HAQuDA_DisplayManip::DisplayMode = none;
+
 bool HAQuDA_DisplayManip::stopEffect = false;
+bool HAQuDA_DisplayManip::forceShowMeas = false;
 
 displayEffectParams_struct HAQuDA_DisplayManip::DisplayEffectParams;
-
 displayMeasParams_struct HAQuDA_DisplayManip::DisplayMeasParams;
 
 HAQuDA_DisplayManip::HAQuDA_DisplayManip() {
+	DisplayEffectParams.effect = noneEffect;
+	DisplayEffectParams.snakeParams.color = COLOR_LIME;
+	DisplayEffectParams.snakeParams.speed = 200;
+	DisplayEffectParams.snakeParams.tailLength = 5;
+
+	DisplayEffectParams.growParams.color = COLOR_AQUA;
+	DisplayEffectParams.growParams.speed = 200;
+
+	DisplayEffectParams.fadeParams.color = COLOR_AQUA;
+	DisplayEffectParams.fadeParams.speed = 200;
+	DisplayEffectParams.fadeParams.startBrightness = 100;
+	DisplayEffectParams.fadeParams.stopBrightness = 0;
+	DisplayEffectParams.fadeParams.step = 2;
+
+	DisplayEffectParams.randomParams.speed = 200;
+	DisplayEffectParams.randomParams.pauseTime = 1000;
+
+	DisplayMeasParams.mode = noneMode;
+	DisplayMeasParams.displayParam = noneParam;
+
+	DisplayMeasParams.multiModeStruct.paramsArr[0] = temp;
+	DisplayMeasParams.multiModeStruct.paramsArr[1] = eCO2;
+	DisplayMeasParams.multiModeStruct.paramsArr[2] = PM2_5;
+
+	DisplayMeasParams.multiModeStruct.dataArr[0] = 0;
+	DisplayMeasParams.multiModeStruct.dataArr[1] = 0;
+	DisplayMeasParams.multiModeStruct.dataArr[2] = 0;
+
+	DisplayMeasParams.temp_divideDots.firstDot = 20;
+	DisplayMeasParams.temp_divideDots.middleDot = 26;
+	DisplayMeasParams.temp_divideDots.thirdDot = 30;
+
+	DisplayMeasParams.humid_divideDots.firstDot = 40;
+	DisplayMeasParams.humid_divideDots.middleDot = 60;
+	DisplayMeasParams.humid_divideDots.thirdDot = 80;
+
+	DisplayMeasParams.eCO2_divideDots.firstDot = 400;
+	DisplayMeasParams.eCO2_divideDots.middleDot = 1000;
+	DisplayMeasParams.eCO2_divideDots.thirdDot = 5000;
+
+	DisplayMeasParams.TVOC_divideDots.firstDot = 220;
+	DisplayMeasParams.TVOC_divideDots.middleDot = 660;
+	DisplayMeasParams.TVOC_divideDots.thirdDot = 1000;
+
+	DisplayMeasParams.PM2_5_divideDots.firstDot = 15;
+	DisplayMeasParams.PM2_5_divideDots.middleDot = 20;
+	DisplayMeasParams.PM2_5_divideDots.thirdDot = 45;
+
+	DisplayMeasParams.multiModeStruct.divideDotsArr[0] = DisplayMeasParams.temp_divideDots;
+
+	DisplayMeasParams.multiModeStruct.divideDotsArr[1] = DisplayMeasParams.eCO2_divideDots;
+
+	DisplayMeasParams.multiModeStruct.divideDotsArr[2] = DisplayMeasParams.PM2_5_divideDots;
+
+	DisplayMeasParams.currentTimeBorder.timeFirstBorder = 21;
+	DisplayMeasParams.currentTimeBorder.timeFirstBorder = 9;
+}
+
+void HAQuDA_DisplayManip::StartNTP() {
+	timeClient = new NTPClient(ntpUDP);
+	// Initialize a NTPClient to get time
+	timeClient->begin();
+	// Set offset time in seconds to adjust for your timezone, for example:
+	// GMT +1 = 3600
+	// GMT +8 = 28800
+	// GMT +3 = 10800
+	// GMT 0 = 0
+	timeClient->setTimeOffset(10800);
 }
 
 void HAQuDA_DisplayManip::SetBrightness(uint8_t newBrightnessPerCent) {
 	WS2812_setBrightnessPerCent(newBrightnessPerCent);
 }
 
-void HAQuDA_DisplayManip::SetDisplayMode(displayMode_enum newDisplayMode) {
+bool HAQuDA_DisplayManip::SetDisplayMode(displayMode_enum newDisplayMode) {
+	if (DisplayMode == error) {
+		return false;
+	}
+	stopEffect = true;
 	DisplayMode = newDisplayMode;
+	switch (DisplayMode) {
+		case none: {
+			DisplayEffectParams.effect = noneEffect;
+			DisplayMeasParams.mode = noneMode;
+			break;
+		}
+		case error: {
+			DisplayMeasParams.mode = noneMode;
+			break;
+		}
+		case meas: {
+			DisplayEffectParams.effect = noneEffect;
+			break;
+		}
+		case effect: {
+			DisplayMeasParams.mode = noneMode;
+			break;
+		}
+		default:
+			break;
+	}
+	return true;
 }
 
 void HAQuDA_DisplayManip::SetDisplayMeasMode(displayMeasMode_enum newDisplayMeasMode) {
-	DisplayMode = meas;
+	if (!SetDisplayMode(meas)) {
+		return;
+	}
 
 	if (newDisplayMeasMode != DisplayMeasParams.mode) {
-		showMeas();
+		forceShowMeas = true;
 	}
 	DisplayMeasParams.mode = newDisplayMeasMode;
 }
 
 void HAQuDA_DisplayManip::SetDisplayMeasParam(displayParams_enum newDisplayMeasParam) {
-	DisplayMode = meas;
+	if (!SetDisplayMode(meas)) {
+		return;
+	}
 
 	if (newDisplayMeasParam != DisplayMeasParams.displayParam) {
-		showMeas();
+		forceShowMeas = true;
 	}
 
 	DisplayMeasParams.displayParam = newDisplayMeasParam;
 }
 
 void HAQuDA_DisplayManip::SetDisplayEffect(displayEffectMode_enum newDisplayEffect) {
-	DisplayMode = effect;
-
+	if (!SetDisplayMode(effect)) {
+		return;
+	}
 	if (newDisplayEffect != DisplayEffectParams.effect) {
 		stopEffect = true;
 	}
-
 	DisplayEffectParams.effect = newDisplayEffect;
 }
 
 void HAQuDA_DisplayManip::SetDisplayEffectParams(displayEffectParams_struct newDisplayEffectParams) {
-	DisplayMode = effect;
+	if (!SetDisplayMode(effect)) {
+		return;
+	}
 
 	if (newDisplayEffectParams.effect != DisplayEffectParams.effect) {
 		stopEffect = true;
 	}
-
 	DisplayEffectParams = newDisplayEffectParams;
 }
 
@@ -80,21 +180,10 @@ displayEffectMode_enum HAQuDA_DisplayManip::GetDisplayEffect() {
 	return DisplayEffectParams.effect;
 }
 
-void HAQuDA_DisplayManip::StartNTP() {
-	// Initialize a NTPClient to get time
-	timeClient->begin();
-	// Set offset time in seconds to adjust for your timezone, for example:
-	// GMT +1 = 3600
-	// GMT +8 = 28800
-	// GMT +3 = 10800
-	// GMT 0 = 0
-	timeClient->setTimeOffset(10800);
-}
-
 void HAQuDA_DisplayManip::ShowStaticColor(uint32_t color) {
 	DisplayMode = effect;
 	WS2812_fillColor(color);
-	vTaskDelay(100);
+	vTaskDelay(100 / portTICK_PERIOD_MS);
 }
 
 void HAQuDA_DisplayManip::ShowStaticColor(int red, int green, int blue) {
@@ -102,12 +191,12 @@ void HAQuDA_DisplayManip::ShowStaticColor(int red, int green, int blue) {
 
 	uint32_t color = ((uint32_t)red << 16) | ((uint32_t)green << 8) | blue;
 	WS2812_fillColor(color);
-	vTaskDelay(100);
+	vTaskDelay(100 / portTICK_PERIOD_MS);
 }
 
 void HAQuDA_DisplayManip::ShowEffectGrow(const growEffectsParams_struct params) {
 	WS2812_clear();
-
+	vTaskDelay(100 / portTICK_PERIOD_MS);
 	for (uint8_t i = 0; i < LED_ROW_NUM; i++) {
 		for (uint8_t j = 0; j < LED_COLUMN_NUM; j++) {
 			uint8_t pixelNum = GetLedNum(i, j);
@@ -115,7 +204,7 @@ void HAQuDA_DisplayManip::ShowEffectGrow(const growEffectsParams_struct params) 
 			WS2812_show();
 
 			if (stopEffect) {
-				break;
+				return;
 			}
 		}
 	}
@@ -123,6 +212,7 @@ void HAQuDA_DisplayManip::ShowEffectGrow(const growEffectsParams_struct params) 
 
 void HAQuDA_DisplayManip::ShowEffectSnake(const snakeEffectsParams_struct params) {
 	WS2812_clear();
+	vTaskDelay(100 / portTICK_PERIOD_MS);
 	for (int i = 0; i < LED_NUM_PIXELS; i++) {
 		int pixelNum = 0;
 		for (int j = 0; j < params.tailLength; j++) {
@@ -131,16 +221,17 @@ void HAQuDA_DisplayManip::ShowEffectSnake(const snakeEffectsParams_struct params
 			WS2812_setPixelColor(pixelNum, params.color);
 
 			if (stopEffect) {
-				break;
+				return;
 			}
 		}
-		WS2812_setPixelColor(i, 0);
 		WS2812_show(params.speed);
+		WS2812_setPixelColor(i, 0);
 	}
 }
 
 void HAQuDA_DisplayManip::ShowEffectRandom(const randomEffectsParams_struct params) {
 	WS2812_clear();
+	vTaskDelay(100 / portTICK_PERIOD_MS);
 	std::vector<int> pixelEnArr;
 	for (int i = 0; i < LED_NUM_PIXELS; i++) {
 		int pixelNum = random(0, LED_NUM_PIXELS);
@@ -148,7 +239,7 @@ void HAQuDA_DisplayManip::ShowEffectRandom(const randomEffectsParams_struct para
 			pixelNum = random(0, LED_NUM_PIXELS);
 
 			if (stopEffect) {
-				break;
+				return;
 			}
 		}
 		pixelEnArr.push_back(pixelNum);
@@ -166,10 +257,19 @@ void HAQuDA_DisplayManip::ShowEffectFade(const fadeEffectsParams_struct params) 
 		WS2812_setBrightnessPerCent(j);
 
 		if (stopEffect) {
-			break;
+			return;
 		}
 	}
 }
+void HAQuDA_DisplayManip::ShowEffectUpDown(const upDownEffectsParams_struct params) {
+
+	int foo = 1;
+	if (params.speed) {
+		foo++;
+	}
+	foo--;
+}
+
 /*
 void HAQuDA_DisplayManip::ShowEffectChristmasTree(uint8_t speed, uint8_t treeMiddleColumn) {
 	uint8_t redBackground = redBackgroundIntensity * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
@@ -184,7 +284,7 @@ void HAQuDA_DisplayManip::ShowEffectChristmasTree(uint8_t speed, uint8_t treeMid
 	// uint8_t lightsEffect = rand() % 3;
 }
 */
-void HAQuDA_DisplayManip::showMeas() {
+void HAQuDA_DisplayManip::ShowMeas() {
 	switch (DisplayMeasParams.mode) {
 		case standard: {
 			standardMode();
@@ -329,9 +429,9 @@ void HAQuDA_DisplayManip::multiMode(multiModeParamDisplay_struct multiModeParams
 										sizeof(multiModeParams.divideDotsArr));
 }
 
-uint8_t HAQuDA_DisplayManip::get_nightMode_hour(nightModeTimeBorder_struct timeBorder) {
-	while (!timeClient->update()) {
-		timeClient->forceUpdate();
+uint8_t HAQuDA_DisplayManip::get_nightMode_hour(NTPClient *time, nightModeTimeBorder_struct timeBorder) {
+	while (!time->update()) {
+		time->forceUpdate();
 	}
 	// The formattedDate comes with the following format:
 	// 2018-05-28T16:00:13Z
@@ -340,7 +440,7 @@ uint8_t HAQuDA_DisplayManip::get_nightMode_hour(nightModeTimeBorder_struct timeB
 	String formattedDate;
 	uint8_t curHour;
 
-	formattedDate = timeClient->getFormattedDate();
+	formattedDate = time->getFormattedDate();
 	Serial.println(formattedDate);
 
 	// Extract date
@@ -371,7 +471,7 @@ uint8_t HAQuDA_DisplayManip::get_nightMode_hour(nightModeTimeBorder_struct timeB
 }
 
 void HAQuDA_DisplayManip::nightMode() {
-	uint8_t nightMode_hour = get_nightMode_hour(DisplayMeasParams.currentTimeBorder);
+	uint8_t nightMode_hour = get_nightMode_hour(timeClient, DisplayMeasParams.currentTimeBorder);
 
 	switch (DisplayMeasParams.displayParam) {
 		case temp: {
@@ -412,13 +512,13 @@ void HAQuDA_DisplayManip::nightMode() {
 void HAQuDA_DisplayManip::getMeasRGB(uint8_t *_red, uint8_t *_green, uint8_t *_blue, const uint8_t brightness, const float data,
 									 const measDivideDots_struct divideDots) {
 	float coefficient = (brightness * 2) / (divideDots.thirdDot - divideDots.firstDot);
-	if ((data < divideDots.secondDot) && (data >= divideDots.firstDot)) {
+	if ((data < divideDots.middleDot) && (data >= divideDots.firstDot)) {
 		*_blue = round(-abs(data - divideDots.firstDot) * coefficient) + MAX_BRIGHTNESS;
-		*_green = round(-abs(data - divideDots.secondDot) * coefficient) + MAX_BRIGHTNESS;
+		*_green = round(-abs(data - divideDots.middleDot) * coefficient) + MAX_BRIGHTNESS;
 		*_red = 0;
-	} else if ((data >= divideDots.secondDot) && (data <= divideDots.thirdDot)) { // calculating values of LED colors (using parametres of color function)
+	} else if ((data >= divideDots.middleDot) && (data <= divideDots.thirdDot)) { // calculating values of LED colors (using parametres of color function)
 		*_blue = 0;
-		*_green = round(-abs(data - divideDots.secondDot) * coefficient) + MAX_BRIGHTNESS;
+		*_green = round(-abs(data - divideDots.middleDot) * coefficient) + MAX_BRIGHTNESS;
 		*_red = round(-abs(data - divideDots.thirdDot) * coefficient) + MAX_BRIGHTNESS;
 	} else if (data < divideDots.firstDot) {
 		*_blue = MAX_BRIGHTNESS;
@@ -433,7 +533,7 @@ void HAQuDA_DisplayManip::getMeasRGB(uint8_t *_red, uint8_t *_green, uint8_t *_b
 
 void HAQuDA_DisplayManip::showMeas_standard(float data, measDivideDots_struct divideDots) {
 	WS2812_clear();
-	vTaskDelay(100);
+	vTaskDelay(100 / portTICK_PERIOD_MS);
 
 	uint8_t red, green, blue; // values of LED colors
 	uint8_t brightness = WS2812_getBrightness();
@@ -443,7 +543,7 @@ void HAQuDA_DisplayManip::showMeas_standard(float data, measDivideDots_struct di
 
 void HAQuDA_DisplayManip::showMeas_night(float data, measDivideDots_struct divideDots, uint8_t time) {
 	WS2812_clear();
-	vTaskDelay(100);
+	vTaskDelay(100 / portTICK_PERIOD_MS);
 
 	uint8_t red, green, blue; // values of LED colors
 	uint8_t brightness = WS2812_getBrightness();
@@ -467,7 +567,7 @@ void HAQuDA_DisplayManip::showMeas_multi(float *data, uint8_t dataSize, measDivi
 	}
 
 	WS2812_clear();
-	vTaskDelay(100);
+	vTaskDelay(100 / portTICK_PERIOD_MS);
 
 	uint8_t red[MULTI_MODE_PARAM_NUM], green[MULTI_MODE_PARAM_NUM], blue[MULTI_MODE_PARAM_NUM]; // values of LED colors
 	uint8_t brightness = WS2812_getBrightness();
