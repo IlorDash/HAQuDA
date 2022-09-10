@@ -20,54 +20,44 @@ typedef enum { effect, meas, error, none } displayMode_enum;
 typedef enum { snake, grow, randomPixel, fade, christmasTree, staticColor, noneEffect } displayEffectMode_enum;
 
 typedef struct {
-	uint16_t speed; // in ms - delay between movements
-	uint8_t tailLength;
-	uint32_t color;
+	uint16_t speed = 0; // in ms - delay between movements
+	uint8_t tailLength = 0;
+	uint32_t color = 0;
 } snakeEffectsParams_struct;
 
 typedef struct {
-	uint16_t speed; // in ms - delay between movements
-	uint32_t color;
+	uint16_t speed = 0; // in ms - delay between movements
+	uint32_t color = 0;
 } growEffectsParams_struct;
 
 typedef struct {
-	uint16_t speed; // in ms - delay between reducing brightness steps
-	uint32_t color;
-	uint8_t startBrightness; // percent
-	uint8_t stopBrightness;  // percent
-	uint8_t step;
+	uint16_t speed = 0; // in ms - delay between reducing brightness steps
+	uint32_t color = 0;
+	uint8_t startBrightness = 0; // percent
+	uint8_t stopBrightness = 0;	// percent
+	uint8_t step = 0;
 } fadeEffectsParams_struct;
 
 typedef struct {
-	uint16_t speed;		// in ms - delay between LED ignition
-	uint16_t pauseTime; // in ms - pause after all LED ignited
+	uint16_t speed = 0;	  // in ms - delay between LED ignition
+	uint16_t pauseTime = 0; // in ms - pause after all LED ignited
 } randomEffectsParams_struct;
 
-struct displayEffectParams_struct {
-	displayEffectMode_enum effect;
+typedef struct {
+	uint16_t speed = 0; // in ms - delay between movements
+	uint32_t color = 0;
+	uint8_t length = 0;
+} upDownEffectsParams_struct;
+
+typedef struct {
+	displayEffectMode_enum effect = noneEffect;
 
 	snakeEffectsParams_struct snakeParams;
 	growEffectsParams_struct growParams;
 	fadeEffectsParams_struct fadeParams;
 	randomEffectsParams_struct randomParams;
-	displayEffectParams_struct() {
-		growParams.color = COLOR_AQUA;
-		growParams.speed = 200;
-
-		snakeParams.color = COLOR_LIME;
-		snakeParams.speed = 200;
-		snakeParams.tailLength = 5;
-
-		randomParams.speed = 200;
-		randomParams.pauseTime = 1000;
-
-		fadeParams.color = COLOR_AQUA;
-		fadeParams.speed = 200;
-		fadeParams.startBrightness = 100;
-		fadeParams.stopBrightness = 0;
-		fadeParams.step = 2;
-	}
-};
+	upDownEffectsParams_struct upDownParams;
+} displayEffectParams_struct;
 
 /*******************************************************/
 
@@ -86,26 +76,26 @@ typedef enum { standard, multi, night, noneMode } displayMeasMode_enum;
 typedef enum { total, eCO2, TVOC, PM2_5, temp, humid, noneParam } displayParams_enum;
 
 typedef struct {
-	uint16_t firstDot;
-	uint16_t secondDot;
-	uint16_t thirdDot;
+	uint16_t firstDot = 0;
+	uint16_t middleDot = 0;
+	uint16_t thirdDot = 0;
 } measDivideDots_struct;
 
 typedef struct {
-	displayParams_enum paramsArr[MULTI_MODE_PARAM_NUM];
-	float dataArr[MULTI_MODE_PARAM_NUM];
+	displayParams_enum paramsArr[MULTI_MODE_PARAM_NUM] = {noneParam, noneParam, noneParam};
+	float dataArr[MULTI_MODE_PARAM_NUM] = {0, 0, 0};
 	measDivideDots_struct divideDotsArr[MULTI_MODE_PARAM_NUM];
 } multiModeParamDisplay_struct;
 
 typedef struct {
-	uint8_t timeFirstBorder;
-	uint8_t timeSecondBorder;
+	uint8_t timeFirstBorder = 0;
+	uint8_t timeSecondBorder = 0;
 } nightModeTimeBorder_struct;
 
-struct displayMeasParams_struct {
-	displayMeasMode_enum mode;
+typedef struct {
+	displayMeasMode_enum mode = noneMode;
 
-	displayParams_enum displayParam;
+	displayParams_enum displayParam = noneParam;
 
 	multiModeParamDisplay_struct multiModeStruct;
 
@@ -115,27 +105,6 @@ struct displayMeasParams_struct {
 	measDivideDots_struct TVOC_divideDots;
 	measDivideDots_struct PM2_5_divideDots;
 	nightModeTimeBorder_struct currentTimeBorder;
-
-	displayMeasParams_struct() {
-		mode = noneMode;
-
-		displayParam = noneParam;
-
-		temp_divideDots = {20, 26, 30};
-		humid_divideDots = {40, 60, 80};
-		eCO2_divideDots = {400, 1000, 5000};
-		TVOC_divideDots = {220, 660, 1000};
-		PM2_5_divideDots = {15, 20, 45};
-		currentTimeBorder = {21, 9};
-
-		multiModeStruct.paramsArr[0] = temp;
-		multiModeStruct.paramsArr[1] = eCO2;
-		multiModeStruct.paramsArr[2] = PM2_5;
-
-		multiModeStruct.divideDotsArr[0] = temp_divideDots;
-		multiModeStruct.divideDotsArr[1] = eCO2_divideDots;
-		multiModeStruct.divideDotsArr[2] = PM2_5_divideDots;
-	}
-};
+} displayMeasParams_struct;
 
 /*******************************************************/
