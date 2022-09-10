@@ -2,50 +2,37 @@
 
 bool HAQuDA_WiFi_handler::WiFiConnected = false;
 
-bool HAQuDA_WiFi_handler::WiFi_connect() {
+bool HAQuDA_WiFi_handler::Connect() {
 
 	WiFi.onEvent(WiFiStationConnected, SYSTEM_EVENT_STA_CONNECTED);
 	WiFi.onEvent(WiFiStationDisconnected, SYSTEM_EVENT_STA_DISCONNECTED);
 	// Blynk.config(BlynkAuth, BLYNK_DEFAULT_DOMAIN, BLYNK_DEFAULT_PORT);
-	vTaskDelay(500 / portTICK_PERIOD_MS);
+	vTaskDelay(200 / portTICK_PERIOD_MS);
 
 	if (_myFS->GetStored_WiFiCredsNum()) {
-
 		if (connectToStoredWiFi()) {
 			return true;
 		} else {
-			_myErrorHandler->FailedToConnectToWiFi();
-			vTaskDelay(3000 / portTICK_PERIOD_MS);
+			return false;
 		}
 	}
+}
 
+bool HAQuDA_WiFi_handler::CreateAP() {
 	if (!createAP()) {
-		_myErrorHandler->FailedToCreateAP();
-		vTaskDelay(3000 / portTICK_PERIOD_MS);
 		return false;
 	}
 	HAQuDA_WebServer::beginWebServer();
 	return true;
 }
 
-void HAQuDA_WiFi_handler::WiFi_handleConnection() {
+void HAQuDA_WiFi_handler::HandleConnection() {
 
 	if (WiFiConnected || !(WiFi.getMode() & WIFI_MODE_STA)) {
 		return;
 	}
 
-	HAQuDA_ErrorHandler::CurrentError = noneError;
-	vTaskDelay(100 / portTICK_PERIOD_MS);
-
-	displayEffectParams_struct startUpEffect;
-
-	startUpEffect.snakeParams.color = COLOR_AQUA;
-	startUpEffect.snakeParams.speed = 200; // start up connection effect
-	startUpEffect.snakeParams.tailLength = 5;
-	startUpEffect.effect = snake;
-	HAQuDA_DisplayManip::SetDisplayEffectParams(startUpEffect);
-
-	vTaskDelay(100 / portTICK_PERIOD_MS);
+	HAQuDA_DisplayManip::SetDisplayEffect(snake); // start up connection effect
 
 	while (!WiFiConnected) {
 		connectToStoredWiFi();
@@ -129,13 +116,20 @@ void HAQuDA_WiFi_handler::WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 
 	HAQuDA_DisplayManip::ShowStaticColor(COLOR_GREEN);
-	vTaskDelay(1000 / portTICK_PERIOD_MS);
+	vTaskDelay(3000 / portTICK_PERIOD_MS);
 	HAQuDA_DisplayManip::ShowStaticColor(0, 0, 0);
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 }
 
 void HAQuDA_WiFi_handler::WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info) {
+	HAQuDA_DisplayManip::SetDisplayMode(none);
 	WiFiConnected = false;
+	vTaskDelay(100 / portTICK_PERIOD_MS);
+
+	HAQuDA_DisplayManip::ShowStaticColor(COLOR_RED);
+	vTaskDelay(3000 / portTICK_PERIOD_MS);
+	HAQuDA_DisplayManip::ShowStaticColor(0, 0, 0);
+	vTaskDelay(100 / portTICK_PERIOD_MS);
 }
 
 HAQuDA_WiFi_handler::~HAQuDA_WiFi_handler() {
