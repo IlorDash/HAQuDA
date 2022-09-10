@@ -1,10 +1,6 @@
 <?xml version="1.0"?>
 <VisualGDBProjectSettings2 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Project xsi:type="com.visualgdb.project.external.arduino">
-    <CustomSourceDirectories>
-      <Directories />
-      <PathStyle>Unknown</PathStyle>
-    </CustomSourceDirectories>
     <AutoProgramSPIFFSPartition>true</AutoProgramSPIFFSPartition>
     <ProjectModeSettings>
       <ProjectGUID>d53d4259-046c-4045-901a-f777e8ced726</ProjectGUID>
@@ -241,7 +237,11 @@
     <VisualGDBConfiguration>
       <PlatformName>ESP32_Dev_Module</PlatformName>
       <DebugSettingsOverride xsi:type="com.visualgdb.debug.embedded">
-        <AdditionalStartupCommands />
+        <AdditionalStartupCommands>
+          <GDBPreStartupCommands />
+          <GDBStartupCommands />
+          <GDBFinalizationCommands />
+        </AdditionalStartupCommands>
         <AdditionalGDBSettings>
           <Features>
             <DisableAutoDetection>false</DisableAutoDetection>
@@ -358,7 +358,7 @@
             </KeyValue>
             <KeyValue>
               <Key>DebugLevel</Key>
-              <Value>info</Value>
+              <Value>error</Value>
             </KeyValue>
           </Entries>
         </Properties>
