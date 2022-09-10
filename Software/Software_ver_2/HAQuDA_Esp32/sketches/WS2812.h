@@ -5,6 +5,7 @@
 #define LED_PIN 26
 #define LED_NUM_PIXELS 109
 #define MAX_BRIGHTNESS 150
+#define DEFAULT_BRIGHTNESS 50
 #define LED_COLUMN_NUM 9
 #define LED_ROW_NUM 12
 #define WHITE_BRIGHTNESS_COEFF 70
@@ -28,10 +29,3 @@ void WS2812_setPixelColor(uint16_t pixelNum, uint32_t color);
 void WS2812_fillColor(uint32_t color);
 void WS2812_fillColor(uint32_t color, uint8_t startPixel, uint8_t numPixels);
 uint32_t WS2812_getColor(uint8_t red, uint8_t green, uint8_t blue);
-
-//void WS2812_showParams_standard(float data, measDivideDots_struct divideDots);
-//void WS2812_showParams_standardTotal(float *data, measDivideDots_struct *dataDivideDots);
-//void WS2812_showParams_multi(float *data, measDivideDots_struct *divideDots);
-//void WS2812_showParams_night(float data, measDivideDots_struct divideDots, uint8_t time);
-//
-//void WS2812_ChristmasTree(int speed);

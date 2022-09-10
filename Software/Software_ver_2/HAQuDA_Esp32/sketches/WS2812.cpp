@@ -7,7 +7,7 @@ void WS2812_begin() {
 	pixels->begin();
 	pixels->clear();
 	WS2812_show();
-	pixels->setBrightness(MAX_BRIGHTNESS);
+	pixels->setBrightness(DEFAULT_BRIGHTNESS);
 }
 
 void WS2812_setBrightnessPerCent(uint8_t brightnessPerCent) {
