@@ -61,6 +61,8 @@ class HAQuDA_DisplayManip {
 	static void SetDisplayEffect(displayEffectMode_enum newDisplayEffect);
 	static void SetDisplayEffectParams(displayEffectParams_struct newDisplayEffectParams);
 
+	static void ClearErrorDisplayMode();
+
 	uint8_t GetBrightness();
 	displayMode_enum GetDisplayMode();
 	displayMeasMode_enum GetDisplayMeasMode();

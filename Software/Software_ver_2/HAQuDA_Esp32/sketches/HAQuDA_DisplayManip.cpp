@@ -21,7 +21,7 @@ HAQuDA_DisplayManip::HAQuDA_DisplayManip() {
 	DisplayEffectParams.growParams.speed = 200;
 
 	DisplayEffectParams.fadeParams.color = COLOR_AQUA;
-	DisplayEffectParams.fadeParams.speed = 200;
+	DisplayEffectParams.fadeParams.speed = 100;
 	DisplayEffectParams.fadeParams.startBrightness = 100;
 	DisplayEffectParams.fadeParams.stopBrightness = 0;
 	DisplayEffectParams.fadeParams.step = 2;
@@ -86,6 +86,11 @@ void HAQuDA_DisplayManip::SetBrightness(uint8_t newBrightnessPerCent) {
 	WS2812_setBrightnessPerCent(newBrightnessPerCent);
 }
 
+void HAQuDA_DisplayManip::ClearErrorDisplayMode() {
+	stopEffect = true;
+	DisplayMode = none;
+}
+
 bool HAQuDA_DisplayManip::SetDisplayMode(displayMode_enum newDisplayMode) {
 	stopEffect = true;
 	if (DisplayMode == error) {
@@ -114,6 +119,7 @@ bool HAQuDA_DisplayManip::SetDisplayMode(displayMode_enum newDisplayMode) {
 		default:
 			break;
 	}
+	vTaskDelay(100 / portTICK_PERIOD_MS);
 	return true;
 }
 
@@ -144,9 +150,8 @@ void HAQuDA_DisplayManip::SetDisplayEffect(displayEffectMode_enum newDisplayEffe
 	if (!SetDisplayMode(effect)) {
 		return;
 	}
-	if (newDisplayEffect != DisplayEffectParams.effect) {
-		stopEffect = true;
-	}
+	stopEffect = true;
+
 	DisplayEffectParams.effect = newDisplayEffect;
 }
 
@@ -154,10 +159,8 @@ void HAQuDA_DisplayManip::SetDisplayEffectParams(displayEffectParams_struct newD
 	if (!SetDisplayMode(effect)) {
 		return;
 	}
+	stopEffect = true;
 
-	if (newDisplayEffectParams.effect != DisplayEffectParams.effect) {
-		stopEffect = true;
-	}
 	DisplayEffectParams = newDisplayEffectParams;
 }
 
@@ -208,7 +211,7 @@ void HAQuDA_DisplayManip::ShowEffectGrow(const growEffectsParams_struct params) 
 				return;
 			}
 		}
-		WS2812_show();
+		WS2812_show(params.speed);
 	}
 }
 
