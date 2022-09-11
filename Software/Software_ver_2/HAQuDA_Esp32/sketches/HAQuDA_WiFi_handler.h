@@ -1,5 +1,7 @@
 #pragma once
 
+#include <DNSServer.h>
+
 #include "HAQuDA_WebServer.h"
 #include "TimeHelper.h"
 #include "HAQuDA_DisplayManip.h"
@@ -10,6 +12,8 @@ class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
   private:
 	char *AP_ssid = AP_SSID;
 	char *AP_pass = AP_PASS;
+
+	DNSServer dnsServer;
 
 	static void WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info);
 	static void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info);

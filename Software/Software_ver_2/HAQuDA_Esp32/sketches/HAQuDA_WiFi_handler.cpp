@@ -13,10 +13,13 @@ bool HAQuDA_WiFi_handler::Connect() {
 			WiFi.onEvent(WiFiStationDisconnected, SYSTEM_EVENT_STA_DISCONNECTED);
 			// Blynk.config(BlynkAuth, BLYNK_DEFAULT_DOMAIN, BLYNK_DEFAULT_PORT);
 			vTaskDelay(200 / portTICK_PERIOD_MS);
+			HAQuDA_WebServer::beginWebServer();
 			return true;
 		} else {
 			return false;
 		}
+	} else {
+		return false;
 	}
 }
 
@@ -24,21 +27,25 @@ bool HAQuDA_WiFi_handler::CreateAP() {
 	if (!createAP()) {
 		return false;
 	}
+	dnsServer.start(53, "*", WiFi.softAPIP());
 	HAQuDA_WebServer::beginWebServer();
 	return true;
 }
 
 void HAQuDA_WiFi_handler::HandleConnection() {
 
+	dnsServer.processNextRequest();
+
 	if (WiFiConnected || !(WiFi.getMode() & WIFI_MODE_STA)) {
 		return;
 	}
-
+	WiFi.removeEvent(SYSTEM_EVENT_STA_DISCONNECTED);
 	HAQuDA_DisplayManip::SetDisplayEffect(snake); // start up connection effect
 
 	while (!WiFiConnected) {
 		connectToStoredWiFi();
 	}
+	WiFi.onEvent(WiFiStationDisconnected, SYSTEM_EVENT_STA_DISCONNECTED);
 }
 
 bool HAQuDA_WiFi_handler::checkStoredWiFiCreds() {
@@ -53,12 +60,12 @@ bool HAQuDA_WiFi_handler::createAP() {
 	if (!WiFi.softAP(AP_ssid, AP_pass)) {
 		return false;
 	}
-	delay(2000);
+	vTaskDelay(2000 / portTICK_PERIOD_MS);
 
 	if (!WiFi.softAPConfig(AP_ip, AP_gateway, AP_subnet)) {
 		return false;
 	}
-	delay(100);
+	vTaskDelay(200 / portTICK_PERIOD_MS);
 
 	return true;
 }
