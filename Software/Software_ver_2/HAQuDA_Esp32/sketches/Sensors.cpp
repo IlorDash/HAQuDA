@@ -1,12 +1,14 @@
 #include "Sensors.h"
 
+#define SENS_POW 23
+
 #define DHTPIN 32
 #define DHTTYPE DHT11
 
 #define ZH03B_RX_PIN 17
 #define ZH03B_TX_PIN 16
 
-#define CCS811_WAK 33
+#define CCS811_WAK 5
 
 #define PM_BUF_LEN 31 // 0x42 + 31 bytes equal to 32 bytes
 
@@ -65,6 +67,9 @@ int transmitPM10(unsigned char *thebuf) {
 }
 
 bool sensorsBegin() {
+	pinMode(SENS_POW, OUTPUT);
+	digitalWrite(SENS_POW, HIGH);
+	
 	PMSerial.begin(9600, SWSERIAL_8N1, ZH03B_RX_PIN, ZH03B_TX_PIN, false, 256);
 	PMSerial.setTimeout(1000);
 
