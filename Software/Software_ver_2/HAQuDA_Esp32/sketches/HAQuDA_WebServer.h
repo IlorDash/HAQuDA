@@ -5,6 +5,7 @@
 #include <AsyncTCP.h>
 #include <WebSerial.h>
 #include "HAQuDA_FileStorage.h"
+#include "HAQuDA_CaptiveRequestHandler.h"
 
 #define WIFI_CREDS_PARAMS_NUM 4
 #define SSID_PARAM_NAME "ssid"

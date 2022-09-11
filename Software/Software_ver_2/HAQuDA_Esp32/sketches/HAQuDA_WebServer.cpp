@@ -2,9 +2,10 @@
 #include "WebPages.h"
 
 void HAQuDA_WebServer::beginWebServer() {
-	WebSerial.begin(&server);
 	WebServerResponds_init();
+	server.addHandler(new HAQuDA_CaptiveRequestHandler()).setFilter(ON_AP_FILTER); // only when requested from AP
 	server.begin();
+	WebSerial.begin(&server);
 }
 
 void HAQuDA_WebServer::handle_NewWiFiCreds(AsyncWebServerRequest *request) {
@@ -124,7 +125,7 @@ void HAQuDA_WebServer::WebServerResponds_init() {
 	server.onNotFound(HAQuDA_WebServer::handle_NotFound);
 }
 
-void HAQuDA_WebServer::WebSerialPrint(const char* str) {
+void HAQuDA_WebServer::WebSerialPrint(const char *str) {
 	WebSerial.println(str);
 	WebSerial.println("");
 }
