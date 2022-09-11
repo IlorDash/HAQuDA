@@ -35,7 +35,7 @@ class HAQuDA_DisplayManip {
 	//	static const uint8_t greenBackgroundIntensity = 190;
 	//	static const uint8_t blueBackgroundIntensity = 230;
 
-	static uint8_t GetLedNum(int x, int y);
+	static uint8_t GetLedNum(uint8_t x, uint8_t y);
 
 	/*
 	static void christmasLightsSnake();

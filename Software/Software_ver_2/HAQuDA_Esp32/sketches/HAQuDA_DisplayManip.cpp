@@ -87,10 +87,10 @@ void HAQuDA_DisplayManip::SetBrightness(uint8_t newBrightnessPerCent) {
 }
 
 bool HAQuDA_DisplayManip::SetDisplayMode(displayMode_enum newDisplayMode) {
+	stopEffect = true;
 	if (DisplayMode == error) {
 		return false;
 	}
-	stopEffect = true;
 	DisplayMode = newDisplayMode;
 	switch (DisplayMode) {
 		case none: {
@@ -99,6 +99,7 @@ bool HAQuDA_DisplayManip::SetDisplayMode(displayMode_enum newDisplayMode) {
 			break;
 		}
 		case error: {
+			DisplayEffectParams.effect = noneEffect;
 			DisplayMeasParams.mode = noneMode;
 			break;
 		}
@@ -197,16 +198,17 @@ void HAQuDA_DisplayManip::ShowStaticColor(int red, int green, int blue) {
 void HAQuDA_DisplayManip::ShowEffectGrow(const growEffectsParams_struct params) {
 	WS2812_clear();
 	vTaskDelay(100 / portTICK_PERIOD_MS);
-	for (uint8_t i = 0; i < LED_ROW_NUM; i++) {
+	for (uint8_t i = (LED_ROW_NUM - 1); i >= 0; i--) {
 		for (uint8_t j = 0; j < LED_COLUMN_NUM; j++) {
-			uint8_t pixelNum = GetLedNum(i, j);
+
+			uint8_t pixelNum = GetLedNum(j, i);
 			WS2812_setPixelColor(pixelNum, COLOR_RED);
-			WS2812_show();
 
 			if (stopEffect) {
 				return;
 			}
 		}
+		WS2812_show();
 	}
 }
 
@@ -613,18 +615,15 @@ void HAQuDA_DisplayManip::showMeas_total(float *data, uint8_t dataSize, measDivi
 	WS2812_fillColor(WS2812_getColor(red, green, blue), 0, LED_NUM_PIXELS);
 }
 
-uint8_t HAQuDA_DisplayManip::GetLedNum(int x, int y) {
-	int n;
+uint8_t HAQuDA_DisplayManip::GetLedNum(uint8_t x, uint8_t y) {
 
-	x = (x >= LED_COLUMN_NUM) ? (x % LED_COLUMN_NUM) : x;
-	y = (y >= LED_ROW_NUM) ? (y % LED_ROW_NUM) : y;
-
-	if (x % 2 == 0) {
-		n = LED_ROW_NUM - y;
-	} else {
-		n = y + 1;
+	if ((x >= LED_COLUMN_NUM) || (y >= LED_ROW_NUM)) {
+		return 0;
 	}
-	return n + LED_ROW_NUM * x;
+
+	y = (x % 2 != 0) ? (LED_ROW_NUM - y - 1) : y;
+
+	return y + LED_ROW_NUM * x;
 }
 /*
 void HAQuDA_DisplayManip::christmasLightsSnake() {
