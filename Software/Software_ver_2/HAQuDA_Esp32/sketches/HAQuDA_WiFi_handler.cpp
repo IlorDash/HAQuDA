@@ -5,12 +5,14 @@ bool HAQuDA_WiFi_handler::WiFiConnected = false;
 bool HAQuDA_WiFi_handler::Connect() {
 
 	WiFi.onEvent(WiFiStationConnected, SYSTEM_EVENT_STA_CONNECTED);
-	WiFi.onEvent(WiFiStationDisconnected, SYSTEM_EVENT_STA_DISCONNECTED);
 	// Blynk.config(BlynkAuth, BLYNK_DEFAULT_DOMAIN, BLYNK_DEFAULT_PORT);
 	vTaskDelay(200 / portTICK_PERIOD_MS);
 
 	if (_myFS->GetStored_WiFiCredsNum()) {
 		if (connectToStoredWiFi()) {
+			WiFi.onEvent(WiFiStationDisconnected, SYSTEM_EVENT_STA_DISCONNECTED);
+			// Blynk.config(BlynkAuth, BLYNK_DEFAULT_DOMAIN, BLYNK_DEFAULT_PORT);
+			vTaskDelay(200 / portTICK_PERIOD_MS);
 			return true;
 		} else {
 			return false;
