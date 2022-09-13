@@ -48,7 +48,8 @@ void setup() {
 	createTasks();
 
 	HAQuDA_DisplayManip::SetDisplayEffect(snake); // start up connection effect
-
+	vTaskDelay(2000 / portTICK_PERIOD_MS);
+	
 	if (!myFS.Start()) {
 		myErrorHandler.FailedToStartFS();
 		while (true) {
@@ -56,25 +57,22 @@ void setup() {
 	}
 
 	if (!myWiFi_handler->Connect()) {
-		HAQuDA_DisplayManip::SetDisplayMode(error);
 		myErrorHandler.FailedToConnectToWiFi();
-		vTaskDelay(DEFAULT_ERROR_DISPLAY_TIME / portTICK_PERIOD_MS);
-
+		
 		if (!myWiFi_handler->CreateAP()) {
-			HAQuDA_DisplayManip::SetDisplayMode(error);
 			myErrorHandler.FailedToCreateAP();
-			vTaskDelay(DEFAULT_ERROR_DISPLAY_TIME / portTICK_PERIOD_MS);
+			
 			while (true) {
 			}
 		}
-		HAQuDA_DisplayManip::SetDisplayMode(none);
+		myErrorHandler.ClearCurrentError();
+		HAQuDA_DisplayManip::SetDisplayEffect(fade);
 	} else {
 		HAQuDA_DisplayManip::SetDisplayMeasMode(multi);
 	}
 
 	if (!sensorsBegin()) {
 		myErrorHandler.FailedToStartSensors();
-		vTaskDelay(DEFAULT_ERROR_DISPLAY_TIME / portTICK_PERIOD_MS);
 		/****************************************/
 		//	REBOOOOOOT ESP32
 		//	OR
