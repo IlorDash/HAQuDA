@@ -104,6 +104,8 @@ bool sensorsBegin() {
 	humid_meas.value = 0;
 	humid_meas.newMeasDone = false;
 
+	vTaskDelay(100 / portTICK_PERIOD_MS);
+	
 	if (!CCS811.begin()) {
 		// Serial.println("Failed to start sensor! Please check your wiring.");
 		return false;
