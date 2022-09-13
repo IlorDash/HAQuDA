@@ -2,6 +2,8 @@
 
 bool HAQuDA_WiFi_handler::WiFiConnected = false;
 
+const char *hostname = AP_SSID;
+
 bool HAQuDA_WiFi_handler::Connect() {
 
 	WiFi.onEvent(WiFiStationConnected, SYSTEM_EVENT_STA_CONNECTED);
@@ -107,6 +109,11 @@ bool HAQuDA_WiFi_handler::connectToWiFi(const char *ssidLocal, const char *passL
 	if (!WiFi.mode(WIFI_STA)) {
 		return false;
 	}
+
+	if (!WiFi.setHostname(hostname)) { // define hostname)
+		return false;
+	}
+
 	if (!WiFi.begin(ssidLocal, passLocal, 0, 0)) {
 		return false;
 	}
