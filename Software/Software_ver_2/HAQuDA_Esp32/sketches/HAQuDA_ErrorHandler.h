@@ -26,6 +26,7 @@ class HAQuDA_ErrorHandler {
 	void FailedToCreateAP();
 	void FailedToStartFS();
 	void FailedToStartSensors();
+	void ClearCurrentError();
 
 	~HAQuDA_ErrorHandler();
 };
