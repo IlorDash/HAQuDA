@@ -14,6 +14,8 @@ class HAQuDA_DisplayManip {
 	static displayMeasParams_struct DisplayMeasParams;
 	static bool forceShowMeas;
 
+	static uint8_t BrighntessPerCent;
+
 	// Define NTP Client to get time
 	WiFiUDP ntpUDP;
 	NTPClient *timeClient;
@@ -54,17 +56,17 @@ class HAQuDA_DisplayManip {
 
 	void ShowMeas();
 
-	static void SetBrightness(uint8_t newBrightnessPerCent);
-	static bool SetDisplayMode(displayMode_enum newDisplayMode);
-	static void SetDisplayMeasMode(displayMeasMode_enum newDisplayMeasMode);
-	static void SetDisplayMeasParam(displayParams_enum newDisplayMeasParamn);
-	static void SetDisplayEffect(displayEffectMode_enum newDisplayEffect);
-	static void SetDisplayEffectParams(displayEffectParams_struct newDisplayEffectParams);
+	static void SetBrightness(const uint8_t newBrightnessPerCent);
+	static bool SetDisplayMode(const displayMode_enum newDisplayMode);
+	static void SetDisplayMeasMode(const displayMeasMode_enum newDisplayMeasMode);
+	static void SetDisplayMeasParam(const displayParams_enum newDisplayMeasParamn);
+	static void SetDisplayEffect(const displayEffectMode_enum newDisplayEffect);
+	static void SetDisplayEffectParams(const displayEffectParams_struct newDisplayEffectParams);
 
 	static void ClearErrorDisplayMode();
 
 	uint8_t GetBrightness();
-	displayMode_enum GetDisplayMode();
+	static displayMode_enum GetDisplayMode();
 	displayMeasMode_enum GetDisplayMeasMode();
 	displayParams_enum GetDisplayMeasParam();
 	static displayEffectMode_enum GetDisplayEffect();
