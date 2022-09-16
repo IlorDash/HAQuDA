@@ -1,6 +1,9 @@
 #pragma once
 
+#include <WiFi.h>
 #include <DNSServer.h>
+#include <EasyDDNS.h>
+#include "HTTPClient.h"
 
 #include "HAQuDA_WebServer.h"
 #include "TimeHelper.h"

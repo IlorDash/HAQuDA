@@ -3,6 +3,8 @@
 bool HAQuDA_WiFi_handler::WiFiConnected = false;
 
 const char *hostname = AP_SSID;
+const char *DDNS_token = "6dfe9873-d546-48ce-91e1-c8434538a9d3";
+const char *DDNS_domain = "haquda.duckdns.org";
 
 bool HAQuDA_WiFi_handler::Connect() {
 
@@ -16,6 +18,14 @@ bool HAQuDA_WiFi_handler::Connect() {
 			// Blynk.config(BlynkAuth, BLYNK_DEFAULT_DOMAIN, BLYNK_DEFAULT_PORT);
 			vTaskDelay(200 / portTICK_PERIOD_MS);
 			HAQuDA_WebServer::beginWebServer();
+			EasyDDNS.service("duckdns");
+			EasyDDNS.client(DDNS_domain, DDNS_token); // Enter your DDNS Domain & Token
+
+			// Get Notified when your IP changes
+			EasyDDNS.onUpdate([&](const char *oldIP, const char *newIP) {
+				Serial.print("EasyDDNS - IP Change Detected: ");
+				Serial.println(newIP);
+			});
 			return true;
 		} else {
 			return false;
@@ -35,7 +45,9 @@ bool HAQuDA_WiFi_handler::CreateAP() {
 }
 
 void HAQuDA_WiFi_handler::HandleConnection() {
-
+	// Check for new public IP every 10 seconds
+	EasyDDNS.update(10000, true);
+	
 	dnsServer.processNextRequest();
 
 	if (WiFiConnected || !(WiFi.getMode() & WIFI_MODE_STA)) {
