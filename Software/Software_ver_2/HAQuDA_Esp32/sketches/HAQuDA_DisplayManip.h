@@ -62,6 +62,7 @@ class HAQuDA_DisplayManip {
 	static void SetDisplayMeasParam(const displayParams_enum newDisplayMeasParamn);
 	static void SetDisplayEffect(const displayEffectMode_enum newDisplayEffect);
 	static void SetDisplayEffectParams(const displayEffectParams_struct newDisplayEffectParams);
+	static void SetDisplayError(const displayEffectMode_enum errorDisplayEffect);
 
 	static void ClearErrorDisplayMode();
 

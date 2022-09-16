@@ -131,7 +131,6 @@ void HAQuDA_DisplayManip::SetDisplayMeasMode(const displayMeasMode_enum newDispl
 	if (!SetDisplayMode(meas)) {
 		return;
 	}
-
 	if (newDisplayMeasMode != DisplayMeasParams.mode) {
 		forceShowMeas = true;
 	}
@@ -142,24 +141,25 @@ void HAQuDA_DisplayManip::SetDisplayMeasParam(const displayParams_enum newDispla
 	if (!SetDisplayMode(meas)) {
 		return;
 	}
-
 	if (newDisplayMeasParam != DisplayMeasParams.displayParam) {
 		forceShowMeas = true;
 	}
-
 	DisplayMeasParams.displayParam = newDisplayMeasParam;
 }
 
 void HAQuDA_DisplayManip::SetDisplayEffect(const displayEffectMode_enum newDisplayEffect) {
 	stopEffect = true;
-
 	DisplayEffectParams.effect = newDisplayEffect;
 }
 
 void HAQuDA_DisplayManip::SetDisplayEffectParams(const displayEffectParams_struct newDisplayEffectParams) {
 	stopEffect = true;
-
 	DisplayEffectParams = newDisplayEffectParams;
+}
+
+void HAQuDA_DisplayManip::SetDisplayError(const displayEffectMode_enum errorDisplayEffect) {
+	HAQuDA_DisplayManip::SetDisplayMode(error);
+	HAQuDA_DisplayManip::SetDisplayEffect(errorDisplayEffect);
 }
 
 uint8_t HAQuDA_DisplayManip::GetBrightness() {
