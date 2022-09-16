@@ -1,5 +1,6 @@
 #include "HAQuDA_ErrorHandler.h"
 #include "HAQuDA_DisplayManip.h"
+#include "HAQuDA_Logger.h"
 
 displayEffectMode_enum HAQuDA_ErrorHandler::errorEffectDisp = noneEffect;
 
@@ -36,34 +37,30 @@ errorTypes_enum HAQuDA_ErrorHandler::GetCurrentError() {
 }
 
 void HAQuDA_ErrorHandler::FailedToStartFS() {
-	log_e("SPIFFS not mounted!");
 	CurrentError = failedToStartFS;
-	HAQuDA_DisplayManip::SetDisplayMode(error);
-	HAQuDA_DisplayManip::SetDisplayEffect(fade);
+	HAQuDA_Logger::LogError("SPIFFS not mounted!");
+	HAQuDA_DisplayManip::SetDisplayError(fade);
 	vTaskDelay(DEFAULT_ERROR_DISPLAY_TIME / portTICK_PERIOD_MS);
 }
 
 void HAQuDA_ErrorHandler::FailedToConnectToWiFi() {
-	log_e("Failed connection to WiFi");
 	CurrentError = failedToConnectToWiFi;
-	HAQuDA_DisplayManip::SetDisplayMode(error);
-	HAQuDA_DisplayManip::SetDisplayEffect(grow);
+	HAQuDA_Logger::LogError("Failed connection to WiFi");
+	HAQuDA_DisplayManip::SetDisplayError(grow);
 	vTaskDelay(DEFAULT_ERROR_DISPLAY_TIME / portTICK_PERIOD_MS);
 }
 
 void HAQuDA_ErrorHandler::FailedToCreateAP() {
-	log_e("Failed creating acces point");
 	CurrentError = failedToCreateAP;
-	HAQuDA_DisplayManip::SetDisplayMode(error);
-	HAQuDA_DisplayManip::SetDisplayEffect(snake);
+	HAQuDA_Logger::LogError("Failed creating Acces Point");
+	HAQuDA_DisplayManip::SetDisplayError(snake);
 	vTaskDelay(DEFAULT_ERROR_DISPLAY_TIME / portTICK_PERIOD_MS);
 }
 
 void HAQuDA_ErrorHandler::FailedToStartSensors() {
-	log_e("Failed to start sensors");
 	CurrentError = failedToStartSensors;
-	HAQuDA_DisplayManip::SetDisplayMode(error);
-	HAQuDA_DisplayManip::SetDisplayEffect(upDown);
+	HAQuDA_Logger::LogError("Failed to start sensors");
+	HAQuDA_DisplayManip::SetDisplayError(upDown);
 	vTaskDelay(DEFAULT_ERROR_DISPLAY_TIME / portTICK_PERIOD_MS);
 }
 
