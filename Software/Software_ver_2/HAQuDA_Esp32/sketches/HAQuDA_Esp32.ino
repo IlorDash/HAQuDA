@@ -9,7 +9,7 @@
 
 #include "Sensors.h"
 #include "Tasks.h"
-#include <WiFi.h>
+
 #include <BlynkSimpleEsp32.h>
 
 #define DISP_MEAS_PERIOD 300000 //=5 min in ms
