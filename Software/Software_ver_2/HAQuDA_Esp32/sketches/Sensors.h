@@ -22,3 +22,6 @@ bool sensorsBegin();
 bool getCCS811_meas();
 bool getPM_meas();
 bool getDHT11_meas();
+
+bool TryRepairSensors();
+void sensReboot();

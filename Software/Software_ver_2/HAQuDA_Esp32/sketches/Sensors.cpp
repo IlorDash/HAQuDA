@@ -10,7 +10,12 @@
 
 #define CCS811_WAK 5
 
-#define PM_BUF_LEN 31 // 0x42 + 31 bytes equal to 32 bytes
+#define PM_BUF_LEN                                                                                                                                             \
+	31 // 0x42 + 31 bytes equal to 32 bytes\
+
+#define SENS_REBOOT_DELAY 1000
+
+#define MAX_SENS_REBOOT_ATTEMPTS 3
 
 Adafruit_CCS811 CCS811;
 
@@ -69,7 +74,7 @@ int transmitPM10(unsigned char *thebuf) {
 bool sensorsBegin() {
 	pinMode(SENS_POW, OUTPUT);
 	digitalWrite(SENS_POW, HIGH);
-	
+
 	PMSerial.begin(9600, SWSERIAL_8N1, ZH03B_RX_PIN, ZH03B_TX_PIN, false, 256);
 	PMSerial.setTimeout(1000);
 
@@ -105,7 +110,7 @@ bool sensorsBegin() {
 	humid_meas.newMeasDone = false;
 
 	vTaskDelay(100 / portTICK_PERIOD_MS);
-	
+
 	if (!CCS811.begin()) {
 		// Serial.println("Failed to start sensor! Please check your wiring.");
 		return false;
@@ -187,4 +192,23 @@ bool getDHT11_meas() {
 		humid_meas.newMeasDone = true;
 	}
 	return true;
+}
+
+bool TryRepairSensors() {
+	uint8_t rebootSensorsAttemptsNum = 0;
+	while (!sensorsBegin()) {
+		if (rebootSensorsAttemptsNum >= MAX_SENS_REBOOT_ATTEMPTS) {
+			return false;
+		}
+		rebootSensorsAttemptsNum++;
+		sensReboot();
+	}
+	return true;
+}
+
+void sensReboot() {
+	digitalWrite(SENS_POW, LOW);
+	vTaskDelay(SENS_REBOOT_DELAY);
+	digitalWrite(SENS_POW, LOW);
+	vTaskDelay(SENS_REBOOT_DELAY);
 }
