@@ -1,16 +1,15 @@
 #include "Arduino.h"
+#include <SoftwareSerial.h>
+#include <BlynkSimpleEsp32.h>
 
 #include "HAQuDA_WiFi_handler.h"
 #include "HAQuDA_DisplayManip.h"
 #include "HAQuDA_FileStorage.h"
 #include "HAQuDA_ErrorHandler.h"
-
-#include <SoftwareSerial.h>
+#include "HAQuDA_Logger.h"
 
 #include "Sensors.h"
 #include "Tasks.h"
-
-#include <BlynkSimpleEsp32.h>
 
 #define DISP_MEAS_PERIOD 300000 //=5 min in ms
 #define SENSORS_MEAS_PERIOD 2000
@@ -49,36 +48,38 @@ void setup() {
 
 	HAQuDA_DisplayManip::SetDisplayEffect(snake); // start up connection effect
 	vTaskDelay(2000 / portTICK_PERIOD_MS);
-	
+
 	if (!myFS.Start()) {
 		myErrorHandler.FailedToStartFS();
 		while (true) {
 		}
 	}
+	HAQuDA_Logger::LogInfo("Started File system");
 
 	if (!myWiFi_handler->Connect()) {
 		myErrorHandler.FailedToConnectToWiFi();
-		
+
 		if (!myWiFi_handler->CreateAP()) {
 			myErrorHandler.FailedToCreateAP();
-			
+
 			while (true) {
 			}
 		}
+		HAQuDA_Logger::LogInfo("Created Acces Point");
 		myErrorHandler.ClearCurrentError();
 		HAQuDA_DisplayManip::SetDisplayEffect(fade);
 	} else {
-		HAQuDA_DisplayManip::SetDisplayMeasMode(multi);
+		HAQuDA_Logger::LogInfo("Connected to WiFi");
 	}
 
 	if (!sensorsBegin()) {
 		myErrorHandler.FailedToStartSensors();
-		/****************************************/
-		//	REBOOOOOOT ESP32
-		//	OR
-		//	REBOOOOOOOT SENSORS
-		/****************************************/
+		if (!TryRepairSensors()) { // rebooting sensors
+			ESP.restart();
+		}
 	}
+	HAQuDA_Logger::LogInfo("Started sensors");
+	HAQuDA_DisplayManip::SetDisplayMeasMode(multi);
 	//
 	//	terminal.println("*************************");
 	//	terminal.print("START LOGGING");
