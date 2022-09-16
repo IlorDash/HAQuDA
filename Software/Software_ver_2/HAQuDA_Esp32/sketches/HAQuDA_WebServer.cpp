@@ -1,11 +1,23 @@
 #include "HAQuDA_WebServer.h"
 #include "WebPages.h"
 
+bool HAQuDA_WebServer::WebServerStarted = false;
+
 void HAQuDA_WebServer::beginWebServer() {
 	WebServerResponds_init();
 	server.addHandler(new HAQuDA_CaptiveRequestHandler()).setFilter(ON_AP_FILTER); // only when requested from AP
 	server.begin();
 	WebSerial.begin(&server);
+	WebServerStarted = true;
+}
+
+void HAQuDA_WebServer::WebSerialPrint(const char *str) {
+	WebSerial.println(str);
+	WebSerial.println("");
+}
+
+bool HAQuDA_WebServer::GetWebServerStarted() {
+	return WebServerStarted;
 }
 
 void HAQuDA_WebServer::handle_NewWiFiCreds(AsyncWebServerRequest *request) {
@@ -64,7 +76,7 @@ void HAQuDA_WebServer::handle_NewWiFiCreds(AsyncWebServerRequest *request) {
 			response_success += "<h2>Re-writed WiFi credentials</h2>";
 			response_success += "<h2>Device will restart in 3 seconds</h2>";
 			request->send(200, "text/html", response_success);
-			delay(3000);
+			vTaskDelay(3000);
 			ESP.restart();
 			break;
 		}
@@ -73,7 +85,7 @@ void HAQuDA_WebServer::handle_NewWiFiCreds(AsyncWebServerRequest *request) {
 			response_success += "<h2>Saved new WiFi credentials</h2>";
 			response_success += "<h2>Device will restart in 3 seconds</h2>";
 			request->send(200, "text/html", response_success);
-			delay(3000);
+			vTaskDelay(SHOW_REBOOT_MSG_DELAY);
 			ESP.restart();
 			break;
 		}
@@ -123,11 +135,6 @@ void HAQuDA_WebServer::WebServerResponds_init() {
 	server.on("/show_wifi_creds", HTTP_POST, HAQuDA_WebServer::show_WiFiCreds);
 	server.on("/add_wifi_creds", HTTP_POST, HAQuDA_WebServer::handle_NewWiFiCreds);
 	server.onNotFound(HAQuDA_WebServer::handle_NotFound);
-}
-
-void HAQuDA_WebServer::WebSerialPrint(const char *str) {
-	WebSerial.println(str);
-	WebSerial.println("");
 }
 
 HAQuDA_WebServer::~HAQuDA_WebServer() {

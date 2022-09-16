@@ -13,12 +13,15 @@
 #define STATIC_IP_ARG "static_ip"
 #define GATEWAY_ARG "gateway"
 
+#define SHOW_REBOOT_MSG_DELAY 3000 // in ms
+
 class HAQuDA_WebServer {
   private:
   protected:
 	HAQuDA_FileStorage *_myFS;
 	bool newWiFiCredsFound = false;
 	AsyncWebServer server = AsyncWebServer(80);
+	static bool WebServerStarted;
 
 	void beginWebServer();
 
@@ -32,5 +35,6 @@ class HAQuDA_WebServer {
 	static void show_WiFiCreds(AsyncWebServerRequest *request);
 
   public:
-	void WebSerialPrint(const char *str);
+	static void WebSerialPrint(const char *str);
+	static bool GetWebServerStarted();
 };
