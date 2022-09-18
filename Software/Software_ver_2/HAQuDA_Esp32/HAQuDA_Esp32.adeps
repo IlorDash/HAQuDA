@@ -1,5 +1,5 @@
 <!-- Add this file to source control in order to automatically restore library dependencies when opening the project on another machine -->
-<ArduinoDependencyCollection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+<ArduinoDependencyCollection xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <Dependencies>
     <Dependency>
       <Type>Platform</Type>

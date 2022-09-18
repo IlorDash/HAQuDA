@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<VisualGDBProjectSettings2 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+<VisualGDBProjectSettings2 xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <Project xsi:type="com.visualgdb.project.external.arduino">
     <CustomSourceDirectories>
       <Directories />
@@ -33,6 +33,7 @@
         <string>sketches\HAQuDA_DisplayManip.h</string>
         <string>sketches\HAQuDA_CaptiveRequestHandler.h</string>
         <string>sketches\HAQuDA_Logger.h</string>
+        <string>sketches\HAQuDA_MyWebSerial.h</string>
       </OtherFiles>
     </ProjectModeSettings>
   </Project>
