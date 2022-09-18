@@ -1,0 +1,21 @@
+{
+  "name": "EasyDDNS",
+  "keywords": "EasyDDNS, ddns, client, update, server, ip, duck, duckdns, noip",
+  "description": "Easy to use DDNS update client on your ESP8266 / ESP32.",
+  "repository":
+  {
+    "type": "git",
+    "url": "https://github.com/ayushsharma82/EasyDDNS.git"
+  },
+  "authors":
+  [
+    {
+      "name": "Ayush Sharma",
+      "email": "asrocks5@gmail.com",
+      "maintainer": true
+    }
+  ],
+  "version": "1.8.0",
+  "frameworks": "arduino",
+  "platforms": "espressif"
+}
