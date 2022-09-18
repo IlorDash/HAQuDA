@@ -12,7 +12,7 @@ bool HAQuDA_WiFi_handler::Connect() {
 	// Blynk.config(BlynkAuth, BLYNK_DEFAULT_DOMAIN, BLYNK_DEFAULT_PORT);
 	vTaskDelay(200 / portTICK_PERIOD_MS);
 
-	if (_myFS->GetStored_WiFiCredsNum()) {
+	if (GetStored_WiFiCredsNum()) {
 		if (connectToStoredWiFi()) {
 			WiFi.onEvent(WiFiStationDisconnected, SYSTEM_EVENT_STA_DISCONNECTED);
 			// Blynk.config(BlynkAuth, BLYNK_DEFAULT_DOMAIN, BLYNK_DEFAULT_PORT);
@@ -47,8 +47,13 @@ bool HAQuDA_WiFi_handler::CreateAP() {
 void HAQuDA_WiFi_handler::HandleConnection() {
 	// Check for new public IP every 10 seconds
 	EasyDDNS.update(10000, true);
-	
+
 	dnsServer.processNextRequest();
+
+	if (MyWebSerial.GetWebSerialOpened()) {
+		WebSerialPrintStoredLogs();
+		MyWebSerial.ResetWebSerialOpened();
+	}
 
 	if (WiFiConnected || !(WiFi.getMode() & WIFI_MODE_STA)) {
 		return;
@@ -93,11 +98,11 @@ void HAQuDA_WiFi_handler::waitUntilWiFiConnected() {
 }
 
 bool HAQuDA_WiFi_handler::connectToStoredWiFi() {
-	int WiFiCredsNum = _myFS->GetStored_WiFiCredsNum();
+	int WiFiCredsNum = GetStored_WiFiCredsNum();
 	TWiFiCreds WiFiCreds;
 
 	for (int i = 0; i < WiFiCredsNum; i++) {
-		WiFiCreds = _myFS->GetStored_WiFi(i);
+		WiFiCreds = GetStored_WiFi(i);
 		if (!strlen(WiFiCreds.ssid)) {
 			continue;
 		}

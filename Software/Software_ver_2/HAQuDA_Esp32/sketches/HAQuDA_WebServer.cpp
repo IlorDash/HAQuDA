@@ -7,13 +7,28 @@ void HAQuDA_WebServer::beginWebServer() {
 	WebServerResponds_init();
 	server.addHandler(new HAQuDA_CaptiveRequestHandler()).setFilter(ON_AP_FILTER); // only when requested from AP
 	server.begin();
-	WebSerial.begin(&server);
+	MyWebSerial.begin(&server);
+	MyWebSerial.msgCallback(HAQuDA_WebServer::recvMsg);
 	WebServerStarted = true;
 }
 
+/* Message callback of MyWebSerial */
+void HAQuDA_WebServer::recvMsg(uint8_t *data, size_t len) {
+	MyWebSerial.println("Received Data...");
+	String d = "";
+	for (int i = 0; i < len; i++) {
+		d += char(data[i]);
+	}
+	MyWebSerial.println(d);
+}
+
 void HAQuDA_WebServer::WebSerialPrint(const char *str) {
-	WebSerial.println(str);
-	WebSerial.println("");
+	MyWebSerial.println(str);
+	MyWebSerial.println("");
+}
+
+void HAQuDA_WebServer::WebSerialPrintStoredLogs() {
+	MyWebSerial.println("");
 }
 
 bool HAQuDA_WebServer::GetWebServerStarted() {
@@ -47,7 +62,7 @@ void HAQuDA_WebServer::handle_NewWiFiCreds(AsyncWebServerRequest *request) {
 
 	log_i("Saving WiFi net with SSID = %s\r\n", newWiFiCreds.ssid);
 
-	saveNewWiFiCredsReturnMsgs saveNewWiFiCredsMsg = HAQuDA_FileStorage::SaveNew_WiFiCreds(newWiFiCreds);
+	saveNewWiFiCredsReturnMsgs saveNewWiFiCredsMsg = SaveNew_WiFiCreds(newWiFiCreds);
 
 	switch (saveNewWiFiCredsMsg) {
 		case too_many_WiFi: {
@@ -106,7 +121,7 @@ void HAQuDA_WebServer::delete_WiFiCreds(AsyncWebServerRequest *request) {
 void HAQuDA_WebServer::show_WiFiCreds(AsyncWebServerRequest *request) {
 	HAQuDA_FileStorage::ReadFileInSerial(FILE_NAME_WIFI_NET);
 	char *bar;
-	int WiFiCredsNum = HAQuDA_FileStorage::GetStored_WiFiCredsNum();
+	int WiFiCredsNum = GetStored_WiFiCredsNum();
 	if (WiFiCredsNum == 0) {
 		request->send(200, "text/html", "WiFi credentials are empty");
 	} else {
@@ -135,6 +150,95 @@ void HAQuDA_WebServer::WebServerResponds_init() {
 	server.on("/show_wifi_creds", HTTP_POST, HAQuDA_WebServer::show_WiFiCreds);
 	server.on("/add_wifi_creds", HTTP_POST, HAQuDA_WebServer::handle_NewWiFiCreds);
 	server.onNotFound(HAQuDA_WebServer::handle_NotFound);
+}
+
+bool HAQuDA_WebServer::checkStoredWiFiCredsCntLimit() {
+	int fSize = HAQuDA_FileStorage::FileSize(FILE_NAME_WIFI_NET);
+	uint8_t storedWiFiCredsCnt = fSize / sizeof(TWiFiCreds);
+	if (storedWiFiCredsCnt >= MAX_WIFI_CREDS_NUM) {
+		return false;
+	}
+	return true;
+}
+
+bool HAQuDA_WebServer::getWiFiCredsWriteIndex(uint16_t *index, const TWiFiCreds newWiFiCreds) {
+	*index = 0;
+	size_t fileSize = HAQuDA_FileStorage::FileSize(FILE_NAME_WIFI_NET);
+	if (fileSize == -1) {
+		return false;
+	}
+	uint8_t storedWiFiCredsCnt = fileSize / sizeof(TWiFiCreds);
+	TWiFiCreds readWiFiCreds;
+	bool newWiFiCredsExists = false;
+
+	while (((*index) < storedWiFiCredsCnt) && !newWiFiCredsExists) {
+		size_t fileReadRes = HAQuDA_FileStorage::ReadFile(FILE_NAME_WIFI_NET, (uint8_t *)&readWiFiCreds, sizeof(TWiFiCreds));
+		if (fileReadRes != sizeof(TWiFiCreds)) {
+			return false;
+		}
+		if (readWiFiCreds.ssid == newWiFiCreds.ssid) {
+			newWiFiCredsExists = true;
+		} else {
+			(*index)++;
+		}
+	}
+	return true;
+}
+
+saveNewWiFiCredsReturnMsgs HAQuDA_WebServer::SaveNew_WiFiCreds(TWiFiCreds newWiFiCreds) {
+
+	if (!checkStoredWiFiCredsCntLimit()) {
+		return too_many_WiFi;
+	}
+
+	bool newWiFiCredsExists = false;
+	int index = 0;
+	int fSize = HAQuDA_FileStorage::FileSize(FILE_NAME_WIFI_NET);
+	if (fSize <= 0) {
+		bool writeCredsRes = HAQuDA_FileStorage::WriteFile(FILE_NAME_WIFI_NET, (uint8_t *)&newWiFiCreds, sizeof(TWiFiCreds));
+		if (!writeCredsRes) {
+			return error_saving_new_WiFi_creds;
+		}
+	} else {
+		uint16_t index;
+		bool getIndexRes = getWiFiCredsWriteIndex(&index, newWiFiCreds);
+		if (!getIndexRes) {
+			return error_reading_stored_WiFi_creds;
+		}
+
+		bool writeCredsRes = HAQuDA_FileStorage::WriteFile(FILE_NAME_WIFI_NET, index * sizeof(TWiFiCreds), (uint8_t *)&newWiFiCreds, sizeof(TWiFiCreds));
+		if (!writeCredsRes) {
+			return error_saving_new_WiFi_creds;
+		}
+	}
+
+	return saved_new_WiFi_creds;
+}
+
+TWiFiCreds HAQuDA_WebServer::GetStored_WiFi(int num) {
+	TWiFiCreds WiFiCreds;
+
+	uint8_t pos = num * sizeof(TWiFiCreds);
+
+	HAQuDA_FileStorage::ReadFile(FILE_NAME_WIFI_NET, pos, (uint8_t *)&WiFiCreds, sizeof(TWiFiCreds));
+	return WiFiCreds;
+}
+
+int HAQuDA_WebServer::GetStored_WiFiCredsNum() {
+	return HAQuDA_FileStorage::FileSize(FILE_NAME_WIFI_NET) / sizeof(TWiFiCreds);
+}
+
+const String HAQuDA_FileStorage::Read_WiFiCreds() {
+	//	char buff[MAX_SHOW_WIFI_CREDS_BUFF_LEN];
+	//	char *header = "Reading file : /WiFiNetworks\r\n";
+	//	strncpy(buff, header, strlen(header));
+	//
+	//	int WiFiCredsNum = GetStored_WiFiCredsNum();
+	//	TWiFiCreds readWiFiCred;
+	//	for (int i = 0; i < WiFiCredsNum; i++) {
+	//	}
+	//
+	//	return String(buff);
 }
 
 HAQuDA_WebServer::~HAQuDA_WebServer() {

@@ -21,8 +21,9 @@
 #define FILE_CHECK_COUNT "/checkCount"
 #define FILE_NAME_BOUNDS "/bounds"
 #define FILE_NAME_WIFI_NET "/WiFiNetworks"
+#define FILE_NAME_LOGS "/logs"
 
-#define WEB_SERVER_INDEX_PAGE "/index.html"
+#define WEB_SERVER_IcNDEX_PAGE "/index.html"
 #define WEB_SERVER_STYLE "/style.css"
 #define WEB_SERVER_WIFI_MANAGER_PAGE "/wifi_manager.html"
 
@@ -63,10 +64,6 @@ typedef enum {
 } saveNewWiFiCredsReturnMsgs;
 
 class HAQuDA_FileStorage {
-  private:
-	static bool checkStoredWiFiCredsCntLimit();
-	static bool getWiFiCredsWriteIndex(uint16_t *index, const TWiFiCreds newWiFiCreds);
-
   public:
 	HAQuDA_FileStorage();
 	~HAQuDA_FileStorage();
@@ -81,16 +78,12 @@ class HAQuDA_FileStorage {
 	static bool AppendFile(const char *path, const uint8_t *data, const size_t len);
 	bool Exists(const String &path);
 	bool Exists(const char *path);
-	static size_t FileSize(const char *path);
+	static int FileSize(const char *path);
 
 	static void ReadFileInSerial(const char *path);
 	static bool ReadFile(const char *path, uint8_t *data, const size_t len);
 	static bool ReadFile(const char *path, const int fromPos, uint8_t *data, const size_t len);
 	const String Read_WiFiCreds();
-
-	static saveNewWiFiCredsReturnMsgs SaveNew_WiFiCreds(TWiFiCreds writeWiFiNet);
-	TWiFiCreds GetStored_WiFi(int num);
-	static int GetStored_WiFiCredsNum();
 };
 
 #endif
