@@ -16,7 +16,7 @@ void HAQuDA_Logger::LogInfo(const char *msg) {
 	char info_msg[MSG_MAX_LEN] = INFO_MSG_PREFIX;
 	strcat(info_msg, msg);
 	if (HAQuDA_WebServer::GetWebServerStarted()) {
-		//HAQuDA_WebServer::WebSerialPrint(info_msg);
+		HAQuDA_WebServer::WebSerialPrint(info_msg);
 	}
 }
 void HAQuDA_Logger::LogError(const char *msg) {
@@ -24,7 +24,7 @@ void HAQuDA_Logger::LogError(const char *msg) {
 	char error_msg[MSG_MAX_LEN] = ERROR_MSG_PREFIX;
 	strcat(error_msg, msg);
 	if (HAQuDA_WebServer::GetWebServerStarted()) {
-		//HAQuDA_WebServer::WebSerialPrint(error_msg);
+		HAQuDA_WebServer::WebSerialPrint(error_msg);
 	}
 }
 
