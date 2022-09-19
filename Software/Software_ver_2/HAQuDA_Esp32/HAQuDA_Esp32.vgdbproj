@@ -51,6 +51,8 @@
         <string> AP_SSID="$(AP_ssid_uv)"</string>
         <string> AP_PASS="$(AP_pass_uv)"</string>
         <string> BUILTIN_LED="$(BuiltIn_LED_uv)"</string>
+        <string>DDNS_DOMAIN="$(DDNS_Domain_uv)"</string>
+        <string>DDNS_TOKEN="$(DDNS_Token_uv)"</string>
       </Common>
     </PreprocessorMacros>
     <ExtraCompilerFlags>
@@ -173,6 +175,20 @@
       <Description />
       <Value>xxxxx</Value>
       <Name>AP_pass_uv</Name>
+      <PromoteToEnvironment>false</PromoteToEnvironment>
+    </BuildVariable>
+    <BuildVariable>
+      <Label />
+      <Description />
+      <Value>xxxxx</Value>
+      <Name>DDNS_Domain_uv</Name>
+      <PromoteToEnvironment>false</PromoteToEnvironment>
+    </BuildVariable>
+    <BuildVariable>
+      <Label />
+      <Description />
+      <Value>xxxxx</Value>
+      <Name>DDNS_Token_uv</Name>
       <PromoteToEnvironment>false</PromoteToEnvironment>
     </BuildVariable>
   </UserDefinedVariables>
