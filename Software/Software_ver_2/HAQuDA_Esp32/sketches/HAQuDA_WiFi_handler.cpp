@@ -3,8 +3,9 @@
 bool HAQuDA_WiFi_handler::WiFiConnected = false;
 
 const char *hostname = AP_SSID;
-const char *DDNS_token = "6dfe9873-d546-48ce-91e1-c8434538a9d3";
-const char *DDNS_domain = "haquda.duckdns.org";
+const char *DDNS_token = DDNS_TOKEN;
+const char *DDNS_domain = DDNS_DOMAIN;
+
 
 bool HAQuDA_WiFi_handler::Connect() {
 
