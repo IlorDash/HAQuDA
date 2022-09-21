@@ -1,27 +1,19 @@
 #pragma once
 
 #include "HAQuDA_DisplayManip_typedefs.h"
-
-#include <WiFiUdp.h>
-#include <NTPClient.h>
+#include "HAQuDA_TimeHelper.h"
 
 class HAQuDA_DisplayManip {
-  private:
 	static displayMode_enum DisplayMode;
-
 	static displayEffectParams_struct DisplayEffectParams;
-
 	static displayMeasParams_struct DisplayMeasParams;
 	static bool forceShowMeas;
-
 	static uint8_t BrighntessPerCent;
 
-	// Define NTP Client to get time
-	WiFiUDP ntpUDP;
-	NTPClient *timeClient;
+	HAQuDA_TimeHelper *timeHelper;
 
 	displayParams_enum checkBadParam(displayMeasParams_struct currUI_Params);
-	uint8_t get_nightMode_hour(NTPClient *time, nightModeTimeBorder_struct timeBorder);
+	uint8_t get_nightMode_hour(nightModeTimeBorder_struct timeBorder);
 	void standardMode();
 	void multiMode(multiModeParamDisplay_struct multiModeParams);
 	void nightMode();
@@ -48,11 +40,9 @@ class HAQuDA_DisplayManip {
 	*/
 
   public:
-	HAQuDA_DisplayManip();
+	HAQuDA_DisplayManip(HAQuDA_TimeHelper *currTimeHelper);
 
 	static bool stopEffect;
-
-	void StartNTP();
 
 	void ShowMeas();
 

@@ -14,7 +14,9 @@ uint8_t HAQuDA_DisplayManip::BrighntessPerCent = DEFAULT_BRIGHTNESS;
 displayEffectParams_struct HAQuDA_DisplayManip::DisplayEffectParams;
 displayMeasParams_struct HAQuDA_DisplayManip::DisplayMeasParams;
 
-HAQuDA_DisplayManip::HAQuDA_DisplayManip() {
+HAQuDA_DisplayManip::HAQuDA_DisplayManip(HAQuDA_TimeHelper *currTimeHelper) {
+	this->timeHelper = currTimeHelper;
+
 	DisplayEffectParams.effect = noneEffect;
 	DisplayEffectParams.snakeParams.color = COLOR_LIME;
 	DisplayEffectParams.snakeParams.speed = 200;
@@ -71,18 +73,6 @@ HAQuDA_DisplayManip::HAQuDA_DisplayManip() {
 
 	DisplayMeasParams.currentTimeBorder.timeFirstBorder = 21;
 	DisplayMeasParams.currentTimeBorder.timeFirstBorder = 9;
-}
-
-void HAQuDA_DisplayManip::StartNTP() {
-	timeClient = new NTPClient(ntpUDP);
-	// Initialize a NTPClient to get time
-	timeClient->begin();
-	// Set offset time in seconds to adjust for your timezone, for example:
-	// GMT +1 = 3600
-	// GMT +8 = 28800
-	// GMT +3 = 10800
-	// GMT 0 = 0
-	timeClient->setTimeOffset(10800);
 }
 
 void HAQuDA_DisplayManip::SetBrightness(const uint8_t newBrightnessPerCent) {
@@ -437,39 +427,25 @@ void HAQuDA_DisplayManip::multiMode(multiModeParamDisplay_struct multiModeParams
 										sizeof(multiModeParams.divideDotsArr));
 }
 
-uint8_t HAQuDA_DisplayManip::get_nightMode_hour(NTPClient *time, nightModeTimeBorder_struct timeBorder) {
-	while (!time->update()) {
-		time->forceUpdate();
+uint8_t HAQuDA_DisplayManip::get_nightMode_hour(nightModeTimeBorder_struct timeBorder) {
+	DateTimeStruct currTime;
+	if (!timeHelper->GetDateTime(&currTime)) {
+		return 0; // TODO: Add Get date and time error handler;
 	}
-	// The formattedDate comes with the following format:
-	// 2018-05-28T16:00:13Z
-	// We need to extract date and time
-	// Variables to save date and time
-	String formattedDate;
-	uint8_t curHour;
-
-	formattedDate = time->getFormattedDate();
-	Serial.println(formattedDate);
-
-	// Extract date
-	int splitT = formattedDate.indexOf("T");
-	int splitColon = formattedDate.indexOf(":");
-	// Extract time
-	curHour = formattedDate.substring(splitT + 1, splitColon).toInt();
 
 	bool isBordersInDifferentDays = (timeBorder.timeSecondBorder < timeBorder.timeFirstBorder);
 
 	if (isBordersInDifferentDays) {
-		if ((curHour >= timeBorder.timeFirstBorder) || (curHour <= timeBorder.timeSecondBorder)) {
-			int8_t hourDiff = curHour - timeBorder.timeFirstBorder;
+		if ((currTime.hour >= timeBorder.timeFirstBorder) || (currTime.hour <= timeBorder.timeSecondBorder)) {
+			int8_t hourDiff = currTime.hour - timeBorder.timeFirstBorder;
 			hourDiff += (hourDiff < 0) ? 24 : 0;
 			return hourDiff;
 		} else {
 			return 12;
 		}
 	} else {
-		if ((curHour >= timeBorder.timeFirstBorder) && (curHour <= timeBorder.timeSecondBorder)) {
-			int8_t hourDiff = curHour - timeBorder.timeFirstBorder;
+		if ((currTime.hour >= timeBorder.timeFirstBorder) && (currTime.hour <= timeBorder.timeSecondBorder)) {
+			int8_t hourDiff = currTime.hour - timeBorder.timeFirstBorder;
 			return hourDiff;
 		} else {
 			return 12;
@@ -479,7 +455,7 @@ uint8_t HAQuDA_DisplayManip::get_nightMode_hour(NTPClient *time, nightModeTimeBo
 }
 
 void HAQuDA_DisplayManip::nightMode() {
-	uint8_t nightMode_hour = get_nightMode_hour(timeClient, DisplayMeasParams.currentTimeBorder);
+	uint8_t nightMode_hour = get_nightMode_hour(DisplayMeasParams.currentTimeBorder);
 
 	switch (DisplayMeasParams.displayParam) {
 		case temp: {
@@ -667,5 +643,5 @@ void HAQuDA_DisplayManip::drawTreeTop(uint8_t middleColumn) {
 */
 
 HAQuDA_DisplayManip::~HAQuDA_DisplayManip() {
-	delete timeClient;
+	delete timeHelper;
 }
