@@ -7,6 +7,7 @@
 #include "HAQuDA_FileStorage.h"
 #include "HAQuDA_ErrorHandler.h"
 #include "HAQuDA_Logger.h"
+#include "HAQuDA_TimeHelper.h"
 
 #include "Sensors.h"
 #include "Tasks.h"
@@ -22,10 +23,12 @@
 char BlynkAuth[] = BLYNK_AUTH;
 
 WidgetTerminal terminal(V0);
-HAQuDA_FileStorage myFS;
+HAQuDA_DisplayManip *myDisplayManip;
 HAQuDA_WiFi_handler *myWiFi_handler;
-HAQuDA_ErrorHandler myErrorHandler;
-HAQuDA_DisplayManip myDisplayManip;
+HAQuDA_FileStorage myFS;
+HAQuDA_TimeHelper myTimeHelper;
+HAQuDA_ErrorHandler myErrorHandler; 
+
 
 void UpdateVirtualPins();
 void blynkPrintLog();
@@ -42,6 +45,7 @@ esp_err_t ans;
 void setup() {
 	Serial.begin(115200);
 	myWiFi_handler = new HAQuDA_WiFi_handler(&myFS);
+	myDisplayManip = new HAQuDA_DisplayManip(&myTimeHelper);
 
 	WS2812_begin();
 	createTasks();
@@ -69,6 +73,7 @@ void setup() {
 		myErrorHandler.ClearCurrentError();
 		HAQuDA_DisplayManip::SetDisplayEffect(fade);
 	} else {
+		myTimeHelper.StartNTP();
 		HAQuDA_Logger::LogInfo("Connected to WiFi");
 	}
 
