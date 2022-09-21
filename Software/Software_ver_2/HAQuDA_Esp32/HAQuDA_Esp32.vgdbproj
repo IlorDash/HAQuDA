@@ -34,6 +34,7 @@
         <string>sketches\HAQuDA_CaptiveRequestHandler.h</string>
         <string>sketches\HAQuDA_Logger.h</string>
         <string>sketches\HAQuDA_MyWebSerial.h</string>
+        <string>sketches\HAQuDA_TimeHelper.h</string>
       </OtherFiles>
     </ProjectModeSettings>
   </Project>
