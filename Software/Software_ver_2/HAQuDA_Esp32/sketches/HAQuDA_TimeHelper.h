@@ -3,13 +3,12 @@
 #include <WiFiUdp.h>
 #include <NTPClient.h>
 
-#define DATE_TIME_FIELDS_NUM 6
-#define DATE_TIME_STR_LEN 20
+#define DATE_TIME_STR_LEN 19 // without null term
 
 typedef struct {
-	uint16_t year;
-	uint8_t month;
 	uint8_t date;
+	uint8_t month;
+	uint16_t year;
 
 	uint8_t hour; // 24-h time format
 	uint8_t min;
@@ -36,6 +35,8 @@ class HAQuDA_TimeHelper_Singleton {
 
 	static HAQuDA_TimeHelper_Singleton *p_instance;
 	static HAQuDA_TimeHelper_SingletonDestroyer destroyer;
+
+	static bool GetFormattedDate(char *_formattedDate);
 
   protected:
 	HAQuDA_TimeHelper_Singleton(){};

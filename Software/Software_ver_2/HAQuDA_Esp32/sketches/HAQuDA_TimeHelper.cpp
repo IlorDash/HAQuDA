@@ -1,5 +1,8 @@
 #include "HAQuDA_TimeHelper.h"
 
+#define DATE_TIME_FIELDS_NUM 6
+#define FORMATTED_DATE_LEN 20
+
 HAQuDA_TimeHelper_Singleton *HAQuDA_TimeHelper_Singleton::p_instance = 0;
 HAQuDA_TimeHelper_SingletonDestroyer HAQuDA_TimeHelper_Singleton::destroyer;
 
@@ -42,9 +45,9 @@ bool HAQuDA_TimeHelper_Singleton::GetTimeClientStarted() {
 	return timeClientStarted;
 }
 
-bool HAQuDA_TimeHelper_Singleton::GetDateTime(DateTimeStruct *_time) {
+bool HAQuDA_TimeHelper_Singleton::GetFormattedDate(char *_formattedDate) {
 	DateTimeStruct currTime;
-	*_time = {0};
+
 	if (!timeClientStarted) {
 		return false;
 	}
@@ -55,47 +58,78 @@ bool HAQuDA_TimeHelper_Singleton::GetDateTime(DateTimeStruct *_time) {
 	// 2018-05-28T16:00:13
 	String formattedDate = timeClient->getFormattedDate();
 
-	uint8_t ret = sscanf(formattedDate.c_str(), "%4d-%2d-%2dT%2d:%2d:%2d", &currTime.year, &currTime.month, &currTime.date, &currTime.hour, &currTime.min,
-						 &currTime.sec);
+	strncpy(_formattedDate, formattedDate.c_str(), formattedDate.length());
+	return true;
+}
+
+bool HAQuDA_TimeHelper_Singleton::GetDateTime(DateTimeStruct *_time) {
+
+	char formattedDate[FORMATTED_DATE_LEN + 1] = {0}; // plus null term
+
+	if (!HAQuDA_TimeHelper_Singleton::GetFormattedDate(formattedDate)) {
+		return false;
+	}
+
+	int date = 0;
+	int month = 0;
+	int year = 0;
+
+	int hour = 0; // 24-h time format
+	int min = 0;
+	int sec = 0;
+
+	uint8_t ret = sscanf(formattedDate, "%4d-%2d-%2dT%2d:%2d:%2d", &year, &month, &date, &hour, &min, &sec);
 
 	if (ret != DATE_TIME_FIELDS_NUM) {
 		return false;
 	}
-	_time = &currTime;
+	_time->date = date;
+	_time->month = month;
+	_time->year = year;
+
+	_time->hour = hour;
+	_time->min = min;
+	_time->sec = sec;
 	return true;
 }
 
 bool HAQuDA_TimeHelper_Singleton::GetDateTime(char *_time) {
 	DateTimeStruct currTime;
-	//*_time = {0};
 
-	if (!timeClientStarted) {
-		return false;
-	}
-	while (!timeClient->update()) {
-		timeClient->forceUpdate();
-	}
-	// The formattedDate comes with the following format:
-	// 2018-05-28T16:00:13
-	String formattedDate = timeClient->getFormattedDate();
-
-	uint8_t ret = sscanf(formattedDate.c_str(), "%4d-%2d-%2dT%2d:%2d:%2d", &currTime.year, &currTime.month, &currTime.date, &currTime.hour, &currTime.min,
-						 &currTime.sec);
-
-	if (ret != DATE_TIME_FIELDS_NUM) {
+	if (!HAQuDA_TimeHelper_Singleton::GetDateTime(&currTime)) {
 		return false;
 	}
 
-	//char buffer[DATE_TIME_STR_LEN];
-	ret = snprintf(_time, DATE_TIME_STR_LEN, "%2d.%2d.%4d %2d:%2d:%2d", currTime.date, currTime.month, currTime.year, currTime.hour, currTime.min,
-				   currTime.sec);
-	if (ret != (DATE_TIME_STR_LEN - 1)) { // exclude null term
+	char buffer[DATE_TIME_STR_LEN + 1] = {0}; // plus null term
+	uint8_t ret = snprintf(buffer, DATE_TIME_STR_LEN, "%2d.%2d.%4d %2d:%2d:%2d", currTime.date, currTime.month, currTime.year, currTime.hour, currTime.min,
+						   currTime.sec);
+	if (ret != DATE_TIME_STR_LEN) {
 		return false;
 	}
-	//size_t foo = sizeof(buffer);
-	//strncpy(_time, buffer, sizeof(buffer));
+	strncpy(_time, buffer, sizeof(buffer));
 	return true;
 }
+
+// bool HAQuDA_TimeHelper_Singleton::GetDateTime(char *_time) {
+//	DateTimeStruct currTime;
+//	*_time = {0};
+//
+//	if (!timeClientStarted) {
+//		return false;
+//	}
+//	while (!timeClient->update()) {
+//		timeClient->forceUpdate();
+//	}
+//	// The formattedDate comes with the following format:
+//	// 2018-05-28T16:00:13
+//	String formattedDate = timeClient->getFormattedDate();
+//
+//	const char *foo = formattedDate.c_str();
+//	size_t bar = formattedDate.length();
+//
+//	strncpy(_time, foo, bar);
+//	return true;
+//}
 
 uint32_t IRAM_ATTR HAQuDA_TimeHelper_Singleton::GetDuration(uint32_t watchedTime) {
 	uint32_t duration;
