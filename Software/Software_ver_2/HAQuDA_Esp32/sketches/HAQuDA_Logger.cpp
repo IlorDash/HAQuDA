@@ -4,7 +4,6 @@
 #include "HAQuDA_FileStorage.h"
 
 #define MSG_MAX_LEN 57
-#define MSG_TIMESTAMP_LEN 20
 #define MSG_PREFIX_LEN 5
 #define MSG_DATA_MAX_LEN 32
 
@@ -14,18 +13,15 @@
 #define CANT_GET_TIME_PREFIX "Can't get time"
 
 typedef struct {
-	char timestamp[MSG_TIMESTAMP_LEN] = {0};
+	char timestamp[DATE_TIME_STR_LEN + 1] = {0};
 	char prefix[MSG_PREFIX_LEN] = {0};
 	char data[MSG_DATA_MAX_LEN] = {0};
 } LogMsgStruct;
 
-//HAQuDA_Logger::HAQuDA_Logger(HAQuDA_TimeHelper *currTimeHelper) {
-//	this->timeHelper = currTimeHelper;
-//}
-
 void HAQuDA_Logger::LogInfo(const char *msg) {
 	LogMsgStruct infoLog;
-	if (!timeHelper->GetDateTime(infoLog.timestamp)) {
+
+	if (!HAQuDA_TimeHelper_Singleton::getInstance()->GetDateTime(infoLog.timestamp)) {
 		strncpy(infoLog.timestamp, CANT_GET_TIME_PREFIX, strlen(CANT_GET_TIME_PREFIX));
 	}
 	strncpy(infoLog.prefix, INFO_MSG_PREFIX, sizeof(INFO_MSG_PREFIX));
@@ -39,7 +35,7 @@ void HAQuDA_Logger::LogInfo(const char *msg) {
 }
 void HAQuDA_Logger::LogError(const char *msg) {
 	LogMsgStruct infoLog;
-	if (!timeHelper->GetDateTime(infoLog.timestamp)) {
+	if (!HAQuDA_TimeHelper_Singleton::getInstance()->GetDateTime(infoLog.timestamp)) {
 		strncpy(infoLog.timestamp, CANT_GET_TIME_PREFIX, strlen(CANT_GET_TIME_PREFIX));
 	}
 	strncpy(infoLog.prefix, ERROR_MSG_PREFIX, sizeof(ERROR_MSG_PREFIX));

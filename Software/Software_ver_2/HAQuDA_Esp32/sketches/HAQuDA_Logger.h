@@ -3,10 +3,8 @@
 #include "HAQuDA_TimeHelper.h"
 
 class HAQuDA_Logger {
-	static HAQuDA_TimeHelper *timeHelper;
-
   public:
-	explicit  HAQuDA_Logger(HAQuDA_TimeHelper *currTimeHelper);
+	explicit  HAQuDA_Logger();
 	static void LogInfo(const char *msg);
 	static void LogError(const char *msg);
 	~HAQuDA_Logger();
