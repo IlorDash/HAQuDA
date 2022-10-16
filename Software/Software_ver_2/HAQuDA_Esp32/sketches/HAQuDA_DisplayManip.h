@@ -10,8 +10,6 @@ class HAQuDA_DisplayManip {
 	static bool forceShowMeas;
 	static uint8_t BrighntessPerCent;
 
-	HAQuDA_TimeHelper *timeHelper;
-
 	displayParams_enum checkBadParam(displayMeasParams_struct currUI_Params);
 	uint8_t get_nightMode_hour(nightModeTimeBorder_struct timeBorder);
 	void standardMode();
@@ -40,7 +38,7 @@ class HAQuDA_DisplayManip {
 	*/
 
   public:
-	HAQuDA_DisplayManip(HAQuDA_TimeHelper *currTimeHelper);
+	HAQuDA_DisplayManip();
 
 	static bool stopEffect;
 

@@ -4,6 +4,7 @@
 #include <NTPClient.h>
 
 #define DATE_TIME_FIELDS_NUM 6
+#define DATE_TIME_STR_LEN 20
 
 typedef struct {
 	uint16_t year;
@@ -15,25 +16,44 @@ typedef struct {
 	uint8_t sec;
 } DateTimeStruct;
 
-class HAQuDA_TimeHelper {
-	// Define NTP Client to get time
-	WiFiUDP ntpUDP;
-	NTPClient *timeClient;
+class HAQuDA_TimeHelper_Singleton; // опережающее объявление
 
-	bool timeClientStarted = false;
+class HAQuDA_TimeHelper_SingletonDestroyer {
+  private:
+	HAQuDA_TimeHelper_Singleton *p_instance;
 
   public:
-	HAQuDA_TimeHelper();
+	~HAQuDA_TimeHelper_SingletonDestroyer();
+	void initialize(HAQuDA_TimeHelper_Singleton *p);
+};
 
-	void StartNTP();
-	bool GetTimeClientStarted();
-	bool GetDateTime(DateTimeStruct *_time);
-	bool GetDateTime(char* _time);
+class HAQuDA_TimeHelper_Singleton {
+	// Define NTP Client to get time
+	static WiFiUDP *ntpUDP;
+	static NTPClient *timeClient;
 
-	uint32_t GetDuration(uint32_t watchedTime);
-	bool PeriodInRange(uint32_t watchedTime, uint32_t minTime, uint32_t maxTime);
-	bool PeriodInRange(uint32_t watchedTime, uint32_t minTime);
-	~HAQuDA_TimeHelper();
+	static bool timeClientStarted;
 
-  private:
+	static HAQuDA_TimeHelper_Singleton *p_instance;
+	static HAQuDA_TimeHelper_SingletonDestroyer destroyer;
+
+  protected:
+	HAQuDA_TimeHelper_Singleton(){};
+	HAQuDA_TimeHelper_Singleton(const HAQuDA_TimeHelper_Singleton *);
+	HAQuDA_TimeHelper_Singleton *operator=(HAQuDA_TimeHelper_Singleton *);
+	~HAQuDA_TimeHelper_Singleton(){};
+	friend class HAQuDA_TimeHelper_SingletonDestroyer;
+
+  public:
+	static HAQuDA_TimeHelper_Singleton *getInstance();
+
+	static void StartNTP();
+
+	static bool GetTimeClientStarted();
+	static bool GetDateTime(DateTimeStruct *_time);
+	static bool GetDateTime(char *_time);
+
+	static uint32_t GetDuration(uint32_t watchedTime);
+	static bool PeriodInRange(uint32_t watchedTime, uint32_t minTime, uint32_t maxTime);
+	static bool PeriodInRange(uint32_t watchedTime, uint32_t minTime);
 };

@@ -14,8 +14,7 @@ uint8_t HAQuDA_DisplayManip::BrighntessPerCent = DEFAULT_BRIGHTNESS;
 displayEffectParams_struct HAQuDA_DisplayManip::DisplayEffectParams;
 displayMeasParams_struct HAQuDA_DisplayManip::DisplayMeasParams;
 
-HAQuDA_DisplayManip::HAQuDA_DisplayManip(HAQuDA_TimeHelper *currTimeHelper) {
-	this->timeHelper = currTimeHelper;
+HAQuDA_DisplayManip::HAQuDA_DisplayManip() {
 
 	DisplayEffectParams.effect = noneEffect;
 	DisplayEffectParams.snakeParams.color = COLOR_LIME;
@@ -429,7 +428,8 @@ void HAQuDA_DisplayManip::multiMode(multiModeParamDisplay_struct multiModeParams
 
 uint8_t HAQuDA_DisplayManip::get_nightMode_hour(nightModeTimeBorder_struct timeBorder) {
 	DateTimeStruct currTime;
-	if (!timeHelper->GetDateTime(&currTime)) {
+	
+	if (!HAQuDA_TimeHelper_Singleton::getInstance()->GetDateTime(&currTime)) {
 		return 0; // TODO: Add Get date and time error handler;
 	}
 
@@ -643,5 +643,4 @@ void HAQuDA_DisplayManip::drawTreeTop(uint8_t middleColumn) {
 */
 
 HAQuDA_DisplayManip::~HAQuDA_DisplayManip() {
-	delete timeHelper;
 }
