@@ -6,12 +6,14 @@
 #include "HAQuDA_MyWebSerial.h"
 #include "HAQuDA_FileStorage.h"
 #include "HAQuDA_CaptiveRequestHandler.h"
+#include "HAQuDA_Logger.h"
 
 #define WIFI_CREDS_PARAMS_NUM 4
 #define SSID_PARAM_NAME "ssid"
 #define PASS_PARAM_NAME "pass"
 #define STATIC_IP_ARG "static_ip"
 #define GATEWAY_ARG "gateway"
+#define WEB_SERIAL_MAX_STR_LEN 64
 
 #define SHOW_REBOOT_MSG_DELAY 3000 // in ms
 

@@ -28,7 +28,13 @@ void HAQuDA_WebServer::WebSerialPrint(const char *str) {
 }
 
 void HAQuDA_WebServer::WebSerialPrintStoredLogs() {
-	MyWebSerial.println("");
+	MyWebSerial.println("foo");
+	int logsNum = HAQuDA_Logger::GetStored_LogsNum();
+	char logText[WEB_SERIAL_MAX_STR_LEN] = {0};
+//	for (int i = 0; i < logsNum; i++) {
+//		HAQuDA_Logger::GetStored_Log(i, logText);
+//		MyWebSerial.println(logText);
+//	}
 }
 
 bool HAQuDA_WebServer::GetWebServerStarted() {
