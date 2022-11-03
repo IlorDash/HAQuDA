@@ -80,7 +80,7 @@ void createTasks() {
 							NULL,					// Parameter to pass
 							1,						// Task priority
 							NULL,					// Task handler
-							1						// Task core
+							0						// Task core
 	);
 
 	xTaskCreatePinnedToCore(BuiltIn_LED_Blink_TaskCode, // Function that should be called
@@ -89,6 +89,6 @@ void createTasks() {
 							NULL,						// Parameter to pass
 							1,							// Task priority
 							NULL,						// Task handler
-							1							// Task core
+							0							// Task core
 	);
 }
