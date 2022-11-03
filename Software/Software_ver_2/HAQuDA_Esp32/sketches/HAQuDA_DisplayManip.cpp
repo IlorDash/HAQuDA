@@ -247,7 +247,7 @@ void HAQuDA_DisplayManip::ShowEffectFade(const fadeEffectsParams_struct params) 
 	WS2812_fillColor(params.color);
 	for (int j = params.startBrightness; j > params.stopBrightness; j = j - params.step) {
 		WS2812_setBrightnessPerCent(j);
-		vTaskDelay(params.speed);
+		vTaskDelay(params.speed / portTICK_PERIOD_MS);
 		if (stopEffect) {
 			WS2812_setBrightnessPerCent(BrighntessPerCent);
 			return;
