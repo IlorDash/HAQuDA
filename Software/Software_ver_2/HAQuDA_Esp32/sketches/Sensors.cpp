@@ -208,7 +208,7 @@ bool TryRepairSensors() {
 
 void sensReboot() {
 	digitalWrite(SENS_POW, LOW);
-	vTaskDelay(SENS_REBOOT_DELAY);
+	vTaskDelay(SENS_REBOOT_DELAY / portTICK_PERIOD_MS);
 	digitalWrite(SENS_POW, LOW);
-	vTaskDelay(SENS_REBOOT_DELAY);
+	vTaskDelay(SENS_REBOOT_DELAY / portTICK_PERIOD_MS);
 }
