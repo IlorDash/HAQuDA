@@ -4,3 +4,6 @@
 [submodule "Software/Software_ver_2/HAQuDA_Esp32/Libs/NTPClient"]
 	path = Software/Software_ver_2/HAQuDA_Esp32/Libs/NTPClient
 	url = https://github.com/IlorDash/NTPClient.git
+[submodule "Software/Software_ver_2/HAQuDA_Esp32/Libs/WebSerial"]
+	path = Software/Software_ver_2/HAQuDA_Esp32/Libs/WebSerial
+	url = https://github.com/IlorDash/WebSerial.git
