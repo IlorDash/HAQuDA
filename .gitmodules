@@ -1,0 +1,3 @@
+[submodule "Software/Software_ver_2/HAQuDA_Esp32/Core/arduino-esp32"]
+	path = Software/Software_ver_2/HAQuDA_Esp32/Core/arduino-esp32
+	url = https://github.com/arduino/arduino-esp32.git
