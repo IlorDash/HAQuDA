@@ -6,7 +6,7 @@
       <Key>
         <Packager>esp32</Packager>
         <Name>esp32</Name>
-        <Version>1.0.6</Version>
+        <Version>2.0.11</Version>
       </Key>
     </Dependency>
     <Dependency>
@@ -14,7 +14,7 @@
       <Key>
         <Packager>Dirk Kaar, Peter Lerup</Packager>
         <Name>EspSoftwareSerial</Name>
-        <Version>6.12.6</Version>
+        <Version>8.1.0</Version>
       </Key>
     </Dependency>
     <Dependency>
@@ -22,7 +22,7 @@
       <Key>
         <Packager>Volodymyr Shymanskyy</Packager>
         <Name>Blynk</Name>
-        <Version>1.0.0-beta.3</Version>
+        <Version>1.0.1</Version>
       </Key>
     </Dependency>
     <Dependency>
@@ -38,7 +38,7 @@
       <Key>
         <Packager>Me-No-Dev</Packager>
         <Name>AsyncTCP</Name>
-        <Version>1.1.1</Version>
+        <Version>1.1.3</Version>
       </Key>
     </Dependency>
     <Dependency>
@@ -46,7 +46,7 @@
       <Key>
         <Packager>Ayush Sharma</Packager>
         <Name>WebSerial</Name>
-        <Version>1.3.0</Version>
+        <Version>1.4.0</Version>
       </Key>
     </Dependency>
   </Dependencies>

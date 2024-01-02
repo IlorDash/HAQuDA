@@ -43,7 +43,7 @@
     <AdditionalLibraryDirectories>
       <string>Libs</string>
     </AdditionalLibraryDirectories>
-    <IgnoreNormalLibraryDirectories>false</IgnoreNormalLibraryDirectories>
+    <IgnoreNormalLibraryDirectories>true</IgnoreNormalLibraryDirectories>
     <OutputSubdirectory>Output\$(PlatformName.defuse)\$(ConfigurationName.defuse)</OutputSubdirectory>
     <EnableVerboseBuild>false</EnableVerboseBuild>
     <PreprocessorMacros>
@@ -298,7 +298,7 @@
           <EnableNonStopMode>false</EnableNonStopMode>
           <MaxBreakpointLimit>0</MaxBreakpointLimit>
           <EnableVerboseMode>true</EnableVerboseMode>
-        </AdditionalGDBSettings>
+                  </AdditionalGDBSettings>
         <DebugMethod>
           <ID>openocd</ID>
           <Configuration xsi:type="com.visualgdb.edp.openocd.settings.esp32">
@@ -322,7 +322,7 @@
             <PreferredTelnetPort>0</PreferredTelnetPort>
             <AlwaysPassSerialNumber>false</AlwaysPassSerialNumber>
             <SelectedCoreIndex xsi:nil="true" />
-            <SuggestionLogicRevision>1</SuggestionLogicRevision>
+                        <SuggestionLogicRevision>1</SuggestionLogicRevision>
             <CheckFLASHSize>true</CheckFLASHSize>
             <FLASHSettings>
               <Size>size4MB</Size>
@@ -350,7 +350,7 @@
       <BuildSettingsExtension xsi:type="com.visualgdb.build.external.arduino.extension">
         <BoardID>esp32:esp32:esp32</BoardID>
         <COMPort>COM8</COMPort>
-        <Properties>
+                <Properties>
           <Entries>
             <KeyValue>
               <Key>PSRAM</Key>
