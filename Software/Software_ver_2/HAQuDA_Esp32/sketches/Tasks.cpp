@@ -28,11 +28,11 @@ void WS2812_EffectsTaskCode(void *parameter) {
 				break;
 			}
 			case randomPixel: {
-				//				if (isError) {
-				//					HAQuDA_DisplayManip::ShowEffectRandom(HAQuDA_ErrorHandler::failedTo....);
-				//				} else {
-				//					HAQuDA_DisplayManip::ShowEffectRandom();
-				//				}
+//				if (iserror) {
+//					haquda_displaymanip::showeffectrandom(haquda_errorhandler::failedto....);
+//				} else {
+//					haquda_displaymanip::showeffectrandom();
+//				}
 				HAQuDA_DisplayManip::ShowEffectRandom();
 				break;
 			}
@@ -83,12 +83,12 @@ void createTasks() {
 							0						// Task core
 	);
 
-	xTaskCreatePinnedToCore(BuiltIn_LED_Blink_TaskCode, // Function that should be called
-							"BuiltIn LED Blink task",   // Name of the task (for debugging)
-							1024,						// Stack size (bytes)
-							NULL,						// Parameter to pass
-							1,							// Task priority
-							NULL,						// Task handler
-							0							// Task core
+	xTaskCreatePinnedToCore(BuiltIn_LED_Blink_TaskCode,
+							"BuiltIn LED Blink task",  
+							1024,					
+							NULL,					
+							1,						
+							NULL,					
+							0						
 	);
 }
