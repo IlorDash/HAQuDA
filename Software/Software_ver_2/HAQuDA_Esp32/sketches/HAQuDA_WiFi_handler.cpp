@@ -9,13 +9,13 @@ const char *DDNS_domain = DDNS_DOMAIN;
 
 bool HAQuDA_WiFi_handler::Connect() {
 
-	WiFi.onEvent(WiFiStationConnected, SYSTEM_EVENT_STA_CONNECTED);
+	WiFi.onEvent(WiFiStationConnected, ARDUINO_EVENT_WIFI_STA_CONNECTED);
 	// Blynk.config(BlynkAuth, BLYNK_DEFAULT_DOMAIN, BLYNK_DEFAULT_PORT);
 	vTaskDelay(200 / portTICK_PERIOD_MS);
 
 	if (GetStored_WiFiCredsNum()) {
 		if (connectToStoredWiFi()) {
-			WiFi.onEvent(WiFiStationDisconnected, SYSTEM_EVENT_STA_DISCONNECTED);
+			WiFi.onEvent(WiFiStationDisconnected, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 			// Blynk.config(BlynkAuth, BLYNK_DEFAULT_DOMAIN, BLYNK_DEFAULT_PORT);
 			vTaskDelay(200 / portTICK_PERIOD_MS);
 			HAQuDA_WebServer::beginWebServer();
@@ -65,7 +65,7 @@ void HAQuDA_WiFi_handler::HandleConnection() {
 	while (!WiFiConnected) {
 		connectToStoredWiFi();
 	}
-	WiFi.onEvent(WiFiStationDisconnected, SYSTEM_EVENT_STA_DISCONNECTED);
+	WiFi.onEvent(WiFiStationDisconnected, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 }
 
 bool HAQuDA_WiFi_handler::checkStoredWiFiCreds() {
