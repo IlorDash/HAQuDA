@@ -1,14 +1,15 @@
 #include "Tasks.h"
 #include "HAQuDA_ErrorHandler.h"
 
+#define BUILTIN_LED 2
+
 HAQuDA_DisplayManip *myDisplayManip_tasks;
-uint8_t builtIn_LED;
 
 void BuiltIn_LED_Blink_TaskCode(void *parameter) {
 	while (true) {
-		digitalWrite(builtIn_LED, HIGH);
+		digitalWrite(BUILTIN_LED, HIGH);
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
-		digitalWrite(builtIn_LED, LOW);
+		digitalWrite(BUILTIN_LED, LOW);
 		vTaskDelay(500 / portTICK_PERIOD_MS);
 	}
 }
@@ -71,8 +72,7 @@ void WS2812_EffectsTaskCode(void *parameter) {
 }
 
 void createTasks() {
-	builtIn_LED = atoi(BUILTIN_LED);
-	pinMode(builtIn_LED, OUTPUT);
+	pinMode(BUILTIN_LED, OUTPUT);
 
 	xTaskCreatePinnedToCore(WS2812_EffectsTaskCode, // Function that should be called
 							"WS2812 Effects task",  // Name of the task (for debugging)
