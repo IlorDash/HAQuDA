@@ -20,14 +20,6 @@
     <Dependency>
       <Type>Library</Type>
       <Key>
-        <Packager>Volodymyr Shymanskyy</Packager>
-        <Name>Blynk</Name>
-        <Version>1.0.1</Version>
-      </Key>
-    </Dependency>
-    <Dependency>
-      <Type>Library</Type>
-      <Key>
         <Packager>Me-No-Dev</Packager>
         <Name>ESP Async WebServer</Name>
         <Version>1.2.3</Version>

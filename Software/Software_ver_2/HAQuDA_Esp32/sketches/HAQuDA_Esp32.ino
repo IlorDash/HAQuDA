@@ -1,6 +1,5 @@
 #include "Arduino.h"
 #include <SoftwareSerial.h>
-#include <BlynkSimpleEsp32.h>
 
 #include "HAQuDA_WiFi_handler.h"
 #include "HAQuDA_DisplayManip.h"
@@ -20,16 +19,10 @@
 #define TOUCH_8 33
 #define TOUCH_0 4
 
-char BlynkAuth[] = BLYNK_AUTH;
-
-WidgetTerminal terminal(V0);
 HAQuDA_DisplayManip *myDisplayManip;
 HAQuDA_WiFi_handler *myWiFi_handler;
 HAQuDA_FileStorage myFS;
 HAQuDA_ErrorHandler myErrorHandler;
-
-void UpdateVirtualPins();
-void blynkPrintLog();
 
 int firstDot;
 int secondDot; // parametrs of dispParams
@@ -41,6 +34,7 @@ bool dispFirstParam = false;
 esp_err_t ans;
 
 void setup() {
+
 	Serial.begin(115200);
 	HAQuDA_TimeHelper_Singleton::getInstance();
 	myWiFi_handler = new HAQuDA_WiFi_handler(&myFS);
@@ -84,9 +78,6 @@ void setup() {
 	}
 	HAQuDA_Logger::LogInfo("Started sensors");
 	HAQuDA_DisplayManip::SetDisplayMeasMode(multi);
-	//
-	//	terminal.println("*************************");
-	//	terminal.print("START LOGGING");
 }
 
 uint16_t measNum = 0;
@@ -117,43 +108,36 @@ void loop() {
 	// touch_val_0); 	vTaskDelay(1000); 	myWiFi_handler->WebSerialPrint(strToSerial);
 
 	myWiFi_handler->HandleConnection();
-	/*if (!Blynk.connected()) {
-		Blynk.connect();
-	} else {
-		Blynk.run();
-	}
-	vTaskDelay(100);
 
-	if ((millis() - sensors_meas_time) > SENSORS_MEAS_PERIOD) {
-		getDHT11_meas();
-		getCCS811_meas();
-		getPM_meas();
-
-		measNum++;
-		blynkPrintLog();
-
-		sensors_meas_time = millis();
-	}
-
-	if (millis() - dispMeasTimer > DISP_MEAS_PERIOD) {
-		myDispManip->displayData(myDisplayInterface->currUI_Params);
-		dispMeasTimer = millis();
-
-		temp_meas.value = 0;
-		temp_meas.measNum = 0;
-
-		humid_meas.value = 0;
-		humid_meas.measNum = 0;
-
-		eCO2_meas.value = 0;
-		eCO2_meas.measNum = 0;
-
-		TVOC_meas.value = 0;
-		TVOC_meas.measNum = 0;
-
-		PM_2_5_meas.value = 0;
-		PM_2_5_meas.measNum = 0;
-	}*/
+//	if ((millis() - sensors_meas_time) > SENSORS_MEAS_PERIOD) {
+//		getDHT11_meas();
+//		getCCS811_meas();
+//		getPM_meas();
+//
+//		measNum++;
+//
+//		sensors_meas_time = millis();
+//	}
+//
+//	if (millis() - dispMeasTimer > DISP_MEAS_PERIOD) {
+//		myDispManip->displayData(myDisplayInterface->currUI_Params);
+//		dispMeasTimer = millis();
+//
+//		temp_meas.value = 0;
+//		temp_meas.measNum = 0;
+//
+//		humid_meas.value = 0;
+//		humid_meas.measNum = 0;
+//
+//		eCO2_meas.value = 0;
+//		eCO2_meas.measNum = 0;
+//
+//		TVOC_meas.value = 0;
+//		TVOC_meas.measNum = 0;
+//
+//		PM_2_5_meas.value = 0;
+//		PM_2_5_meas.measNum = 0;
+//	}
 }
 //
 // void checkIfMeasCorrect() {
@@ -181,164 +165,3 @@ void loop() {
 //	humid_meas.newMeasDone = false;
 //}
 //
-// void blynkPrintLog() {
-//	terminal.println();
-//	terminal.println("----------------------------");
-//	terminal.print(measNum);
-//	terminal.println(" - measurment");
-//
-//	checkIfMeasCorrect();
-//
-//	terminal.print("Temp: ");
-//	terminal.print(temp_meas.value / temp_meas.measNum);
-//	terminal.println("  C");
-//	terminal.print("Humid: ");
-//	terminal.print(humid_meas.value / humid_meas.measNum);
-//	terminal.println("  %");
-//	terminal.println();
-//
-//	terminal.flush();
-//
-//	terminal.print("PM1.0: ");
-//	terminal.print(PM_1_0_meas.value / PM_1_0_meas.measNum);
-//	terminal.println("  ug/m3");
-//	terminal.print("PM2.5: ");
-//	terminal.print(PM_2_5_meas.value / PM_2_5_meas.measNum);
-//	terminal.println("  ug/m3");
-//	terminal.print("PM1 0: ");
-//	terminal.print(PM_10_meas.value / PM_10_meas.measNum);
-//	terminal.println("  ug/m3");
-//	terminal.println();
-//
-//	terminal.flush();
-//
-//	terminal.print("eCO2: ");
-//	terminal.print(eCO2_meas.value / eCO2_meas.measNum);
-//	terminal.println("  ppm");
-//	terminal.println();
-//
-//	terminal.print("TVOC: ");
-//	terminal.print(TVOC_meas.value / TVOC_meas.measNum);
-//	terminal.println("  ppb");
-//	terminal.println();
-//
-//	terminal.flush();
-//
-//	/*if (myDisplayInterface.currUI_Params.dispMode == standard) {
-//		terminal.println("Display standard");
-//		switch (myDisplayInterface.currUI_Params.dispParam) {
-//			case total:
-//				terminal.println("Display total quality");
-//				break;
-//			case temp:
-//				terminal.println("Display temperature");
-//				break;
-//			case humid:
-//				terminal.println("Display humidity");
-//				break;
-//			case eCO2:
-//				terminal.println("Display eCO2");
-//				break;
-//			case TVOC:
-//				terminal.println("Display TVOC");
-//				break;
-//			case PM2_5:
-//				terminal.println("Display PM2_5");
-//				break;
-//			default:
-//				terminal.println("Display none parametr");
-//		}
-//	} else if (myDisplayInterface.currUI_Params.dispMode == multi) {
-//		terminal.println("Display multi");
-//		for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
-//			switch (myDisplayInterface.currUI_Params.multiModeStruct.paramsArr[i]) {
-//				case total:
-//					terminal.println("Display total quality");
-//					break;
-//				case temp:
-//					terminal.println("Display temperature");
-//					break;
-//				case humid:
-//					terminal.println("Display humidity");
-//					break;
-//				case eCO2:
-//					terminal.println("Display eCO2");
-//					break;
-//				case TVOC:
-//					terminal.println("Display TVOC");
-//					break;
-//				case PM2_5:
-//					terminal.println("Display PM2_5");
-//					break;
-//				default:
-//					terminal.println("Display none parametr");
-//			}
-//		}
-//	} else if (myDisplayInterface.currUI_Params.dispMode == night) {
-//		switch (myDisplayInterface.currUI_Params.dispParam) {
-//			case total:
-//				terminal.println("Display total quality");
-//				break;
-//			case temp:
-//				terminal.println("Display temperature");
-//				break;
-//			case humid:
-//				terminal.println("Display humidity");
-//				break;
-//			case eCO2:
-//				terminal.println("Display eCO2");
-//				break;
-//			case TVOC:
-//				terminal.println("Display TVOC");
-//				break;
-//			case PM2_5:
-//				terminal.println("Display PM2_5");
-//				break;
-//			default:
-//				terminal.println("Display none parametr");
-//		}
-//	} else {
-//		switch (myDisplayInterface.currUI_Params.dispEffect) {
-//			case snake:
-//				terminal.println("Display snake effect");
-//				break;
-//			case randomPixel:
-//				terminal.println("Display random pixel effect");
-//				break;
-//			case fade:
-//				terminal.println("Display fade effect");
-//				break;
-//			case christmasTree:
-//				terminal.println("Display Christmas Tree effect");
-//				break;
-//			default:
-//				break;
-//		}
-//	}*/
-//
-//	terminal.flush();
-//}
-//
-// BLYNK_WRITE(V1) {
-//	int red = param[0].asInt();
-//	int green = param[1].asInt();
-//	int blue = param[2].asInt();
-//
-//	//myDisplayInterface.ext_setStaticColor(red, green, blue);
-//}
-//
-// BLYNK_WRITE(V2) {
-//	//myDisplayInterface.ext_setBrightness(param.asInt());
-//}
-//
-// BLYNK_WRITE(V3) {
-//	//myDisplayInterface.ext_changeDispMode(param.asInt());
-//}
-//
-// BLYNK_WRITE(V4) {
-//	//myDisplayInterface.ext_changeDispParam(param.asInt());
-//}
-//
-// BLYNK_WRITE(V5) {
-//	//myDisplayInterface.ext_changeDispEffect(param.asInt());
-//}

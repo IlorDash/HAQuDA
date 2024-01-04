@@ -48,8 +48,7 @@
     <EnableVerboseBuild>false</EnableVerboseBuild>
     <PreprocessorMacros>
       <Common>
-        <string>BLYNK_AUTH="$(BlynkAuth_uv)"</string>
-        <string> AP_SSID="$(AP_ssid_uv)"</string>
+        <string>AP_SSID="$(AP_ssid_uv)"</string>
         <string> AP_PASS="$(AP_pass_uv)"</string>
         <string>DDNS_DOMAIN="$(DDNS_Domain_uv)"</string>
         <string>DDNS_TOKEN="$(DDNS_Token_uv)"</string>
@@ -149,13 +148,6 @@
     <ShowMessageAfterExecuting>true</ShowMessageAfterExecuting>
   </CustomShortcuts>
   <UserDefinedVariables>
-    <BuildVariable>
-      <Label />
-      <Description />
-      <Value>xxxxx</Value>
-      <Name>BlynkAuth_uv</Name>
-      <PromoteToEnvironment>false</PromoteToEnvironment>
-    </BuildVariable>
     <BuildVariable>
       <Label />
       <Description />
