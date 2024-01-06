@@ -16,7 +16,7 @@ class HAQuDA_ErrorHandler {
 
 	static fade_effect_params failedToStartFS_displayParams;
 
-	static upDown_effects_params failedToStartSensors_displayParams;
+	static random_effect_params failedToStartSensors_displayParams;
 
 	HAQuDA_ErrorHandler();
 

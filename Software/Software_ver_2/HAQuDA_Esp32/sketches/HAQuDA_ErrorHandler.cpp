@@ -9,7 +9,7 @@ snake_effect_params HAQuDA_ErrorHandler::failedToCreateAP_displayParams;
 
 fade_effect_params HAQuDA_ErrorHandler::failedToStartFS_displayParams;
 
-upDown_effects_params HAQuDA_ErrorHandler::failedToStartSensors_displayParams;
+random_effect_params HAQuDA_ErrorHandler::failedToStartSensors_displayParams;
 
 errorTypes_enum HAQuDA_ErrorHandler::CurrentError = noneError;
 
@@ -27,9 +27,8 @@ HAQuDA_ErrorHandler::HAQuDA_ErrorHandler() {
 	failedToStartFS_displayParams.stopBrightness = 0;
 	failedToStartFS_displayParams.step = 5;
 
-	failedToStartSensors_displayParams.color = COLOR_RED;	//upDown
-	failedToStartSensors_displayParams.speed = 200;
-	failedToStartSensors_displayParams.length = 3;
+    failedToStartSensors_displayParams.speed = 50;      //random
+	failedToStartSensors_displayParams.pauseTime = 500;
 }
 
 errorTypes_enum HAQuDA_ErrorHandler::GetCurrentError() {
@@ -60,7 +59,7 @@ void HAQuDA_ErrorHandler::FailedToCreateAP() {
 void HAQuDA_ErrorHandler::FailedToStartSensors() {
 	CurrentError = failedToStartSensors;
 	HAQuDA_Logger::LogError("Failed to start sensors");
-	HAQuDA_DisplayManip::SetError(upDown);
+	HAQuDA_DisplayManip::SetError(randomPixel);
 	vTaskDelay(DEFAULT_ERROR_DISPLAY_TIME / portTICK_PERIOD_MS);
 }
 

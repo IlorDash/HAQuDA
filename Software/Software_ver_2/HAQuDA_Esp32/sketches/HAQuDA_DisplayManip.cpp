@@ -245,33 +245,7 @@ void HAQuDA_DisplayManip::ShowEffectFade(const fade_effect_params params) {
 		}
 	}
 }
-void HAQuDA_DisplayManip::ShowEffectUpDown(const upDown_effects_params params) {
 
-	/*****************************************************/
-	ShowStaticColor(COLOR_YELLOW);
-	/*****************************************************/
-
-	int foo = 1;
-	if (params.speed) {
-		foo++;
-	}
-	foo--;
-}
-
-/*
-void HAQuDA_DisplayManip::ShowEffectChristmasTree(uint8_t speed, uint8_t treeMiddleColumn) {
-	uint8_t redBackground = redBackgroundIntensity * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
-	uint8_t greenBackground = greenBackgroundIntensity * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
-	uint8_t blueBackground = blueBackgroundIntensity * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
-	uint32_t backgroundColor = WS2812_getColor(redBackground, greenBackground, blueBackground);
-	WS2812_fillColor(backgroundColor); // drawing christmas tree with white-blue background
-
-	HAQuDA_DisplayManip::drawTreeTrunk(treeMiddleColumn);
-	HAQuDA_DisplayManip::drawTreeTop(treeMiddleColumn);
-	HAQuDA_DisplayManip::drawStarOnTree(treeMiddleColumn);
-	// uint8_t lightsEffect = rand() % 3;
-}
-*/
 void HAQuDA_DisplayManip::ShowMeas() {
 	switch (Display.measParams.mode) {
 		case standard: {
@@ -596,40 +570,6 @@ uint8_t HAQuDA_DisplayManip::getLedNum(uint8_t x, uint8_t y) {
 
 	return y + LED_ROW_NUM * x;
 }
-/*
-void HAQuDA_DisplayManip::christmasLightsSnake() {
-	uint8_t startColumn = LED_COLUMN_NUM - 1;
-
-	//	for (int i = 0; i < length; i++) {
-	//	}
-}
-
-void HAQuDA_DisplayManip::drawStarOnTree(int middleColumn) {
-	WS2812_setPixelColor(GetLedNum(middleColumn, LED_ROW_NUM - 1), CHRISTMAS_TREE_STAR_COLOR);
-	WS2812_setPixelColor(GetLedNum(middleColumn, LED_ROW_NUM - 2), CHRISTMAS_TREE_STAR_COLOR);
-	WS2812_setPixelColor(GetLedNum(middleColumn, LED_ROW_NUM - 3), CHRISTMAS_TREE_STAR_COLOR);
-	WS2812_setPixelColor(GetLedNum(middleColumn - 1, LED_ROW_NUM - 2), CHRISTMAS_TREE_STAR_COLOR);
-	WS2812_setPixelColor(GetLedNum(middleColumn + 1, LED_ROW_NUM - 2), CHRISTMAS_TREE_STAR_COLOR);
-}
-
-void HAQuDA_DisplayManip::drawTreeTrunk(uint8_t middleColumn) {
-	WS2812_fillColor(trunkColor, 0, GetLedNum(middleColumn, 0));
-}
-
-void HAQuDA_DisplayManip::drawTreeTop(uint8_t middleColumn) {
-
-	bool isLedStripFromUp = (middleColumn % 2 == 0);
-
-	int globalMiddleColumn = LED_COLUMN_NUM / 2;
-	int middleColumnOffset = globalMiddleColumn - middleColumn;
-	for (int i = 0; i < (CHRISTMAS_TREE_HEIGHT / 2); i++) {
-		for (int j = (globalMiddleColumn - CHRISTMAS_TREE_HALF_WIDTH + i); j <= (globalMiddleColumn + CHRISTMAS_TREE_HALF_WIDTH - i); j++) {
-			WS2812_setPixelColor(GetLedNum(j + middleColumnOffset, i), CHRISTMAS_TREE_COLOR);
-			WS2812_setPixelColor(GetLedNum(j + middleColumnOffset, i + 1), CHRISTMAS_TREE_COLOR);
-		}
-	}
-}
-*/
 
 HAQuDA_DisplayManip::~HAQuDA_DisplayManip() {
 }

@@ -29,12 +29,11 @@ void WS2812_EffectsTaskCode(void *parameter) {
 				break;
 			}
 			case randomPixel: {
-//				if (iserror) {
-//					haquda_displaymanip::showeffectrandom(haquda_errorhandler::failedto....);
-//				} else {
-//					haquda_displaymanip::showeffectrandom();
-//				}
-				HAQuDA_DisplayManip::ShowEffectRandom();
+				if (isError) {
+					HAQuDA_DisplayManip::ShowEffectRandom(HAQuDA_ErrorHandler::failedToStartSensors_displayParams);
+				} else {
+					HAQuDA_DisplayManip::ShowEffectRandom();
+				}
 				break;
 			}
 			case fade: {
@@ -51,18 +50,6 @@ void WS2812_EffectsTaskCode(void *parameter) {
 				} else {
 					HAQuDA_DisplayManip::ShowEffectGrow();
 				}
-				break;
-			}
-			case upDown: {
-				if (isError) {
-					HAQuDA_DisplayManip::ShowEffectUpDown(HAQuDA_ErrorHandler::failedToStartSensors_displayParams);
-				} else {
-					HAQuDA_DisplayManip::ShowEffectUpDown();
-				}
-				break;
-			}
-			case christmasTree: {
-				// WS2812_ChristmasTree(400);
 				break;
 			}
 			default:

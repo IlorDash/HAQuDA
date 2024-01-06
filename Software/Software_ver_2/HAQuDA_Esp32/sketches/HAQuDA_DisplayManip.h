@@ -17,21 +17,7 @@ class HAQuDA_DisplayManip {
 	void showMeas_standard(float data, div_dots divideDots);
 	void showMeas_night(float data, div_dots divideDots, uint8_t time);
 
-	//	static const uint32_t trunkColor = 0xBE551E;
-	//	static const uint8_t christmasTreeMaxWidth = 7;
-	//	static const uint8_t redBackgroundIntensity = 190;
-	//	static const uint8_t greenBackgroundIntensity = 190;
-	//	static const uint8_t blueBackgroundIntensity = 230;
-
 	static uint8_t getLedNum(uint8_t x, uint8_t y);
-
-	/*
-	static void christmasLightsSnake();
-	static void drawStarOnTree(int middleColumn);
-	static void drawTreeTrunk(uint8_t middleColumn);
-	static void drawTreeTop(uint8_t middleColumn);
-	static void displayChristmasTree(uint8_t speed, uint8_t treeMiddleColumn);
-	*/
 
   public:
 	HAQuDA_DisplayManip();
@@ -63,9 +49,6 @@ class HAQuDA_DisplayManip {
 	static void ShowEffectSnake(const snake_effect_params params = Display.effectParams.snakeParams);
 	static void ShowEffectRandom(const random_effect_params params = Display.effectParams.randomParams);
 	static void ShowEffectFade(const fade_effect_params params = Display.effectParams.fadeParams);
-	static void ShowEffectUpDown(const upDown_effects_params params = Display.effectParams.upDownParams);
-
-	// static void ShowEffectChristmasTree(uint8_t speed, uint8_t treeMiddleColumn);
 
 	~HAQuDA_DisplayManip();
 };
