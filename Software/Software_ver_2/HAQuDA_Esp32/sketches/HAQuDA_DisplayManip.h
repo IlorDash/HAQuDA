@@ -63,7 +63,6 @@ class HAQuDA_DisplayManip {
 	static void ShowEffectSnake(const snake_effect_params params = Display.effectParams.snakeParams);
 	static void ShowEffectRandom(const random_effect_params params = Display.effectParams.randomParams);
 	static void ShowEffectFade(const fade_effect_params params = Display.effectParams.fadeParams);
-	static void ShowEffectUpDown(const upDown_effects_params params = Display.effectParams.upDownParams);
 
 	// static void ShowEffectChristmasTree(uint8_t speed, uint8_t treeMiddleColumn);
 

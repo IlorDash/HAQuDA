@@ -245,18 +245,6 @@ void HAQuDA_DisplayManip::ShowEffectFade(const fade_effect_params params) {
 		}
 	}
 }
-void HAQuDA_DisplayManip::ShowEffectUpDown(const upDown_effects_params params) {
-
-	/*****************************************************/
-	ShowStaticColor(COLOR_YELLOW);
-	/*****************************************************/
-
-	int foo = 1;
-	if (params.speed) {
-		foo++;
-	}
-	foo--;
-}
 
 /*
 void HAQuDA_DisplayManip::ShowEffectChristmasTree(uint8_t speed, uint8_t treeMiddleColumn) {
