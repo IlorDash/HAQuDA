@@ -61,10 +61,6 @@ void WS2812_EffectsTaskCode(void *parameter) {
 				}
 				break;
 			}
-			case christmasTree: {
-				// WS2812_ChristmasTree(400);
-				break;
-			}
 			default:
 				break;
 		}

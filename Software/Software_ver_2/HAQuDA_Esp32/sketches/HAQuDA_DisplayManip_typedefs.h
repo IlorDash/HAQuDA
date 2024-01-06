@@ -13,7 +13,7 @@ typedef enum { effect, meas, error, noneMode } display_mode;
 
 /***************TYPEDEFS FOR EFFECTS********************/
 
-typedef enum { snake, grow, randomPixel, fade, upDown, christmasTree, staticColor, noneEffect } effect_mode;
+typedef enum { snake, grow, randomPixel, fade, upDown, staticColor, noneEffect } effect_mode;
 
 typedef struct {
 	uint16_t speed = 0; // in ms - delay between movements
