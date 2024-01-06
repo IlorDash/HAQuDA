@@ -3,205 +3,196 @@
 #include "Sensors.h"
 #include <vector>
 
-displayMode_enum HAQuDA_DisplayManip::DisplayMode = none;
-
-bool HAQuDA_DisplayManip::stopEffect = false;
-
-bool HAQuDA_DisplayManip::forceShowMeas = false;
-
-uint8_t HAQuDA_DisplayManip::BrighntessPerCent = DEFAULT_BRIGHTNESS;
-
-displayEffectParams_struct HAQuDA_DisplayManip::DisplayEffectParams;
-displayMeasParams_struct HAQuDA_DisplayManip::DisplayMeasParams;
+curr_display HAQuDA_DisplayManip::Display;
 
 HAQuDA_DisplayManip::HAQuDA_DisplayManip() {
 
-	DisplayEffectParams.effect = noneEffect;
-	DisplayEffectParams.snakeParams.color = COLOR_LIME;
-	DisplayEffectParams.snakeParams.speed = 200;
-	DisplayEffectParams.snakeParams.tailLength = 5;
+	Display.brighntessPerCent = DEFAULT_BRIGHTNESS;
+	Display.stopEffect = false;
+	Display.forceShowMeas = false;
 
-	DisplayEffectParams.growParams.color = COLOR_AQUA;
-	DisplayEffectParams.growParams.speed = 200;
+	Display.effectParams.mode = noneEffect;
+	Display.effectParams.snakeParams.color = COLOR_LIME;
+	Display.effectParams.snakeParams.speed = 200;
+	Display.effectParams.snakeParams.tailLength = 5;
 
-	DisplayEffectParams.fadeParams.color = COLOR_AQUA;
-	DisplayEffectParams.fadeParams.speed = 10;
-	DisplayEffectParams.fadeParams.startBrightness = 100;
-	DisplayEffectParams.fadeParams.stopBrightness = 0;
-	DisplayEffectParams.fadeParams.step = 5;
+	Display.effectParams.growParams.color = COLOR_AQUA;
+	Display.effectParams.growParams.speed = 200;
 
-	DisplayEffectParams.randomParams.speed = 200;
-	DisplayEffectParams.randomParams.pauseTime = 1000;
+	Display.effectParams.fadeParams.color = COLOR_AQUA;
+	Display.effectParams.fadeParams.speed = 10;
+	Display.effectParams.fadeParams.startBrightness = 100;
+	Display.effectParams.fadeParams.stopBrightness = 0;
+	Display.effectParams.fadeParams.step = 5;
 
-	DisplayMeasParams.mode = noneMode;
-	DisplayMeasParams.displayParam = noneParam;
+	Display.effectParams.randomParams.speed = 200;
+	Display.effectParams.randomParams.pauseTime = 1000;
 
-	DisplayMeasParams.multiModeStruct.paramsArr[0] = temp;
-	DisplayMeasParams.multiModeStruct.paramsArr[1] = eCO2;
-	DisplayMeasParams.multiModeStruct.paramsArr[2] = PM2_5;
+	Display.measParams.mode = noneMeas;
+	Display.measParams.type = noneType;
 
-	DisplayMeasParams.multiModeStruct.dataArr[0] = 0;
-	DisplayMeasParams.multiModeStruct.dataArr[1] = 0;
-	DisplayMeasParams.multiModeStruct.dataArr[2] = 0;
+	Display.measParams.multiModeParams.paramsArr[0] = temp;
+	Display.measParams.multiModeParams.paramsArr[1] = eCO2;
+	Display.measParams.multiModeParams.paramsArr[2] = PM2_5;
+	Display.measParams.multiModeParams.dataArr[0] = 0;
+	Display.measParams.multiModeParams.dataArr[1] = 0;
+	Display.measParams.multiModeParams.dataArr[2] = 0;
+	Display.measParams.multiModeParams.divideDotsArr[0] = Display.measParams.divDots.temp;
+	Display.measParams.multiModeParams.divideDotsArr[1] = Display.measParams.divDots.eCO2;
+	Display.measParams.multiModeParams.divideDotsArr[2] = Display.measParams.divDots.PM2_5;
 
-	DisplayMeasParams.temp_divideDots.firstDot = 20;
-	DisplayMeasParams.temp_divideDots.middleDot = 26;
-	DisplayMeasParams.temp_divideDots.thirdDot = 30;
+	Display.measParams.nightModeTimeBorder.timeFirstBorder = 21;
+	Display.measParams.nightModeTimeBorder.timeFirstBorder = 9;
 
-	DisplayMeasParams.humid_divideDots.firstDot = 40;
-	DisplayMeasParams.humid_divideDots.middleDot = 60;
-	DisplayMeasParams.humid_divideDots.thirdDot = 80;
+	Display.measParams.divDots.temp.firstDot = 20;
+	Display.measParams.divDots.temp.middleDot = 26;
+	Display.measParams.divDots.temp.thirdDot = 30;
 
-	DisplayMeasParams.eCO2_divideDots.firstDot = 400;
-	DisplayMeasParams.eCO2_divideDots.middleDot = 1000;
-	DisplayMeasParams.eCO2_divideDots.thirdDot = 5000;
+	Display.measParams.divDots.humid.firstDot = 40;
+	Display.measParams.divDots.humid.middleDot = 60;
+	Display.measParams.divDots.humid.thirdDot = 80;
 
-	DisplayMeasParams.TVOC_divideDots.firstDot = 220;
-	DisplayMeasParams.TVOC_divideDots.middleDot = 660;
-	DisplayMeasParams.TVOC_divideDots.thirdDot = 1000;
+	Display.measParams.divDots.eCO2.firstDot = 400;
+	Display.measParams.divDots.eCO2.middleDot = 1000;
+	Display.measParams.divDots.eCO2.thirdDot = 5000;
 
-	DisplayMeasParams.PM2_5_divideDots.firstDot = 15;
-	DisplayMeasParams.PM2_5_divideDots.middleDot = 20;
-	DisplayMeasParams.PM2_5_divideDots.thirdDot = 45;
+	Display.measParams.divDots.TVOC.firstDot = 220;
+	Display.measParams.divDots.TVOC.middleDot = 660;
+	Display.measParams.divDots.TVOC.thirdDot = 1000;
 
-	DisplayMeasParams.multiModeStruct.divideDotsArr[0] = DisplayMeasParams.temp_divideDots;
-
-	DisplayMeasParams.multiModeStruct.divideDotsArr[1] = DisplayMeasParams.eCO2_divideDots;
-
-	DisplayMeasParams.multiModeStruct.divideDotsArr[2] = DisplayMeasParams.PM2_5_divideDots;
-
-	DisplayMeasParams.currentTimeBorder.timeFirstBorder = 21;
-	DisplayMeasParams.currentTimeBorder.timeFirstBorder = 9;
+	Display.measParams.divDots.PM2_5.firstDot = 15;
+	Display.measParams.divDots.PM2_5.middleDot = 20;
+	Display.measParams.divDots.PM2_5.thirdDot = 45;
 }
 
-void HAQuDA_DisplayManip::SetBrightness(const uint8_t newBrightnessPerCent) {
-	BrighntessPerCent = newBrightnessPerCent;
-	WS2812_setBrightnessPerCent(newBrightnessPerCent);
+void HAQuDA_DisplayManip::SetBrightness(const uint8_t new_brightness) {
+	Display.brighntessPerCent = new_brightness;
+	WS2812_setBrightnessPerCent(Display.brighntessPerCent);
 }
 
-void HAQuDA_DisplayManip::ClearErrorDisplayMode() {
-	stopEffect = true;
-	DisplayMode = none;
-}
+bool HAQuDA_DisplayManip::SetMode(const display_mode new_mode) {
 
-bool HAQuDA_DisplayManip::SetDisplayMode(const displayMode_enum newDisplayMode) {
-	stopEffect = true;
-	if (DisplayMode == error) {
+	if (Display.mode == error) {
 		return false;
 	}
-	DisplayMode = newDisplayMode;
-	switch (DisplayMode) {
-		case none: {
-			DisplayEffectParams.effect = noneEffect;
-			DisplayMeasParams.mode = noneMode;
+
+	Display.stopEffect = true;
+	Display.mode = new_mode;
+
+	switch (Display.mode) {
+		case noneMode: {
+			Display.effectParams.mode = noneEffect;
+			Display.measParams.mode = noneMeas;
 			break;
 		}
 		case error: {
-			DisplayEffectParams.effect = noneEffect;
-			DisplayMeasParams.mode = noneMode;
+			Display.effectParams.mode = noneEffect;
+			Display.measParams.mode = noneMeas;
 			break;
 		}
 		case meas: {
-			DisplayEffectParams.effect = noneEffect;
+			Display.effectParams.mode = noneEffect;
 			break;
 		}
 		case effect: {
-			DisplayMeasParams.mode = noneMode;
+			Display.measParams.mode = noneMeas;
 			break;
 		}
 		default:
 			break;
 	}
-	vTaskDelay(100 / portTICK_PERIOD_MS);
 	return true;
 }
 
-void HAQuDA_DisplayManip::SetDisplayMeasMode(const displayMeasMode_enum newDisplayMeasMode) {
-	if (!SetDisplayMode(meas)) {
-		return;
+void HAQuDA_DisplayManip::SetMeasMode(const meas_mode new_meas_mode) {
+
+	if (new_meas_mode != Display.measParams.mode) {
+		Display.forceShowMeas = true;
+		Display.measParams.mode = new_meas_mode;
 	}
-	if (newDisplayMeasMode != DisplayMeasParams.mode) {
-		forceShowMeas = true;
-	}
-	DisplayMeasParams.mode = newDisplayMeasMode;
+
+	if (Display.mode != meas)
+		SetMode(meas);
 }
 
-void HAQuDA_DisplayManip::SetDisplayMeasParam(const displayParams_enum newDisplayMeasParam) {
-	if (!SetDisplayMode(meas)) {
-		return;
+void HAQuDA_DisplayManip::SetMeasType(const meas_type new_meas_type) {
+
+	if (new_meas_type != Display.measParams.type) {
+		Display.forceShowMeas = true;
+		Display.measParams.type = new_meas_type;
 	}
-	if (newDisplayMeasParam != DisplayMeasParams.displayParam) {
-		forceShowMeas = true;
-	}
-	DisplayMeasParams.displayParam = newDisplayMeasParam;
+
+	if (Display.mode != meas)
+		SetMode(meas);
 }
 
-void HAQuDA_DisplayManip::SetDisplayEffect(const displayEffectMode_enum newDisplayEffect) {
-	stopEffect = true;
-	DisplayEffectParams.effect = newDisplayEffect;
+void HAQuDA_DisplayManip::SetEffectMode(const effect_mode new_effect_mode) {
+	Display.stopEffect = true;
+	Display.effectParams.mode = new_effect_mode;
 }
 
-void HAQuDA_DisplayManip::SetDisplayEffectParams(const displayEffectParams_struct newDisplayEffectParams) {
-	stopEffect = true;
-	DisplayEffectParams = newDisplayEffectParams;
+void HAQuDA_DisplayManip::SetEffectParam(const effects_params new_effect_param) {
+	Display.stopEffect = true;
+	Display.effectParams = new_effect_param;
 }
 
-void HAQuDA_DisplayManip::SetDisplayError(const displayEffectMode_enum errorDisplayEffect) {
-	HAQuDA_DisplayManip::SetDisplayMode(error);
-	HAQuDA_DisplayManip::SetDisplayEffect(errorDisplayEffect);
+void HAQuDA_DisplayManip::SetError(const effect_mode new_error) {
+	HAQuDA_DisplayManip::SetMode(error);
+	HAQuDA_DisplayManip::SetEffectMode(new_error);
+}
+
+void HAQuDA_DisplayManip::ClearError() {
+	SetMode(noneMode);
 }
 
 uint8_t HAQuDA_DisplayManip::GetBrightness() {
-	return BrighntessPerCent;
+	return Display.brighntessPerCent;
 }
 
-displayMode_enum HAQuDA_DisplayManip::GetDisplayMode() {
-	return DisplayMode;
+display_mode HAQuDA_DisplayManip::GetMode() {
+	return Display.mode;
 }
 
-displayMeasMode_enum HAQuDA_DisplayManip::GetDisplayMeasMode() {
-	return DisplayMeasParams.mode;
+meas_mode HAQuDA_DisplayManip::GetMeasMode() {
+	return Display.measParams.mode;
 }
 
-displayParams_enum HAQuDA_DisplayManip::GetDisplayMeasParam() {
-	return DisplayMeasParams.displayParam;
+meas_type HAQuDA_DisplayManip::GetMeasType() {
+	return Display.measParams.type;
 }
 
-displayEffectMode_enum HAQuDA_DisplayManip::GetDisplayEffect() {
-	return DisplayEffectParams.effect;
+effect_mode HAQuDA_DisplayManip::GetEffectMode() {
+	return Display.effectParams.mode;
 }
 
 void HAQuDA_DisplayManip::ShowStaticColor(uint32_t color) {
-	DisplayMode = effect;
+	SetMode(noneMode);
 	WS2812_fillColor(color);
-	vTaskDelay(100 / portTICK_PERIOD_MS);
 }
 
 void HAQuDA_DisplayManip::ShowStaticColor(int red, int green, int blue) {
-	DisplayMode = effect;
-
 	uint32_t color = ((uint32_t)red << 16) | ((uint32_t)green << 8) | blue;
+	SetMode(noneMode);
 	WS2812_fillColor(color);
-	vTaskDelay(100 / portTICK_PERIOD_MS);
 }
 
-void HAQuDA_DisplayManip::ShowEffectGrow(const growEffectsParams_struct params) {
-	stopEffect = false;
+void HAQuDA_DisplayManip::ShowEffectGrow(const grow_effect_params params) {
+	Display.stopEffect = false;
 	WS2812_clear();
 	for (int i = (LED_ROW_NUM - 1); i >= 0; i--) {
 		for (int j = 0; j < LED_COLUMN_NUM; j++) {
-			if (stopEffect) {
+			if (Display.stopEffect) {
 				return;
 			}
-			uint8_t pixelNum = GetLedNum(j, i);
+			uint8_t pixelNum = getLedNum(j, i);
 			WS2812_setPixelColor(pixelNum, COLOR_RED);
 		}
 		WS2812_show(params.speed);
 	}
 }
 
-void HAQuDA_DisplayManip::ShowEffectSnake(const snakeEffectsParams_struct params) {
-	stopEffect = false;
+void HAQuDA_DisplayManip::ShowEffectSnake(const snake_effect_params params) {
+	Display.stopEffect = false;
 	WS2812_clear();
 	for (int i = 0; i < LED_NUM_PIXELS; i++) {
 		int pixelNum = 0;
@@ -210,7 +201,7 @@ void HAQuDA_DisplayManip::ShowEffectSnake(const snakeEffectsParams_struct params
 			pixelNum = (pixelNum > LED_NUM_PIXELS) ? LED_NUM_PIXELS : pixelNum;
 			WS2812_setPixelColor(pixelNum, params.color);
 
-			if (stopEffect) {
+			if (Display.stopEffect) {
 				return;
 			}
 		}
@@ -219,8 +210,8 @@ void HAQuDA_DisplayManip::ShowEffectSnake(const snakeEffectsParams_struct params
 	}
 }
 
-void HAQuDA_DisplayManip::ShowEffectRandom(const randomEffectsParams_struct params) {
-	stopEffect = false;
+void HAQuDA_DisplayManip::ShowEffectRandom(const random_effect_params params) {
+	Display.stopEffect = false;
 	WS2812_clear();
 	std::vector<int> pixelEnArr;
 	for (int i = 0; i < LED_NUM_PIXELS; i++) {
@@ -228,7 +219,7 @@ void HAQuDA_DisplayManip::ShowEffectRandom(const randomEffectsParams_struct para
 		while (find(pixelEnArr.begin(), pixelEnArr.end(), pixelNum) != pixelEnArr.end()) {
 			pixelNum = random(0, LED_NUM_PIXELS);
 
-			if (stopEffect) {
+			if (Display.stopEffect) {
 				return;
 			}
 		}
@@ -240,21 +231,21 @@ void HAQuDA_DisplayManip::ShowEffectRandom(const randomEffectsParams_struct para
 	vTaskDelay(params.pauseTime / portTICK_PERIOD_MS);
 }
 
-void HAQuDA_DisplayManip::ShowEffectFade(const fadeEffectsParams_struct params) {
-	stopEffect = false;
+void HAQuDA_DisplayManip::ShowEffectFade(const fade_effect_params params) {
+	Display.stopEffect = false;
 	WS2812_clear();
 	WS2812_setBrightnessPerCent(params.startBrightness);
 	WS2812_fillColor(params.color);
 	for (int j = params.startBrightness; j > params.stopBrightness; j = j - params.step) {
 		WS2812_setBrightnessPerCent(j);
 		vTaskDelay(params.speed / portTICK_PERIOD_MS);
-		if (stopEffect) {
-			WS2812_setBrightnessPerCent(BrighntessPerCent);
+		if (Display.stopEffect) {
+			WS2812_setBrightnessPerCent(Display.brighntessPerCent);
 			return;
 		}
 	}
 }
-void HAQuDA_DisplayManip::ShowEffectUpDown(const upDownEffectsParams_struct params) {
+void HAQuDA_DisplayManip::ShowEffectUpDown(const upDown_effects_params params) {
 
 	/*****************************************************/
 	ShowStaticColor(COLOR_YELLOW);
@@ -282,13 +273,13 @@ void HAQuDA_DisplayManip::ShowEffectChristmasTree(uint8_t speed, uint8_t treeMid
 }
 */
 void HAQuDA_DisplayManip::ShowMeas() {
-	switch (DisplayMeasParams.mode) {
+	switch (Display.measParams.mode) {
 		case standard: {
 			standardMode();
 			break;
 		}
 		case multi: {
-			multiMode(DisplayMeasParams.multiModeStruct);
+			multiMode(Display.measParams.multiModeParams);
 			break;
 		}
 		case night: {
@@ -300,68 +291,68 @@ void HAQuDA_DisplayManip::ShowMeas() {
 	}
 }
 
-displayParams_enum HAQuDA_DisplayManip::checkBadParam(displayMeasParams_struct DisplayMeasParams) {
-	if (((temp_meas.value / temp_meas.measNum) >= DisplayMeasParams.temp_divideDots.thirdDot)
-		|| ((temp_meas.value / temp_meas.measNum) <= DisplayMeasParams.temp_divideDots.firstDot)) {
+meas_type HAQuDA_DisplayManip::checkBadMeas(meas_params DisplayMeasParams) {
+	if (((temp_meas.value / temp_meas.measNum) >= DisplayMeasParams.divDots.temp.thirdDot)
+		|| ((temp_meas.value / temp_meas.measNum) <= DisplayMeasParams.divDots.temp.firstDot)) {
 		return temp;
-	} else if (((humid_meas.value / humid_meas.measNum) >= DisplayMeasParams.humid_divideDots.thirdDot)
-			   || ((humid_meas.value / humid_meas.measNum) <= DisplayMeasParams.humid_divideDots.firstDot)) {
+	} else if (((humid_meas.value / humid_meas.measNum) >= DisplayMeasParams.divDots.humid.thirdDot)
+			   || ((humid_meas.value / humid_meas.measNum) <= DisplayMeasParams.divDots.humid.firstDot)) {
 		return humid;
-	} else if ((eCO2_meas.value / eCO2_meas.measNum) >= DisplayMeasParams.eCO2_divideDots.thirdDot) {
+	} else if ((eCO2_meas.value / eCO2_meas.measNum) >= DisplayMeasParams.divDots.eCO2.thirdDot) {
 		return eCO2;
-	} else if ((TVOC_meas.value / TVOC_meas.measNum) >= DisplayMeasParams.TVOC_divideDots.thirdDot) {
+	} else if ((TVOC_meas.value / TVOC_meas.measNum) >= DisplayMeasParams.divDots.TVOC.thirdDot) {
 		return TVOC;
-	} else if ((PM_2_5_meas.value / PM_2_5_meas.measNum) >= DisplayMeasParams.PM2_5_divideDots.thirdDot) {
+	} else if ((PM_2_5_meas.value / PM_2_5_meas.measNum) >= DisplayMeasParams.divDots.PM2_5.thirdDot) {
 		return PM2_5;
 	}
-	return noneParam;
+	return noneType;
 }
 
 void HAQuDA_DisplayManip::standardMode() {
-	switch (DisplayMeasParams.displayParam) {
+	switch (Display.measParams.type) {
 		case total: {
-			displayParams_enum badParam = checkBadParam(DisplayMeasParams);
+			meas_type badParam = checkBadMeas(Display.measParams);
 			switch (badParam) {
 				case temp: {
-					showMeas_standard(temp_meas.value / temp_meas.measNum, DisplayMeasParams.temp_divideDots);
+					showMeas_standard(temp_meas.value / temp_meas.measNum, Display.measParams.divDots.temp);
 					break;
 				}
 				case humid: {
-					showMeas_standard(humid_meas.value / humid_meas.measNum, DisplayMeasParams.humid_divideDots);
+					showMeas_standard(humid_meas.value / humid_meas.measNum, Display.measParams.divDots.humid);
 					break;
 				}
 				case eCO2: {
-					showMeas_standard(eCO2_meas.value / eCO2_meas.measNum, DisplayMeasParams.eCO2_divideDots);
+					showMeas_standard(eCO2_meas.value / eCO2_meas.measNum, Display.measParams.divDots.eCO2);
 					break;
 				}
 				case TVOC: {
-					showMeas_standard(TVOC_meas.value / TVOC_meas.measNum, DisplayMeasParams.TVOC_divideDots);
+					showMeas_standard(TVOC_meas.value / TVOC_meas.measNum, Display.measParams.divDots.TVOC);
 					break;
 				}
 				case PM2_5: {
-					showMeas_standard(PM_2_5_meas.value / PM_2_5_meas.measNum, DisplayMeasParams.PM2_5_divideDots);
+					showMeas_standard(PM_2_5_meas.value / PM_2_5_meas.measNum, Display.measParams.divDots.PM2_5);
 					break;
 				}
-				case noneParam: {
+				case noneType: {
 					float measValuesArr[DISP_PARAMS_NUM];
-					measDivideDots_struct measDivideDots[DISP_PARAMS_NUM];
+					div_dots measDivideDots[DISP_PARAMS_NUM];
 
 					measValuesArr[0] = temp_meas.value / temp_meas.measNum;
-					measDivideDots[0] = DisplayMeasParams.temp_divideDots;
+					measDivideDots[0] = Display.measParams.divDots.temp;
 
 					measValuesArr[1] = humid_meas.value / humid_meas.measNum;
-					measDivideDots[1] = DisplayMeasParams.humid_divideDots;
+					measDivideDots[1] = Display.measParams.divDots.humid;
 
 					measValuesArr[2] = eCO2_meas.value / eCO2_meas.measNum;
-					measDivideDots[2] = DisplayMeasParams.eCO2_divideDots;
+					measDivideDots[2] = Display.measParams.divDots.eCO2;
 
 					measValuesArr[3] = TVOC_meas.value / TVOC_meas.measNum;
-					measDivideDots[3] = DisplayMeasParams.TVOC_divideDots;
+					measDivideDots[3] = Display.measParams.divDots.TVOC;
 
 					measValuesArr[4] = PM_2_5_meas.value / PM_2_5_meas.measNum;
-					measDivideDots[4] = DisplayMeasParams.PM2_5_divideDots;
+					measDivideDots[4] = Display.measParams.divDots.PM2_5;
 
-					HAQuDA_DisplayManip::showMeas_total(measValuesArr, sizeof(measValuesArr), measDivideDots, sizeof(measDivideDots));
+					showMeas_total(measValuesArr, sizeof(measValuesArr), measDivideDots, sizeof(measDivideDots));
 					break;
 				}
 				default:
@@ -370,32 +361,31 @@ void HAQuDA_DisplayManip::standardMode() {
 			break;
 		}
 		case temp: {
-			HAQuDA_DisplayManip::showMeas_standard(temp_meas.value / temp_meas.measNum, DisplayMeasParams.temp_divideDots);
+			HAQuDA_DisplayManip::showMeas_standard(temp_meas.value / temp_meas.measNum, Display.measParams.divDots.temp);
 			break;
 		}
 		case humid: {
-			HAQuDA_DisplayManip::showMeas_standard(humid_meas.value / humid_meas.measNum, DisplayMeasParams.humid_divideDots);
+			HAQuDA_DisplayManip::showMeas_standard(humid_meas.value / humid_meas.measNum, Display.measParams.divDots.humid);
 			break;
 		}
 		case eCO2: {
-			HAQuDA_DisplayManip::showMeas_standard(eCO2_meas.value / eCO2_meas.measNum, DisplayMeasParams.eCO2_divideDots);
+			HAQuDA_DisplayManip::showMeas_standard(eCO2_meas.value / eCO2_meas.measNum, Display.measParams.divDots.eCO2);
 			break;
 		}
 		case TVOC: {
-			HAQuDA_DisplayManip::showMeas_standard(TVOC_meas.value / TVOC_meas.measNum, DisplayMeasParams.TVOC_divideDots);
+			HAQuDA_DisplayManip::showMeas_standard(TVOC_meas.value / TVOC_meas.measNum, Display.measParams.divDots.TVOC);
 			break;
 		}
 		case PM2_5: {
-			HAQuDA_DisplayManip::showMeas_standard(PM_2_5_meas.value / PM_2_5_meas.measNum, DisplayMeasParams.PM2_5_divideDots);
+			HAQuDA_DisplayManip::showMeas_standard(PM_2_5_meas.value / PM_2_5_meas.measNum, Display.measParams.divDots.PM2_5);
 			break;
 		}
-
 		default:
 			break;
 	}
 }
 
-void HAQuDA_DisplayManip::multiMode(multiModeParamDisplay_struct multiModeParams) {
+void HAQuDA_DisplayManip::multiMode(multi_mode_params multiModeParams) {
 	for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
 		switch (multiModeParams.paramsArr[i]) {
 			case temp: {
@@ -426,9 +416,9 @@ void HAQuDA_DisplayManip::multiMode(multiModeParamDisplay_struct multiModeParams
 										sizeof(multiModeParams.divideDotsArr));
 }
 
-uint8_t HAQuDA_DisplayManip::get_nightMode_hour(nightModeTimeBorder_struct timeBorder) {
+uint8_t HAQuDA_DisplayManip::get_nightMode_hour(night_mode_time_border timeBorder) {
 	DateTimeStruct currTime;
-	
+
 	if (!HAQuDA_TimeHelper_Singleton::getInstance()->GetDateTime(&currTime)) {
 		return 0; // TODO: Add Get date and time error handler;
 	}
@@ -455,35 +445,35 @@ uint8_t HAQuDA_DisplayManip::get_nightMode_hour(nightModeTimeBorder_struct timeB
 }
 
 void HAQuDA_DisplayManip::nightMode() {
-	uint8_t nightMode_hour = get_nightMode_hour(DisplayMeasParams.currentTimeBorder);
+	uint8_t nightMode_hour = get_nightMode_hour(Display.measParams.nightModeTimeBorder);
 
-	switch (DisplayMeasParams.displayParam) {
+	switch (Display.measParams.type) {
 		case temp: {
-			HAQuDA_DisplayManip::showMeas_night(temp_meas.value / temp_meas.measNum, DisplayMeasParams.temp_divideDots, nightMode_hour);
+			HAQuDA_DisplayManip::showMeas_night(temp_meas.value / temp_meas.measNum, Display.measParams.divDots.temp, nightMode_hour);
 			temp_meas.value = 0;
 			temp_meas.measNum = 0;
 			break;
 		}
 		case humid: {
-			HAQuDA_DisplayManip::showMeas_night(humid_meas.value / humid_meas.measNum, DisplayMeasParams.humid_divideDots, nightMode_hour);
+			HAQuDA_DisplayManip::showMeas_night(humid_meas.value / humid_meas.measNum, Display.measParams.divDots.humid, nightMode_hour);
 			humid_meas.value = 0;
 			humid_meas.measNum = 0;
 			break;
 		}
 		case eCO2: {
-			HAQuDA_DisplayManip::showMeas_night(eCO2_meas.value / eCO2_meas.measNum, DisplayMeasParams.eCO2_divideDots, nightMode_hour);
+			HAQuDA_DisplayManip::showMeas_night(eCO2_meas.value / eCO2_meas.measNum, Display.measParams.divDots.eCO2, nightMode_hour);
 			eCO2_meas.value = 0;
 			eCO2_meas.measNum = 0;
 			break;
 		}
 		case TVOC: {
-			HAQuDA_DisplayManip::showMeas_night(TVOC_meas.value / TVOC_meas.measNum, DisplayMeasParams.TVOC_divideDots, nightMode_hour);
+			HAQuDA_DisplayManip::showMeas_night(TVOC_meas.value / TVOC_meas.measNum, Display.measParams.divDots.TVOC, nightMode_hour);
 			TVOC_meas.value = 0;
 			TVOC_meas.measNum = 0;
 			break;
 		}
 		case PM2_5: {
-			HAQuDA_DisplayManip::showMeas_night(PM_2_5_meas.value / PM_2_5_meas.measNum, DisplayMeasParams.PM2_5_divideDots, nightMode_hour);
+			HAQuDA_DisplayManip::showMeas_night(PM_2_5_meas.value / PM_2_5_meas.measNum, Display.measParams.divDots.PM2_5, nightMode_hour);
 			PM_2_5_meas.value = 0;
 			PM_2_5_meas.measNum = 0;
 			break;
@@ -493,8 +483,7 @@ void HAQuDA_DisplayManip::nightMode() {
 	}
 }
 
-void HAQuDA_DisplayManip::getMeasRGB(uint8_t *_red, uint8_t *_green, uint8_t *_blue, const uint8_t brightness, const float data,
-									 const measDivideDots_struct divideDots) {
+void HAQuDA_DisplayManip::getMeasRGB(uint8_t *_red, uint8_t *_green, uint8_t *_blue, const uint8_t brightness, const float data, const div_dots divideDots) {
 	float coefficient = (brightness * 2) / (divideDots.thirdDot - divideDots.firstDot);
 	if ((data < divideDots.middleDot) && (data >= divideDots.firstDot)) {
 		*_blue = round(-abs(data - divideDots.firstDot) * coefficient) + MAX_BRIGHTNESS;
@@ -515,7 +504,7 @@ void HAQuDA_DisplayManip::getMeasRGB(uint8_t *_red, uint8_t *_green, uint8_t *_b
 	}
 }
 
-void HAQuDA_DisplayManip::showMeas_standard(float data, measDivideDots_struct divideDots) {
+void HAQuDA_DisplayManip::showMeas_standard(float data, div_dots divideDots) {
 	WS2812_clear();
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 
@@ -525,7 +514,7 @@ void HAQuDA_DisplayManip::showMeas_standard(float data, measDivideDots_struct di
 	WS2812_fillColor(WS2812_getColor(red, green, blue));
 }
 
-void HAQuDA_DisplayManip::showMeas_night(float data, measDivideDots_struct divideDots, uint8_t time) {
+void HAQuDA_DisplayManip::showMeas_night(float data, div_dots divideDots, uint8_t time) {
 	WS2812_clear();
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 
@@ -542,7 +531,7 @@ void HAQuDA_DisplayManip::showMeas_night(float data, measDivideDots_struct divid
 	}
 }
 
-void HAQuDA_DisplayManip::showMeas_multi(float *data, uint8_t dataSize, measDivideDots_struct *divideDots, uint8_t divideDotsSize) {
+void HAQuDA_DisplayManip::showMeas_multi(float *data, uint8_t dataSize, div_dots *divideDots, uint8_t divideDotsSize) {
 	if (dataSize != MULTI_MODE_PARAM_NUM) {
 		return;
 	}
@@ -571,7 +560,7 @@ void HAQuDA_DisplayManip::showMeas_multi(float *data, uint8_t dataSize, measDivi
 	}
 }
 
-void HAQuDA_DisplayManip::showMeas_total(float *data, uint8_t dataSize, measDivideDots_struct *dataDivideDots, uint8_t divideDotsSize) {
+void HAQuDA_DisplayManip::showMeas_total(float *data, uint8_t dataSize, div_dots *dataDivideDots, uint8_t divideDotsSize) {
 	if (dataSize != MULTI_MODE_PARAM_NUM) {
 		return;
 	}
@@ -597,7 +586,7 @@ void HAQuDA_DisplayManip::showMeas_total(float *data, uint8_t dataSize, measDivi
 	WS2812_fillColor(WS2812_getColor(red, green, blue), 0, LED_NUM_PIXELS);
 }
 
-uint8_t HAQuDA_DisplayManip::GetLedNum(uint8_t x, uint8_t y) {
+uint8_t HAQuDA_DisplayManip::getLedNum(uint8_t x, uint8_t y) {
 
 	if ((x >= LED_COLUMN_NUM) || (y >= LED_ROW_NUM)) {
 		return 0;

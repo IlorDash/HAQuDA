@@ -6,17 +6,17 @@ typedef enum { failedToStartFS, failedToConnectToWiFi, failedToCreateAP, failedT
 #define DEFAULT_ERROR_DISPLAY_TIME 5000 // 5 sec
 
 class HAQuDA_ErrorHandler {
-	static displayEffectMode_enum errorEffectDisp;
+	static effect_mode errorEffectDisp;
 
 	static errorTypes_enum CurrentError;
 
   public:
-	static growEffectsParams_struct failedToConnectToWiFi_displayParams;
-	static snakeEffectsParams_struct failedToCreateAP_displayParams;
+	static grow_effect_params failedToConnectToWiFi_displayParams;
+	static snake_effect_params failedToCreateAP_displayParams;
 
-	static fadeEffectsParams_struct failedToStartFS_displayParams;
+	static fade_effect_params failedToStartFS_displayParams;
 
-	static upDownEffectsParams_struct failedToStartSensors_displayParams;
+	static upDown_effects_params failedToStartSensors_displayParams;
 
 	HAQuDA_ErrorHandler();
 

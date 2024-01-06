@@ -58,7 +58,7 @@ void HAQuDA_WiFi_handler::HandleConnection() {
 		return;
 	}
 	WiFi.removeEvent(SYSTEM_EVENT_STA_DISCONNECTED);
-	HAQuDA_DisplayManip::SetDisplayEffect(snake); // start up connection effect
+	HAQuDA_DisplayManip::SetEffectMode(snake); // start up connection effect
 
 	while (!WiFiConnected) {
 		connectToStoredWiFi();
@@ -143,7 +143,7 @@ bool HAQuDA_WiFi_handler::connectToWiFi(const char *ssidLocal, const char *passL
 }
 
 void HAQuDA_WiFi_handler::WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info) {
-	HAQuDA_DisplayManip::SetDisplayMode(none);
+	HAQuDA_DisplayManip::SetMode(noneMode);
 	WiFiConnected = true;
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 
@@ -154,7 +154,7 @@ void HAQuDA_WiFi_handler::WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_
 }
 
 void HAQuDA_WiFi_handler::WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info) {
-	HAQuDA_DisplayManip::SetDisplayMode(none);
+	HAQuDA_DisplayManip::SetMode(noneMode);
 	WiFiConnected = false;
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 

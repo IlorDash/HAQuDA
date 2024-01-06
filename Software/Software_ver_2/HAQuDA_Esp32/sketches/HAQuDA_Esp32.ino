@@ -43,7 +43,7 @@ void setup() {
 	WS2812_begin();
 	createTasks();
 
-	HAQuDA_DisplayManip::SetDisplayEffect(snake); // start up connection effect
+	HAQuDA_DisplayManip::SetEffectMode(snake); // start up connection effect
 	vTaskDelay(2000 / portTICK_PERIOD_MS);
 
 	if (!myFS.Start()) {
@@ -64,7 +64,7 @@ void setup() {
 		}
 		HAQuDA_Logger::LogInfo("Created Acces Point");
 		myErrorHandler.ClearCurrentError();
-		HAQuDA_DisplayManip::SetDisplayEffect(fade);
+		HAQuDA_DisplayManip::SetEffectMode(fade);
 	} else {
 		HAQuDA_TimeHelper_Singleton::getInstance()->StartNTP();
 		HAQuDA_Logger::LogInfo("Connected to WiFi");
@@ -77,7 +77,7 @@ void setup() {
 		}
 	}
 	HAQuDA_Logger::LogInfo("Started sensors");
-	HAQuDA_DisplayManip::SetDisplayMeasMode(multi);
+	HAQuDA_DisplayManip::SetMeasMode(multi);
 }
 
 uint16_t measNum = 0;
@@ -109,35 +109,35 @@ void loop() {
 
 	myWiFi_handler->HandleConnection();
 
-//	if ((millis() - sensors_meas_time) > SENSORS_MEAS_PERIOD) {
-//		getDHT11_meas();
-//		getCCS811_meas();
-//		getPM_meas();
-//
-//		measNum++;
-//
-//		sensors_meas_time = millis();
-//	}
-//
-//	if (millis() - dispMeasTimer > DISP_MEAS_PERIOD) {
-//		myDispManip->displayData(myDisplayInterface->currUI_Params);
-//		dispMeasTimer = millis();
-//
-//		temp_meas.value = 0;
-//		temp_meas.measNum = 0;
-//
-//		humid_meas.value = 0;
-//		humid_meas.measNum = 0;
-//
-//		eCO2_meas.value = 0;
-//		eCO2_meas.measNum = 0;
-//
-//		TVOC_meas.value = 0;
-//		TVOC_meas.measNum = 0;
-//
-//		PM_2_5_meas.value = 0;
-//		PM_2_5_meas.measNum = 0;
-//	}
+	//	if ((millis() - sensors_meas_time) > SENSORS_MEAS_PERIOD) {
+	//		getDHT11_meas();
+	//		getCCS811_meas();
+	//		getPM_meas();
+	//
+	//		measNum++;
+	//
+	//		sensors_meas_time = millis();
+	//	}
+	//
+	//	if (millis() - dispMeasTimer > DISP_MEAS_PERIOD) {
+	//		myDispManip->displayData(myDisplayInterface->currUI_Params);
+	//		dispMeasTimer = millis();
+	//
+	//		temp_meas.value = 0;
+	//		temp_meas.measNum = 0;
+	//
+	//		humid_meas.value = 0;
+	//		humid_meas.measNum = 0;
+	//
+	//		eCO2_meas.value = 0;
+	//		eCO2_meas.measNum = 0;
+	//
+	//		TVOC_meas.value = 0;
+	//		TVOC_meas.measNum = 0;
+	//
+	//		PM_2_5_meas.value = 0;
+	//		PM_2_5_meas.measNum = 0;
+	//	}
 }
 //
 // void checkIfMeasCorrect() {
@@ -164,4 +164,3 @@ void loop() {
 //	temp_meas.newMeasDone = false;
 //	humid_meas.newMeasDone = false;
 //}
-//

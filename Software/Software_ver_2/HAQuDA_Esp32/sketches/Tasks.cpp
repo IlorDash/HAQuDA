@@ -16,8 +16,8 @@ void BuiltIn_LED_Blink_TaskCode(void *parameter) {
 
 void WS2812_EffectsTaskCode(void *parameter) {
 	while (true) {
-		bool isError = (HAQuDA_DisplayManip::GetDisplayMode() == error);
-		displayEffectMode_enum effect = HAQuDA_DisplayManip::GetDisplayEffect();
+		bool isError = (HAQuDA_DisplayManip::GetMode() == error);
+		effect_mode effect = HAQuDA_DisplayManip::GetEffectMode();
 
 		switch (effect) {
 			case snake: {

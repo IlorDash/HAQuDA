@@ -2,14 +2,14 @@
 #include "HAQuDA_DisplayManip.h"
 #include "HAQuDA_Logger.h"
 
-displayEffectMode_enum HAQuDA_ErrorHandler::errorEffectDisp = noneEffect;
+effect_mode HAQuDA_ErrorHandler::errorEffectDisp = noneEffect;
 
-growEffectsParams_struct HAQuDA_ErrorHandler::failedToConnectToWiFi_displayParams;
-snakeEffectsParams_struct HAQuDA_ErrorHandler::failedToCreateAP_displayParams;
+grow_effect_params HAQuDA_ErrorHandler::failedToConnectToWiFi_displayParams;
+snake_effect_params HAQuDA_ErrorHandler::failedToCreateAP_displayParams;
 
-fadeEffectsParams_struct HAQuDA_ErrorHandler::failedToStartFS_displayParams;
+fade_effect_params HAQuDA_ErrorHandler::failedToStartFS_displayParams;
 
-upDownEffectsParams_struct HAQuDA_ErrorHandler::failedToStartSensors_displayParams;
+upDown_effects_params HAQuDA_ErrorHandler::failedToStartSensors_displayParams;
 
 errorTypes_enum HAQuDA_ErrorHandler::CurrentError = noneError;
 
@@ -39,34 +39,34 @@ errorTypes_enum HAQuDA_ErrorHandler::GetCurrentError() {
 void HAQuDA_ErrorHandler::FailedToStartFS() {
 	CurrentError = failedToStartFS;
 	HAQuDA_Logger::LogError("SPIFFS not mounted!");
-	HAQuDA_DisplayManip::SetDisplayError(fade);
+	HAQuDA_DisplayManip::SetError(fade);
 	vTaskDelay(DEFAULT_ERROR_DISPLAY_TIME / portTICK_PERIOD_MS);
 }
 
 void HAQuDA_ErrorHandler::FailedToConnectToWiFi() {
 	CurrentError = failedToConnectToWiFi;
 	HAQuDA_Logger::LogError("Failed connection to WiFi");
-	HAQuDA_DisplayManip::SetDisplayError(grow);
+	HAQuDA_DisplayManip::SetError(grow);
 	vTaskDelay(DEFAULT_ERROR_DISPLAY_TIME / portTICK_PERIOD_MS);
 }
 
 void HAQuDA_ErrorHandler::FailedToCreateAP() {
 	CurrentError = failedToCreateAP;
 	HAQuDA_Logger::LogError("Failed creating Acces Point");
-	HAQuDA_DisplayManip::SetDisplayError(snake);
+	HAQuDA_DisplayManip::SetError(snake);
 	vTaskDelay(DEFAULT_ERROR_DISPLAY_TIME / portTICK_PERIOD_MS);
 }
 
 void HAQuDA_ErrorHandler::FailedToStartSensors() {
 	CurrentError = failedToStartSensors;
 	HAQuDA_Logger::LogError("Failed to start sensors");
-	HAQuDA_DisplayManip::SetDisplayError(upDown);
+	HAQuDA_DisplayManip::SetError(upDown);
 	vTaskDelay(DEFAULT_ERROR_DISPLAY_TIME / portTICK_PERIOD_MS);
 }
 
 void HAQuDA_ErrorHandler::ClearCurrentError() {
 	CurrentError = noneError;
-	HAQuDA_DisplayManip::ClearErrorDisplayMode();
+	HAQuDA_DisplayManip::ClearError();
 }
 
 HAQuDA_ErrorHandler::~HAQuDA_ErrorHandler() {
