@@ -49,10 +49,8 @@ void HAQuDA_WebServer::handle_NewWiFiCreds(AsyncWebServerRequest *request) {
 		AsyncWebParameter *p = request->getParam(i);
 		if (p->isPost()) {
 			if (p->name() == SSID_PARAM_NAME) {
-				// newWiFiCreds.ssid = p->value().c_str();
 				strcpy(newWiFiCreds.ssid, p->value().c_str());
 			} else if (p->name() == PASS_PARAM_NAME) {
-				// newWiFiCreds.password = p->value().c_str();
 				strcpy(newWiFiCreds.pass, p->value().c_str());
 			}
 		}
@@ -132,12 +130,12 @@ void HAQuDA_WebServer::show_WiFiCreds(AsyncWebServerRequest *request) {
 		request->send(200, "text/html", "WiFi credentials are empty");
 	} else {
 		HAQuDA_FileStorage::ReadFile(FILE_NAME_WIFI_NET, (uint8_t *)bar, sizeof(TWiFiCreds));
-		//		char buff[WIFI_SSID_LEN + WIFI_PASS_LEN] = {""};
-		//		String answer = "";
-		//		for (int i = 0; i < WiFiCredsNum; i++) {
-		//			HAQuDA_FileStorage::ReadFileFrom(FILE_NAME_WIFI_NET, sizeof(TWiFiCreds) * i, (uint8_t *)buff, sizeof(TWiFiCreds));
-		//			answer += buff;
-		//		}
+//		char buff[WIFI_SSID_LEN + WIFI_PASS_LEN] = {""};
+//		String answer = "";
+//		for (int i = 0; i < WiFiCredsNum; i++) {
+//			HAQuDA_FileStorage::ReadFileFrom(FILE_NAME_WIFI_NET, sizeof(TWiFiCreds) * i, (uint8_t *)buff, sizeof(TWiFiCreds));
+//			answer += buff;
+//		}
 		request->send(200, "text/html", "answer");
 	}
 }
