@@ -1,18 +1,29 @@
-name: GitHub Actions Demo
-run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
-on: [push]
+name: Build HAQuDA
+run-name: ${{ github.actor }} is building HAQuDA 🔨
+on: [push, pull_request]
 jobs:
-  Explore-GitHub-Actions:
+  Build:
+    strategy:
+      matrix:
+        name: ["esp32"]
+        arch: ["esp32"]
+        board: ["esp32"]
+        opts: ["PSRAM=disabled,PartitionScheme=default,CPUFreq=240,FlashMode=qio,FlashFreq=80,FlashSize=4M,UploadSpeed=921600,DebugLevel=error"]
+        ssid: ["actions_ssid"]
+        pass: ["actions_pass"]
+        dns_domain: ["actions_domain"]
+        dns_token: ["actions_token"]
     runs-on: ubuntu-latest
     steps:
-      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
-      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
-      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
-      - name: Check out repository code
-        uses: actions/checkout@v4
-      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
-      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
-      - name: List files in the repository
+      - name: Checkout
+        uses: actions/checkout@master   submodules
+      - name: Setup Arduino CLI
+        uses: arduino/setup-arduino-cli@v0.35.0
+      - name: Install core
         run: |
-          ls ${{ github.workspace }}
-      - run: echo "🍏 This job's status is ${{ job.status }}."
+          arduino-cli core update-index
+          arduino-cli core install ${{ matrix.name }}:${{ matrix.arch }}
+          pip install pyserial
+      - name: Compile Sketch
+        working-directory: ./Software/Software_ver_2/
+        run: ARDUINO_DIRECTORIES_USER=$GITHUB_WORKSPACE/Software/Software_ver_2/HAQuDA_Esp32 arduino-cli compile --fqbn ${{ matrix.name }}:${{ matrix.arch }}:${{ matrix.board }}:${{ matrix.opts }} --libraries Libs --library sketches --build-property=compiler.cpp.extra_flags="-DAP_SSID=${{ matrix.ssid }} -DAP_PASS=${{ matrix.pass }} -DDDNS_DOMAIN=${{ matrix.dns_domain }} -DDDNS_TOKEN=${{ matrix.dns_token }}" --verbose --clean --output-dir output
