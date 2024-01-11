@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@master   submodules
+        uses: actions/checkout@test-github-actions
       - name: Setup Arduino CLI
         uses: arduino/setup-arduino-cli@v1
         with:
