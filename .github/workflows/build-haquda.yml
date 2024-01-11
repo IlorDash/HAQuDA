@@ -1,0 +1,44 @@
+name: Build HAQuDA
+run-name: ${{ github.actor }} is building HAQuDA 🔨
+on:
+  push:
+    paths:
+    - 'Software/Software_ver_2/HAQuDA_Esp32/**'
+  pull_request:
+    paths:
+    - 'Software/Software_ver_2/HAQuDA_Esp32/**'
+jobs:
+  Build:
+    strategy:
+      matrix:
+        name: ["esp32"]
+        arch: ["esp32"]
+        board: ["esp32"]
+        opts: ["PSRAM=disabled,PartitionScheme=default,CPUFreq=240,FlashMode=qio,FlashFreq=80,FlashSize=4M,UploadSpeed=921600,DebugLevel=error"]
+        ssid: ["actions_ssid"]
+        pass: ["actions_pass"]
+        dns_domain: ["actions_domain"]
+        dns_token: ["actions_token"]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - name: Setup Arduino CLI
+        uses: arduino/setup-arduino-cli@v1
+        with:
+          version: "0.34.0"
+      - name: Install core
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install ${{ matrix.name }}:${{ matrix.arch }}
+          pip install pyserial
+      - name: Compile Sketch
+        working-directory: ./Software/Software_ver_2/HAQuDA_Esp32
+        run: arduino-cli compile --fqbn ${{ matrix.name }}:${{ matrix.arch }}:${{ matrix.board }}:${{ matrix.opts }} --libraries Libs --library sketches --build-property=compiler.cpp.extra_flags="-DAP_SSID=\"${{ matrix.ssid }}\" -DAP_PASS=\"${{ matrix.pass }}\" -DDDNS_DOMAIN=\"${{ matrix.dns_domain }}\" -DDDNS_TOKEN=\"${{ matrix.dns_token }}\"" --verbose --clean --build-path build/${{ matrix.name }}_${{ matrix.arch }}_${{ matrix.board }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: HAQuDA_${{ matrix.name }}_${{ matrix.arch }}_${{ matrix.board }}
+          path: ./Software/Software_ver_2/HAQuDA_Esp32/build/${{ matrix.name }}_${{ matrix.arch }}_${{ matrix.board }}/

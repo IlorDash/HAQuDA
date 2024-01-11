@@ -61,3 +61,4 @@ dkms.conf
 */MemoryUtilizationReport.xml
 *.vcxproj.user
 *.htm
+**/output/*
