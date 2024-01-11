@@ -1,6 +1,12 @@
 name: Build HAQuDA
 run-name: ${{ github.actor }} is building HAQuDA 🔨
-on: [push, pull_request]
+on:
+  push:
+    paths:
+    - 'Software/Software_ver_2/HAQuDA_Esp32/**'
+  pull_request:
+    paths:
+    - 'Software/Software_ver_2/HAQuDA_Esp32/**'
 jobs:
   Build:
     strategy:
