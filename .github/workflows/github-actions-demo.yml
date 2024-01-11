@@ -30,9 +30,9 @@ jobs:
           pip install pyserial
       - name: Compile Sketch
         working-directory: ./Software/Software_ver_2/HAQuDA_Esp32
-        run: arduino-cli compile --fqbn ${{ matrix.name }}:${{ matrix.arch }}:${{ matrix.board }}:${{ matrix.opts }} --libraries Libs --library sketches --build-property=compiler.cpp.extra_flags="-DAP_SSID=\"${{ matrix.ssid }}\" -DAP_PASS=\"${{ matrix.pass }}\" -DDDNS_DOMAIN=\"${{ matrix.dns_domain }}\" -DDDNS_TOKEN=\"${{ matrix.dns_token }}\"" --verbose --clean --output-dir output/${{ matrix.name }}_${{ matrix.arch }}_${{ matrix.board }}
+        run: arduino-cli compile --fqbn ${{ matrix.name }}:${{ matrix.arch }}:${{ matrix.board }}:${{ matrix.opts }} --libraries Libs --library sketches --build-property=compiler.cpp.extra_flags="-DAP_SSID=\"${{ matrix.ssid }}\" -DAP_PASS=\"${{ matrix.pass }}\" -DDDNS_DOMAIN=\"${{ matrix.dns_domain }}\" -DDDNS_TOKEN=\"${{ matrix.dns_token }}\"" --verbose --clean --build-path build/${{ matrix.name }}_${{ matrix.arch }}_${{ matrix.board }}
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: HAQuDA_${{ matrix.name }}_${{ matrix.arch }}_${{ matrix.board }}
-          path: ./Software/Software_ver_2/HAQuDA_Esp32/output/${{ matrix.name }}_${{ matrix.arch }}_${{ matrix.board }}/
+          path: ./Software/Software_ver_2/HAQuDA_Esp32/build/${{ matrix.name }}_${{ matrix.arch }}_${{ matrix.board }}/
