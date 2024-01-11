@@ -15,17 +15,17 @@ jobs:
         dns_token: ["actions_token"]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: 'recursive'
-      - name: Setup Arduino CLI
-        uses: arduino/setup-arduino-cli@v1
-      - name: Install core
-        run: |
-          arduino-cli core update-index
-          arduino-cli core install ${{ matrix.name }}:${{ matrix.arch }}
-          pip install pyserial
+      # - name: Checkout
+      #   uses: actions/checkout@v4
+      #   with:
+      #     submodules: 'recursive'
+      # - name: Setup Arduino CLI
+      #   uses: arduino/setup-arduino-cli@v1
+      # - name: Install core
+      #   run: |
+      #     arduino-cli core update-index
+      #     arduino-cli core install ${{ matrix.name }}:${{ matrix.arch }}
+      #     pip install pyserial
       - name: Print github actions vars
         run: |
           echo $GITHUB_WORKSPACE
@@ -33,6 +33,6 @@ jobs:
           arduino-cli --help
           arduino-cli config dump
           arduino-cli version
-      - name: Compile Sketch
-        working-directory: ./Software/Software_ver_2/
-        run: ARDUINO_DIRECTORIES_USER=$GITHUB_WORKSPACE/Software/Software_ver_2/HAQuDA_Esp32 arduino-cli compile --fqbn ${{ matrix.name }}:${{ matrix.arch }}:${{ matrix.board }}:${{ matrix.opts }} --libraries Libs --library sketches --build-property=compiler.cpp.extra_flags="-DAP_SSID=${{ matrix.ssid }} -DAP_PASS=${{ matrix.pass }} -DDDNS_DOMAIN=${{ matrix.dns_domain }} -DDDNS_TOKEN=${{ matrix.dns_token }}" --verbose --clean --output-dir output
+      # - name: Compile Sketch
+      #   working-directory: ./Software/Software_ver_2/
+      #   run: ARDUINO_DIRECTORIES_USER=$GITHUB_WORKSPACE/Software/Software_ver_2/HAQuDA_Esp32 arduino-cli compile --fqbn ${{ matrix.name }}:${{ matrix.arch }}:${{ matrix.board }}:${{ matrix.opts }} --libraries Libs --library sketches --build-property=compiler.cpp.extra_flags="-DAP_SSID=${{ matrix.ssid }} -DAP_PASS=${{ matrix.pass }} -DDDNS_DOMAIN=${{ matrix.dns_domain }} -DDDNS_TOKEN=${{ matrix.dns_token }}" --verbose --clean --output-dir output
