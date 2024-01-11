@@ -22,7 +22,7 @@ jobs:
       - name: Setup Arduino CLI
         uses: arduino/setup-arduino-cli@v1
         with:
-          version: "0.5.0"
+          version: "0.35.0"
       # - name: Install core
       #   run: |
       #     arduino-cli core update-index
