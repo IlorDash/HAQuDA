@@ -4,31 +4,31 @@
 
 effect_mode HAQuDA_ErrorHandler::errorEffectDisp = noneEffect;
 
-grow_effect_params HAQuDA_ErrorHandler::failedToConnectToWiFi_displayParams;
-snake_effect_params HAQuDA_ErrorHandler::failedToCreateAP_displayParams;
+grow_effect_params HAQuDA_ErrorHandler::failedToConnectToWiFiEffect;
+snake_effect_params HAQuDA_ErrorHandler::failedToCreateAPEffect;
 
-fade_effect_params HAQuDA_ErrorHandler::failedToStartFS_displayParams;
+fade_effect_params HAQuDA_ErrorHandler::failedToStartFSEffect;
 
-random_effect_params HAQuDA_ErrorHandler::failedToStartSensors_displayParams;
+random_effect_params HAQuDA_ErrorHandler::failedToStartSensorsEffect;
 
-errorTypes_enum HAQuDA_ErrorHandler::CurrentError = noneError;
+errorTypes HAQuDA_ErrorHandler::CurrentError = noneError;
 
 HAQuDA_ErrorHandler::HAQuDA_ErrorHandler() {
-	failedToConnectToWiFi_displayParams.color = COLOR_RED;	//grow
-	failedToConnectToWiFi_displayParams.speed = 200;
+	failedToConnectToWiFiEffect.color = COLOR_RED;	//grow
+	failedToConnectToWiFiEffect.speed = 200;
 
-	failedToCreateAP_displayParams.color = COLOR_RED;	//snake
-	failedToCreateAP_displayParams.speed = 200;
-	failedToCreateAP_displayParams.tailLength = 1;
+	failedToCreateAPEffect.color = COLOR_RED;	//snake
+	failedToCreateAPEffect.speed = 200;
+	failedToCreateAPEffect.tailLength = 1;
 
-	failedToStartFS_displayParams.color = COLOR_RED;	//fade
-	failedToStartFS_displayParams.speed = 10;
-	failedToStartFS_displayParams.startBrightness = 100;
-	failedToStartFS_displayParams.stopBrightness = 0;
-	failedToStartFS_displayParams.step = 5;
+	failedToStartFSEffect.color = COLOR_RED;	//fade
+	failedToStartFSEffect.speed = 10;
+	failedToStartFSEffect.startBrightness = 100;
+	failedToStartFSEffect.stopBrightness = 0;
+	failedToStartFSEffect.step = 5;
 
-    failedToStartSensors_displayParams.speed = 50;      //random
-	failedToStartSensors_displayParams.pauseTime = 500;
+    failedToStartSensorsEffect.speed = 50;      //random
+	failedToStartSensorsEffect.pauseTime = 500;
 }
 
 errorTypes_enum HAQuDA_ErrorHandler::GetCurrentError() {
