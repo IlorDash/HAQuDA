@@ -1,0 +1,166 @@
+#include "Arduino.h"
+#include <SoftwareSerial.h>
+
+#include "HAQuDA_WiFi_handler.h"
+#include "HAQuDA_DisplayManip.h"
+#include "HAQuDA_FileStorage.h"
+#include "HAQuDA_ErrorHandler.h"
+#include "HAQuDA_Logger.h"
+#include "HAQuDA_TimeHelper.h"
+
+#include "Sensors.h"
+#include "Tasks.h"
+
+#define DISP_MEAS_PERIOD 300000 //=5 min in ms
+#define SENSORS_MEAS_PERIOD 2000
+
+#define TOUCH_9 32
+#define TOUCH_7 27
+#define TOUCH_8 33
+#define TOUCH_0 4
+
+HAQuDA_DisplayManip *myDisplayManip;
+HAQuDA_WiFi_handler *myWiFi_handler;
+HAQuDA_FileStorage myFS;
+HAQuDA_ErrorHandler myErrorHandler;
+
+int firstDot;
+int secondDot; // parametrs of dispParams
+int thirdDot;
+
+bool dispFirstParam = false;
+
+#define TOUCH_THRESH_NO_USE (0)
+esp_err_t ans;
+
+void setup() {
+
+	Serial.begin(115200);
+	HAQuDA_TimeHelper_Singleton::getInstance();
+	myWiFi_handler = new HAQuDA_WiFi_handler(&myFS);
+	myDisplayManip = new HAQuDA_DisplayManip();
+
+	WS2812_begin();
+	createTasks();
+
+	HAQuDA_DisplayManip::SetEffectMode(snake); // start up connection effect
+	vTaskDelay(2000 / portTICK_PERIOD_MS);
+
+	if (!myFS.Start()) {
+		myErrorHandler.FailedToStartFS();
+		while (true) {
+		}
+	}
+	HAQuDA_Logger::LogInfo("Started File system");
+
+	if (!myWiFi_handler->Connect()) {
+		myErrorHandler.FailedToConnectToWiFi();
+
+		if (!myWiFi_handler->CreateAP()) {
+			myErrorHandler.FailedToCreateAP();
+
+			while (true) {
+			}
+		}
+		HAQuDA_Logger::LogInfo("Created Acces Point");
+		myErrorHandler.ClearCurrentError();
+		HAQuDA_DisplayManip::SetEffectMode(fade);
+	} else {
+		HAQuDA_TimeHelper_Singleton::getInstance()->StartNTP();
+		HAQuDA_Logger::LogInfo("Connected to WiFi");
+	}
+
+	if (!sensorsBegin()) {
+		myErrorHandler.FailedToStartSensors();
+		if (!TryRepairSensors()) { // rebooting sensors
+			ESP.restart();
+		}
+	}
+	HAQuDA_Logger::LogInfo("Started sensors");
+	HAQuDA_DisplayManip::SetMeasMode(multi);
+}
+
+uint16_t measNum = 0;
+uint32_t dispMeasTimer = 0;
+uint32_t sensors_meas_time = 0;
+
+uint16_t touch_val_9 = 0, touch_val_7 = 0, touch_val_8 = 0, touch_val_0 = 0;
+uint8_t TTP223_val = 0;
+char strToSerial[64] = {};
+void loop() {
+
+	// ans = touch_pad_read_raw_data(TOUCH_PAD_NUM9, &touch_val_9);
+	// ans = touch_pad_read_raw_data(TOUCH_PAD_NUM8, &touch_val_8);
+
+	//	touch_val_9 = touchRead(TOUCH_9);
+	//	touch_val_7 = touchRead(TOUCH_7);
+	//	touch_val_8 = touchRead(TOUCH_8);
+	//	touch_val_0 = touchRead(TOUCH_0);
+	//
+	//	if (touch_val_9 || touch_val_7 || touch_val_8 || touch_val_0) {
+	//		touch_val_9 = touch_val_9;
+	//		touch_val_7 = touch_val_7;
+	//		touch_val_8 = touch_val_8;
+	//		touch_val_0 = touch_val_0;
+	//	}
+	//
+	//	sprintf(strToSerial, "TTP223 value: %d  TOUCH9: %d  TOUCH7: %d  TOUCH8: %d  TOUCH0: %d  ", TTP223_val, touch_val_9, touch_val_7, touch_val_8,
+	// touch_val_0); 	vTaskDelay(1000); 	myWiFi_handler->WebSerialPrint(strToSerial);
+
+	myWiFi_handler->HandleConnection();
+
+	//	if ((millis() - sensors_meas_time) > SENSORS_MEAS_PERIOD) {
+	//		getDHT11_meas();
+	//		getCCS811_meas();
+	//		getPM_meas();
+	//
+	//		measNum++;
+	//
+	//		sensors_meas_time = millis();
+	//	}
+	//
+	//	if (millis() - dispMeasTimer > DISP_MEAS_PERIOD) {
+	//		myDispManip->displayData(myDisplayInterface->currUI_Params);
+	//		dispMeasTimer = millis();
+	//
+	//		temp_meas.value = 0;
+	//		temp_meas.measNum = 0;
+	//
+	//		humid_meas.value = 0;
+	//		humid_meas.measNum = 0;
+	//
+	//		eCO2_meas.value = 0;
+	//		eCO2_meas.measNum = 0;
+	//
+	//		TVOC_meas.value = 0;
+	//		TVOC_meas.measNum = 0;
+	//
+	//		PM_2_5_meas.value = 0;
+	//		PM_2_5_meas.measNum = 0;
+	//	}
+}
+//
+// void checkIfMeasCorrect() {
+//	if (!eCO2_meas.newMeasDone) {
+//		terminal.println("ERROR: Failed to get eCO2 measurment");
+//	}
+//	if (!TVOC_meas.newMeasDone) {
+//		terminal.println("ERROR: Failed to get TVOC measurment");
+//	}
+//	if (!PM_2_5_meas.newMeasDone) {
+//		terminal.println("ERROR: Failed to get PM 2.5 measurment");
+//	}
+//	if (!temp_meas.newMeasDone) {
+//		terminal.println("ERROR: Failed to get TEMP measurment");
+//	}
+//	if (!humid_meas.newMeasDone) {
+//		terminal.println("ERROR: Failed to get HUMID measurment");
+//	}
+//	terminal.flush();
+//
+//	eCO2_meas.newMeasDone = false;
+//	TVOC_meas.newMeasDone = false;
+//	PM_2_5_meas.newMeasDone = false;
+//	temp_meas.newMeasDone = false;
+//	humid_meas.newMeasDone = false;
+//}
