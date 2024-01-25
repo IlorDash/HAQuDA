@@ -6,16 +6,16 @@
 class HAQuDA_DisplayManip {
 	static curr_display Display;
 
-	meas_type checkBadMeas(meas_params currUI_Params);
-	uint8_t get_nightMode_hour(night_mode_time_border timeBorder);
-	void standardMode();
-	void multiMode(multi_mode_params multiModeParams);
-	void nightMode();
-	void getMeasRGB(uint8_t *_red, uint8_t *_green, uint8_t *_blue, const uint8_t brightness, const float data, const div_dots divideDots);
-	void showMeas_multi(float *data, uint8_t dataSize, div_dots *divideDots, uint8_t divideDotsSize);
-	void showMeas_total(float *data, uint8_t dataSize, div_dots *dataDivideDots, uint8_t divideDotsSize);
-	void showMeas_standard(float data, div_dots divideDots);
-	void showMeas_night(float data, div_dots divideDots, uint8_t time);
+	static meas_type checkBadMeas(meas_params currUI_Params);
+	static uint8_t get_nightMode_hour(night_mode_time_border timeBorder);
+	static void standardMode();
+	static void multiMode(multi_mode_params multiModeParams);
+	static void nightMode();
+	static void getMeasRGB(uint8_t *_red, uint8_t *_green, uint8_t *_blue, const uint8_t brightness, const float data, const div_dots divideDots);
+	static void showMeas_multi(float *data, uint8_t dataSize, div_dots *divideDots, uint8_t divideDotsSize);
+	static void showMeas_total(float *data, uint8_t dataSize, div_dots *dataDivideDots, uint8_t divideDotsSize);
+	static void showMeas_standard(float data, div_dots divideDots);
+	static void showMeas_night(float data, div_dots divideDots, uint8_t time);
 
 	static uint8_t getLedNum(uint8_t x, uint8_t y);
 

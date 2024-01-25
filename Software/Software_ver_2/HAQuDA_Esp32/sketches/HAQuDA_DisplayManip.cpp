@@ -263,15 +263,15 @@ void HAQuDA_DisplayManip::ShowEffectFade(const fade_effect_params params) {
 void HAQuDA_DisplayManip::ShowMeas() {
 	switch (Display.measParams.mode) {
 		case standard: {
-			standardMode();
+			HAQuDA_DisplayManip::standardMode();
 			break;
 		}
 		case multi: {
-			multiMode(Display.measParams.multiModeParams);
+			HAQuDA_DisplayManip::multiMode(Display.measParams.multiModeParams);
 			break;
 		}
 		case night: {
-			nightMode();
+			HAQuDA_DisplayManip::nightMode();
 			break;
 		}
 		default:
