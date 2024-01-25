@@ -136,15 +136,6 @@ void HAQuDA_DisplayManip::SetEffectParam(const effects_params new_effect_param) 
 	Display.effectParams = new_effect_param;
 }
 
-void HAQuDA_DisplayManip::SetError(const effect_mode new_error) {
-	HAQuDA_DisplayManip::SetMode(error);
-	HAQuDA_DisplayManip::SetEffectMode(new_error);
-}
-
-void HAQuDA_DisplayManip::ClearError() {
-	SetMode(noneMode);
-}
-
 uint8_t HAQuDA_DisplayManip::GetBrightness() {
 	return Display.brighntessPerCent;
 }
@@ -163,6 +154,29 @@ meas_type HAQuDA_DisplayManip::GetMeasType() {
 
 effect_mode HAQuDA_DisplayManip::GetEffectMode() {
 	return Display.effectParams.mode;
+}
+
+void HAQuDA_DisplayManip::ShowEffect() {
+	switch (Display.effectParams.mode) {
+		case snake: {
+			ShowEffectSnake();
+			break;
+		}
+		case randomPixel: {
+			ShowEffectRandom();
+			break;
+		}
+		case fade: {
+			ShowEffectFade();
+			break;
+		}
+		case grow: {
+			ShowEffectGrow();
+			break;
+		}
+		default:
+			break;
+	}
 }
 
 void HAQuDA_DisplayManip::ShowStaticColor(uint32_t color) {

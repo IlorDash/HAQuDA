@@ -1,16 +1,15 @@
 #pragma once
 #include "HAQuDA_DisplayManip_typedefs.h"
 
-typedef enum { failedToStartFS, failedToConnectToWiFi, failedToCreateAP, failedToStartSensors, noneError } errorTypes;
+typedef enum { failedToConnectToWiFi, failedToCreateAP, failedToStartFS, failedToStartSensors, noneError } errorTypes;
 
 #define DEFAULT_ERROR_DISPLAY_TIME 5000 // 5 sec
 
 class HAQuDA_ErrorHandler {
 	static effect_mode errorEffectDisp;
 
-	static errorTypes CurrentError;
+	static errorTypes currentError;
 
-  public:
 	static grow_effect_params failedToConnectToWiFiEffect;
 	static snake_effect_params failedToCreateAPEffect;
 
@@ -18,7 +17,13 @@ class HAQuDA_ErrorHandler {
 
 	static random_effect_params failedToStartSensorsEffect;
 
+	static void setErrorToDisplayManip(const effect_mode new_error);
+	static void resetErrorOnDisplayManip();
+
+  public:
 	HAQuDA_ErrorHandler();
+
+	static void ShowError();
 
 	static errorTypes GetCurrentError();
 

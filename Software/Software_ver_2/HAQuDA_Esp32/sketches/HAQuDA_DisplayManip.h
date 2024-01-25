@@ -32,7 +32,6 @@ class HAQuDA_DisplayManip {
 	static void SetEffectMode(const effect_mode new_effect_mode);
 	static void SetEffectParam(const effects_params new_effect_param);
 
-	static void SetError(const effect_mode new_error);
 
 	uint8_t GetBrightness();
 	static display_mode GetMode();
@@ -40,8 +39,7 @@ class HAQuDA_DisplayManip {
 	meas_type GetMeasType();
 	static effect_mode GetEffectMode();
 
-	void ShowMeas();
-	static void ClearError();
+	static void ShowEffect();
 
 	static void ShowStaticColor(uint32_t color);
 	static void ShowStaticColor(int red, int green, int blue);
@@ -49,6 +47,8 @@ class HAQuDA_DisplayManip {
 	static void ShowEffectSnake(const snake_effect_params params = Display.effectParams.snakeParams);
 	static void ShowEffectRandom(const random_effect_params params = Display.effectParams.randomParams);
 	static void ShowEffectFade(const fade_effect_params params = Display.effectParams.fadeParams);
+
+	static void ShowMeas();
 
 	~HAQuDA_DisplayManip();
 };

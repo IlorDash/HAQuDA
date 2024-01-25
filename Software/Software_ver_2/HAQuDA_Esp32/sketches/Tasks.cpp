@@ -3,8 +3,6 @@
 
 #define BUILTIN_LED 2
 
-HAQuDA_DisplayManip *myDisplayManip_tasks;
-
 void BuiltIn_LED_Blink_TaskCode(void *parameter) {
 	while (true) {
 		digitalWrite(BUILTIN_LED, HIGH);
@@ -16,42 +14,17 @@ void BuiltIn_LED_Blink_TaskCode(void *parameter) {
 
 void WS2812_EffectsTaskCode(void *parameter) {
 	while (true) {
-		bool isError = (HAQuDA_DisplayManip::GetMode() == error);
-		effect_mode effect = HAQuDA_DisplayManip::GetEffectMode();
+		display_mode mode = HAQuDA_DisplayManip::GetMode();
 
-		switch (effect) {
-			case snake: {
-				if (isError) {
-					HAQuDA_DisplayManip::ShowEffectSnake(HAQuDA_ErrorHandler::failedToCreateAP_displayParams);
-				} else {
-					HAQuDA_DisplayManip::ShowEffectSnake();
-				}
+		switch (mode) {
+			case effect:
+				HAQuDA_DisplayManip::ShowEffect();
 				break;
-			}
-			case randomPixel: {
-				if (isError) {
-					HAQuDA_DisplayManip::ShowEffectRandom(HAQuDA_ErrorHandler::failedToStartSensors_displayParams);
-				} else {
-					HAQuDA_DisplayManip::ShowEffectRandom();
-				}
+			case meas:
 				break;
-			}
-			case fade: {
-				if (isError) {
-					HAQuDA_DisplayManip::ShowEffectFade(HAQuDA_ErrorHandler::failedToStartFS_displayParams);
-				} else {
-					HAQuDA_DisplayManip::ShowEffectFade();
-				}
+			case error:
+				HAQuDA_ErrorHandler::ShowError();
 				break;
-			}
-			case grow: {
-				if (isError) {
-					HAQuDA_DisplayManip::ShowEffectGrow(HAQuDA_ErrorHandler::failedToConnectToWiFi_displayParams);
-				} else {
-					HAQuDA_DisplayManip::ShowEffectGrow();
-				}
-				break;
-			}
 			default:
 				break;
 		}
@@ -70,12 +43,5 @@ void createTasks() {
 							0						// Task core
 	);
 
-	xTaskCreatePinnedToCore(BuiltIn_LED_Blink_TaskCode,
-							"BuiltIn LED Blink task",  
-							1024,					
-							NULL,					
-							1,						
-							NULL,					
-							0						
-	);
+	xTaskCreatePinnedToCore(BuiltIn_LED_Blink_TaskCode, "BuiltIn LED Blink task", 1024, NULL, 1, NULL, 0);
 }
