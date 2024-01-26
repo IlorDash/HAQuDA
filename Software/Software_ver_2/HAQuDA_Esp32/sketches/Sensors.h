@@ -8,15 +8,15 @@ typedef struct {
 	float value;
 	uint16_t measNum;
 	bool newMeasDone;
-} measStruct;
+} meas_data;
 
-extern measStruct eCO2_meas;
-extern measStruct TVOC_meas;
-extern measStruct PM_1_0_meas;  // define PM1.0 value of the air detector module
-extern measStruct PM_2_5_meas; // define PM2.5 value of the air detector module
-extern measStruct PM_10_meas;  // define PM10 value of the air detector module
-extern measStruct temp_meas;  // define PM10 value of the air detector module
-extern measStruct humid_meas; // define PM10 value of the air detector module
+extern meas_data eCO2_meas;
+extern meas_data TVOC_meas;
+extern meas_data PM_1_0_meas;  // define PM1.0 value of the air detector module
+extern meas_data PM_2_5_meas; // define PM2.5 value of the air detector module
+extern meas_data PM_10_meas;  // define PM10 value of the air detector module
+extern meas_data temp_meas;  // define PM10 value of the air detector module
+extern meas_data humid_meas; // define PM10 value of the air detector module
 
 bool sensorsBegin();
 bool getCCS811_meas();

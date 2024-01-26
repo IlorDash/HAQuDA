@@ -19,13 +19,13 @@
 
 Adafruit_CCS811 CCS811;
 
-measStruct eCO2_meas;
-measStruct TVOC_meas;
-measStruct PM_1_0_meas; // define PM1.0 value of the air detector module
-measStruct PM_2_5_meas; // define PM2.5 value of the air detector module
-measStruct PM_10_meas;  // define PM10 value of the air detector module
-measStruct temp_meas;   // define PM10 value of the air detector module
-measStruct humid_meas;  // define PM10 value of the air detector module
+meas_data eCO2_meas;
+meas_data TVOC_meas;
+meas_data PM_1_0_meas; // define PM1.0 value of the air detector module
+meas_data PM_2_5_meas; // define PM2.5 value of the air detector module
+meas_data PM_10_meas;  // define PM10 value of the air detector module
+meas_data temp_meas;   // define PM10 value of the air detector module
+meas_data humid_meas;  // define PM10 value of the air detector module
 
 unsigned char buf[PM_BUF_LEN];
 byte O3_buf[9];
