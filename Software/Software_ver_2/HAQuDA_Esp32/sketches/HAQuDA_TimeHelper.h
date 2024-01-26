@@ -15,7 +15,7 @@ typedef struct {
 	uint8_t sec;
 } DateTimeStruct;
 
-class HAQuDA_TimeHelper_Singleton; // опережающее объявление
+class HAQuDA_TimeHelper_Singleton;
 
 class HAQuDA_TimeHelper_SingletonDestroyer {
   private:
