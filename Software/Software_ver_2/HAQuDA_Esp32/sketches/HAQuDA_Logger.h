@@ -1,15 +1,16 @@
 #pragma once
 
 #include "HAQuDA_TimeHelper.h"
+#include "HAQuDA_ErrorHandler.h"
 
-#define MSG_MAX_LEN 57
-#define MSG_PREFIX_LEN 5
+#define MSG_MAX_LEN 64
+#define MSG_PREFIX_LEN 8
 #define MSG_DATA_MAX_LEN 32
 
-#define ERROR_MSG_PREFIX "ERROR: "
-#define INFO_MSG_PREFIX "Info: "
+#define ERROR_MSG_PREFIX "ERROR"
+#define INFO_MSG_PREFIX "Info"
 
-#define CANT_GET_TIME_PREFIX "Can't get time"
+#define CANT_GET_TIME_PREFIX "Fail get time!"
 
 typedef struct {
 	char timestamp[DATE_TIME_STR_LEN + 1] = {0};
@@ -24,6 +25,10 @@ class HAQuDA_Logger {
 
   public:
 	explicit HAQuDA_Logger();
+
+	static void SetErrHandler(HAQuDA_ErrorHandler *_err_handler);
+	static void PreareLogsFile();
+
 	static void LogInfo(const char *msg);
 	static void LogError(const char *msg);
 
