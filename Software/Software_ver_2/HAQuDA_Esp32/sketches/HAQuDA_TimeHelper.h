@@ -3,14 +3,14 @@
 #include <WiFiUdp.h>
 #include <NTPClient.h>
 
-#define DATE_TIME_STR_LEN 19 // without null term
+#define DATE_TIME_STR_LEN 20
 
 typedef struct {
 	uint8_t date;
 	uint8_t month;
 	uint16_t year;
 
-	uint8_t hour; // 24-h time format
+	uint8_t hour;
 	uint8_t min;
 	uint8_t sec;
 } DateTimeStruct;

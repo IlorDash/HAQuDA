@@ -51,9 +51,15 @@ bool HAQuDA_TimeHelper_Singleton::GetFormattedDate(char *_formattedDate) {
 	if (!timeClientStarted) {
 		return false;
 	}
-	while (!timeClient->update()) {
+
+	int time_update_retries = 2;
+
+	while ((!timeClient->update()) && (time_update_retries--)) {
 		timeClient->forceUpdate();
 	}
+	if (!time_update_retries)
+		return false;
+
 	// The formattedDate comes with the following format:
 	// 2018-05-28T16:00:13
 	String formattedDate = timeClient->getFormattedDate();
@@ -100,8 +106,8 @@ bool HAQuDA_TimeHelper_Singleton::GetDateTime(char *_time) {
 		return false;
 	}
 
-	char buffer[DATE_TIME_STR_LEN + 1] = {0}; // plus null term
-	uint8_t ret = snprintf(buffer, DATE_TIME_STR_LEN, "%2d.%2d.%4d %2d:%2d:%2d", currTime.date, currTime.month, currTime.year, currTime.hour, currTime.min,
+	char buffer[DATE_TIME_STR_LEN] = {0}; // plus null term
+	uint8_t ret = snprintf(buffer, DATE_TIME_STR_LEN, "%02d.%02d.%4d %02d:%02d:%02d", currTime.date, currTime.month, currTime.year, currTime.hour, currTime.min,
 						   currTime.sec);
 	if (ret != DATE_TIME_STR_LEN) {
 		return false;
