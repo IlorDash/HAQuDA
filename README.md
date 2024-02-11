@@ -3,10 +3,15 @@ Home Air Quality Display And so on
 
 ![workflow status](https://github.com/IlorDash/HAQuDA/actions/workflows/build-haquda.yml/badge.svg)
 
+Events description:
+* :white_circle::snake: Lime snake - Booting
+* :green_circle: Green - Connected to WiFi
+
 Errors description:
 * :red_circle::arrow_up_small::arrow_double_up: Red grow - Failed to connect to WiFi
 * :red_circle::snake: Red snake - Failed to create Access Point
 * :red_circle::high_brightness::low_brightness: Red fading - Failed to start FS
+* :yellow_circle::low_brightness::high_brightness: Yellow reverse fading - Failed to update NTP client
 * :alarm_clock::broken_heart::snail: Random - Failed to start sensors
 
 Software is an Arduino project created using VisualGDB 5.6. Currently **we support esp32 2.0.11 version** of Arduino core, so if you encounter problems with unsuported methods or something like that, **check version of this package**.
