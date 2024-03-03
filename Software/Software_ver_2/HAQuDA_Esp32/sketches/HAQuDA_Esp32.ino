@@ -18,13 +18,12 @@
 
 #define BUILTIN_LED_PERIOD 1000
 
-HAQuDA_DisplayManip *DispManip;
-HAQuDA_MeasHandler *MeasHandler;
-HAQuDA_EffectsHandler EffectsHandler;
 HAQuDA_ErrorHandler ErrHandler;
-
-HAQuDA_WiFi_handler *WiFiHandler;
 HAQuDA_FileStorage FileStorage;
+HAQuDA_EffectsHandler EffectsHandler;
+HAQuDA_MeasHandler MeasHandler(&ErrHandler);
+HAQuDA_DisplayManip DispManip(&MeasHandler, &EffectsHandler, &ErrHandler);
+HAQuDA_WiFi_handler WiFiHandler(&FileStorage, &DispManip);
 
 int meas_start_time = 0;
 int builtin_blink_start_time = 0;
@@ -34,19 +33,16 @@ void setup() {
 	Serial.begin(115200);
 	pinMode(BUILTIN_LED, OUTPUT);
 
-	MeasHandler = new HAQuDA_MeasHandler(&ErrHandler);
-	DispManip = new HAQuDA_DisplayManip(MeasHandler, &EffectsHandler, &ErrHandler);
-	WiFiHandler = new HAQuDA_WiFi_handler(&FileStorage, DispManip);
 	HAQuDA_Logger::SetErrHandler(&ErrHandler);
-    HAQuDA_TimeService::getInstance();
+	HAQuDA_TimeService::getInstance();
 	HAQuDA_LEDs::getInstance()->Begin();
-	createTasks(DispManip);
+	createTasks(&DispManip);
 
-	DispManip->SetEffect(snake);
+	DispManip.SetEffect(snake);
 	vTaskDelay(2000 / portTICK_PERIOD_MS);
 
 	if (!FileStorage.Start()) {
-		DispManip->SetMode(error);
+		DispManip.SetMode(error);
 		ErrHandler.FailedToStartFS();
 		while (true) {
 		}
@@ -54,30 +50,29 @@ void setup() {
 	HAQuDA_Logger::PrepareLogsFile();
 	HAQuDA_Logger::LogInfo("Started File system");
 
-	if (!WiFiHandler->Connect()) {
-		DispManip->SetMode(error);
+	if (!WiFiHandler.Connect()) {
+		DispManip.SetMode(error);
 		ErrHandler.FailedToConnectToWiFi();
 
-		if (!WiFiHandler->CreateAP()) {
-			DispManip->SetMode(error);
+		if (!WiFiHandler.CreateAP()) {
+			DispManip.SetMode(error);
 			ErrHandler.FailedToCreateAP();
-
 			while (true) {
 			}
 		}
 		HAQuDA_Logger::LogInfo("Created Acces Point");
-		DispManip->SetMode(noneMode);
+		DispManip.SetMode(noneMode);
 		ErrHandler.ClearError();
 		HAQuDA_DisplayManip::SetEffect(fading);
 	} else {
-		HAQuDA_TimeService::getInstance()->StartNTP();
+		HAQuDA_TimeService::StartNTP();
 		HAQuDA_Logger::LogInfo("Connected to WiFi");
 	}
 
-	if (!MeasHandler->SensorsBegin()) {
-		DispManip->SetMode(error);
+	if (!MeasHandler.SensorsBegin()) {
+		DispManip.SetMode(error);
 		ErrHandler.FailedToStartSensors();
-		if (!MeasHandler->TryRebootSensors()) {
+		if (!MeasHandler.TryRebootSensors()) {
 			ESP.restart();
 		}
 	}
@@ -87,8 +82,8 @@ void setup() {
 }
 
 void loop() {
-	WiFiHandler->HandleConnection();
-	MeasHandler->UpdateMeas(&meas_start_time);
+	WiFiHandler.HandleConnection();
+	MeasHandler.UpdateMeas(&meas_start_time);
 	if ((millis() - builtin_blink_start_time) > BUILTIN_LED_PERIOD) {
 		digitalWrite(BUILTIN_LED, !digitalRead(BUILTIN_LED));
 		builtin_blink_start_time = millis();
