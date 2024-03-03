@@ -51,7 +51,7 @@ void setup() {
 		while (true) {
 		}
 	}
-	HAQuDA_Logger::PreareLogsFile();
+	HAQuDA_Logger::PrepareLogsFile();
 	HAQuDA_Logger::LogInfo("Started File system");
 
 	if (!WiFiHandler->Connect()) {

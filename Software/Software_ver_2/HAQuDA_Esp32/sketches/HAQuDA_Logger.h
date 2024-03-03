@@ -27,7 +27,7 @@ class HAQuDA_Logger {
 	explicit HAQuDA_Logger();
 
 	static void SetErrHandler(HAQuDA_ErrorHandler *_err_handler);
-	static void PreareLogsFile();
+	static void PrepareLogsFile();
 
 	static void LogInfo(const char *msg);
 	static void LogError(const char *msg);

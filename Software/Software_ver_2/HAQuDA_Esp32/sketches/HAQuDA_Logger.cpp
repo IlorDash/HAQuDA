@@ -11,7 +11,7 @@ void HAQuDA_Logger::SetErrHandler(HAQuDA_ErrorHandler *_err_handler) {
 	errHandler = _err_handler;
 }
 
-void HAQuDA_Logger::PreareLogsFile() {
+void HAQuDA_Logger::PrepareLogsFile() {
 	HAQuDA_FileStorage::DeleteFile(FILE_NAME_LOGS);
 }
 
