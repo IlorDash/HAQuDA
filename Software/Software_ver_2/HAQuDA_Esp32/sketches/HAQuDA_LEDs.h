@@ -7,9 +7,9 @@ class HAQuDA_LEDs {
 
 	static HAQuDA_LEDs *p_instance;
 
-  protected:
 	HAQuDA_LEDs(){};
 	HAQuDA_LEDs(const HAQuDA_LEDs *);
+	HAQuDA_LEDs *operator=(HAQuDA_LEDs *);
 	~HAQuDA_LEDs(){};
 
   public:
