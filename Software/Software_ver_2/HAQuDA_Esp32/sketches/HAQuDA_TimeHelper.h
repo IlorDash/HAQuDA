@@ -3,6 +3,7 @@
 #include <WiFiUdp.h>
 #include <NTPClient.h>
 
+#define GMT_PLUS_3_TZ_SEC 10800
 #define DATE_TIME_STR_LEN 20
 
 typedef struct {
@@ -15,38 +16,24 @@ typedef struct {
 	uint8_t sec;
 } DateTimeStruct;
 
-class HAQuDA_TimeHelper_Singleton;
-
-class HAQuDA_TimeHelper_SingletonDestroyer {
-  private:
-	HAQuDA_TimeHelper_Singleton *p_instance;
-
-  public:
-	~HAQuDA_TimeHelper_SingletonDestroyer();
-	void initialize(HAQuDA_TimeHelper_Singleton *p);
-};
-
-class HAQuDA_TimeHelper_Singleton {
-	// Define NTP Client to get time
+class HAQuDA_TimeService {
 	static WiFiUDP *ntpUDP;
 	static NTPClient *timeClient;
 
 	static bool timeClientStarted;
 
-	static HAQuDA_TimeHelper_Singleton *p_instance;
-	static HAQuDA_TimeHelper_SingletonDestroyer destroyer;
+	static HAQuDA_TimeService *p_instance;
 
 	static bool GetFormattedDate(char *_formattedDate);
 
   protected:
-	HAQuDA_TimeHelper_Singleton(){};
-	HAQuDA_TimeHelper_Singleton(const HAQuDA_TimeHelper_Singleton *);
-	HAQuDA_TimeHelper_Singleton *operator=(HAQuDA_TimeHelper_Singleton *);
-	~HAQuDA_TimeHelper_Singleton(){};
-	friend class HAQuDA_TimeHelper_SingletonDestroyer;
+	HAQuDA_TimeService(){};
+	HAQuDA_TimeService(const HAQuDA_TimeService *);
+	HAQuDA_TimeService *operator=(HAQuDA_TimeService *);
+	~HAQuDA_TimeService(){};
 
   public:
-	static HAQuDA_TimeHelper_Singleton *getInstance();
+	static HAQuDA_TimeService *getInstance();
 
 	static void StartNTP();
 

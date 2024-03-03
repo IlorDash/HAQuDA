@@ -38,7 +38,7 @@ void setup() {
 	DispManip = new HAQuDA_DisplayManip(MeasHandler, &EffectsHandler, &ErrHandler);
 	WiFiHandler = new HAQuDA_WiFi_handler(&FileStorage, DispManip);
 	HAQuDA_Logger::SetErrHandler(&ErrHandler);
-    HAQuDA_TimeHelper_Singleton::getInstance();
+    HAQuDA_TimeService::getInstance();
 	HAQuDA_LEDs_Singleton::getInstance()->Begin();
 	createTasks(DispManip);
 
@@ -70,7 +70,7 @@ void setup() {
 		ErrHandler.ClearError();
 		HAQuDA_DisplayManip::SetEffect(fading);
 	} else {
-		HAQuDA_TimeHelper_Singleton::getInstance()->StartNTP();
+		HAQuDA_TimeService::getInstance()->StartNTP();
 		HAQuDA_Logger::LogInfo("Connected to WiFi");
 	}
 

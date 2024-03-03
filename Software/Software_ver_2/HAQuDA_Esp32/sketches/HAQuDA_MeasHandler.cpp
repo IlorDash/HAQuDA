@@ -320,7 +320,7 @@ void HAQuDA_MeasHandler::multiMode(multi_mode_params multiModeParams) {
 uint8_t HAQuDA_MeasHandler::get_nightMode_hour(night_time timeBorder) {
 	DateTimeStruct currTime;
 
-	if (!HAQuDA_TimeHelper_Singleton::getInstance()->GetDateTime(&currTime)) {
+	if (!HAQuDA_TimeService::getInstance()->GetDateTime(&currTime)) {
 		return 0;
 	}
 

@@ -17,7 +17,7 @@ void HAQuDA_Logger::PreareLogsFile() {
 
 void HAQuDA_Logger::prepareLogInfoText(LogMsgStruct *log_i_struct, char *log_i_text, const char *msg) {
 
-	if (!HAQuDA_TimeHelper_Singleton::getInstance()->GetDateTime(log_i_struct->timestamp)) {
+	if (!HAQuDA_TimeService::getInstance()->GetDateTime(log_i_struct->timestamp)) {
 		errHandler->FailedToUpdateNTP();
 		strncpy(log_i_struct->timestamp, CANT_GET_TIME_PREFIX, strlen(CANT_GET_TIME_PREFIX));
 	}
@@ -44,7 +44,7 @@ void HAQuDA_Logger::LogInfo(const char *msg_to_show) {
 
 void HAQuDA_Logger::prepareLogErrorText(LogMsgStruct *log_e_struct, char *log_e_text, const char *msg) {
 
-	if (!HAQuDA_TimeHelper_Singleton::getInstance()->GetDateTime(log_e_struct->timestamp)) {
+	if (!HAQuDA_TimeService::getInstance()->GetDateTime(log_e_struct->timestamp)) {
 		errHandler->FailedToUpdateNTP();
 		strncpy(log_e_struct->timestamp, CANT_GET_TIME_PREFIX, strlen(CANT_GET_TIME_PREFIX));
 	}
