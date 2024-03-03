@@ -37,7 +37,7 @@ char checkValue(unsigned char *thebuf) {
 	for (int i = 0; i < (PM_BUF_LEN - 2); i++) {
 		receiveSum += thebuf[i];
 	}
-	receiveSum += (int)(pm_data_marker & 0xff) + (int)(pm_data_marker >> 8 & 0xff);
+	receiveSum += (int)(pm_data_marker & 0xff) + (int)((pm_data_marker >> 8) & 0xff);
 
 	if (receiveSum == ((thebuf[PM_BUF_LEN - 2] << 8) + thebuf[PM_BUF_LEN - 1])) {
 		receiveSum = 0;
