@@ -19,18 +19,16 @@ typedef struct {
 class HAQuDA_TimeService {
 	static WiFiUDP *ntpUDP;
 	static NTPClient *timeClient;
-
-	static bool timeClientStarted;
-
 	static HAQuDA_TimeService *p_instance;
 
-	static bool GetFormattedDate(char *_formattedDate);
-
-  protected:
 	HAQuDA_TimeService(){};
 	HAQuDA_TimeService(const HAQuDA_TimeService *);
 	HAQuDA_TimeService *operator=(HAQuDA_TimeService *);
 	~HAQuDA_TimeService(){};
+
+	static bool timeClientStarted;
+
+	static bool GetFormattedDate(char *_formattedDate);
 
   public:
 	static HAQuDA_TimeService *getInstance();
