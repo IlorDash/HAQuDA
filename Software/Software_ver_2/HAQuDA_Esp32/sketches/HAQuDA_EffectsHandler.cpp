@@ -75,7 +75,7 @@ effect_type HAQuDA_EffectsHandler::GetEffect() {
 	return effect;
 };
 
- void HAQuDA_EffectsHandler::SetSnakeParam(const snake_params _snake_p) {
+void HAQuDA_EffectsHandler::SetSnakeParam(const snake_params _snake_p) {
 	snake_p = _snake_p;
 }
 
@@ -100,19 +100,18 @@ void HAQuDA_EffectsHandler::show_static_color(uint32_t c) {
 	HAQuDA_LEDs::getInstance()->Show();
 }
 
- void HAQuDA_EffectsHandler::show_snake(const snake_params p) {
+void HAQuDA_EffectsHandler::show_snake(const snake_params p) {
 	stop_effect = false;
 	HAQuDA_LEDs::getInstance()->Clear();
 	for (int i = 0; i < LED_NUM_PIXELS; i++) {
 		int pixelNum = 0;
 		for (int j = 0; j < p.tail_len; j++) {
-			pixelNum = j + i;
-			pixelNum = (pixelNum > LED_NUM_PIXELS) ? LED_NUM_PIXELS : pixelNum;
-			HAQuDA_LEDs::getInstance()->SetPixelColor(pixelNum, p.color);
-
 			if (stop_effect) {
 				return;
 			}
+			pixelNum = j + i;
+			pixelNum = (pixelNum > LED_NUM_PIXELS) ? LED_NUM_PIXELS : pixelNum;
+			HAQuDA_LEDs::getInstance()->SetPixelColor(pixelNum, p.color);
 		}
 		HAQuDA_LEDs::getInstance()->Show(p.move_pause_ms);
 		HAQuDA_LEDs::getInstance()->SetPixelColor(i, 0);
