@@ -23,18 +23,22 @@
         <string>sketches\Board.h</string>
         <string>sketches\WebPages.h</string>
         <string>sketches\Sensors.h</string>
-        <string>sketches\WS2812.h</string>
+        <string>sketches\HAQuDA_LEDs.h</string>
         <string>sketches\Tasks.h</string>
         <string>sketches\HAQuDA_WebServer.h</string>
         <string>sketches\HAQuDA_WiFi_handler.h</string>
         <string>sketches\HAQuDA_FileStorage.h</string>
         <string>sketches\HAQuDA_ErrorHandler.h</string>
-        <string>sketches\HAQuDA_DisplayManip_typedefs.h</string>
+        <string>sketches\HAQuDA_LEDsParams.h</string>
         <string>sketches\HAQuDA_DisplayManip.h</string>
         <string>sketches\HAQuDA_CaptiveRequestHandler.h</string>
         <string>sketches\HAQuDA_Logger.h</string>
         <string>sketches\HAQuDA_MyWebSerial.h</string>
         <string>sketches\HAQuDA_TimeHelper.h</string>
+        <string>sketches\HAQuDA_MeasHandler.h</string>
+        <string>sketches\HAQuDA_EffectsHandler.h</string>
+        <string>sketches\HAQuDA_EventHandler.h</string>
+        <string>sketches\HAQuDA_Touch.h</string>
       </OtherFiles>
     </ProjectModeSettings>
   </Project>
@@ -287,7 +291,7 @@
         <DebugMethod>
           <ID>openocd</ID>
           <Configuration xsi:type="com.visualgdb.edp.openocd.settings.esp32">
-            <CommandLine>-f interface/jlink.cfg -c "adapter_khz 10000" -f target/esp32.cfg</CommandLine>
+            <CommandLine>-f interface/jlink.cfg -c "adapter_khz 12000" -f target/esp32.cfg</CommandLine>
             <ExtraParameters>
               <Frequency xsi:nil="true" />
               <BoostedFrequency xsi:nil="true" />
@@ -309,6 +313,9 @@
             <SelectedCoreIndex xsi:nil="true" />
             <LiveMemoryTimeout>5000</LiveMemoryTimeout>
             <SuggestionLogicRevision>1</SuggestionLogicRevision>
+            <FLASHResources>
+              <FLASHResource />
+            </FLASHResources>
             <CheckFLASHSize>true</CheckFLASHSize>
             <FLASHSettings>
               <Size>size4MB</Size>

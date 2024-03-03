@@ -1,61 +1,59 @@
 #include "HAQuDA_ErrorHandler.h"
-#include "HAQuDA_DisplayManip.h"
 #include "HAQuDA_Logger.h"
+#include "HAQuDA_LEDsParams.h"
 
-effect_mode HAQuDA_ErrorHandler::errorEffectDisp = noneEffect;
+snake_params HAQuDA_ErrorHandler::failedToCreateAPEffect;
+growing_params HAQuDA_ErrorHandler::failedToConnectToWiFiEffect;
+random_led_params HAQuDA_ErrorHandler::failedToStartSensorsEffect;
+fading_params HAQuDA_ErrorHandler::failedToStartFSEffect;
+fading_params HAQuDA_ErrorHandler::failedToUpdateNTPEffect;
 
-grow_effect_params HAQuDA_ErrorHandler::failedToConnectToWiFiEffect;
-snake_effect_params HAQuDA_ErrorHandler::failedToCreateAPEffect;
-
-fade_effect_params HAQuDA_ErrorHandler::failedToStartFSEffect;
-
-random_effect_params HAQuDA_ErrorHandler::failedToStartSensorsEffect;
-
-errorTypes HAQuDA_ErrorHandler::currentError = noneError;
+error_type HAQuDA_ErrorHandler::currentError = noneError;
 
 HAQuDA_ErrorHandler::HAQuDA_ErrorHandler() {
-	failedToConnectToWiFiEffect.color = COLOR_RED; // grow
-	failedToConnectToWiFiEffect.speed = 200;
+	failedToCreateAPEffect.color = COLOR_RED;
+	failedToCreateAPEffect.move_pause_ms = 100;
+	failedToCreateAPEffect.tail_len = 1;
 
-	failedToCreateAPEffect.color = COLOR_RED; // snake
-	failedToCreateAPEffect.speed = 200;
-	failedToCreateAPEffect.tailLength = 1;
+	failedToConnectToWiFiEffect.color = COLOR_RED;
+	failedToConnectToWiFiEffect.grow_pause_ms = 100;
 
-	failedToStartFSEffect.color = COLOR_RED; // fade
-	failedToStartFSEffect.speed = 10;
-	failedToStartFSEffect.startBrightness = 100;
-	failedToStartFSEffect.stopBrightness = 0;
+	failedToStartSensorsEffect.pause_ms = 50;
+	failedToStartSensorsEffect.end_pause_ms = 500;
+
+	failedToStartFSEffect.color = COLOR_RED;
+	failedToStartFSEffect.fade_pause_ms = 10;
+	failedToStartFSEffect.start_bright = 100;
+	failedToStartFSEffect.stop_bright = 0;
 	failedToStartFSEffect.step = 5;
 
-	failedToStartSensorsEffect.speed = 50; // random
-	failedToStartSensorsEffect.pauseTime = 500;
+	failedToUpdateNTPEffect.color = COLOR_YELLOW;
+	failedToUpdateNTPEffect.fade_pause_ms = 10;
+	failedToUpdateNTPEffect.start_bright = 0;
+	failedToUpdateNTPEffect.stop_bright = 100;
+	failedToUpdateNTPEffect.step = 10;
 }
 
-void HAQuDA_ErrorHandler::setErrorToDisplayManip(const effect_mode new_error) {
-	HAQuDA_DisplayManip::SetMode(error);
-	HAQuDA_DisplayManip::SetEffectMode(new_error);
-}
-
-void HAQuDA_ErrorHandler::resetErrorOnDisplayManip() {
-	HAQuDA_DisplayManip::SetMode(noneMode);
-}
-
-void HAQuDA_ErrorHandler::ShowError() {
+void HAQuDA_ErrorHandler::Show() {
 	switch (currentError) {
-		case failedToConnectToWiFi: {
-			HAQuDA_DisplayManip::ShowEffectGrow(HAQuDA_ErrorHandler::failedToConnectToWiFiEffect);
+		case failedToCreateAP: {
+			show_snake(failedToCreateAPEffect);
 			break;
 		}
-		case failedToCreateAP: {
-			HAQuDA_DisplayManip::ShowEffectSnake(HAQuDA_ErrorHandler::failedToCreateAPEffect);
+		case failedToConnectToWiFi: {
+			show_growing(failedToConnectToWiFiEffect);
 			break;
 		}
 		case failedToStartFS: {
-			HAQuDA_DisplayManip::ShowEffectFade(HAQuDA_ErrorHandler::failedToStartFSEffect);
+			show_random(failedToStartSensorsEffect);
 			break;
 		}
 		case failedToStartSensors: {
-			HAQuDA_DisplayManip::ShowEffectRandom(HAQuDA_ErrorHandler::failedToStartSensorsEffect);
+			show_fading(failedToStartFSEffect);
+			break;
+		}
+		case failedToUpdateNTP: {
+			show_fading(failedToUpdateNTPEffect);
 			break;
 		}
 		default:
@@ -65,36 +63,39 @@ void HAQuDA_ErrorHandler::ShowError() {
 
 void HAQuDA_ErrorHandler::FailedToStartFS() {
 	currentError = failedToStartFS;
-	HAQuDA_Logger::LogError("SPIFFS not mounted!");
-	HAQuDA_DisplayManip::SetMode(error);
-	HAQuDA_DisplayManip::SetEffectMode(fade);
 	vTaskDelay(DEFAULT_ERROR_DISPLAY_TIME / portTICK_PERIOD_MS);
 }
 
 void HAQuDA_ErrorHandler::FailedToConnectToWiFi() {
 	currentError = failedToConnectToWiFi;
 	HAQuDA_Logger::LogError("Failed connection to WiFi");
-	setErrorToDisplayManip(grow);
 	vTaskDelay(DEFAULT_ERROR_DISPLAY_TIME / portTICK_PERIOD_MS);
 }
 
 void HAQuDA_ErrorHandler::FailedToCreateAP() {
 	currentError = failedToCreateAP;
 	HAQuDA_Logger::LogError("Failed creating Acces Point");
-	setErrorToDisplayManip(snake);
 	vTaskDelay(DEFAULT_ERROR_DISPLAY_TIME / portTICK_PERIOD_MS);
 }
 
 void HAQuDA_ErrorHandler::FailedToStartSensors() {
 	currentError = failedToStartSensors;
 	HAQuDA_Logger::LogError("Failed to start sensors");
-	setErrorToDisplayManip(randomPixel);
 	vTaskDelay(DEFAULT_ERROR_DISPLAY_TIME / portTICK_PERIOD_MS);
 }
 
-void HAQuDA_ErrorHandler::ClearCurrentError() {
+void HAQuDA_ErrorHandler::FailedToUpdateNTP() {
+	currentError = failedToUpdateNTP;
+	vTaskDelay(DEFAULT_ERROR_DISPLAY_TIME / portTICK_PERIOD_MS);
+}
+
+void HAQuDA_ErrorHandler::FailedToGetMeas(const char *msg) {
+	HAQuDA_Logger::LogError(msg);
+}
+
+void HAQuDA_ErrorHandler::ClearError() {
 	currentError = noneError;
-	resetErrorOnDisplayManip();
+	SetEffect(noneEffect);
 }
 
 HAQuDA_ErrorHandler::~HAQuDA_ErrorHandler() {

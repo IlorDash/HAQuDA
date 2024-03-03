@@ -1,48 +1,16 @@
 #include "Tasks.h"
 #include "HAQuDA_ErrorHandler.h"
 
-#define BUILTIN_LED 2
+void ShowTask(void *parameter) {
 
-void BuiltIn_LED_BlinkTask(void *parameter) {
-	while (true) {
-		digitalWrite(BUILTIN_LED, HIGH);
-		vTaskDelay(1000 / portTICK_PERIOD_MS);
-		digitalWrite(BUILTIN_LED, LOW);
-		vTaskDelay(500 / portTICK_PERIOD_MS);
-	}
+	HAQuDA_DisplayManip *dispManip = (HAQuDA_DisplayManip *)parameter;
+	int show_meas_time = 0;
+
+	while (true)
+		dispManip->Show(&show_meas_time);
 }
 
-void WS2812_ShowTask(void *parameter) {
-	while (true) {
-		display_mode mode = HAQuDA_DisplayManip::GetMode();
+void createTasks(HAQuDA_DisplayManip *dispManip) {
 
-		switch (mode) {
-			case effect:
-				HAQuDA_DisplayManip::ShowEffect();
-				break;
-			case meas:
-				HAQuDA_DisplayManip::ShowMeas();
-				break;
-			case error:
-				HAQuDA_ErrorHandler::ShowError();
-				break;
-			default:
-				break;
-		}
-	}
-}
-
-void createTasks() {
-	pinMode(BUILTIN_LED, OUTPUT);
-
-	xTaskCreatePinnedToCore(WS2812_ShowTask, // Function that should be called
-							"WS2812 Effects task",  // Name of the task (for debugging)
-							2048,					// Stack size (bytes)
-							NULL,					// Parameter to pass
-							1,						// Task priority
-							NULL,					// Task handler
-							0						// Task core
-	);
-
-	xTaskCreatePinnedToCore(BuiltIn_LED_BlinkTask, "BuiltIn LED Blink task", 1024, NULL, 1, NULL, 0);
+	xTaskCreatePinnedToCore(ShowTask, "WS2812 Effects task", 3000, (void *)dispManip, 1, NULL, 0);
 }

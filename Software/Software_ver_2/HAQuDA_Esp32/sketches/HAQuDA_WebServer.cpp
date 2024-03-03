@@ -24,17 +24,15 @@ void HAQuDA_WebServer::recvMsg(uint8_t *data, size_t len) {
 
 void HAQuDA_WebServer::WebSerialPrint(const char *str) {
 	MyWebSerial.println(str);
-	MyWebSerial.println("");
 }
 
 void HAQuDA_WebServer::WebSerialPrintStoredLogs() {
-	MyWebSerial.println("foo");
 	int logsNum = HAQuDA_Logger::GetStored_LogsNum();
 	char logText[WEB_SERIAL_MAX_STR_LEN] = {0};
-//	for (int i = 0; i < logsNum; i++) {
-//		HAQuDA_Logger::GetStored_Log(i, logText);
-//		MyWebSerial.println(logText);
-//	}
+	for (int i = 0; i < logsNum; i++) {
+		HAQuDA_Logger::GetStored_Log(i, logText);
+		WebSerialPrint(logText);
+	}
 }
 
 bool HAQuDA_WebServer::GetWebServerStarted() {
@@ -199,7 +197,7 @@ saveNewWiFiCredsReturnMsgs HAQuDA_WebServer::SaveNew_WiFiCreds(TWiFiCreds newWiF
 	int index = 0;
 	int fSize = HAQuDA_FileStorage::FileSize(FILE_NAME_WIFI_NET);
 	if (fSize <= 0) {
-		bool writeCredsRes = HAQuDA_FileStorage::WriteFile(FILE_NAME_WIFI_NET, (uint8_t *)&newWiFiCreds, sizeof(TWiFiCreds));
+		bool writeCredsRes = HAQuDA_FileStorage::AppendFile(FILE_NAME_WIFI_NET, (uint8_t *)&newWiFiCreds, sizeof(TWiFiCreds));
 		if (!writeCredsRes) {
 			return error_saving_new_WiFi_creds;
 		}
