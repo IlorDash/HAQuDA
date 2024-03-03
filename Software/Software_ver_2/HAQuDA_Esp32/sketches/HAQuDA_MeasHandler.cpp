@@ -406,34 +406,34 @@ void HAQuDA_MeasHandler::getMeasRGB(uint8_t *_red, uint8_t *_green, uint8_t *_bl
 }
 
 void HAQuDA_MeasHandler::showMeas_standard(float data, div_dots divideDots) {
-	HAQuDA_LEDs_Singleton::getInstance()->Clear();
+	HAQuDA_LEDs::getInstance()->Clear();
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 
 	uint8_t r, g, b;
-	uint8_t brightness = HAQuDA_LEDs_Singleton::getInstance()->GetBright();
+	uint8_t brightness = HAQuDA_LEDs::getInstance()->GetBright();
 	getMeasRGB(&r, &g, &b, brightness, data, divideDots);
-	HAQuDA_LEDs_Singleton::getInstance()->FillColor(r, g, b);
-	HAQuDA_LEDs_Singleton::getInstance()->Show();
+	HAQuDA_LEDs::getInstance()->FillColor(r, g, b);
+	HAQuDA_LEDs::getInstance()->Show();
 }
 
 void HAQuDA_MeasHandler::showMeas_night(float data, div_dots divideDots, uint8_t time) {
-	HAQuDA_LEDs_Singleton::getInstance()->Clear();
+	HAQuDA_LEDs::getInstance()->Clear();
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 
 	uint8_t r, g, b;
-	uint8_t brightness = HAQuDA_LEDs_Singleton::getInstance()->GetBright();
+	uint8_t brightness = HAQuDA_LEDs::getInstance()->GetBright();
 	getMeasRGB(&r, &g, &b, brightness, data, divideDots);
 
 	for (int i = 0; i < LED_COLUMN_NUM; i++) {
 		uint8_t whiteBright = brightness * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
 
-		uint32_t color = (!(i % 3)) ? HAQuDA_LEDs_Singleton::getInstance()->GetColor(r, g, b)
-									: HAQuDA_LEDs_Singleton::getInstance()->GetColor(whiteBright, whiteBright, whiteBright);
+		uint32_t color = (!(i % 3)) ? HAQuDA_LEDs::getInstance()->GetColor(r, g, b)
+									: HAQuDA_LEDs::getInstance()->GetColor(whiteBright, whiteBright, whiteBright);
 		uint8_t pixelNum = (!(i % 3)) ? LED_ROW_NUM : time;
 		uint8_t startPixel = (!(i % 2)) ? (i * LED_ROW_NUM) : (i * LED_ROW_NUM + LED_ROW_NUM - pixelNum);
-		HAQuDA_LEDs_Singleton::getInstance()->FillColorFrom(color, startPixel, pixelNum);
+		HAQuDA_LEDs::getInstance()->FillColorFrom(color, startPixel, pixelNum);
 	}
-	HAQuDA_LEDs_Singleton::getInstance()->Show();
+	HAQuDA_LEDs::getInstance()->Show();
 }
 
 void HAQuDA_MeasHandler::showMeas_multi(float *data, uint8_t dataSize, div_dots *divDots, uint8_t divDotsSize) {
@@ -445,26 +445,26 @@ void HAQuDA_MeasHandler::showMeas_multi(float *data, uint8_t dataSize, div_dots 
 		return;
 	}
 
-	HAQuDA_LEDs_Singleton::getInstance()->Clear();
+	HAQuDA_LEDs::getInstance()->Clear();
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 
 	uint8_t r[MULTI_MODE_PARAM_NUM], g[MULTI_MODE_PARAM_NUM], b[MULTI_MODE_PARAM_NUM];
-	uint8_t brightness = HAQuDA_LEDs_Singleton::getInstance()->GetBright();
+	uint8_t brightness = HAQuDA_LEDs::getInstance()->GetBright();
 	for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
 		getMeasRGB(&(r[i]), &(g[i]), &(b[i]), brightness, data[i], divDots[i]);
 	}
 	for (int i = 0; i < LED_ROW_NUM; i++) {
 		if (!(i % 2)) {
-			HAQuDA_LEDs_Singleton::getInstance()->FillColorFrom(r[0], g[0], b[0], i * LED_ROW_NUM + 1, 3);
-			HAQuDA_LEDs_Singleton::getInstance()->FillColorFrom(r[1], g[1], b[1], i * LED_ROW_NUM + 5, 3);
-			HAQuDA_LEDs_Singleton::getInstance()->FillColorFrom(r[2], g[2], b[2], i * LED_ROW_NUM + 9, 3);
+			HAQuDA_LEDs::getInstance()->FillColorFrom(r[0], g[0], b[0], i * LED_ROW_NUM + 1, 3);
+			HAQuDA_LEDs::getInstance()->FillColorFrom(r[1], g[1], b[1], i * LED_ROW_NUM + 5, 3);
+			HAQuDA_LEDs::getInstance()->FillColorFrom(r[2], g[2], b[2], i * LED_ROW_NUM + 9, 3);
 		} else {
-			HAQuDA_LEDs_Singleton::getInstance()->FillColorFrom(r[2], g[2], b[2], i * LED_ROW_NUM, 3);
-			HAQuDA_LEDs_Singleton::getInstance()->FillColorFrom(r[1], g[1], b[1], i * LED_ROW_NUM + 4, 3);
-			HAQuDA_LEDs_Singleton::getInstance()->FillColorFrom(r[0], g[0], b[0], i * LED_ROW_NUM + 8, 3);
+			HAQuDA_LEDs::getInstance()->FillColorFrom(r[2], g[2], b[2], i * LED_ROW_NUM, 3);
+			HAQuDA_LEDs::getInstance()->FillColorFrom(r[1], g[1], b[1], i * LED_ROW_NUM + 4, 3);
+			HAQuDA_LEDs::getInstance()->FillColorFrom(r[0], g[0], b[0], i * LED_ROW_NUM + 8, 3);
 		}
 	}
-	HAQuDA_LEDs_Singleton::getInstance()->Show();
+	HAQuDA_LEDs::getInstance()->Show();
 }
 
 void HAQuDA_MeasHandler::showMeas_total(float *data, uint8_t dataSize, div_dots *dataDivideDots, uint8_t divideDotsSize) {
@@ -475,7 +475,7 @@ void HAQuDA_MeasHandler::showMeas_total(float *data, uint8_t dataSize, div_dots 
 		return;
 	}
 	uint8_t colorsArr[DISP_PARAMS_NUM][COLORS_NUM];
-	uint8_t brightness = HAQuDA_LEDs_Singleton::getInstance()->GetBright();
+	uint8_t brightness = HAQuDA_LEDs::getInstance()->GetBright();
 	for (int i = 0; i < DISP_PARAMS_NUM; i++) {
 		getMeasRGB(&(colorsArr[i][0]), &(colorsArr[i][1]), &(colorsArr[i][2]), brightness, data[i], dataDivideDots[i]);
 	}
@@ -489,8 +489,8 @@ void HAQuDA_MeasHandler::showMeas_total(float *data, uint8_t dataSize, div_dots 
 	r /= DISP_PARAMS_NUM;
 	g /= DISP_PARAMS_NUM;
 	b /= DISP_PARAMS_NUM;
-	HAQuDA_LEDs_Singleton::getInstance()->FillColor(r, g, b);
-	HAQuDA_LEDs_Singleton::getInstance()->Show();
+	HAQuDA_LEDs::getInstance()->FillColor(r, g, b);
+	HAQuDA_LEDs::getInstance()->Show();
 }
 
 HAQuDA_MeasHandler::~HAQuDA_MeasHandler() {

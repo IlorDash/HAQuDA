@@ -3,30 +3,17 @@
 #include <Adafruit_NeoPixel.h>
 #include "HAQuDA_LEDsParams.h"
 
-class HAQuDA_LEDs_Singleton;
+class HAQuDA_LEDs {
 
-class HAQuDA_LEDs_SingletonDestroyer {
-  private:
-	HAQuDA_LEDs_Singleton *p_instance;
-
-  public:
-	~HAQuDA_LEDs_SingletonDestroyer();
-	void initialize(HAQuDA_LEDs_Singleton *p);
-};
-
-class HAQuDA_LEDs_Singleton {
-
-	static HAQuDA_LEDs_Singleton *p_instance;
-	static HAQuDA_LEDs_SingletonDestroyer destroyer;
+	static HAQuDA_LEDs *p_instance;
 
   protected:
-	HAQuDA_LEDs_Singleton(){};
-	HAQuDA_LEDs_Singleton(const HAQuDA_LEDs_Singleton *);
-	~HAQuDA_LEDs_Singleton(){};
-	friend class HAQuDA_LEDs_SingletonDestroyer;
+	HAQuDA_LEDs(){};
+	HAQuDA_LEDs(const HAQuDA_LEDs *);
+	~HAQuDA_LEDs(){};
 
   public:
-	static HAQuDA_LEDs_Singleton *getInstance();
+	static HAQuDA_LEDs *getInstance();
 
 	void Begin();
 

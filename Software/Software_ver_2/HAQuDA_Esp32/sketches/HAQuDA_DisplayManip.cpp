@@ -38,7 +38,7 @@ void HAQuDA_DisplayManip::Show(int *show_meas_time) {
 
 void HAQuDA_DisplayManip::SetBrightness(const uint8_t new_brightness) {
 	brighntessPerCent = new_brightness;
-	HAQuDA_LEDs_Singleton::getInstance()->SetBright(brighntessPerCent);
+	HAQuDA_LEDs::getInstance()->SetBright(brighntessPerCent);
 }
 
 bool HAQuDA_DisplayManip::SetMode(const display_modes m) {

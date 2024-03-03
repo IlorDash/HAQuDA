@@ -39,7 +39,7 @@ void setup() {
 	WiFiHandler = new HAQuDA_WiFi_handler(&FileStorage, DispManip);
 	HAQuDA_Logger::SetErrHandler(&ErrHandler);
     HAQuDA_TimeService::getInstance();
-	HAQuDA_LEDs_Singleton::getInstance()->Begin();
+	HAQuDA_LEDs::getInstance()->Begin();
 	createTasks(DispManip);
 
 	DispManip->SetEffect(snake);

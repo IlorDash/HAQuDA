@@ -96,47 +96,47 @@ void HAQuDA_EffectsHandler::SetStaticColorParam(const uint32_t _static_color_p) 
 }
 
 void HAQuDA_EffectsHandler::show_static_color(uint32_t c) {
-	HAQuDA_LEDs_Singleton::getInstance()->FillColor(c);
-	HAQuDA_LEDs_Singleton::getInstance()->Show();
+	HAQuDA_LEDs::getInstance()->FillColor(c);
+	HAQuDA_LEDs::getInstance()->Show();
 }
 
  void HAQuDA_EffectsHandler::show_snake(const snake_params p) {
 	stop_effect = false;
-	HAQuDA_LEDs_Singleton::getInstance()->Clear();
+	HAQuDA_LEDs::getInstance()->Clear();
 	for (int i = 0; i < LED_NUM_PIXELS; i++) {
 		int pixelNum = 0;
 		for (int j = 0; j < p.tail_len; j++) {
 			pixelNum = j + i;
 			pixelNum = (pixelNum > LED_NUM_PIXELS) ? LED_NUM_PIXELS : pixelNum;
-			HAQuDA_LEDs_Singleton::getInstance()->SetPixelColor(pixelNum, p.color);
+			HAQuDA_LEDs::getInstance()->SetPixelColor(pixelNum, p.color);
 
 			if (stop_effect) {
 				return;
 			}
 		}
-		HAQuDA_LEDs_Singleton::getInstance()->Show(p.move_pause_ms);
-		HAQuDA_LEDs_Singleton::getInstance()->SetPixelColor(i, 0);
+		HAQuDA_LEDs::getInstance()->Show(p.move_pause_ms);
+		HAQuDA_LEDs::getInstance()->SetPixelColor(i, 0);
 	}
 }
 
 void HAQuDA_EffectsHandler::show_growing(const growing_params p) {
 	stop_effect = false;
-	HAQuDA_LEDs_Singleton::getInstance()->Clear();
+	HAQuDA_LEDs::getInstance()->Clear();
 	for (int i = (LED_ROW_NUM - 1); i >= 0; i--) {
 		for (int j = 0; j < LED_COLUMN_NUM; j++) {
 			if (stop_effect) {
 				return;
 			}
 			uint8_t pixelNum = get_led_num(j, i);
-			HAQuDA_LEDs_Singleton::getInstance()->SetPixelColor(pixelNum, p.color);
+			HAQuDA_LEDs::getInstance()->SetPixelColor(pixelNum, p.color);
 		}
-		HAQuDA_LEDs_Singleton::getInstance()->Show(p.grow_pause_ms);
+		HAQuDA_LEDs::getInstance()->Show(p.grow_pause_ms);
 	}
 }
 
 void HAQuDA_EffectsHandler::show_random(const random_led_params p) {
 	stop_effect = false;
-	HAQuDA_LEDs_Singleton::getInstance()->Clear();
+	HAQuDA_LEDs::getInstance()->Clear();
 	std::vector<int> pixels_on;
 	for (int i = 0; i < LED_NUM_PIXELS; i++) {
 		int pixelNum = random(0, LED_NUM_PIXELS);
@@ -148,24 +148,24 @@ void HAQuDA_EffectsHandler::show_random(const random_led_params p) {
 			}
 		}
 		pixels_on.push_back(pixelNum);
-		HAQuDA_LEDs_Singleton::getInstance()->SetPixelColor(pixelNum, ((uint32_t)random(0, 255) << 16) | ((uint32_t)random(0, 255) << 8) | random(0, 255));
-		HAQuDA_LEDs_Singleton::getInstance()->Show(p.pause_ms);
+		HAQuDA_LEDs::getInstance()->SetPixelColor(pixelNum, ((uint32_t)random(0, 255) << 16) | ((uint32_t)random(0, 255) << 8) | random(0, 255));
+		HAQuDA_LEDs::getInstance()->Show(p.pause_ms);
 	}
 	vTaskDelay(p.end_pause_ms / portTICK_PERIOD_MS);
 }
 
 void HAQuDA_EffectsHandler::show_fading(const fading_params p) {
 	stop_effect = false;
-	auto bright = HAQuDA_LEDs_Singleton::getInstance()->GetBright();
-	HAQuDA_LEDs_Singleton::getInstance()->Clear();
-	HAQuDA_LEDs_Singleton::getInstance()->SetBright(p.start_bright);
-	HAQuDA_LEDs_Singleton::getInstance()->FillColor(p.color);
-	HAQuDA_LEDs_Singleton::getInstance()->Show();
+	auto bright = HAQuDA_LEDs::getInstance()->GetBright();
+	HAQuDA_LEDs::getInstance()->Clear();
+	HAQuDA_LEDs::getInstance()->SetBright(p.start_bright);
+	HAQuDA_LEDs::getInstance()->FillColor(p.color);
+	HAQuDA_LEDs::getInstance()->Show();
 	for (int i = p.start_bright; i > p.stop_bright; i = i - p.step) {
-		HAQuDA_LEDs_Singleton::getInstance()->SetBright(i);
+		HAQuDA_LEDs::getInstance()->SetBright(i);
 		vTaskDelay(p.fade_pause_ms / portTICK_PERIOD_MS);
 		if (stop_effect) {
-			HAQuDA_LEDs_Singleton::getInstance()->SetBright(bright);
+			HAQuDA_LEDs::getInstance()->SetBright(bright);
 			return;
 		}
 	}
