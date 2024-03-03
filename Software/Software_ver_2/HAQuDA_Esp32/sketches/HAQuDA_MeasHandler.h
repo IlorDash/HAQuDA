@@ -43,7 +43,6 @@ class HAQuDA_MeasHandler {
 	static bool sens_start;
 	static int meas_num;
 	static bool show_meas_immed;
-	static bool stop_meas_show;
 
 	static meas_mode mode;
 	static meas_type standard_m_p;

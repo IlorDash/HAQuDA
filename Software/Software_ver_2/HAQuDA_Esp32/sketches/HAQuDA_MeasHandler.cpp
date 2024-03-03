@@ -9,7 +9,6 @@
 bool HAQuDA_MeasHandler::sens_start;
 int HAQuDA_MeasHandler::meas_num;
 bool HAQuDA_MeasHandler::show_meas_immed;
-bool HAQuDA_MeasHandler::stop_meas_show;
 
 meas_mode HAQuDA_MeasHandler::mode;
 meas_type HAQuDA_MeasHandler::standard_m_p;
@@ -123,12 +122,9 @@ void HAQuDA_MeasHandler::checkMeasCorrect() {
 
 void HAQuDA_MeasHandler::Show(int *show_meas_time) {
 
-	if ((millis() - *show_meas_time > DISP_MEAS_PERIOD_MS) || show_meas_immed || stop_meas_show) {
+	bool show_meas_time_passed = (millis() - *show_meas_time > DISP_MEAS_PERIOD_MS);
 
-		if (stop_meas_show) {
-			stop_meas_show = false;
-			return;
-		}
+	if (show_meas_time_passed || show_meas_immed) {
 
 		switch (mode) {
 			case standard: {
@@ -154,9 +150,8 @@ void HAQuDA_MeasHandler::Show(int *show_meas_time) {
 
 void HAQuDA_MeasHandler::SetMeasDispMode(meas_mode m) {
 	if (m == noneMeas)
-		stop_meas_show = true;
-	else
-		show_meas_immed = true;
+		return;
+	show_meas_immed = true;
 	mode = m;
 }
 
@@ -182,13 +177,17 @@ void HAQuDA_MeasHandler::SetMeasDivDots(const meas_div_dots _dots) {
 meas_type HAQuDA_MeasHandler::checkBadMeas() {
 	if (((temp_meas.value / temp_meas.measNum) >= dots.temp.last) || ((temp_meas.value / temp_meas.measNum) <= dots.temp.first)) {
 		return temp;
-	} else if (((humid_meas.value / humid_meas.measNum) >= dots.humid.last) || ((humid_meas.value / humid_meas.measNum) <= dots.humid.first)) {
+	}
+	if (((humid_meas.value / humid_meas.measNum) >= dots.humid.last) || ((humid_meas.value / humid_meas.measNum) <= dots.humid.first)) {
 		return humid;
-	} else if ((eCO2_meas.value / eCO2_meas.measNum) >= dots.eCO2.last) {
+	}
+	if ((eCO2_meas.value / eCO2_meas.measNum) >= dots.eCO2.last) {
 		return eCO2;
-	} else if ((TVOC_meas.value / TVOC_meas.measNum) >= dots.TVOC.last) {
+	}
+	if ((TVOC_meas.value / TVOC_meas.measNum) >= dots.TVOC.last) {
 		return TVOC;
-	} else if ((PM_2_5_meas.value / PM_2_5_meas.measNum) >= dots.PM2_5.last) {
+	}
+	if ((PM_2_5_meas.value / PM_2_5_meas.measNum) >= dots.PM2_5.last) {
 		return PM2_5;
 	}
 	return noneType;
@@ -427,8 +426,8 @@ void HAQuDA_MeasHandler::showMeas_night(float data, div_dots divideDots, uint8_t
 	for (int i = 0; i < LED_COLUMN_NUM; i++) {
 		uint8_t whiteBright = brightness * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
 
-		uint32_t color = (!(i % 3)) ? HAQuDA_LEDs::getInstance()->GetColor(r, g, b)
-									: HAQuDA_LEDs::getInstance()->GetColor(whiteBright, whiteBright, whiteBright);
+		uint32_t color
+			= (!(i % 3)) ? HAQuDA_LEDs::getInstance()->GetColor(r, g, b) : HAQuDA_LEDs::getInstance()->GetColor(whiteBright, whiteBright, whiteBright);
 		uint8_t pixelNum = (!(i % 3)) ? LED_ROW_NUM : time;
 		uint8_t startPixel = (!(i % 2)) ? (i * LED_ROW_NUM) : (i * LED_ROW_NUM + LED_ROW_NUM - pixelNum);
 		HAQuDA_LEDs::getInstance()->FillColorFrom(color, startPixel, pixelNum);
