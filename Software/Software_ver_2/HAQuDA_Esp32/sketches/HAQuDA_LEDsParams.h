@@ -1,0 +1,22 @@
+#pragma once
+
+#include "Arduino.h"
+
+#define LED_PIN 26
+#define LED_NUM_PIXELS 109
+#define MAX_BRIGHTNESS 150
+#define DEFAULT_BRIGHTNESS 50
+#define LED_COLUMN_NUM 9
+#define LED_ROW_NUM 12
+#define WHITE_BRIGHTNESS_COEFF 70
+
+#define COLORS_NUM 3
+
+#define COLOR_OFF 0x000000
+#define COLOR_AQUA 0x00FFFF
+#define COLOR_LIME 0x99FF33
+#define COLOR_GREEN 0x01FF00
+#define COLOR_RED 0xFF0000
+#define COLOR_YELLOW 0xFFFF00
+#define COLOR_WHITE 0xFFFFFF
+

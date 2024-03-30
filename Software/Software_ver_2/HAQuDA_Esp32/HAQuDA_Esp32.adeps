@@ -12,14 +12,6 @@
     <Dependency>
       <Type>Library</Type>
       <Key>
-        <Packager>Dirk Kaar, Peter Lerup</Packager>
-        <Name>EspSoftwareSerial</Name>
-        <Version>8.1.0</Version>
-      </Key>
-    </Dependency>
-    <Dependency>
-      <Type>Library</Type>
-      <Key>
         <Packager>Me-No-Dev</Packager>
         <Name>ESP Async WebServer</Name>
         <Version>1.2.3</Version>
@@ -39,6 +31,14 @@
         <Packager>Ayush Sharma</Packager>
         <Name>WebSerial</Name>
         <Version>1.4.0</Version>
+      </Key>
+    </Dependency>
+    <Dependency>
+      <Type>Library</Type>
+      <Key>
+        <Packager>Dirk Kaar, Peter Lerup</Packager>
+        <Name>EspSoftwareSerial</Name>
+        <Version>8.1.0</Version>
       </Key>
     </Dependency>
   </Dependencies>

@@ -1,11 +1,19 @@
 #include "HAQuDA_WiFi_handler.h"
 
+#define CONNECT_WIFI_TIMEOUT 3000
+#define WAIT_FOR_SEND_WEB_SERIAL_MS 1000
+
 bool HAQuDA_WiFi_handler::WiFiConnected = false;
 
 const char *hostname = AP_SSID;
 const char *DDNS_token = DDNS_TOKEN;
 const char *DDNS_domain = DDNS_DOMAIN;
 
+static HAQuDA_DisplayManip *dispManip;
+
+HAQuDA_WiFi_handler::HAQuDA_WiFi_handler(HAQuDA_FileStorage *currFS, HAQuDA_DisplayManip *_dispManip) : HAQuDA_WebServer(currFS) {
+	dispManip = _dispManip;
+};
 
 bool HAQuDA_WiFi_handler::Connect() {
 
@@ -43,14 +51,23 @@ bool HAQuDA_WiFi_handler::CreateAP() {
 	return true;
 }
 
+int web_serial_send_timeout;
+bool start_send_web_serial_timer = false;
+
 void HAQuDA_WiFi_handler::HandleConnection() {
 	// Check for new public IP every 10 seconds
-	EasyDDNS.update(10000, true);
+	//EasyDDNS.update(10000, true);
 
-	dnsServer.processNextRequest();
+	//dnsServer.processNextRequest();
 
-	if (MyWebSerial.GetWebSerialOpened()) {
+	if ((MyWebSerial.GetWebSerialOpened()) && !start_send_web_serial_timer) {
+		start_send_web_serial_timer = true;
+		web_serial_send_timeout = millis();
+	}
+
+	if (start_send_web_serial_timer && (millis() - web_serial_send_timeout > WAIT_FOR_SEND_WEB_SERIAL_MS)) {
 		WebSerialPrintStoredLogs();
+		start_send_web_serial_timer = false;
 		MyWebSerial.ResetWebSerialOpened();
 	}
 
@@ -58,7 +75,9 @@ void HAQuDA_WiFi_handler::HandleConnection() {
 		return;
 	}
 	WiFi.removeEvent(SYSTEM_EVENT_STA_DISCONNECTED);
-	HAQuDA_DisplayManip::SetEffectMode(snake); // start up connection effect
+
+	dispManip->SetEffect(snake);
+	vTaskDelay(2000 / portTICK_PERIOD_MS);
 
 	while (!WiFiConnected) {
 		connectToStoredWiFi();
@@ -143,24 +162,28 @@ bool HAQuDA_WiFi_handler::connectToWiFi(const char *ssidLocal, const char *passL
 }
 
 void HAQuDA_WiFi_handler::WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info) {
-	HAQuDA_DisplayManip::SetMode(noneMode);
 	WiFiConnected = true;
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 
-	HAQuDA_DisplayManip::ShowStaticColor(COLOR_GREEN);
+	dispManip->SetEffectParam(COLOR_GREEN);
+	dispManip->SetEffect(staticColor);
 	vTaskDelay(3000 / portTICK_PERIOD_MS);
-	HAQuDA_DisplayManip::ShowStaticColor(0, 0, 0);
+
+	dispManip->SetEffectParam(COLOR_OFF);
+	dispManip->SetEffect(staticColor);
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 }
 
 void HAQuDA_WiFi_handler::WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info) {
-	HAQuDA_DisplayManip::SetMode(noneMode);
 	WiFiConnected = false;
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 
-	HAQuDA_DisplayManip::ShowStaticColor(COLOR_RED);
+	dispManip->SetEffectParam(COLOR_RED);
+	dispManip->SetEffect(staticColor);
 	vTaskDelay(3000 / portTICK_PERIOD_MS);
-	HAQuDA_DisplayManip::ShowStaticColor(0, 0, 0);
+
+	dispManip->SetEffectParam(COLOR_OFF);
+	dispManip->SetEffect(staticColor);
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 }
 

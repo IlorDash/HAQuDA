@@ -5,11 +5,11 @@
 #include <EasyDDNS.h>
 #include "HTTPClient.h"
 
-#include "HAQuDA_WebServer.h"
 #include "TimeHelper.h"
+#include "HAQuDA_WebServer.h"
 #include "HAQuDA_DisplayManip.h"
 
-#define CONNECT_WIFI_TIMEOUT 3000
+#include "HAQuDA_LEDsParams.h"
 
 class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
   private:
@@ -32,7 +32,7 @@ class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
 	void waitUntilWiFiConnected();
 
   public:
-	HAQuDA_WiFi_handler(HAQuDA_FileStorage *currFS) : HAQuDA_WebServer(currFS){};
+	HAQuDA_WiFi_handler(HAQuDA_FileStorage *currFS, HAQuDA_DisplayManip *_dispManip);
 	~HAQuDA_WiFi_handler();
 	static bool WiFiConnected;
 	bool Connect();

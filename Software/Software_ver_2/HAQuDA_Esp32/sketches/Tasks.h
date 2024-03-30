@@ -1,7 +1,6 @@
 #pragma once
 
-#include "WS2812.h"
 #include "HAQuDA_DisplayManip.h"
 
-void createTasks();
+void createTasks(HAQuDA_DisplayManip *dispManip);
 void deleteTasks();
