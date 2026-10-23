@@ -1,0 +1,25 @@
+minimum_pre_commit_version: "3.2.0"
+default_install_hook_types: [pre-commit, commit-msg]
+
+repos:
+  - repo: https://github.com/jorisroovers/gitlint
+    rev: v0.19.1
+    hooks:
+      - id: gitlint
+        stages: [commit-msg]
+
+  - repo: local
+    hooks:
+      # Checks only the lines changed in the staged files, so old files that
+      # were never formatted are not reformatted as a whole. The style comes
+      # from Software/.clang-format. git-clang-format returns non-zero when
+      # --diff prints a diff (LLVM 18+), so the commit stops and shows the
+      # lines to change.
+      - id: clang-format-changed-lines
+        name: clang-format (changed lines only)
+        language: python
+        additional_dependencies: [clang-format==19.1.7]
+        entry: git-clang-format --staged --diff --extensions h,cpp,ino --
+        files: ^Software/.*\.(h|cpp|ino)$
+        exclude: ^Software/Software_ver_2/HAQuDA_Esp32/(Libs|Core)/
+        stages: [pre-commit]

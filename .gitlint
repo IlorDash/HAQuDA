@@ -1,0 +1,19 @@
+[general]
+ignore-merge-commits=true
+# The body is optional and may be short.
+ignore=body-is-missing,body-min-length
+
+# area: Summary, or README: Summary. The range +-_ is intentional: it lets
+# uppercase areas such as MeasHandler and CI pass.
+[title-match-regex]
+regex=^(?:README: |(?:[a-z0-9+-_]+: )+).+$
+
+[title-max-length]
+line-length=65
+
+[body-max-line-length]
+line-length=79
+
+# URL lines may exceed the body width.
+[ignore-body-lines]
+regex=https?://
