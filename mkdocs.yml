@@ -1,0 +1,111 @@
+site_name: HAQuDA
+site_description: Home air quality lamp that shows temperature, humidity, CO2, TVOC and PM2.5 as colour on an LED matrix
+# GitHub Pages has no equivalent of GitLab's CI_PAGES_URL. The docs workflow takes the
+# published address from the configure-pages step (its base_url output, with a trailing
+# slash added) and passes it in SITE_URL, which makes the canonical links, the sitemap and
+# the language switcher's hreflang entries point at the real address. Empty locally,
+# where a relative build is what you want.
+site_url: !ENV [SITE_URL, ""]
+use_directory_urls: true
+
+docs_dir: docs
+site_dir: public
+
+# Kept next to the docs for convenience, but it is not part of the site.
+exclude_docs: |
+  requirements.txt
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.sections
+    - navigation.top
+    # navigation.instant is deliberately NOT enabled: mkdocs-static-i18n cannot
+    # keep the language switcher pointing at the current page with it on, so
+    # switching RU/EN would always drop you back on the home page.
+    - content.code.copy
+    - toc.follow
+  palette:
+    # primary: custom makes Material read the brand colour from
+    # docs/stylesheets/extra.css instead of one of its built-in palettes.
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: deep orange
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: deep orange
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+extra_css:
+  - stylesheets/extra.css
+
+hooks:
+  - hooks/app_version.py
+  - hooks/shared_assets.py
+
+# Under --strict these become build failures, so a renamed heading or a typo in
+# a cross-page anchor is caught in CI instead of shipping as a dead link.
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      # Keeps Cyrillic headings in the anchors instead of dropping them, so
+      # cross-page links into the Russian pages resolve.
+      slugify: !!python/object/apply:pymdownx.slugs.slugify {kwds: {case: lower}}
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - pymdownx.keys
+
+plugins:
+  - search
+  # Suffix mode: `page.md` is English, `page.ru.md` is its Russian twin.
+  # The plugin builds / and /ru/ and injects the language switcher into the header.
+  - i18n:
+      docs_structure: suffix
+      reconfigure_material: true
+      reconfigure_search: true
+      languages:
+        - locale: en
+          default: true
+          name: English
+          build: true
+        - locale: ru
+          name: Русский
+          build: true
+          site_name: HAQuDA
+          nav_translations:
+            Overview: Обзор
+            Quick guide: Быстрый старт
+            Display modes: Режимы отображения
+            Web interface: Веб-интерфейс
+            LED codes and troubleshooting: Коды индикации и устранение неполадок
+            Building and flashing: Сборка и прошивка
+            Release notes: Примечания к выпускам
+
+nav:
+  - Overview: index.md
+  - Quick guide: quick-guide.md
+  - Display modes: display-modes.md
+  - Web interface: web-interface.md
+  - LED codes and troubleshooting: troubleshooting.md
+  - Building and flashing: build-and-flash.md
+  - Release notes:
+      - release-2-0-0.md

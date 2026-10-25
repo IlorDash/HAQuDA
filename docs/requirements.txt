@@ -1,0 +1,16 @@
+# Build the docs site locally (Python 3.9+ required):
+#
+#   py -3 -m venv .venv                                        # Windows
+#   .venv\Scripts\python.exe -m pip install -r docs/requirements.txt
+#   .venv\Scripts\python.exe -m mkdocs serve
+#
+#   python3 -m venv .venv                                      # Linux
+#   .venv/bin/pip install -r docs/requirements.txt
+#   .venv/bin/mkdocs serve
+#
+# Use the venv explicitly rather than a bare `pip`: on Windows the `python` and
+# `pip` on PATH may still be Python 2.7, whose newest available MkDocs is 1.0.4.
+
+mkdocs==1.6.1
+mkdocs-material==9.5.49
+mkdocs-static-i18n==1.2.3
