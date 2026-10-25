@@ -1,0 +1,65 @@
+/* ---------------------------------------------------------------------------
+   Brand colour: warm orange, the colour of the lamp's light.
+
+   Material calls the header colour the "primary" colour. mkdocs.yml sets
+   palette.primary to "custom", which makes the theme read the variables below
+   instead of one of its built-in palettes - so this file is the single place
+   the brand colour is defined.
+
+   White text on this orange has a contrast of about 2.4:1, too weak for the
+   header. --md-primary-bg-color is the text colour on the primary colour, so it
+   is a near-black here: about 6.7:1 on the light orange and about 6:1 on the
+   darker orange of the dark scheme.
+
+   The light and the dark (slate) scheme each get their own block: the slate
+   scheme redefines these variables itself, so a plain :root block alone would
+   be overridden the moment a reader switches to dark mode. The dark scheme
+   uses a slightly deeper orange so the header does not glare on a dark page.
+   --------------------------------------------------------------------------- */
+
+:root,
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color:        #f28c1e;
+  --md-primary-fg-color--light: #f7a21b;
+  --md-primary-fg-color--dark:  #d9730a;
+
+  /* Link colour: the header orange is only about 2.4:1 on white, so links get a
+     darker orange with a contrast of at least 4.5:1. */
+  --md-typeset-a-color:         #b35a00;
+
+  --md-primary-bg-color:        #1f1f1f;
+  --md-primary-bg-color--light: rgba(0, 0, 0, 0.7);
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color:        #e8820f;
+  --md-primary-fg-color--light: #f2a340;
+  --md-primary-fg-color--dark:  #b35f00;
+
+  --md-primary-bg-color:        #1f1f1f;
+  --md-primary-bg-color--light: rgba(0, 0, 0, 0.7);
+}
+
+/* ---------------------------------------------------------------------------
+   WIP label: marks a feature that is not ready. Neutral grey on purpose -
+   orange is the colour of links and the header. Used as
+   <span class="wip">WIP</span> in tables, lists and sentences.
+   --------------------------------------------------------------------------- */
+
+.wip {
+  display: inline-block;
+  padding: 0 0.5em;
+  border-radius: 0.8em;
+  font-size: 0.7em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+  vertical-align: middle;
+  background-color: #e0e0e0;
+  color: #424242;
+}
+
+[data-md-color-scheme="slate"] .wip {
+  background-color: #4a4a4a;
+  color: #eeeeee;
+}

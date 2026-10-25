@@ -1,3 +1,6 @@
 **/Garbages/*
 **/Data/*
 **/To Print/*
+/public/
+/.venv/
+__pycache__/
