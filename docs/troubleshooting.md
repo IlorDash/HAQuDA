@@ -23,7 +23,7 @@ Effects in the tables use these names:
 | Aqua fading, once | The access point runs and the sensors start. | Join the lamp's network and open `http://192.168.4.22/`. |
 | Dark matrix that stays dark, the lamp's WiFi network usually does not appear, the LED on the ESP32 board does not blink | The lamp could not create its access point and stops. | Unplug the lamp and plug it in again. If it repeats, check the access point password in your build (8 to 63 characters). |
 | Dark matrix for about 15–20 seconds after the green flash or the aqua fading, then the lime snake starts again, again and again | The lamp could not start its sensors (the CCS811 does not answer). It tries up to three times to power the sensors off and on, then restarts itself. | Check the sensor power and the I2C wiring. |
-| Pixels light up one by one in random colours; it does not stop | The lamp could not start its file system and stops. | Unplug the lamp and plug it in again. If it repeats, flash the lamp again. |
+| Pixels light up one by one in random colours; it does not stop | The lamp could not start its file system and stops. Known bug: the intended effect is a red fading; the firmware swaps the effects of the file system and sensor errors. | Unplug the lamp and plug it in again. If it repeats, flash the lamp again. |
 
 ---
 

@@ -24,7 +24,8 @@ plug.
 
 !!! warning "If it fails"
     - **Pixels light up one by one in random colours and nothing else happens** — the lamp
-      cannot start its file system and stops. Unplug the lamp and plug it in again. If this
+      cannot start its file system and stops. Known bug: the intended effect is a red fading;
+      the firmware swaps the effects of the file system and sensor errors. Unplug the lamp and plug it in again. If this
       repeats, the flash memory needs attention: flash the lamp again.
     - **The matrix goes dark and stays dark, and the lamp's WiFi network usually does not
       appear** — the lamp cannot create its access point and stops. Unplug the lamp and plug it

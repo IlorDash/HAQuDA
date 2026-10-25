@@ -29,3 +29,5 @@ These features are not ready in this version.
 - [DuckDNS updates](build-and-flash.md#set-the-build-variables).
 
 In access point mode the [log page](web-interface.md#log-page) is not available.
+
+Known bug: the [file system error](troubleshooting.md#start-up-effects) shows random pixels instead of the intended red fading.

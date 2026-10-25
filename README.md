@@ -11,7 +11,7 @@ LED effects and what to do:
 | Green matrix for 3 seconds | The lamp joined your WiFi network. | Nothing. |
 | Red matrix for 3 seconds, then a lime snake | The lamp lost the WiFi connection and reconnects. | Wait. |
 | Dark matrix for about 20 seconds, then an aqua fading | No network is stored or the lamp could not join it, so it opens its access point. | Join the access point and add your network. |
-| Random pixels, one by one, without end | The file system does not start. The lamp stops. | Unplug the lamp and plug it in again. |
+| Random pixels, one by one, without end | The file system does not start. The lamp stops. Known bug: the intended effect is a red fading; the firmware swaps the effects of the file system and sensor errors. | Unplug the lamp and plug it in again. |
 | Dark matrix that stays dark, the access point usually does not appear | The access point cannot be created. The lamp stops. | Unplug the lamp and plug it in again. |
 | Dark matrix for about 15–20 seconds after the green flash or the aqua fading, then the lime snake again and again | The sensors do not start. The lamp restarts itself. | Check the sensor wiring. |
 
