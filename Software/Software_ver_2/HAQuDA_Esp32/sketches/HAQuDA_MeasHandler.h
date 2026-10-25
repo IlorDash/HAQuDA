@@ -2,6 +2,7 @@
 
 #include "Arduino.h"
 #include "HAQuDA_ErrorHandler.h"
+#include "HAQuDA_ColorScale.h"
 
 #define MULTI_MODE_PARAM_NUM 3
 #define DIVIDE_DOTS_NUM 3
@@ -12,12 +13,6 @@
 typedef enum { standard, multi, night, noneMeas } meas_mode;
 
 typedef enum { total, eCO2, TVOC, PM2_5, temp, humid, noneType } meas_type;
-
-typedef struct {
-	uint16_t first;
-	uint16_t mid;
-	uint16_t last;
-} div_dots;
 
 typedef struct {
 	meas_type paramsArr[MULTI_MODE_PARAM_NUM];
@@ -56,7 +51,6 @@ class HAQuDA_MeasHandler {
 	static void standardMode();
 	static void multiMode(multi_mode_params multiModeParams);
 	static void nightMode();
-	static void getMeasRGB(uint8_t *_red, uint8_t *_green, uint8_t *_blue, const uint8_t brightness, const float data, const div_dots divideDots);
 	static void showMeas_multi(float *data, uint8_t dataSize, div_dots *divideDots, uint8_t divideDotsSize);
 	static void showMeas_total(float *data, uint8_t dataSize, div_dots *dataDivideDots, uint8_t divideDotsSize);
 	static void showMeas_standard(float data, div_dots divideDots);

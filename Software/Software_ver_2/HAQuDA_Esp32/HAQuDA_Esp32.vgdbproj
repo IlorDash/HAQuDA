@@ -39,6 +39,8 @@
         <string>sketches\HAQuDA_EffectsHandler.h</string>
         <string>sketches\HAQuDA_EventHandler.h</string>
         <string>sketches\HAQuDA_Touch.h</string>
+        <string>sketches\HAQuDA_ColorScale.h</string>
+        <string>sketches\HAQuDA_ILEDs.h</string>
       </OtherFiles>
     </ProjectModeSettings>
   </Project>

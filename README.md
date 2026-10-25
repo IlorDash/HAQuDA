@@ -38,3 +38,16 @@ The commit title has the form `area: Summary`, for example `MeasHandler: Fix ave
 The clang-format hook checks only the lines you changed in `.h`, `.cpp` and `.ino` files under `Software/`. It does not reformat whole files and skips `Libs/` and `Core/`. The style comes from `Software/.clang-format`. When the hook fails, it shows the lines to change. Format them, stage the files again and commit again. Edit -> Advanced -> Format Selection uses `Software/.clang-format` only when ClangFormat support is enabled under Tools -> Options -> Text Editor -> C/C++ -> Code Style -> Formatting.
 
 Git runs the hooks for every commit, including commits from the Git Changes window.
+
+## Unit tests
+
+The unit tests run on your PC. They never touch the lamp hardware.
+
+1. Open `Software/Software_ver_2/HAQuDA_Esp32/HAQuDA_Esp32.sln` in Visual Studio 2022.
+2. Choose Build -> Build Solution. Visual Studio restores the `gmock` NuGet package into `Software/Software_ver_2/HAQuDA_Esp32/packages` on the first build.
+3. Open Test -> Test Explorer.
+4. Click Run All Tests.
+
+The test project is `HAQuDA_Tests` under `Software/Software_ver_2/HAQuDA_Esp32/tests`. Both the Debug and the Release solution configuration build it for x64.
+If Test Explorer lists no tests, build the solution again and check that the `HAQuDA_Tests` row in Build -> Configuration Manager is ticked.
+The firmware build does not include the tests.
