@@ -14,7 +14,9 @@ repos:
       # were never formatted are not reformatted as a whole. The style comes
       # from Software/.clang-format. git-clang-format returns non-zero when
       # --diff prints a diff (LLVM 18+), so the commit stops and shows the
-      # lines to change.
+      # lines to change. Serial: every git-clang-format run locks the index
+      # and writes the same temporary .git/clang-format-index, so parallel
+      # batches fail with "index.lock: File exists".
       - id: clang-format-changed-lines
         name: clang-format (changed lines only)
         language: python
@@ -23,3 +25,4 @@ repos:
         files: ^Software/.*\.(h|cpp|ino)$
         exclude: ^Software/Software_ver_2/HAQuDA_Esp32/(Libs|Core)/
         stages: [pre-commit]
+        require_serial: true
