@@ -13,6 +13,7 @@
 #include "HAQuDA_LEDs.h"
 
 #include "Tasks.h"
+#include "HAQuDA_Version.h"
 
 #define BUILTIN_LED 2
 
@@ -31,6 +32,8 @@ int builtin_blink_start_time = 0;
 void setup() {
 
 	Serial.begin(115200);
+	// Serial, not the logger: a logger call blocks the boot for 5 s and raises the NTP error effect.
+	Serial.printf("HAQuDA firmware v%s\n", FW_VERSION);
 	pinMode(BUILTIN_LED, OUTPUT);
 
 	HAQuDA_Logger::SetErrHandler(&ErrHandler);
