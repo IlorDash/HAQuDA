@@ -9,6 +9,12 @@ on:
     - 'Software/Software_ver_2/HAQuDA_Esp32/**'
 jobs:
   Build:
+    env:
+      # Pinned: the local VisualGDB build uses esp32 core 2.0.11. Core 3.x (ESP-IDF 5) removes the
+      # SYSTEM_EVENT_* names the firmware uses and breaks the vendored AsyncTCP/ESPAsyncWebServer.
+      # Not a matrix field: matrix values become part of the "Build (...)" check name.
+      ESP32_CORE_VERSION: "2.0.11"
+      ESP32_INDEX_URL: "https://espressif.github.io/arduino-esp32/package_esp32_index.json"
     strategy:
       matrix:
         name: ["esp32"]
@@ -31,8 +37,8 @@ jobs:
           version: "0.34.0"
       - name: Install core
         run: |
-          arduino-cli core update-index
-          arduino-cli core install ${{ matrix.name }}:${{ matrix.arch }}
+          arduino-cli core update-index --additional-urls ${{ env.ESP32_INDEX_URL }}
+          arduino-cli core install ${{ matrix.name }}:${{ matrix.arch }}@${{ env.ESP32_CORE_VERSION }} --additional-urls ${{ env.ESP32_INDEX_URL }}
           pip install pyserial
       - name: Compile Sketch
         working-directory: ./Software/Software_ver_2/HAQuDA_Esp32
