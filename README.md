@@ -2,6 +2,7 @@
 Home Air Quality Display And so on
 
 ![workflow status](https://github.com/IlorDash/HAQuDA/actions/workflows/build-haquda.yml/badge.svg)
+
 ![host tests status](https://github.com/IlorDash/HAQuDA/actions/workflows/host-tests.yml/badge.svg)
 
 LED effects and what to do:
