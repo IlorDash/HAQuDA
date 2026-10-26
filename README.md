@@ -2,6 +2,7 @@
 Home Air Quality Display And so on
 
 ![workflow status](https://github.com/IlorDash/HAQuDA/actions/workflows/build-haquda.yml/badge.svg)
+![host tests status](https://github.com/IlorDash/HAQuDA/actions/workflows/host-tests.yml/badge.svg)
 
 LED effects and what to do:
 
@@ -69,3 +70,5 @@ The unit tests run on your PC. They never touch the lamp hardware.
 The test project is `HAQuDA_Tests` under `Software/Software_ver_2/HAQuDA_Esp32/tests`. Both the Debug and the Release solution configuration build it for x64.
 If Test Explorer lists no tests, build the solution again and check that the `HAQuDA_Tests` row in Build -> Configuration Manager is ticked.
 The firmware build does not include the tests.
+
+GitHub Actions also runs the tests on every push and pull request that changes `sketches`, `tests`, the solution file or the workflow file `host-tests.yml`. A failed test turns the "Host tests / Test" check red. Open the run and read the log to see which test failed. The run attaches the XML results as the `host-test-results` artifact.
