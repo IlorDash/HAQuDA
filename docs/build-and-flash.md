@@ -86,6 +86,19 @@ them.
 
 ## Builds from GitHub Actions
 
-Do not flash the builds that GitHub Actions produces. The workflow installs the latest Arduino
-core instead of 2.0.11, which does not match this firmware. Build the firmware yourself as
-described above.
+GitHub Actions builds the firmware on every push and pull request that changes the firmware
+folder. The build only checks that the firmware compiles. It uses the same core 2.0.11 as the
+local build. The artifact `HAQuDA_esp32_esp32_esp32` holds the arduino-cli build folder: the
+firmware image, the bootloader, the partition table and the `.elf` file.
+
+The workflow fills the build variables with dummy values: the access point name `actions_ssid`,
+the password `actions_pass` and fake DuckDNS values. Do not flash the artifact to a lamp you
+use. Build the firmware yourself with your own values and flash that build, as described above.
+
+### Unit tests
+
+The repository has host unit tests in the project `HAQuDA_Tests` of the same solution. In Visual
+Studio, choose **Build → Build Solution**, then open **Test → Test Explorer** and click
+**Run All Tests**. They test the firmware logic on the PC, not on the lamp. GitHub Actions runs
+them too, in the check
+"Host tests / Test", and a failed test turns the check red.
