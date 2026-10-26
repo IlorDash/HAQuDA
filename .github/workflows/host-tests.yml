@@ -1,0 +1,49 @@
+name: Host tests
+on:
+  push:
+    paths:
+    - 'Software/Software_ver_2/HAQuDA_Esp32/sketches/**'
+    - 'Software/Software_ver_2/HAQuDA_Esp32/tests/**'
+    - 'Software/Software_ver_2/HAQuDA_Esp32/HAQuDA_Esp32.sln'
+    - '.github/workflows/host-tests.yml'
+  pull_request:
+    paths:
+    - 'Software/Software_ver_2/HAQuDA_Esp32/sketches/**'
+    - 'Software/Software_ver_2/HAQuDA_Esp32/tests/**'
+    - 'Software/Software_ver_2/HAQuDA_Esp32/HAQuDA_Esp32.sln'
+    - '.github/workflows/host-tests.yml'
+permissions:
+  contents: read
+jobs:
+  Test:
+    # Pinned: the test project uses the v143 toolset (VS 2022); windows-latest may move to a newer Visual Studio.
+    runs-on: windows-2022
+    env:
+      FW_DIR: Software/Software_ver_2/HAQuDA_Esp32
+    steps:
+      # No submodules: the tests compile only sketches/ and tests/, never Libs/.
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2
+      # Restore the test project's packages.config, not the .sln: the .sln also holds the VisualGDB
+      # project, which MSBuild skips on the runner with warning MSB4078 (expected in the log). The vcxproj imports gmock.targets from <fw>/packages.
+      - name: Restore gmock
+        run: nuget restore ${{ env.FW_DIR }}/tests/HAQuDA_Tests/packages.config -PackagesDirectory ${{ env.FW_DIR }}/packages
+      # Same target as the local build: the .sln maps HAQuDA_Tests to Debug|x64 and writes <fw>/x64/Debug.
+      # WindowsTargetPlatformVersion=10.0 selects the newest Windows SDK installed on the runner, because the
+      # project pins 10.0.26100.0, which the image may not have.
+      - name: Build
+        run: msbuild ${{ env.FW_DIR }}/HAQuDA_Esp32.sln /t:HAQuDA_Tests /p:Configuration=Debug /p:Platform=ESP32_Dev_Module /p:WindowsTargetPlatformVersion=10.0 /v:minimal
+      # A non-zero exit code of the test exe fails the job.
+      - name: Run tests
+        run: ${{ env.FW_DIR }}/x64/Debug/HAQuDA_Tests.exe --gtest_output=xml:${{ env.FW_DIR }}/x64/Debug/test-results.xml
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: host-test-results
+          path: ${{ env.FW_DIR }}/x64/Debug/test-results.xml
+          if-no-files-found: ignore
