@@ -56,3 +56,16 @@ To build the guide on your PC:
 3. Start the preview at http://127.0.0.1:8000: `.venv\Scripts\python.exe -m mkdocs serve`.
 
 Run `.venv\Scripts\python.exe -m mkdocs build --strict` before you open a pull request. The build fails on a broken link.
+
+## Unit tests
+
+The unit tests run on your PC. They never touch the lamp hardware.
+
+1. Open `Software/Software_ver_2/HAQuDA_Esp32/HAQuDA_Esp32.sln` in Visual Studio 2022.
+2. Choose Build -> Build Solution. Visual Studio restores the `gmock` NuGet package into `Software/Software_ver_2/HAQuDA_Esp32/packages` on the first build.
+3. Open Test -> Test Explorer.
+4. Click Run All Tests.
+
+The test project is `HAQuDA_Tests` under `Software/Software_ver_2/HAQuDA_Esp32/tests`. Both the Debug and the Release solution configuration build it for x64.
+If Test Explorer lists no tests, build the solution again and check that the `HAQuDA_Tests` row in Build -> Configuration Manager is ticked.
+The firmware build does not include the tests.

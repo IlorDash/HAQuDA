@@ -62,3 +62,5 @@ dkms.conf
 *.vcxproj.user
 *.htm
 **/output/*
+# NuGet restore folder
+**/packages/*
