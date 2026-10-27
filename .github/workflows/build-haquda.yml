@@ -4,9 +4,12 @@ on:
   push:
     paths:
     - 'Software/Software_ver_2/HAQuDA_Esp32/**'
+    - '.github/workflows/build-haquda.yml'
   pull_request:
     paths:
     - 'Software/Software_ver_2/HAQuDA_Esp32/**'
+    - '.github/workflows/build-haquda.yml'
+  workflow_dispatch:
 jobs:
   Build:
     env:
