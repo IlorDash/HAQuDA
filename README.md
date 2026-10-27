@@ -21,9 +21,7 @@ The user guide below explains each effect in detail.
 
 Software is an Arduino project created using VisualGDB 5.6. Currently **we support esp32 2.0.11 version** of Arduino core, so if you encounter problems with unsuported methods or something like that, **check version of this package**.
 
-GitHub Actions builds the firmware with esp32 core 2.0.11 on every push and pull request. The build runs only when a change touches `Software/Software_ver_2/HAQuDA_Esp32`. The local VisualGDB build uses the same esp32 core 2.0.11.
-
-Each successful run attaches the artifact `HAQuDA_esp32_esp32_esp32`. It holds the merged image `HAQuDA_Esp32.merged.bin`, the separate parts, `HAQuDA_Esp32.ino.elf` for decoding backtraces, and a `flash_args` file with the offsets. You can flash the artifact to a lamp in two ways.
+To get a ready firmware, open the Actions tab, select the latest successful "Build HAQuDA" run and download the artifact `HAQuDA_esp32_esp32_esp32`. It holds the merged image `HAQuDA_Esp32.merged.bin`, the separate parts, `HAQuDA_Esp32.ino.elf` for decoding backtraces, and a `flash_args` file with the offsets. You can flash the artifact to a lamp in two ways.
 
 - Run `esptool.py --chip esp32 write_flash 0x0 HAQuDA_Esp32.merged.bin` with the lamp connected over UART.
 - Open the browser tool esptool-js at https://espressif.github.io/esptool-js/ and write `HAQuDA_Esp32.merged.bin` at address 0x0. It needs desktop Chrome or Edge, because it uses Web Serial.
@@ -74,5 +72,3 @@ The unit tests run on your PC. They never touch the lamp hardware.
 The test project is `HAQuDA_Tests` under `Software/Software_ver_2/HAQuDA_Esp32/tests`. Both the Debug and the Release solution configuration build it for x64.
 If Test Explorer lists no tests, build the solution again and check that the `HAQuDA_Tests` row in Build -> Configuration Manager is ticked.
 The firmware build does not include the tests.
-
-GitHub Actions also runs the tests on every push and pull request that changes `sketches`, `tests`, the solution file or the workflow file `host-tests.yml`. A failed test turns the "Host tests / Test" check red. Open the run and read the log to see which test failed. The run attaches the XML results as the `host-test-results` artifact.
