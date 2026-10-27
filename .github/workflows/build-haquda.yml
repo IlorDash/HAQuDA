@@ -43,8 +43,47 @@ jobs:
       - name: Compile Sketch
         working-directory: ./Software/Software_ver_2/HAQuDA_Esp32
         run: arduino-cli compile --fqbn ${{ matrix.name }}:${{ matrix.arch }}:${{ matrix.board }}:${{ matrix.opts }} --libraries Libs --library sketches --build-property=compiler.cpp.extra_flags="-DAP_SSID=\"${{ matrix.ssid }}\" -DAP_PASS=\"${{ matrix.pass }}\" -DDDNS_DOMAIN=\"${{ matrix.dns_domain }}\" -DDDNS_TOKEN=\"${{ matrix.dns_token }}\"" --verbose --clean --build-path build/${{ matrix.name }}_${{ matrix.arch }}_${{ matrix.board }}
+      # The build folder holds objects and a map file and lacks boot_app0.bin, which the
+      # core's upload command writes at 0xe000. Collect only what a flash needs. Flash mode, frequency,
+      # size and offsets come from the core, so they follow the board options and match the upload command
+      # of platform.txt: for QIO the image header is written as dio, the bootloader itself is the qio build.
+      - name: Package flashable files
+        working-directory: ./Software/Software_ver_2/HAQuDA_Esp32
+        run: |
+          set -euo pipefail
+          BUILD_DIR=build/${{ matrix.name }}_${{ matrix.arch }}_${{ matrix.board }}
+          PROPS=$(arduino-cli compile --fqbn ${{ matrix.name }}:${{ matrix.arch }}:${{ matrix.board }}:${{ matrix.opts }} --show-properties)
+          # No early exit in awk and no pipe: a closed pipe would kill printf with SIGPIPE and fail the step under pipefail.
+          prop() { awk -F= -v key="$1" '$1 == key && !found { sub(/^[^=]*=/, ""); print; found = 1 }' <<<"$PROPS"; }
+          FLASH_MODE=$(prop build.flash_mode)
+          FLASH_FREQ=$(prop build.flash_freq)
+          FLASH_SIZE=$(prop build.flash_size)
+          BOOTLOADER_ADDR=$(prop build.bootloader_addr)
+          PLATFORM_PATH=$(prop runtime.platform.path)
+          ESPTOOL_PATH=$(prop runtime.tools.esptool_py.path)
+          : "${FLASH_MODE:?}" "${FLASH_FREQ:?}" "${FLASH_SIZE:?}" "${BOOTLOADER_ADDR:?}" "${PLATFORM_PATH:?}" "${ESPTOOL_PATH:?}"
+          mkdir dist
+          cp "$BUILD_DIR/HAQuDA_Esp32.ino.bin" "$BUILD_DIR/HAQuDA_Esp32.ino.bootloader.bin" "$BUILD_DIR/HAQuDA_Esp32.ino.partitions.bin" "$BUILD_DIR/HAQuDA_Esp32.ino.elf" dist/
+          cp "$PLATFORM_PATH/tools/partitions/boot_app0.bin" dist/
+          # Same esptool and python3 call as the core's own build and upload commands (esptool.py on Linux).
+          # A flash that starts at 0x0 needs a single file, so merge_bin pads the gaps between the parts.
+          python3 "$ESPTOOL_PATH/esptool.py" --chip esp32 merge_bin -o dist/HAQuDA_Esp32.merged.bin \
+            --flash_mode "$FLASH_MODE" --flash_freq "$FLASH_FREQ" --flash_size "$FLASH_SIZE" \
+            "$BOOTLOADER_ADDR" dist/HAQuDA_Esp32.ino.bootloader.bin \
+            0x8000 dist/HAQuDA_Esp32.ino.partitions.bin \
+            0xe000 dist/boot_app0.bin \
+            0x10000 dist/HAQuDA_Esp32.ino.bin
+          # For flashing the separate parts: esptool.py --chip esp32 write_flash @flash_args
+          {
+            echo "--flash_mode $FLASH_MODE --flash_freq $FLASH_FREQ --flash_size $FLASH_SIZE"
+            echo "$BOOTLOADER_ADDR HAQuDA_Esp32.ino.bootloader.bin"
+            echo "0x8000 HAQuDA_Esp32.ino.partitions.bin"
+            echo "0xe000 boot_app0.bin"
+            echo "0x10000 HAQuDA_Esp32.ino.bin"
+          } > dist/flash_args
+          ls -l dist
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: HAQuDA_${{ matrix.name }}_${{ matrix.arch }}_${{ matrix.board }}
-          path: ./Software/Software_ver_2/HAQuDA_Esp32/build/${{ matrix.name }}_${{ matrix.arch }}_${{ matrix.board }}/
+          path: ./Software/Software_ver_2/HAQuDA_Esp32/dist/

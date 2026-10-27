@@ -21,9 +21,20 @@ The user guide below explains each effect in detail.
 
 Software is an Arduino project created using VisualGDB 5.6. Currently **we support esp32 2.0.11 version** of Arduino core, so if you encounter problems with unsuported methods or something like that, **check version of this package**.
 
-GitHub Actions builds the firmware with esp32 core 2.0.11 on every push and pull request. The build runs only when a change touches `Software/Software_ver_2/HAQuDA_Esp32`. The build only checks that the firmware compiles and never runs it on a lamp. The local VisualGDB build uses the same esp32 core 2.0.11.
+GitHub Actions builds the firmware with esp32 core 2.0.11 on every push and pull request. The build runs only when a change touches `Software/Software_ver_2/HAQuDA_Esp32`. The local VisualGDB build uses the same esp32 core 2.0.11.
 
-Build the firmware yourself in Visual Studio with Build -> Build Solution. Then flash over UART with Debug -> Program and Start Without Debugging. To flash over OpenOCD instead, run Debug -> Start Debugging with GDB. Do not flash the Actions artifact to a lamp you use, because it holds dummy access point credentials and fake DuckDNS values.
+Each successful run attaches the artifact `HAQuDA_esp32_esp32_esp32`. It holds the merged image `HAQuDA_Esp32.merged.bin`, the separate parts, `HAQuDA_Esp32.ino.elf` for decoding backtraces, and a `flash_args` file with the offsets. You can flash the artifact to a lamp in two ways.
+
+- Run `esptool.py --chip esp32 write_flash 0x0 HAQuDA_Esp32.merged.bin` with the lamp connected over UART.
+- Open the browser tool esptool-js at https://espressif.github.io/esptool-js/ and write `HAQuDA_Esp32.merged.bin` at address 0x0. It needs desktop Chrome or Edge, because it uses Web Serial.
+
+If the `esptool.py` command is missing, install it with `pip install esptool`. If esptool cannot connect, hold the BOOT button while it starts. If several serial ports exist, add `--port <COMx>` before `write_flash`.
+
+To flash the separate parts instead, unzip the artifact and run `esptool.py --chip esp32 write_flash @flash_args` in that folder.
+
+A lamp flashed this way opens its setup access point as `actions_ssid` with the password `actions_pass`. Anyone nearby can join it with this public password until you flash your own build. DuckDNS does not work, because the artifact holds dummy values. To use your own values, build the firmware in Visual Studio.
+
+Build the firmware yourself in Visual Studio with Build -> Build Solution. Then flash over UART with Debug -> Program and Start Without Debugging. To flash over OpenOCD instead, run Debug -> Start Debugging with GDB.
 
 ## Commit messages and formatting
 Commit hooks check every message and the formatting of the lines you change. Set them up once per clone:
