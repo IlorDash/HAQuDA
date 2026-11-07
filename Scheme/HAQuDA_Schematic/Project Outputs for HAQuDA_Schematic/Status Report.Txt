@@ -1,15 +1,10 @@
-Output: NC Drill Files
-Type  : NC Drill
+Output: Protel
+Type  : ProtelNetlist
 From  : Project [HAQuDA_Schematic.PrjPcb]
-   Generated File[HAQuDA_board_Ver_2-RoundHoles-Plated.TXT]
-   Generated File[HAQuDA_board_Ver_2-RoundHoles-NonPlated.TXT]
-   Generated File[HAQuDA_board_Ver_2-SlotHoles-Plated.TXT]
-   Generated File[HAQuDA_board_Ver_2-SlotHoles-NonPlated.TXT]
-   Generated File[HAQuDA_board_Ver_2.LDP]
-   Generated File[HAQuDA_board_Ver_2.DRR]
+   Generated File[HAQuDA_Schematic.NET]
 
 
-Files Generated   : 6
+Files Generated   : 1
 Documents Printed : 0
 
-Finished Output Generation At 18:10:26 On 28-Aug-22
+Finished Output Generation At 14:31:37 On 07-Nov-26
