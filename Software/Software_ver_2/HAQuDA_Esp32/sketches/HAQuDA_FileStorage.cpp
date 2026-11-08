@@ -56,6 +56,16 @@ bool HAQuDA_FileStorage::Format() {
 	return res;
 }
 
+bool HAQuDA_FileStorage::RenameFile(const char *from, const char *to) {
+	if ((from == nullptr) || (to == nullptr)) {
+		return false;
+	}
+	DisableWdt();
+	bool res = SPIFFS.rename(from, to);
+	EnableWdt();
+	return res;
+}
+
 bool HAQuDA_FileStorage::WriteFile(const char *path, const uint8_t *data, const size_t len) {
 	if (data == nullptr) {
 		return false;

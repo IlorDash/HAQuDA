@@ -22,6 +22,7 @@
 #define FILE_NAME_BOUNDS "/bounds"
 #define FILE_NAME_WIFI_NET "/WiFiNetworks"
 #define FILE_NAME_LOGS "/logs"
+#define FILE_NAME_LOGS_OLD "/logs.old" // SPIFFS names are limited to 31 chars with the path
 
 #define WEB_SERVER_IcNDEX_PAGE "/index.html"
 #define WEB_SERVER_STYLE "/style.css"
@@ -73,11 +74,13 @@ class HAQuDA_FileStorage {
 	void ListDir(const char *dirname, const uint8_t levels);
 	static bool DeleteFile(const char *path);
 	bool Format();
+	// Renames a file in place, the target must not exist. loop task.
+	static bool RenameFile(const char *from, const char *to);
 	static bool WriteFile(const char *path, const uint8_t *data, const size_t len);
 	static bool WriteFile(const char *path, const uint16_t fromPos, const uint8_t *data, const size_t len);
 	static bool AppendFile(const char *path, const uint8_t *data, const size_t len);
-	bool Exists(const String &path);
-	bool Exists(const char *path);
+	static bool Exists(const String &path);
+	static bool Exists(const char *path);
 	static int FileSize(const char *path);
 
 	static void ReadFileInSerial(const char *path);

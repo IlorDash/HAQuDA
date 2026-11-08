@@ -20,12 +20,15 @@ class HAQuDA_ErrorHandler : HAQuDA_EffectsHandler {
 
 	static void Show();
 
-	static error_type GetCurrentError() { return currentError; }
+	static error_type GetCurrentError() {
+		return currentError;
+	}
 
 	void FailedToConnectToWiFi();
 	void FailedToCreateAP();
 	void FailedToStartFS();
 	void FailedToStartSensors();
+	// Only sets the error effect, does not block. Called by the logger, so loop task only.
 	void FailedToUpdateNTP();
 	void FailedToGetMeas(const char *msg);
 	void ClearError();

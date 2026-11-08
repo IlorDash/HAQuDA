@@ -85,8 +85,8 @@ void HAQuDA_ErrorHandler::FailedToStartSensors() {
 }
 
 void HAQuDA_ErrorHandler::FailedToUpdateNTP() {
+	// Called from the logger (loop task): must not block, ShowTask draws the effect on its own.
 	currentError = failedToUpdateNTP;
-	vTaskDelay(DEFAULT_ERROR_DISPLAY_TIME / portTICK_PERIOD_MS);
 }
 
 void HAQuDA_ErrorHandler::FailedToGetMeas(const char *msg) {

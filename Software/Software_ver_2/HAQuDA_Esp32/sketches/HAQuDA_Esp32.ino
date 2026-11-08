@@ -21,6 +21,7 @@
 
 HAQuDA_ErrorHandler ErrHandler;
 HAQuDA_FileStorage FileStorage;
+HAQuDA_LogDedup LogDedup;
 HAQuDA_EffectsHandler EffectsHandler;
 HAQuDA_MeasHandler MeasHandler(&ErrHandler);
 HAQuDA_DisplayManip DispManip(&MeasHandler, &EffectsHandler, &ErrHandler);
@@ -32,11 +33,12 @@ int builtin_blink_start_time = 0;
 void setup() {
 
 	Serial.begin(115200);
-	// Serial, not the logger: a logger call blocks the boot for 5 s and raises the NTP error effect.
+	// Serial, not the logger: the file system is not mounted yet, so a log record could not be stored.
 	Serial.printf("HAQuDA firmware v%s\n", FW_VERSION);
 	pinMode(BUILTIN_LED, OUTPUT);
 
 	HAQuDA_Logger::SetErrHandler(&ErrHandler);
+	HAQuDA_Logger::SetDedup(&LogDedup);
 	HAQuDA_TimeService::getInstance();
 	HAQuDA_LEDs::getInstance()->Begin();
 	createTasks(&DispManip);
@@ -87,6 +89,7 @@ void setup() {
 void loop() {
 	WiFiHandler.HandleConnection();
 	MeasHandler.UpdateMeas(&meas_start_time);
+	HAQuDA_Logger::FlushExpiredRepeats();
 	if ((millis() - builtin_blink_start_time) > BUILTIN_LED_PERIOD) {
 		digitalWrite(BUILTIN_LED, !digitalRead(BUILTIN_LED));
 		builtin_blink_start_time = millis();
