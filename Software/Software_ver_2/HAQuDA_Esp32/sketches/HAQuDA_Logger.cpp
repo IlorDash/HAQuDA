@@ -33,7 +33,7 @@ void HAQuDA_Logger::LogInfo(const char *msg_to_show) {
 
 	HAQuDA_Logger::prepareLogInfoText(&logInfoStruct, logInfoText, msg_to_show);
 
-	log_i(LOG_PRINT_T, logInfoText.timestamp, logInfoText.prefix, logInfoText.data);
+	log_i("%s", logInfoText);
 
 	if (HAQuDA_WebServer::GetWebServerStarted()) {
 		HAQuDA_WebServer::WebSerialPrint(logInfoText);
