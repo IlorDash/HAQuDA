@@ -5,6 +5,10 @@
 
 #define APPLICATION_NAME "HAQuDA"
 
+// CCS811 WAKE input, active low: the sensor sleeps and ignores I2C until it is pulled low.
+// Board Ver 2.1 routes it to IO27 (Ver 1.1 used IO5).
+#define CCS811_WAK 27
+
 #ifdef USE_WDT
 #include <esp_task_wdt.h>
 #include <WiFi.h>

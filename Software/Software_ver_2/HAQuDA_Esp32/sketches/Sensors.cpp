@@ -1,4 +1,5 @@
 #include "Sensors.h"
+#include "Board.h"
 
 #define SENS_POW 23
 
@@ -8,8 +9,6 @@
 #define ZH03B_RX_PIN 17
 #define ZH03B_TX_PIN 16
 #define PM_BUF_LEN 22
-
-#define CCS811_WAK 5
 
 #define SENS_REBOOT_DELAY 1000
 
