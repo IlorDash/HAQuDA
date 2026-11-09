@@ -66,13 +66,21 @@ void HAQuDA_Logger::rotateLogsIfFull() {
 	}
 }
 
-void HAQuDA_Logger::emitRecord(const LogMsgStruct &record) {
-	if (HAQuDA_WebServer::GetWebServerStarted()) {
-		char text[MSG_MAX_LEN] = {0};
-		snprintf(text, sizeof(text), LOG_PRINT_T, record.timestamp, record.prefix, record.data);
-		HAQuDA_WebServer::WebSerialPrint(text);
+void HAQuDA_Logger::printLive(const LogMsgStruct &record) {
+	if (!HAQuDA_WebServer::GetWebServerStarted()) {
+		return;
 	}
+	char text[MSG_MAX_LEN] = {0};
+	// Two bytes stay free for the CRLF, also when the text is cut: the line end is what separates lines on the page.
+	snprintf(text, sizeof(text) - 2, LOG_PRINT_T, record.timestamp, record.prefix, record.data);
+	const size_t len = strlen(text);
+	text[len] = '\r';
+	text[len + 1] = '\n';
+	text[len + 2] = '\0';
+	HAQuDA_WebServer::WebSerialPrintRaw(text);
+}
 
+void HAQuDA_Logger::emitRecord(const LogMsgStruct &record) {
 	rotateLogsIfFull();
 	if (!HAQuDA_FileStorage::AppendFile(FILE_NAME_LOGS, (const uint8_t *)&record, sizeof(record))) {
 		log_e("Cannot append to " FILE_NAME_LOGS);
@@ -86,6 +94,8 @@ void HAQuDA_Logger::emitSummary(const log_dedup_summary &summary) {
 	const char *prefix = (summary.level == log_dedup_level::error) ? REPEAT_ERROR_MSG_PREFIX : REPEAT_MSG_PREFIX;
 	strncpy(record.prefix, prefix, sizeof(record.prefix) - 1);
 	HAQuDA_FormatRepeatSummary(record.data, sizeof(record.data), summary.text, summary.repeats);
+	// Summaries are rare and tell the user how often a line repeated, so they go live as well as to the file.
+	printLive(record);
 	emitRecord(record);
 }
 
@@ -101,8 +111,8 @@ void HAQuDA_Logger::logMessage(log_dedup_level level, const char *msg) {
 	strncpy(record.prefix, prefix, sizeof(record.prefix) - 1);
 	strncpy(record.data, msg, sizeof(record.data) - 1);
 
-	// The UART gets every line, also the repeats: a disconnected sensor stays visible there.
-	// log_e/log_i are macros that compile to nothing below their core debug level.
+	// The UART and the live WebSerial page get every line, also the repeats: a disconnected sensor stays visible there.
+	// Only the /logs file is deduplicated. log_e/log_i are macros that compile to nothing below their core debug level.
 	snprintf(text, sizeof(text), LOG_PRINT_T, record.timestamp, record.prefix, record.data);
 	if (level == log_dedup_level::error) {
 		log_e("%s", text);
@@ -111,6 +121,7 @@ void HAQuDA_Logger::logMessage(log_dedup_level level, const char *msg) {
 	}
 
 	if (dedup == nullptr) {
+		printLive(record);
 		emitRecord(record);
 		return;
 	}
@@ -119,6 +130,8 @@ void HAQuDA_Logger::logMessage(log_dedup_level level, const char *msg) {
 	if (result.hasEvicted) {
 		emitSummary(result.evicted);
 	}
+	// WebSerial behaves like the UART: every line goes out as it happens, repeats included.
+	printLive(record);
 	if (result.write) {
 		emitRecord(record);
 	}
