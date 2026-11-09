@@ -34,7 +34,7 @@ void setup() {
 
 	Serial.begin(115200);
 	// Serial, not the logger: the file system is not mounted yet, so a log record could not be stored.
-	Serial.printf("HAQuDA firmware v%s\n", FW_VERSION);
+	Serial.printf("HAQuDA firmware v%s\r\n", FW_VERSION);
 	pinMode(BUILTIN_LED, OUTPUT);
 
 	HAQuDA_Logger::SetErrHandler(&ErrHandler);
