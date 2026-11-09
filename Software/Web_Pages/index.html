@@ -1,59 +1,48 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>HAQuDA WEB SERVER</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-html {
-    font-family: Arial, Helvetica, sans-serif;
-    display: inline-block;
-    text-align: center;
-}
-h1 {
-    font-size: 1.8rem;
-    color: white;
-}
-p {
-    font-size: 1.4rem;
-}
-.topnav {
-    overflow: hidden;
-    background-color: #0A1128;
-}
-body {
-    margin: 0;
-}
-.content {
-    padding: 5%;
-}
-</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>HAQuDA</title>
+<link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <div class="topnav">
-        <h1>HAQuDA WEB SERVER</h1>
-    </div>
-    <div>
-        <h2>Hello, world!</h2>
-            <p class="text">
-                <a href="wifi_manager">Add WiFi credentials</a>
-            </p>
-    </div>
-	
-	 <div>
-        <p>Delete stored WiFi credentials</p>
-            <form action="/delete_wifi_creds" method="POST">
-				<button name="Delete">Delete</button>
-			</form>
-    </div>
-	
-	<div>
-        <p>Show stored WiFi credentials</p>
-            <form action="/show_wifi_creds" method="POST">
-				<button name="Show">Show</button>
-			</form>
-    </div>
-	
-	
-	
+<header class="top">
+	<h1>HAQuDA</h1>
+	<p id="info" class="muted">Connecting to the lamp...</p>
+</header>
+<main>
+	<section class="card wide">
+		<h2>Air now</h2>
+		<ul id="meas" class="plain meas">
+			<li data-k="temp"><i class="dot"></i><span class="lbl">Temperature</span><b class="val">--</b><span class="unit">&deg;C</span></li>
+			<li data-k="humid"><i class="dot"></i><span class="lbl">Humidity</span><b class="val">--</b><span class="unit">%</span></li>
+			<li data-k="eco2"><i class="dot"></i><span class="lbl">CO&#8322;</span><b class="val">--</b><span class="unit">ppm</span></li>
+			<li data-k="tvoc"><i class="dot"></i><span class="lbl">TVOC</span><b class="val">--</b><span class="unit">ppb</span></li>
+			<li data-k="pm25"><i class="dot"></i><span class="lbl">PM2.5</span><b class="val">--</b><span class="unit">&micro;g/m&sup3;</span></li>
+		</ul>
+		<p class="muted">The dot shows the colour the lamp gives the value. A value stays empty until the sensor delivers a reading.</p>
+	</section>
+	<section class="card">
+		<h2>Services</h2>
+		<ul class="plain">
+			<li><a href="/webserial">WebSerial log</a></li>
+			<li><a href="/wifi_manager">WiFi manager</a></li>
+			<li><a href="https://ilordash.github.io/HAQuDA/" target="_blank" rel="noopener">User guide</a><span class="muted">needs internet</span></li>
+			<li><a href="https://github.com/IlorDash/HAQuDA" target="_blank" rel="noopener">Source repository</a><span class="muted">needs internet</span></li>
+		</ul>
+	</section>
+	<section class="card">
+		<h2>Saved WiFi networks</h2>
+		<ul id="nets" class="plain"><li class="muted">Loading...</li></ul>
+		<div class="actions">
+			<a class="btn" href="/wifi_manager">Add network</a>
+			<button id="wipe" class="btn danger" type="button">Delete all</button>
+		</div>
+		<p id="msg" class="muted" role="status"></p>
+	</section>
+</main>
+<script src="/app.js"></script>
 </body>
 </html>

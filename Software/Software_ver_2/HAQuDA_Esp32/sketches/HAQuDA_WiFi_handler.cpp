@@ -13,7 +13,8 @@ const char *DDNS_domain = DDNS_DOMAIN;
 
 static HAQuDA_DisplayManip *dispManip;
 
-HAQuDA_WiFi_handler::HAQuDA_WiFi_handler(HAQuDA_FileStorage *currFS, HAQuDA_DisplayManip *_dispManip) : HAQuDA_WebServer(currFS) {
+HAQuDA_WiFi_handler::HAQuDA_WiFi_handler(HAQuDA_FileStorage *currFS, HAQuDA_DisplayManip *_dispManip, const HAQuDA_MeasSnapshot &snapshot)
+	: HAQuDA_WebServer(currFS, snapshot) {
 	dispManip = _dispManip;
 };
 
@@ -62,6 +63,8 @@ bool start_send_web_serial_timer = false;
 void HAQuDA_WiFi_handler::HandleConnection() {
 	// Check for new public IP every 10 seconds
 	// EasyDDNS.update(10000, true);
+
+	HandleDeferredWork();
 
 	// Captive portal: answers every DNS query with the AP address so the phone's connectivity probe
 	// reaches the web server. AP mode only; station mode runs no DNS server.

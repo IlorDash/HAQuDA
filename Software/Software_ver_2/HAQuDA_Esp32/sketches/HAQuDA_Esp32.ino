@@ -23,9 +23,10 @@ HAQuDA_ErrorHandler ErrHandler;
 HAQuDA_FileStorage FileStorage;
 HAQuDA_LogDedup LogDedup;
 HAQuDA_EffectsHandler EffectsHandler;
-HAQuDA_MeasHandler MeasHandler(&ErrHandler);
+HAQuDA_MeasSnapshot MeasSnapshot;
+HAQuDA_MeasHandler MeasHandler(&ErrHandler, MeasSnapshot);
 HAQuDA_DisplayManip DispManip(&MeasHandler, &EffectsHandler, &ErrHandler);
-HAQuDA_WiFi_handler WiFiHandler(&FileStorage, &DispManip);
+HAQuDA_WiFi_handler WiFiHandler(&FileStorage, &DispManip, MeasSnapshot);
 
 int meas_start_time = 0;
 int builtin_blink_start_time = 0;

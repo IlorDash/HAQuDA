@@ -4,6 +4,8 @@
 #include "HAQuDA_LEDs.h"
 #include "Sensors.h"
 
+#include <atomic>
+
 #define MAX_SENS_REBOOT_ATTEMPTS 3
 
 static_assert(COLOR_SCALE_MAX_CHANNEL == MAX_BRIGHTNESS, "colour scale and LED limits must agree");
@@ -20,7 +22,7 @@ meas_div_dots HAQuDA_MeasHandler::dots;
 
 static HAQuDA_ErrorHandler *errHandler;
 
-HAQuDA_MeasHandler::HAQuDA_MeasHandler(HAQuDA_ErrorHandler *_err_handler) {
+HAQuDA_MeasHandler::HAQuDA_MeasHandler(HAQuDA_ErrorHandler *_err_handler, HAQuDA_MeasSnapshot &snapshot) : measSnapshot(snapshot) {
 
 	sens_start = false;
 
@@ -96,6 +98,8 @@ void HAQuDA_MeasHandler::UpdateMeas(int *sensors_meas_time) {
 
 		checkMeasCorrect();
 
+		publishSnapshots();
+
 		eCO2_meas.newMeasDone = false;
 		TVOC_meas.newMeasDone = false;
 		PM_2_5_meas.newMeasDone = false;
@@ -120,6 +124,48 @@ void HAQuDA_MeasHandler::checkMeasCorrect() {
 	if (!humid_meas.newMeasDone) {
 		errHandler->FailedToGetMeas("Failed to get HUMID meas");
 	}
+}
+
+// Scales one lamp channel (0..COLOR_SCALE_MAX_CHANNEL, the LED current limit) to the full 0..255 range of a web colour.
+// The clamp keeps the result below 256, so a channel never carries into its neighbour in the packed colour.
+static uint32_t webChannel(uint8_t channel) {
+	uint32_t limited = (channel > COLOR_SCALE_MAX_CHANNEL) ? COLOR_SCALE_MAX_CHANNEL : channel;
+	return limited * 255 / COLOR_SCALE_MAX_CHANNEL;
+}
+
+// loop task. A failed poll publishes NaN so the page shows a gap instead of a stale value.
+// ShowTask zeroes count and then sum in ClearMeasData() without a lock. Here the count is read before and after
+// the sum: an unchanged non-zero count means no clear started before the second read, so the sum is the old one
+// and matches the count. A changed count means a clear ran in between, and that poll keeps the previous snapshot.
+static void publishOne(HAQuDA_MeasSnapshot &snapshot, snapshot_param param, const meas_data &data, div_dots dotsOfParam) {
+	if (!data.newMeasDone) {
+		snapshot.Publish(param, NAN, 0);
+		return;
+	}
+	// volatile: the compiler must not merge the two count reads or move them past the sum read
+	const volatile uint16_t *count = &data.measNum;
+	const volatile float *sumPtr = &data.value;
+	uint16_t countBefore = *count;
+	std::atomic_thread_fence(std::memory_order_seq_cst);
+	float sum = *sumPtr;
+	std::atomic_thread_fence(std::memory_order_seq_cst);
+	uint16_t countAfter = *count;
+	if ((countBefore == 0) || (countBefore != countAfter)) {
+		return;
+	}
+
+	float average = sum / countBefore;
+	rgb_color color = {0, 0, 0};
+	HAQuDA_GetMeasRGB(average, dotsOfParam, COLOR_SCALE_MAX_CHANNEL, color);
+	snapshot.Publish(param, average, (webChannel(color.r) << 16) | (webChannel(color.g) << 8) | webChannel(color.b));
+}
+
+void HAQuDA_MeasHandler::publishSnapshots() {
+	publishOne(measSnapshot, snapshot_param::temp, temp_meas, dots.temp);
+	publishOne(measSnapshot, snapshot_param::humid, humid_meas, dots.humid);
+	publishOne(measSnapshot, snapshot_param::eco2, eCO2_meas, dots.eCO2);
+	publishOne(measSnapshot, snapshot_param::tvoc, TVOC_meas, dots.TVOC);
+	publishOne(measSnapshot, snapshot_param::pm25, PM_2_5_meas, dots.PM2_5);
 }
 
 void HAQuDA_MeasHandler::Show(int *show_meas_time) {
@@ -352,32 +398,27 @@ void HAQuDA_MeasHandler::nightMode() {
 	switch (standard_m_p) {
 		case temp: {
 			showMeas_night(temp_meas.value / temp_meas.measNum, dots.temp, nightMode_hour);
-			temp_meas.value = 0;
-			temp_meas.measNum = 0;
+			ClearMeasData(temp_meas);
 			break;
 		}
 		case humid: {
 			showMeas_night(humid_meas.value / humid_meas.measNum, dots.humid, nightMode_hour);
-			humid_meas.value = 0;
-			humid_meas.measNum = 0;
+			ClearMeasData(humid_meas);
 			break;
 		}
 		case eCO2: {
 			showMeas_night(eCO2_meas.value / eCO2_meas.measNum, dots.eCO2, nightMode_hour);
-			eCO2_meas.value = 0;
-			eCO2_meas.measNum = 0;
+			ClearMeasData(eCO2_meas);
 			break;
 		}
 		case TVOC: {
 			showMeas_night(TVOC_meas.value / TVOC_meas.measNum, dots.TVOC, nightMode_hour);
-			TVOC_meas.value = 0;
-			TVOC_meas.measNum = 0;
+			ClearMeasData(TVOC_meas);
 			break;
 		}
 		case PM2_5: {
 			showMeas_night(PM_2_5_meas.value / PM_2_5_meas.measNum, dots.PM2_5, nightMode_hour);
-			PM_2_5_meas.value = 0;
-			PM_2_5_meas.measNum = 0;
+			ClearMeasData(PM_2_5_meas);
 			break;
 		}
 		default:

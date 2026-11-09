@@ -96,11 +96,15 @@ bool HAQuDA_FileStorage::WriteFile(const char *path, const uint16_t fromPos, con
 		return false;
 	}
 
-	File file = SPIFFS.open(path, FILE_WRITE);
+	// "r+" keeps the other bytes of the file: "w" would truncate it before the seek
+	File file = SPIFFS.open(path, FILE_READ_WRITE);
 	if (!file) {
 		return false;
 	}
-	file.seek(fromPos);
+	if (!file.seek(fromPos)) {
+		file.close();
+		return false;
+	}
 
 	if (file.write(data, len) != len) {
 		file.close();

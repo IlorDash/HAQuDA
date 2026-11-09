@@ -16,6 +16,7 @@
 #define FILE_WRITE "w"
 #define FILE_APPEND "a"
 #define FILE_READ "r"
+#define FILE_READ_WRITE "r+"
 
 #define FILE_NAME_MEAS_LOG "/measLog.data"
 #define FILE_CHECK_COUNT "/checkCount"
@@ -23,10 +24,6 @@
 #define FILE_NAME_WIFI_NET "/WiFiNetworks"
 #define FILE_NAME_LOGS "/logs"
 #define FILE_NAME_LOGS_OLD "/logs.old" // SPIFFS names are limited to 31 chars with the path
-
-#define WEB_SERVER_IcNDEX_PAGE "/index.html"
-#define WEB_SERVER_STYLE "/style.css"
-#define WEB_SERVER_WIFI_MANAGER_PAGE "/wifi_manager.html"
 
 #define MAX_WIFI_CREDS_NUM 10
 #define WIFI_SSID_LEN 32
@@ -86,7 +83,6 @@ class HAQuDA_FileStorage {
 	static void ReadFileInSerial(const char *path);
 	static bool ReadFile(const char *path, uint8_t *data, const size_t len);
 	static bool ReadFile(const char *path, const int fromPos, uint8_t *data, const size_t len);
-	const String Read_WiFiCreds();
 };
 
 #endif

@@ -41,6 +41,7 @@
         <string>sketches\HAQuDA_Touch.h</string>
         <string>sketches\HAQuDA_ColorScale.h</string>
         <string>sketches\HAQuDA_ILEDs.h</string>
+        <string>sketches\HAQuDA_MeasSnapshot.h</string>
       </OtherFiles>
     </ProjectModeSettings>
   </Project>
@@ -90,7 +91,7 @@
   </CustomDebug>
   <DeviceTerminalSettings>
     <Connection xsi:type="com.sysprogs.terminal.connection.serial">
-      <ComPortName>COM8</ComPortName>
+      <ComPortName>COM10</ComPortName>
       <AdvancedSettings>
         <BaudRate>115200</BaudRate>
         <DataBits>8</DataBits>
@@ -145,10 +146,13 @@
       <TimeoutForAutoBreak>0</TimeoutForAutoBreak>
     </HexSettings>
     <LineEnding>LF</LineEnding>
-    <TreatLFAsCRLF>false</TreatLFAsCRLF>
+    <TreatLFAsCRLF>true</TreatLFAsCRLF>
     <KeepOpenAfterExit>true</KeepOpenAfterExit>
     <ShowAfterProgramming>true</ShowAfterProgramming>
   </DeviceTerminalSettings>
+  <SmartTerminalSettings>
+    <Environments />
+  </SmartTerminalSettings>
   <CustomShortcuts>
     <Shortcuts />
     <ShowMessageAfterExecuting>true</ShowMessageAfterExecuting>
@@ -285,10 +289,12 @@
           <EnableAsyncExecutionMode>false</EnableAsyncExecutionMode>
           <AsyncModeSupportsBreakpoints>true</AsyncModeSupportsBreakpoints>
           <TemporaryBreakConsolidationTimeout>0</TemporaryBreakConsolidationTimeout>
+          <BacktraceFrameLimit>0</BacktraceFrameLimit>
           <EnableNonStopMode>false</EnableNonStopMode>
           <MaxBreakpointLimit>0</MaxBreakpointLimit>
           <EnableVerboseMode>true</EnableVerboseMode>
           <EnablePrettyPrinters>false</EnablePrettyPrinters>
+          <EnableAbsolutePathReporting>true</EnableAbsolutePathReporting>
         </AdditionalGDBSettings>
         <DebugMethod>
           <ID>openocd</ID>
@@ -344,7 +350,7 @@
       </DebugSettingsOverride>
       <BuildSettingsExtension xsi:type="com.visualgdb.build.external.arduino.extension">
         <BoardID>esp32:esp32:esp32</BoardID>
-        <COMPort>COM8</COMPort>
+        <COMPort>COM10</COMPort>
         <Properties>
           <Entries>
             <KeyValue>
@@ -377,7 +383,7 @@
             </KeyValue>
             <KeyValue>
               <Key>DebugLevel</Key>
-              <Value>error</Value>
+              <Value>verbose</Value>
             </KeyValue>
           </Entries>
         </Properties>

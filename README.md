@@ -34,6 +34,13 @@ A lamp flashed this way opens its setup access point as `actions_ssid` with the 
 
 Build the firmware yourself in Visual Studio with Build -> Build Solution. Then flash over UART with Debug -> Program and Start Without Debugging. To flash over OpenOCD instead, run Debug -> Start Debugging with GDB.
 
+## Web pages
+The lamp serves its web pages from `Software/Web_Pages/`: `index.html`, `wifi_manager.html`, `style.css`, `app.js` and `wifi.js`. The pages use no external resources, so they work when the lamp runs as an access point without internet.
+
+The firmware does not read these files. It contains their gzipped bytes in `Software/Software_ver_2/HAQuDA_Esp32/sketches/WebPages.h`. After you change a page source, run `py -3 Software/Web_Pages/gen_web_pages.py` from any folder and commit the changed `WebPages.h` together with the source. The script needs Python 3 and nothing else.
+
+The `Web pages` workflow runs `python3 Software/Web_Pages/gen_web_pages.py --check`. The check fails when `WebPages.h` does not match the sources, so a forgotten regeneration shows up in the pull request.
+
 ## Commit messages and formatting
 Commit hooks check every message and the formatting of the lines you change. Set them up once per clone:
 1. Install Python 3 and run `pip install pre-commit`;

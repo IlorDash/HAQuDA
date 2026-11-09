@@ -35,7 +35,8 @@ class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
 	void waitUntilWiFiConnected();
 
   public:
-	HAQuDA_WiFi_handler(HAQuDA_FileStorage *currFS, HAQuDA_DisplayManip *_dispManip);
+	// snapshot feeds the web page with the latest measurements; it must outlive the handler.
+	HAQuDA_WiFi_handler(HAQuDA_FileStorage *currFS, HAQuDA_DisplayManip *_dispManip, const HAQuDA_MeasSnapshot &snapshot);
 	~HAQuDA_WiFi_handler();
 	static bool WiFiConnected;
 	bool Connect();

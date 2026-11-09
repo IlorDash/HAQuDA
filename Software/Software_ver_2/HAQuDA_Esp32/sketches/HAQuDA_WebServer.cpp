@@ -1,5 +1,75 @@
 #include "HAQuDA_WebServer.h"
+// Only this file includes the page data: a second include would copy it into another object file
 #include "WebPages.h"
+#include "HAQuDA_Version.h"
+
+#include <esp_timer.h>
+#include <cstdarg>
+#include <cstdio>
+#include <cstring>
+
+constexpr size_t STATUS_JSON_LEN = 512;
+constexpr size_t WIFI_LIST_JSON_LEN = 2048;
+// A SSID byte is escaped to at most 6 characters (\u00XX)
+constexpr size_t JSON_ESCAPED_SSID_LEN = WIFI_SSID_LEN * 6 + 1;
+constexpr char CACHE_STATIC[] = "max-age=86400";
+constexpr char CACHE_NONE[] = "no-cache";
+
+namespace {
+	// Appends formatted text at pos; returns false (and keeps the buffer terminated) when it does not fit
+	bool appendFormat(char *buf, size_t size, size_t &pos, const char *fmt, ...) {
+		if (pos >= size) {
+			return false;
+		}
+		va_list args;
+		va_start(args, fmt);
+		int written = vsnprintf(buf + pos, size - pos, fmt, args);
+		va_end(args);
+		if ((written < 0) || (static_cast<size_t>(written) >= size - pos)) {
+			buf[pos] = '\0';
+			return false;
+		}
+		pos += written;
+		return true;
+	}
+
+	// Writes the JSON string body (no quotes) of a possibly unterminated record field into out
+	void escapeJson(const char *text, size_t maxLen, char *out, size_t outSize) {
+		size_t pos = 0;
+		size_t textLen = strnlen(text, maxLen);
+		for (size_t i = 0; i < textLen; i++) {
+			unsigned char c = static_cast<unsigned char>(text[i]);
+			int written = 0;
+			if ((c == '"') || (c == '\\')) {
+				written = snprintf(out + pos, outSize - pos, "\\%c", c);
+			} else if (c < 0x20) {
+				written = snprintf(out + pos, outSize - pos, "\\u%04x", c);
+			} else {
+				written = snprintf(out + pos, outSize - pos, "%c", c);
+			}
+			if ((written < 0) || (static_cast<size_t>(written) >= outSize - pos)) {
+				break;
+			}
+			pos += written;
+		}
+		out[pos] = '\0';
+	}
+
+	void sendAsset(AsyncWebServerRequest *request, const char *mime, const uint8_t *data, size_t len, const char *cacheControl) {
+		AsyncWebServerResponse *response = request->beginResponse_P(200, mime, data, len);
+		response->addHeader("Content-Encoding", "gzip");
+		response->addHeader("Cache-Control", cacheControl);
+		request->send(response);
+	}
+
+	void sendText(AsyncWebServerRequest *request, int code, const char *text) {
+		request->send(code, "text/plain", text);
+	}
+} // namespace
+
+void HAQuDA_SendIndexPage(AsyncWebServerRequest *request) {
+	sendAsset(request, "text/html", WEB_INDEX_HTML_GZ, WEB_INDEX_HTML_GZ_LEN, CACHE_NONE);
+}
 
 bool HAQuDA_WebServer::WebServerStarted = false;
 
@@ -43,103 +113,190 @@ bool HAQuDA_WebServer::GetWebServerStarted() {
 	return WebServerStarted;
 }
 
-void HAQuDA_WebServer::handle_NewWiFiCreds(AsyncWebServerRequest *request) {
+// msg must be a string literal: only the pointer crosses the tasks. If two failures arrive within one loop() pass,
+// the later one replaces the earlier one.
+void HAQuDA_WebServer::postLogError(const char *msg) {
+	deferredLogError.store(msg);
+}
 
-	int params_cnt = request->params();
-	TWiFiCreds newWiFiCreds;
-	for (int i = 0; i < params_cnt; i++) {
-		AsyncWebParameter *p = request->getParam(i);
-		if (p->isPost()) {
-			if (p->name() == SSID_PARAM_NAME) {
-				strcpy(newWiFiCreds.ssid, p->value().c_str());
-			} else if (p->name() == PASS_PARAM_NAME) {
-				strcpy(newWiFiCreds.pass, p->value().c_str());
-			}
-		}
+void HAQuDA_WebServer::HandleDeferredWork() {
+	const char *logMsg = deferredLogError.exchange(nullptr);
+	if (logMsg != nullptr) {
+		HAQuDA_Logger::LogError(logMsg);
 	}
 
-	if (!strlen(newWiFiCreds.pass) || !strlen(newWiFiCreds.ssid)) {
-		// If one of the creds is missing, go back to form page
-		String response_error = "<h1>Error check WiFi creds</h1>";
-		response_error += "<h2><a href='/'>Go back</a>to try again";
-		request->send(200, "text/html", response_error);
+	if (!restartPending.load()) {
+		return;
+	}
+	if ((uint32_t)(millis() - restartRequestMs.load()) >= RESTART_DELAY_MS) {
+		HAQuDA_Logger::LogInfo("Restart to apply new WiFi credentials");
+		ESP.restart();
+	}
+}
+
+void HAQuDA_WebServer::handle_NewWiFiCreds(AsyncWebServerRequest *request) {
+	AsyncWebParameter *ssidParam = request->getParam(SSID_PARAM_NAME, true);
+	AsyncWebParameter *passParam = request->getParam(PASS_PARAM_NAME, true);
+	if ((ssidParam == nullptr) || (passParam == nullptr) || (ssidParam->value().length() == 0) || (passParam->value().length() == 0)) {
+		sendText(request, 400, "Enter both the network name and the password.");
+		return;
+	}
+	// The record fields hold the text and a terminator
+	if (ssidParam->value().length() >= WIFI_SSID_LEN) {
+		sendText(request, 400, "The network name is too long (31 bytes at most).");
+		return;
+	}
+	if (passParam->value().length() >= WIFI_PASS_LEN) {
+		sendText(request, 400, "The password is too long (31 bytes at most).");
 		return;
 	}
 
-	log_i("Saving WiFi net with SSID = %s\r\n", newWiFiCreds.ssid);
+	TWiFiCreds newWiFiCreds;
+	memset(&newWiFiCreds, 0, sizeof(newWiFiCreds));
+	strncpy(newWiFiCreds.ssid, ssidParam->value().c_str(), sizeof(newWiFiCreds.ssid) - 1);
+	strncpy(newWiFiCreds.pass, passParam->value().c_str(), sizeof(newWiFiCreds.pass) - 1);
 
 	saveNewWiFiCredsReturnMsgs saveNewWiFiCredsMsg = SaveNew_WiFiCreds(newWiFiCreds);
 
 	switch (saveNewWiFiCredsMsg) {
-		case too_many_WiFi: {
-			String response_error = "<h1>Error writing new WiFi creds in file system</h1>";
-			response_error += "<h2>Too many WiFi credentials</h2>";
-			response_error += "<h2><a href='/'>Go back</a>to try again";
-			request->send(200, "text/html", response_error);
+		case too_many_WiFi:
+			postLogError("handle_NewWiFiCreds: no room for another network");
+			sendText(request, 409,
+					 "The lamp stores 10 networks and all places are taken. "
+					 "Press Delete all on the main page, then add this network again.");
 			break;
-		}
-		case error_reading_stored_WiFi_creds: {
-			String response_error = "<h1>Error writing new WiFi creds in file system</h1>";
-			response_error += "<h2>Error reading stored WiFi credentials</h2>";
-			response_error += "<h2><a href='/'>Go back</a>to try again";
-			request->send(500, "text/html", response_error);
+		case error_reading_stored_WiFi_creds:
+			postLogError("handle_NewWiFiCreds: cannot read the saved networks");
+			sendText(request, 500,
+					 "The lamp cannot read its saved networks. Try again. "
+					 "If it fails again, press Delete all on the main page and add the network again.");
 			break;
-		}
-		case error_saving_new_WiFi_creds: {
-			String response_error = "<h1>Error writing new WiFi creds in file system</h1>";
-			response_error += "<h2>Error saving stored WiFi credentials</h2>";
-			response_error += "<h2><a href='/'>Go back</a>to try again";
-			request->send(500, "text/html", response_error);
+		case error_saving_new_WiFi_creds:
+			postLogError("handle_NewWiFiCreds: cannot write the network");
+			sendText(request, 500,
+					 "The lamp cannot save the network. Try again. "
+					 "If it fails again, press Delete all on the main page and add the network again.");
 			break;
-		}
-		case re_writed_WiFi_creds: {
-			String response_success = "<h1>Success</h1>";
-			response_success += "<h2>Re-writed WiFi credentials</h2>";
-			response_success += "<h2>Device will restart in 3 seconds</h2>";
-			request->send(200, "text/html", response_success);
-			vTaskDelay(3000);
-			ESP.restart();
+		case re_writed_WiFi_creds:
+			sendText(request, 200, "This network was already saved. The password is updated and the lamp restarts in 3 seconds.");
+			scheduleRestart();
 			break;
-		}
-		case saved_new_WiFi_creds: {
-			String response_success = "<h1>Success</h1>";
-			response_success += "<h2>Saved new WiFi credentials</h2>";
-			response_success += "<h2>Device will restart in 3 seconds</h2>";
-			request->send(200, "text/html", response_success);
-			vTaskDelay(SHOW_REBOOT_MSG_DELAY);
-			ESP.restart();
+		case saved_new_WiFi_creds:
+			sendText(request, 200, "Saved. The lamp restarts in 3 seconds.");
+			scheduleRestart();
 			break;
-		}
 		default:
+			postLogError("handle_NewWiFiCreds: unexpected save result");
+			sendText(request, 500, "The lamp cannot save the network. Try again.");
 			break;
+	}
+}
+
+// loop() restarts the lamp: waiting in the async_tcp task would block it
+void HAQuDA_WebServer::scheduleRestart() {
+	if (!restartPending.load()) {
+		restartRequestMs.store(millis());
+		restartPending.store(true);
 	}
 }
 
 void HAQuDA_WebServer::delete_WiFiCreds(AsyncWebServerRequest *request) {
-	bool res = HAQuDA_FileStorage::DeleteFile(FILE_NAME_WIFI_NET);
-	if (res) {
-		request->send(200, "text/html", "Deleted all WiFi credentials");
+	if (!HAQuDA_FileStorage::Exists(FILE_NAME_WIFI_NET)) {
+		sendText(request, 200, "There are no saved networks.");
+		return;
+	}
+	if (HAQuDA_FileStorage::DeleteFile(FILE_NAME_WIFI_NET)) {
+		sendText(request, 200, "Deleted all saved networks.");
 	} else {
-		request->send(500, "text/html", "Error while deleting WiFi credentials");
+		postLogError("delete_WiFiCreds: cannot delete the credentials file");
+		sendText(request, 500, "Error deleting the saved networks.");
 	}
 }
 
-void HAQuDA_WebServer::show_WiFiCreds(AsyncWebServerRequest *request) {
-	HAQuDA_FileStorage::ReadFileInSerial(FILE_NAME_WIFI_NET);
-	char *bar;
-	int WiFiCredsNum = GetStored_WiFiCredsNum();
-	if (WiFiCredsNum == 0) {
-		request->send(200, "text/html", "WiFi credentials are empty");
+void HAQuDA_WebServer::handleStatus(AsyncWebServerRequest *request) {
+	static const char *const PARAM_KEYS[SNAPSHOT_PARAM_NUM] = {"temp", "humid", "eco2", "tvoc", "pm25"};
+	// Decimals shown per parameter: the DHT11 reports tenths, the others whole numbers
+	static const uint8_t PARAM_DECIMALS[SNAPSHOT_PARAM_NUM] = {1, 1, 0, 0, 0};
+
+	char buf[STATUS_JSON_LEN];
+	size_t pos = 0;
+	buf[0] = '\0';
+
+	bool stationMode = (WiFi.getMode() & WIFI_MODE_STA) != 0;
+	bool stationUp = stationMode && (WiFi.status() == WL_CONNECTED);
+	IPAddress ip = stationMode ? WiFi.localIP() : WiFi.softAPIP();
+	// esp_timer counts in 64 bits, millis() would wrap after 49 days
+	uint32_t uptimeS = (uint32_t)(esp_timer_get_time() / 1000000LL);
+
+	bool fits = appendFormat(buf, sizeof(buf), pos, "{\"fw\":\"%s\",\"mode\":\"%s\",\"ip\":\"%u.%u.%u.%u\",\"uptime\":%lu,\"rssi\":", FW_VERSION,
+							 stationMode ? "sta" : "ap", ip[0], ip[1], ip[2], ip[3], (unsigned long)uptimeS);
+	if (stationUp) {
+		fits = fits && appendFormat(buf, sizeof(buf), pos, "%d", (int)WiFi.RSSI());
 	} else {
-		HAQuDA_FileStorage::ReadFile(FILE_NAME_WIFI_NET, (uint8_t *)bar, sizeof(TWiFiCreds));
-//		char buff[WIFI_SSID_LEN + WIFI_PASS_LEN] = {""};
-//		String answer = "";
-//		for (int i = 0; i < WiFiCredsNum; i++) {
-//			HAQuDA_FileStorage::ReadFileFrom(FILE_NAME_WIFI_NET, sizeof(TWiFiCreds) * i, (uint8_t *)buff, sizeof(TWiFiCreds));
-//			answer += buff;
-//		}
-		request->send(200, "text/html", "answer");
+		fits = fits && appendFormat(buf, sizeof(buf), pos, "null");
 	}
+	fits = fits && appendFormat(buf, sizeof(buf), pos, ",\"meas\":{");
+
+	for (size_t i = 0; i < SNAPSHOT_PARAM_NUM; i++) {
+		float value = 0;
+		uint32_t rgb = 0;
+		const char *separator = (i == 0) ? "" : ",";
+		if (measSnapshot.Get(static_cast<snapshot_param>(i), value, rgb)) {
+			fits = fits
+				   && appendFormat(buf, sizeof(buf), pos, "%s\"%s\":{\"v\":%.*f,\"c\":\"#%06lx\"}", separator, PARAM_KEYS[i], PARAM_DECIMALS[i], value,
+								   (unsigned long)rgb);
+		} else {
+			fits = fits && appendFormat(buf, sizeof(buf), pos, "%s\"%s\":null", separator, PARAM_KEYS[i]);
+		}
+	}
+	fits = fits && appendFormat(buf, sizeof(buf), pos, "}}");
+
+	if (!fits) {
+		postLogError("handleStatus: status buffer too small");
+		sendText(request, 500, "Status unavailable.");
+		return;
+	}
+	AsyncWebServerResponse *response = request->beginResponse(200, "application/json", buf);
+	response->addHeader("Cache-Control", "no-store");
+	request->send(response);
+}
+
+void HAQuDA_WebServer::handleWiFiList(AsyncWebServerRequest *request) {
+	char buf[WIFI_LIST_JSON_LEN];
+	char escapedSsid[JSON_ESCAPED_SSID_LEN];
+	size_t pos = 0;
+	bool first = true;
+	buf[0] = '\0';
+	appendFormat(buf, sizeof(buf), pos, "[");
+
+	int credsNum = GetStored_WiFiCredsNum();
+	if (credsNum > MAX_WIFI_CREDS_NUM) {
+		credsNum = MAX_WIFI_CREDS_NUM;
+	}
+	for (int i = 0; i < credsNum; i++) {
+		TWiFiCreds creds;
+		if (!HAQuDA_FileStorage::ReadFile(FILE_NAME_WIFI_NET, i * (int)sizeof(TWiFiCreds), (uint8_t *)&creds, sizeof(TWiFiCreds))) {
+			postLogError("handleWiFiList: cannot read a saved network");
+			continue;
+		}
+		if (strnlen(creds.ssid, sizeof(creds.ssid)) == 0) {
+			continue;
+		}
+		escapeJson(creds.ssid, sizeof(creds.ssid), escapedSsid, sizeof(escapedSsid));
+		// The passwords never leave the lamp: only the network name is copied out of the record
+		if (!appendFormat(buf, sizeof(buf), pos, "%s\"%s\"", first ? "" : ",", escapedSsid)) {
+			break;
+		}
+		first = false;
+	}
+	// MAX_WIFI_CREDS_NUM escaped names always fit, so the bracket cannot overflow; a failure still leaves a valid empty list
+	if (!appendFormat(buf, sizeof(buf), pos, "]")) {
+		strcpy(buf, "[]");
+	}
+
+	AsyncWebServerResponse *response = request->beginResponse(200, "application/json", buf);
+	response->addHeader("Cache-Control", "no-store");
+	request->send(response);
 }
 
 void HAQuDA_WebServer::handle_NotFound(AsyncWebServerRequest *request) {
@@ -147,104 +304,92 @@ void HAQuDA_WebServer::handle_NotFound(AsyncWebServerRequest *request) {
 }
 
 void HAQuDA_WebServer::WebServerResponds_init() {
-	// Route for root / web page
-	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) { request->send(200, "text/html", indexPage); });
+	// Routes added here are checked before the captive handler (added last), so AP clients reach them too
+	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) { HAQuDA_SendIndexPage(request); });
+	server.on("/wifi_manager", HTTP_GET,
+			  [](AsyncWebServerRequest *request) { sendAsset(request, "text/html", WEB_WIFI_MANAGER_HTML_GZ, WEB_WIFI_MANAGER_HTML_GZ_LEN, CACHE_NONE); });
+	server.on("/style.css", HTTP_GET,
+			  [](AsyncWebServerRequest *request) { sendAsset(request, "text/css", WEB_STYLE_CSS_GZ, WEB_STYLE_CSS_GZ_LEN, CACHE_STATIC); });
+	server.on("/app.js", HTTP_GET,
+			  [](AsyncWebServerRequest *request) { sendAsset(request, "application/javascript", WEB_APP_JS_GZ, WEB_APP_JS_GZ_LEN, CACHE_STATIC); });
+	server.on("/wifi.js", HTTP_GET,
+			  [](AsyncWebServerRequest *request) { sendAsset(request, "application/javascript", WEB_WIFI_JS_GZ, WEB_WIFI_JS_GZ_LEN, CACHE_STATIC); });
 
-	server.on("/wifi_manager", HTTP_GET, [](AsyncWebServerRequest *request) { request->send(200, "text/html", WiFiManagerPage); });
+	server.on("/api/status", HTTP_GET, [this](AsyncWebServerRequest *request) { handleStatus(request); });
+	server.on("/api/wifi", HTTP_GET, [this](AsyncWebServerRequest *request) { handleWiFiList(request); });
 
-	server.on("/delete_wifi_creds", HTTP_POST, HAQuDA_WebServer::delete_WiFiCreds);
-	server.on("/show_wifi_creds", HTTP_POST, HAQuDA_WebServer::show_WiFiCreds);
-	server.on("/add_wifi_creds", HTTP_POST, HAQuDA_WebServer::handle_NewWiFiCreds);
+	server.on("/delete_wifi_creds", HTTP_POST, [this](AsyncWebServerRequest *request) { delete_WiFiCreds(request); });
+	server.on("/add_wifi_creds", HTTP_POST, [this](AsyncWebServerRequest *request) { handle_NewWiFiCreds(request); });
 	server.onNotFound(HAQuDA_WebServer::handle_NotFound);
 }
 
+// True when one more record fits. GetStored_WiFiCredsNum() counts a missing file as zero records, whether
+// SPIFFS reports its size as 0 or as -1.
 bool HAQuDA_WebServer::checkStoredWiFiCredsCntLimit() {
-	int fSize = HAQuDA_FileStorage::FileSize(FILE_NAME_WIFI_NET);
-	uint8_t storedWiFiCredsCnt = fSize / sizeof(TWiFiCreds);
-	if (storedWiFiCredsCnt >= MAX_WIFI_CREDS_NUM) {
-		return false;
-	}
-	return true;
+	return GetStored_WiFiCredsNum() < MAX_WIFI_CREDS_NUM;
 }
 
+// Finds where newWiFiCreds goes: the index of the stored record with the same SSID (it is overwritten), or the
+// record count (it is appended). Returns false when a record cannot be read.
 bool HAQuDA_WebServer::getWiFiCredsWriteIndex(uint16_t *index, const TWiFiCreds newWiFiCreds) {
-	*index = 0;
-	size_t fileSize = HAQuDA_FileStorage::FileSize(FILE_NAME_WIFI_NET);
-	if (fileSize == -1) {
+	if (index == nullptr) {
 		return false;
 	}
-	uint8_t storedWiFiCredsCnt = fileSize / sizeof(TWiFiCreds);
+	int storedWiFiCredsCnt = GetStored_WiFiCredsNum();
 	TWiFiCreds readWiFiCreds;
-	bool newWiFiCredsExists = false;
 
-	while (((*index) < storedWiFiCredsCnt) && !newWiFiCredsExists) {
-		size_t fileReadRes = HAQuDA_FileStorage::ReadFile(FILE_NAME_WIFI_NET, (uint8_t *)&readWiFiCreds, sizeof(TWiFiCreds));
-		if (fileReadRes != sizeof(TWiFiCreds)) {
+	for (int i = 0; i < storedWiFiCredsCnt; i++) {
+		if (!HAQuDA_FileStorage::ReadFile(FILE_NAME_WIFI_NET, i * (int)sizeof(TWiFiCreds), (uint8_t *)&readWiFiCreds, sizeof(TWiFiCreds))) {
 			return false;
 		}
-		if (readWiFiCreds.ssid == newWiFiCreds.ssid) {
-			newWiFiCredsExists = true;
-		} else {
-			(*index)++;
+		if (strncmp(readWiFiCreds.ssid, newWiFiCreds.ssid, WIFI_SSID_LEN) == 0) {
+			*index = i;
+			return true;
 		}
 	}
+	*index = storedWiFiCredsCnt;
 	return true;
 }
 
 saveNewWiFiCredsReturnMsgs HAQuDA_WebServer::SaveNew_WiFiCreds(TWiFiCreds newWiFiCreds) {
+	uint16_t index = 0;
+	if (!getWiFiCredsWriteIndex(&index, newWiFiCreds)) {
+		return error_reading_stored_WiFi_creds;
+	}
+
+	// An existing SSID is overwritten in place, so it needs no free record even when the file is full
+	bool overwrite = (index < GetStored_WiFiCredsNum());
+	if (overwrite) {
+		if (!HAQuDA_FileStorage::WriteFile(FILE_NAME_WIFI_NET, index * sizeof(TWiFiCreds), (uint8_t *)&newWiFiCreds, sizeof(TWiFiCreds))) {
+			return error_saving_new_WiFi_creds;
+		}
+		return re_writed_WiFi_creds;
+	}
 
 	if (!checkStoredWiFiCredsCntLimit()) {
 		return too_many_WiFi;
 	}
-
-	bool newWiFiCredsExists = false;
-	int index = 0;
-	int fSize = HAQuDA_FileStorage::FileSize(FILE_NAME_WIFI_NET);
-	if (fSize <= 0) {
-		bool writeCredsRes = HAQuDA_FileStorage::AppendFile(FILE_NAME_WIFI_NET, (uint8_t *)&newWiFiCreds, sizeof(TWiFiCreds));
-		if (!writeCredsRes) {
-			return error_saving_new_WiFi_creds;
-		}
-	} else {
-		uint16_t index;
-		bool getIndexRes = getWiFiCredsWriteIndex(&index, newWiFiCreds);
-		if (!getIndexRes) {
-			return error_reading_stored_WiFi_creds;
-		}
-
-		bool writeCredsRes = HAQuDA_FileStorage::WriteFile(FILE_NAME_WIFI_NET, index * sizeof(TWiFiCreds), (uint8_t *)&newWiFiCreds, sizeof(TWiFiCreds));
-		if (!writeCredsRes) {
-			return error_saving_new_WiFi_creds;
-		}
+	if (!HAQuDA_FileStorage::AppendFile(FILE_NAME_WIFI_NET, (uint8_t *)&newWiFiCreds, sizeof(TWiFiCreds))) {
+		return error_saving_new_WiFi_creds;
 	}
-
 	return saved_new_WiFi_creds;
 }
 
 TWiFiCreds HAQuDA_WebServer::GetStored_WiFi(int num) {
 	TWiFiCreds WiFiCreds;
 
-	uint8_t pos = num * sizeof(TWiFiCreds);
+	int pos = num * sizeof(TWiFiCreds);
 
 	HAQuDA_FileStorage::ReadFile(FILE_NAME_WIFI_NET, pos, (uint8_t *)&WiFiCreds, sizeof(TWiFiCreds));
 	return WiFiCreds;
 }
 
 int HAQuDA_WebServer::GetStored_WiFiCredsNum() {
-	return HAQuDA_FileStorage::FileSize(FILE_NAME_WIFI_NET) / sizeof(TWiFiCreds);
-}
-
-const String HAQuDA_FileStorage::Read_WiFiCreds() {
-	//	char buff[MAX_SHOW_WIFI_CREDS_BUFF_LEN];
-	//	char *header = "Reading file : /WiFiNetworks\r\n";
-	//	strncpy(buff, header, strlen(header));
-	//
-	//	int WiFiCredsNum = GetStored_WiFiCredsNum();
-	//	TWiFiCreds readWiFiCred;
-	//	for (int i = 0; i < WiFiCredsNum; i++) {
-	//	}
-	//
-	//	return String(buff);
+	int fSize = HAQuDA_FileStorage::FileSize(FILE_NAME_WIFI_NET);
+	if (fSize <= 0) {
+		return 0;
+	}
+	return fSize / sizeof(TWiFiCreds);
 }
 
 HAQuDA_WebServer::~HAQuDA_WebServer() {

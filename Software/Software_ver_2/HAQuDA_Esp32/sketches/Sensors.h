@@ -12,15 +12,17 @@ typedef struct {
 
 extern meas_data eCO2_meas;
 extern meas_data TVOC_meas;
-extern meas_data PM_1_0_meas;  // define PM1.0 value of the air detector module
+extern meas_data PM_1_0_meas; // define PM1.0 value of the air detector module
 extern meas_data PM_2_5_meas; // define PM2.5 value of the air detector module
 extern meas_data PM_10_meas;  // define PM10 value of the air detector module
-extern meas_data temp_meas;  // define PM10 value of the air detector module
-extern meas_data humid_meas; // define PM10 value of the air detector module
+extern meas_data temp_meas;	  // define PM10 value of the air detector module
+extern meas_data humid_meas;  // define PM10 value of the air detector module
 
 bool sensorsBegin();
 bool getCCS811_meas();
 bool getPM_meas();
 bool getDHT11_meas();
 void ClearMeas();
+// Zeroes the count first, then the sum. ShowTask only (loop() reads the pair for the web page).
+void ClearMeasData(meas_data &data);
 void sensors_reboot();
