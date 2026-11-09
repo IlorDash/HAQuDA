@@ -17,12 +17,15 @@ class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
 	char *AP_pass = AP_PASS;
 
 	DNSServer dnsServer;
+	// Set in CreateAP() (setup), read in HandleConnection() (loop): same task, no sharing
+	bool dnsServerRunning = false;
+	// loop() only
+	uint32_t dnsPollMs = 0;
 
 	static void WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info);
 	static void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info);
 
 	IPAddress AP_ip = IPAddress(192, 168, 4, 22);
-	IPAddress AP_gateway = IPAddress(192, 168, 4, 9);
 	IPAddress AP_subnet = IPAddress(255, 255, 255, 0);
 	int reconnectAttempts = 3;
 	bool connectToStoredWiFi();

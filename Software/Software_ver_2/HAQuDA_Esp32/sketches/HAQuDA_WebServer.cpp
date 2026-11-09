@@ -5,10 +5,14 @@ bool HAQuDA_WebServer::WebServerStarted = false;
 
 void HAQuDA_WebServer::beginWebServer() {
 	WebServerResponds_init();
-	server.addHandler(new HAQuDA_CaptiveRequestHandler()).setFilter(ON_AP_FILTER); // only when requested from AP
-	server.begin();
+	// WebSerial only registers its page and socket handlers, so it needs nothing from server.begin().
+	// It goes before the captive handler: the server gives a request to the first handler that accepts
+	// it, and the captive handler accepts every URL, so AP clients would never reach /webserial.
 	MyWebSerial.begin(&server);
 	MyWebSerial.msgCallback(HAQuDA_WebServer::recvMsg);
+	// Must stay last: it answers every unknown URL (captive portal probes) with the index page
+	server.addHandler(new HAQuDA_CaptiveRequestHandler()).setFilter(ON_AP_FILTER); // only when requested from AP
+	server.begin();
 	WebServerStarted = true;
 }
 

@@ -3,6 +3,8 @@
 #define CONNECT_WIFI_TIMEOUT 3000
 #define WAIT_FOR_SEND_WEB_SERIAL_MS 1000
 
+constexpr uint32_t DNS_POLL_PERIOD_MS = 10;
+
 bool HAQuDA_WiFi_handler::WiFiConnected = false;
 
 const char *hostname = AP_SSID;
@@ -46,7 +48,10 @@ bool HAQuDA_WiFi_handler::CreateAP() {
 	if (!createAP()) {
 		return false;
 	}
-	dnsServer.start(53, "*", WiFi.softAPIP());
+	dnsServerRunning = dnsServer.start(53, "*", WiFi.softAPIP());
+	if (!dnsServerRunning) {
+		HAQuDA_Logger::LogError("CreateAP: captive DNS not started");
+	}
 	HAQuDA_WebServer::beginWebServer();
 	return true;
 }
@@ -56,9 +61,16 @@ bool start_send_web_serial_timer = false;
 
 void HAQuDA_WiFi_handler::HandleConnection() {
 	// Check for new public IP every 10 seconds
-	//EasyDDNS.update(10000, true);
+	// EasyDDNS.update(10000, true);
 
-	//dnsServer.processNextRequest();
+	// Captive portal: answers every DNS query with the AP address so the phone's connectivity probe
+	// reaches the web server. AP mode only; station mode runs no DNS server.
+	// Polled every DNS_POLL_PERIOD_MS only: in core 2.0.11 each WiFiUDP::parsePacket() allocates and frees a
+	// 1460-byte buffer even when no packet waits, so polling on every loop() pass churns the heap.
+	if (dnsServerRunning && (millis() - dnsPollMs >= DNS_POLL_PERIOD_MS)) {
+		dnsPollMs = millis();
+		dnsServer.processNextRequest();
+	}
 
 	if ((MyWebSerial.GetWebSerialOpened()) && !start_send_web_serial_timer) {
 		start_send_web_serial_timer = true;
@@ -99,7 +111,10 @@ bool HAQuDA_WiFi_handler::createAP() {
 	}
 	vTaskDelay(2000 / portTICK_PERIOD_MS);
 
-	if (!WiFi.softAPConfig(AP_ip, AP_gateway, AP_subnet)) {
+	// The DHCP server hands the gateway to clients as their router. The lamp is the only host in the
+	// AP network, so the gateway is the AP address. The default gateway 192.168.4.9 did not exist, and
+	// iOS checks after joining that its router answers, so the gateway must be a real host.
+	if (!WiFi.softAPConfig(AP_ip, AP_ip, AP_subnet)) {
 		return false;
 	}
 	vTaskDelay(200 / portTICK_PERIOD_MS);
