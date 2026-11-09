@@ -39,7 +39,15 @@ The lamp serves its web pages from `Software/Web_Pages/`: `index.html`, `wifi_ma
 
 The firmware does not read these files. It contains their gzipped bytes in `Software/Software_ver_2/HAQuDA_Esp32/sketches/WebPages.h`. After you change a page source, run `py -3 Software/Web_Pages/gen_web_pages.py` from any folder and commit the changed `WebPages.h` together with the source. The script needs Python 3 and nothing else.
 
-The `Web pages` workflow runs `python3 Software/Web_Pages/gen_web_pages.py --check`. The check fails when `WebPages.h` does not match the sources, so a forgotten regeneration shows up in the pull request.
+To design the pages without the lamp, run `py -3 Software/Web_Pages/preview_server.py` from any folder. The script opens `http://127.0.0.1:8080/` in your browser. It serves the page sources from disk on every request, so a saved change shows after a refresh. Press Ctrl+C in the terminal to stop it.
+
+The script answers `/api/status`, `/api/wifi` and the WiFi routes with mock data. The firmware and the lamp's access point are not needed.
+
+Pick a mock state with `--scenario`: `normal` (default), `bad-air`, `sensor-fail`, `ap`, `sta-offline` or `errors`. The `errors` state returns the lamp's 500 replies. Add `--latency 800` to delay every answer by 800 ms. Use `--port` to change the port and `--no-browser` to keep the browser closed.
+
+Saved networks live only in the script's memory. The "restarts in 3 seconds" reply is sent, but nothing restarts. The `WebSerial` link opens a stub page, because WebSerial runs only on the lamp.
+
+The `Web pages` workflow runs `python3 Software/Web_Pages/gen_web_pages.py --check`. The check fails when `WebPages.h` does not match the sources, so a forgotten regeneration shows up in the pull request. The workflow also syntax-checks `preview_server.py`.
 
 ## Commit messages and formatting
 Commit hooks check every message and the formatting of the lines you change. Set them up once per clone:

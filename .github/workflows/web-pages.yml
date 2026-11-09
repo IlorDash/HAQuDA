@@ -22,3 +22,5 @@ jobs:
       # source changed without regenerating the header would ship the old page.
       - name: Check WebPages.h is generated from the sources
         run: python3 Software/Web_Pages/gen_web_pages.py --check
+      - name: Check the preview server compiles
+        run: python3 -m py_compile Software/Web_Pages/preview_server.py
