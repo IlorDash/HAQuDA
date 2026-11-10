@@ -66,6 +66,9 @@ class HAQuDA_WebServer {
 	void HandleDeferredWork();
 
   public:
+	// Sends str plus CRLF as two websocket frames (println). Loop task only: a call from a web callback would race with the logger's sends.
 	static void WebSerialPrint(const char *str);
+	// Sends str as is in one websocket frame; the caller appends the line end. Loop task only.
+	static void WebSerialPrintRaw(const char *str);
 	static bool GetWebServerStarted();
 };

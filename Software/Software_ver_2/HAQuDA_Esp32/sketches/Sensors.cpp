@@ -6,7 +6,8 @@
 #define SENS_POW 23
 
 #define DHTPIN 18
-#define DHTTYPE DHT11
+// The assembled board carries a DHT22 (AM2302); the DHT library decodes it differently from the DHT11
+#define DHTTYPE DHT22
 
 #define ZH03B_RX_PIN 17
 #define ZH03B_TX_PIN 16
@@ -65,12 +66,16 @@ int transmitPM10(unsigned char *thebuf) {
 	return PM10Val;
 }
 
+void pmSerialBegin() {
+	// 256 is the RX buffer size; begin() also allocates a ~2560-entry (~10 KB) ISR buffer before freeing the old one,
+	// so it runs once: retries only power-cycle the sensors, the pins and the buffers stay configured.
+	PMSerial.begin(9600, SWSERIAL_8N1, ZH03B_RX_PIN, ZH03B_TX_PIN, false, 256);
+	PMSerial.setTimeout(1000);
+}
+
 bool sensorsBegin() {
 	pinMode(SENS_POW, OUTPUT);
 	digitalWrite(SENS_POW, HIGH);
-
-	PMSerial.begin(9600, SWSERIAL_8N1, ZH03B_RX_PIN, ZH03B_TX_PIN, false, 256);
-	PMSerial.setTimeout(1000);
 
 	pinMode(CCS811_WAK, OUTPUT);
 	digitalWrite(CCS811_WAK, LOW);
@@ -164,7 +169,7 @@ bool getPM_meas() {
 	return false;
 }
 
-bool getDHT11_meas() {
+bool getDHT22_meas() {
 	// Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
 	float humid = dht.readHumidity();
 	float temp_celc = dht.readTemperature();

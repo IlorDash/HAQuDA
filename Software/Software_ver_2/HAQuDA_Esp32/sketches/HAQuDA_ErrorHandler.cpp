@@ -45,11 +45,11 @@ void HAQuDA_ErrorHandler::Show() {
 			break;
 		}
 		case failedToStartFS: {
-			show_random(failedToStartSensorsEffect);
+			show_fading(failedToStartFSEffect);
 			break;
 		}
 		case failedToStartSensors: {
-			show_fading(failedToStartFSEffect);
+			show_random(failedToStartSensorsEffect);
 			break;
 		}
 		case failedToUpdateNTP: {
@@ -63,25 +63,21 @@ void HAQuDA_ErrorHandler::Show() {
 
 void HAQuDA_ErrorHandler::FailedToStartFS() {
 	currentError = failedToStartFS;
-	vTaskDelay(DEFAULT_ERROR_DISPLAY_TIME / portTICK_PERIOD_MS);
 }
 
 void HAQuDA_ErrorHandler::FailedToConnectToWiFi() {
 	currentError = failedToConnectToWiFi;
 	HAQuDA_Logger::LogError("Failed connection to WiFi");
-	vTaskDelay(DEFAULT_ERROR_DISPLAY_TIME / portTICK_PERIOD_MS);
 }
 
 void HAQuDA_ErrorHandler::FailedToCreateAP() {
 	currentError = failedToCreateAP;
 	HAQuDA_Logger::LogError("Failed creating Acces Point");
-	vTaskDelay(DEFAULT_ERROR_DISPLAY_TIME / portTICK_PERIOD_MS);
 }
 
 void HAQuDA_ErrorHandler::FailedToStartSensors() {
 	currentError = failedToStartSensors;
 	HAQuDA_Logger::LogError("Failed to start sensors");
-	vTaskDelay(DEFAULT_ERROR_DISPLAY_TIME / portTICK_PERIOD_MS);
 }
 
 void HAQuDA_ErrorHandler::FailedToUpdateNTP() {

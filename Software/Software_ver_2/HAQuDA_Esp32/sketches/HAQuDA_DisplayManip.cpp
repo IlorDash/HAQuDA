@@ -1,3 +1,5 @@
+#include <atomic>
+
 #include "HAQuDA_DisplayManip.h"
 #include "HAQuDA_LEDsParams.h"
 #include "HAQuDA_LEDs.h"
@@ -8,6 +10,9 @@ display_modes HAQuDA_DisplayManip::mode;
 static HAQuDA_MeasHandler *measHandler;
 static HAQuDA_EffectsHandler *effectsHandler;
 static HAQuDA_ErrorHandler *errHandler;
+
+// Set in the loop task, consumed in ShowTask.
+static std::atomic<bool> restoreBrightnessPending{false};
 
 HAQuDA_DisplayManip::HAQuDA_DisplayManip(HAQuDA_MeasHandler *_meas_handler, HAQuDA_EffectsHandler *_effects_handler, HAQuDA_ErrorHandler *_err_handler) {
 	brighntessPerCent = DEFAULT_BRIGHTNESS;
@@ -25,6 +30,12 @@ void HAQuDA_DisplayManip::Show(int *show_meas_time) {
 			effectsHandler->Show();
 			break;
 		case meas:
+			// The error effect has returned by now, so its own brightness restore cannot overwrite this one.
+			// Clear first: the LEDs still hold the last error frame, and the first meas draw can be up to a minute away.
+			if (restoreBrightnessPending.exchange(false)) {
+				HAQuDA_LEDs::getInstance()->Clear();
+				HAQuDA_LEDs::getInstance()->SetBright(brighntessPerCent);
+			}
 			measHandler->Show(show_meas_time);
 			break;
 		case error:
@@ -39,6 +50,10 @@ void HAQuDA_DisplayManip::Show(int *show_meas_time) {
 void HAQuDA_DisplayManip::SetBrightness(const uint8_t new_brightness) {
 	brighntessPerCent = new_brightness;
 	HAQuDA_LEDs::getInstance()->SetBright(brighntessPerCent);
+}
+
+void HAQuDA_DisplayManip::RestoreBrightnessOnMeas() {
+	restoreBrightnessPending = true;
 }
 
 bool HAQuDA_DisplayManip::SetMode(const display_modes m) {

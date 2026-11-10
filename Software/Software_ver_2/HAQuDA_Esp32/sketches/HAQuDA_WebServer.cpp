@@ -100,6 +100,11 @@ void HAQuDA_WebServer::WebSerialPrint(const char *str) {
 	MyWebSerial.println(str);
 }
 
+void HAQuDA_WebServer::WebSerialPrintRaw(const char *str) {
+	// Print::print(const char *) makes a single write(buffer, len) call, so one textAll()
+	MyWebSerial.print(str);
+}
+
 void HAQuDA_WebServer::WebSerialPrintStoredLogs() {
 	int logsNum = HAQuDA_Logger::GetStored_LogsNum();
 	char logText[WEB_SERIAL_MAX_STR_LEN] = {0};

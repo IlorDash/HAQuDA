@@ -18,10 +18,12 @@ extern meas_data PM_10_meas;  // define PM10 value of the air detector module
 extern meas_data temp_meas;	  // define PM10 value of the air detector module
 extern meas_data humid_meas;  // define PM10 value of the air detector module
 
+// Starts the ZH03B UART once, before the first sensorsBegin(). loop task (setup) only.
+void pmSerialBegin();
 bool sensorsBegin();
 bool getCCS811_meas();
 bool getPM_meas();
-bool getDHT11_meas();
+bool getDHT22_meas();
 void ClearMeas();
 // Zeroes the count first, then the sum. ShowTask only (loop() reads the pair for the web page).
 void ClearMeasData(meas_data &data);
