@@ -163,19 +163,19 @@ void HAQuDA_WebServer::handle_NewWiFiCreds(AsyncWebServerRequest *request) {
 			postLogError("handle_NewWiFiCreds: no room for another network");
 			sendText(request, 409,
 					 "The lamp stores 10 networks and all places are taken. "
-					 "Press Delete all on the main page, then add this network again.");
+					 "Press Delete all networks on the WiFi networks page, then add this network again.");
 			break;
 		case error_reading_stored_WiFi_creds:
 			postLogError("handle_NewWiFiCreds: cannot read the saved networks");
 			sendText(request, 500,
 					 "The lamp cannot read its saved networks. Try again. "
-					 "If it fails again, press Delete all on the main page and add the network again.");
+					 "If it fails again, press Delete all networks on the WiFi networks page and add the network again.");
 			break;
 		case error_saving_new_WiFi_creds:
 			postLogError("handle_NewWiFiCreds: cannot write the network");
 			sendText(request, 500,
 					 "The lamp cannot save the network. Try again. "
-					 "If it fails again, press Delete all on the main page and add the network again.");
+					 "If it fails again, press Delete all networks on the WiFi networks page and add the network again.");
 			break;
 		case re_writed_WiFi_creds:
 			sendText(request, 200, "This network was already saved. The password is updated and the lamp restarts in 3 seconds.");

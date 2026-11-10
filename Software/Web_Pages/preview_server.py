@@ -41,11 +41,11 @@ SCENARIOS = ["normal", "bad-air", "sensor-fail", "ap", "sta-offline", "errors"]
 STATUS_FAIL_TEXT = "Status unavailable."
 READ_FAIL_TEXT = (
     "The lamp cannot read its saved networks. Try again. "
-    "If it fails again, press Delete all on the main page and add the network again."
+    "If it fails again, press Delete all networks on the WiFi networks page and add the network again."
 )
 SAVE_FAIL_TEXT = (
     "The lamp cannot save the network. Try again. "
-    "If it fails again, press Delete all on the main page and add the network again."
+    "If it fails again, press Delete all networks on the WiFi networks page and add the network again."
 )
 DELETE_FAIL_TEXT = "Error deleting the saved networks."
 
@@ -168,7 +168,7 @@ class MockLamp:
                 return 200, "This network was already saved. The password is updated and the lamp restarts in 3 seconds."
             if len(self.networks) >= MAX_WIFI_CREDS_NUM:
                 return 409, ("The lamp stores 10 networks and all places are taken. "
-                             "Press Delete all on the main page, then add this network again.")
+                             "Press Delete all networks on the WiFi networks page, then add this network again.")
             self.networks.append(ssid)
         return 200, "Saved. The lamp restarts in 3 seconds."
 

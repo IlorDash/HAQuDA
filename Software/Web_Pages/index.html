@@ -5,43 +5,59 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <title>HAQuDA</title>
+<script>try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}</script>
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<header class="top">
-	<h1>HAQuDA</h1>
-	<p id="info" class="muted">Connecting to the lamp...</p>
-</header>
-<main>
-	<section class="card wide">
-		<h2>Air now</h2>
-		<ul id="meas" class="plain meas">
-			<li data-k="temp"><i class="dot"></i><span class="lbl">Temperature</span><b class="val">--</b><span class="unit">&deg;C</span></li>
-			<li data-k="humid"><i class="dot"></i><span class="lbl">Humidity</span><b class="val">--</b><span class="unit">%</span></li>
-			<li data-k="eco2"><i class="dot"></i><span class="lbl">CO&#8322;</span><b class="val">--</b><span class="unit">ppm</span></li>
-			<li data-k="tvoc"><i class="dot"></i><span class="lbl">TVOC</span><b class="val">--</b><span class="unit">ppb</span></li>
-			<li data-k="pm25"><i class="dot"></i><span class="lbl">PM2.5</span><b class="val">--</b><span class="unit">&micro;g/m&sup3;</span></li>
-		</ul>
-		<p class="muted">The dot shows the colour the lamp gives the value. A value stays empty until the sensor delivers a reading.</p>
-	</section>
-	<section class="card">
-		<h2>Services</h2>
-		<ul class="plain">
-			<li><a href="/webserial">WebSerial log</a></li>
-			<li><a href="/wifi_manager">WiFi manager</a></li>
-			<li><a href="https://ilordash.github.io/HAQuDA/" target="_blank" rel="noopener">User guide</a><span class="muted">needs internet</span></li>
-			<li><a href="https://github.com/IlorDash/HAQuDA" target="_blank" rel="noopener">Source repository</a><span class="muted">needs internet</span></li>
-		</ul>
-	</section>
-	<section class="card">
-		<h2>Saved WiFi networks</h2>
-		<ul id="nets" class="plain"><li class="muted">Loading...</li></ul>
-		<div class="actions">
-			<a class="btn" href="/wifi_manager">Add network</a>
-			<button id="wipe" class="btn danger" type="button">Delete all</button>
+<header class="hdr">
+	<div class="in hdr-in">
+		<div class="hdr-l">
+			<div class="brand">
+				<span class="logo">HAQuDA</span>
+				<span class="bars" id="bars"><i></i><i></i><i></i><i></i></span>
+			</div>
+			<div class="status"><span class="sdot" id="sdot"></span><span id="stext" role="status">Connecting to the lamp&hellip;</span></div>
 		</div>
-		<p id="msg" class="muted" role="status"></p>
-	</section>
+		<div class="hdr-r">
+			<div class="seg" role="group" aria-label="Language">
+				<button type="button" data-lang="en" aria-pressed="true">EN</button>
+				<button type="button" data-lang="ru" aria-pressed="false">RU</button>
+			</div>
+			<button type="button" class="themebtn" id="theme" aria-label="Toggle theme"><span></span></button>
+		</div>
+	</div>
+</header>
+<main class="in">
+	<div class="banner" id="banner" hidden>
+		<p id="bannerText"></p>
+		<a class="cta" id="bannerCta" href="/wifi_manager" data-i="cta" hidden>Add WiFi network</a>
+	</div>
+	<div class="grid">
+		<section class="lamp" id="lamp">
+			<div class="mrow">
+				<div class="matrix" id="matrix" aria-hidden="true"></div>
+				<div class="legend">
+					<div><span data-i="lDust">Dust PM2.5</span><b id="lv-pm25">--</b></div>
+					<div><span>eCO&#8322;</span><b id="lv-eco2">--</b></div>
+					<div><span data-i="lTemp">Temperature</span><b id="lv-temp">--</b></div>
+				</div>
+			</div>
+			<div class="idx">
+				<div class="idx-word" id="idxWord">&mdash;</div>
+				<div class="idx-sub" id="idxSub"></div>
+			</div>
+		</section>
+		<div class="side">
+			<div class="tiles" id="tiles"></div>
+			<nav class="links">
+				<a class="lk" href="/wifi_manager"><span data-i="wifi">WiFi networks</span></a>
+				<a class="lk" href="/webserial"><span data-i="log">Live log</span></a>
+				<a class="lk ext" href="https://ilordash.github.io/HAQuDA/" target="_blank" rel="noopener"><span data-i="guide">User guide &#8599;</span><span class="note" data-i="offNote">needs internet</span></a>
+				<a class="lk ext" href="https://github.com/IlorDash/HAQuDA" target="_blank" rel="noopener"><span>GitHub &#8599;</span><span class="note" data-i="offNote">needs internet</span></a>
+			</nav>
+			<footer class="meta"><span id="mfw"></span><span id="mip"></span><span id="mup"></span></footer>
+		</div>
+	</div>
 </main>
 <script src="/app.js"></script>
 </body>

@@ -5,30 +5,88 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <title>HAQuDA WiFi manager</title>
+<script>try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}</script>
 <link rel="stylesheet" href="/style.css">
 </head>
-<body>
-<header class="top">
-	<h1>HAQuDA</h1>
-	<p class="muted">WiFi manager</p>
-</header>
-<main>
-	<section class="card wide">
-		<h2>Add a WiFi network</h2>
-		<form id="form" action="/add_wifi_creds" method="POST">
-			<label for="ssid">Network name (SSID)</label>
-			<input type="text" id="ssid" name="ssid" maxlength="31" required autocomplete="off" autocapitalize="none" spellcheck="false">
-			<label for="pass">Password</label>
-			<input type="password" id="pass" name="pass" maxlength="31" required autocomplete="off">
-			<label class="check"><input type="checkbox" id="showPass"> Show password</label>
-			<div class="actions">
-				<button class="btn" id="save" type="submit">Save</button>
-				<a class="btn danger" href="/">Back</a>
+<body class="wifi">
+<header class="hdr">
+	<div class="in hdr-in">
+		<div class="hdr-l">
+			<div class="brand">
+				<span class="logo">HAQuDA</span>
+				<span class="bars" id="bars"><i></i><i></i><i></i><i></i></span>
 			</div>
-		</form>
-		<p id="msg" class="muted" role="status"></p>
-		<p class="muted">The lamp restarts after it saves the network. Names and passwords take up to 31 bytes.</p>
+			<div class="status"><span class="sdot" id="sdot"></span><span id="stext" role="status">Connecting to the lamp&hellip;</span></div>
+		</div>
+		<div class="hdr-r">
+			<div class="seg" role="group" aria-label="Language">
+				<button type="button" data-lang="en" aria-pressed="true">EN</button>
+				<button type="button" data-lang="ru" aria-pressed="false">RU</button>
+			</div>
+			<button type="button" class="themebtn" id="theme" aria-label="Toggle theme"><span></span></button>
+		</div>
+	</div>
+</header>
+<main class="in">
+	<div class="pgt">
+		<a class="back" href="/" aria-label="Main page">&larr;</a>
+		<h1 data-i="title">WiFi networks</h1>
+	</div>
+	<div class="banner" id="banner" hidden>
+		<p data-i="bAp">You&rsquo;re on the lamp&rsquo;s own network. Add your home WiFi &mdash; the lamp will restart and join it.</p>
+	</div>
+	<div id="edit">
+		<div class="cols">
+			<form class="card" id="form" action="/add_wifi_creds" method="post">
+				<div class="card-t" data-i="addTitle">Add network</div>
+				<div class="fld">
+					<div class="fl"><label for="ssid" data-i="ssid">Network name (SSID)</label><span class="cnt" id="ssidCnt">0 / 31 bytes</span></div>
+					<div class="inp" id="ssidBox"><input type="text" id="ssid" name="ssid" required autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="e.g. HomeNet"></div>
+					<div class="hint" id="ssidHint" hidden></div>
+				</div>
+				<div class="fld">
+					<div class="fl"><label for="pass" data-i="pass">Password</label><span class="cnt" id="passCnt">0 / 31 bytes</span></div>
+					<div class="inp" id="passBox"><input type="password" id="pass" name="pass" required autocomplete="off" placeholder="Network password"><button type="button" class="show" id="showPass">Show</button></div>
+					<div class="hint bad" id="passHint" hidden></div>
+				</div>
+				<button type="submit" class="submit" id="save">Save and restart</button>
+				<div class="reply" id="reply" role="status" hidden><i></i><span id="replyText"></span></div>
+			</form>
+			<section class="card saved">
+				<div class="sh"><span class="card-t" data-i="saved">Saved networks</span><span class="cnt" id="netCnt">0 / 10</span></div>
+				<div class="hint bad" id="listErr" data-i="listFail" hidden>Cannot read the saved networks.</div>
+				<div class="empty" id="empty" data-i="empty" hidden>No saved networks yet.</div>
+				<div id="nets"></div>
+				<div id="delBox" hidden>
+					<button type="button" class="delbtn" id="delAsk" data-i="delAll">Delete all networks</button>
+					<div class="confirm" id="confirm" hidden>
+						<p id="confirmText"></p>
+						<div class="btns">
+							<button type="button" id="delNo" data-i="cancel">Cancel</button>
+							<button type="button" class="yes" id="delYes" data-i="delYes">Delete all</button>
+						</div>
+					</div>
+				</div>
+				<div class="reply" id="delReply" role="status" hidden><i></i><span id="delReplyText"></span></div>
+			</section>
+		</div>
+		<nav class="links">
+			<a class="lk" href="/"><span data-i="main">Main page</span></a>
+			<a class="lk" href="/webserial"><span data-i="log">Live log</span></a>
+		</nav>
+	</div>
+	<section class="card rb" id="rb" hidden>
+		<div class="rb-t"><span class="rb-dot"></span><span data-i="rbTitle">Saved. The lamp is restarting</span></div>
+		<div class="rb-resp" id="rbResp"></div>
+		<div class="steps">
+			<div class="step"><b>1</b><span id="rbS1"></span></div>
+			<div class="step"><b>2</b><span id="rbS2"></span></div>
+			<div class="step"><b>3</b><span id="rbS3"></span></div>
+		</div>
+		<div class="wait" data-i="rbWait">Waiting for the lamp &middot; checking every 5 s</div>
+		<a class="cta" href="/" data-i="toMain">Back to main page</a>
 	</section>
+	<footer class="meta"><span id="mfw"></span><span id="mip"></span></footer>
 </main>
 <script src="/wifi.js"></script>
 </body>
