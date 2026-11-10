@@ -59,7 +59,10 @@ class HAQuDA_MeasHandler {
   public:
 	HAQuDA_MeasHandler(HAQuDA_ErrorHandler *_err_handler);
 
+	// Starts the sensors once. loop task only (setup or loop), never from ShowTask.
 	bool SensorsBegin();
+	// Power-cycles and restarts the sensors up to 3 times, blocks up to ~8 s, enables UpdateMeas() on success.
+	// loop task only (setup or loop), never from ShowTask.
 	bool TryRebootSensors();
 
 	static void UpdateMeas(int *sensors_meas_time);

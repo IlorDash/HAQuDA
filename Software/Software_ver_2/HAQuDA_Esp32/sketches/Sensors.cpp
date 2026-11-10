@@ -63,12 +63,16 @@ int transmitPM10(unsigned char *thebuf) {
 	return PM10Val;
 }
 
+void pmSerialBegin() {
+	// 256 is the RX buffer size; begin() also allocates a ~2560-entry (~10 KB) ISR buffer before freeing the old one,
+	// so it runs once: retries only power-cycle the sensors, the pins and the buffers stay configured.
+	PMSerial.begin(9600, SWSERIAL_8N1, ZH03B_RX_PIN, ZH03B_TX_PIN, false, 256);
+	PMSerial.setTimeout(1000);
+}
+
 bool sensorsBegin() {
 	pinMode(SENS_POW, OUTPUT);
 	digitalWrite(SENS_POW, HIGH);
-
-	PMSerial.begin(9600, SWSERIAL_8N1, ZH03B_RX_PIN, ZH03B_TX_PIN, false, 256);
-	PMSerial.setTimeout(1000);
 
 	pinMode(CCS811_WAK, OUTPUT);
 	digitalWrite(CCS811_WAK, LOW);

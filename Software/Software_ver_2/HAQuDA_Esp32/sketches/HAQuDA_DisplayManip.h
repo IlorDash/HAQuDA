@@ -21,8 +21,13 @@ class HAQuDA_DisplayManip {
 		return brighntessPerCent;
 	}
 
+	// Makes ShowTask clear the matrix and re-apply the user's brightness once it enters the meas mode: an error effect
+	// may leave the LEDs dim and its last frame lit.
+	// Call before leaving the error mode. loop task only.
+	static void RestoreBrightnessOnMeas();
+
 	static bool SetMode(const display_modes new_mode);
-	
+
 	static display_modes GetMode() {
 		return mode;
 	};

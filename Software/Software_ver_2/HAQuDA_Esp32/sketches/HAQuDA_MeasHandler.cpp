@@ -67,6 +67,7 @@ HAQuDA_MeasHandler::HAQuDA_MeasHandler(HAQuDA_ErrorHandler *_err_handler) {
 }
 
 bool HAQuDA_MeasHandler::SensorsBegin() {
+	pmSerialBegin();
 	sens_start = sensorsBegin();
 	return sens_start;
 }
@@ -75,11 +76,13 @@ bool HAQuDA_MeasHandler::TryRebootSensors() {
 	uint8_t rebootSensorsAttemptsNum = 0;
 	while (!sensorsBegin()) {
 		if (rebootSensorsAttemptsNum >= MAX_SENS_REBOOT_ATTEMPTS) {
+			sens_start = false;
 			return false;
 		}
 		rebootSensorsAttemptsNum++;
 		sensors_reboot();
 	}
+	sens_start = true;
 	return true;
 }
 
