@@ -4,7 +4,8 @@
 #define SENS_POW 23
 
 #define DHTPIN 18
-#define DHTTYPE DHT11
+// The assembled board carries a DHT22 (AM2302); the DHT library decodes it differently from the DHT11
+#define DHTTYPE DHT22
 
 #define ZH03B_RX_PIN 17
 #define ZH03B_TX_PIN 16
@@ -166,7 +167,7 @@ bool getPM_meas() {
 	return false;
 }
 
-bool getDHT11_meas() {
+bool getDHT22_meas() {
 	// Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
 	float humid = dht.readHumidity();
 	float temp_celc = dht.readTemperature();

@@ -91,7 +91,7 @@ void HAQuDA_MeasHandler::UpdateMeas(int *sensors_meas_time) {
 		return;
 
 	if ((millis() - *sensors_meas_time) > SENSORS_MEAS_PERIOD_MS) {
-		getDHT11_meas();
+		getDHT22_meas();
 		getCCS811_meas();
 		getPM_meas();
 		meas_num++;
