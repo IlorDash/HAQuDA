@@ -34,6 +34,8 @@ int builtin_blink_start_time = 0;
 // 5 minutes keeps the ~8 s power-cycle block of loop() rare and the log free of retry spam.
 constexpr uint32_t SENSORS_START_RETRY_PERIOD_MS = 5 * 60 * 1000;
 
+constexpr uint32_t WIFI_ERROR_DISPLAY_MS = 10 * 1000;
+
 // Both written and read in the loop task only (setup runs in it too).
 bool sensorsRunning = false;
 uint32_t sensorsStartRetryMs = 0;
@@ -69,6 +71,9 @@ void setup() {
 	if (!WiFiHandler.Connect()) {
 		DispManip.SetMode(error);
 		ErrHandler.FailedToConnectToWiFi();
+		// CreateAP() replaces the red growing effect with the access point effect, so without this pause the user
+		// never sees that the WiFi connection failed. Blocks the loop task only; ShowTask draws on the other core.
+		vTaskDelay(pdMS_TO_TICKS(WIFI_ERROR_DISPLAY_MS));
 
 		if (!WiFiHandler.CreateAP()) {
 			DispManip.SetMode(error);

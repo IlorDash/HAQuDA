@@ -4,8 +4,6 @@
 
 typedef enum { failedToConnectToWiFi, failedToCreateAP, failedToStartFS, failedToStartSensors, failedToUpdateNTP, noneError } error_type;
 
-#define DEFAULT_ERROR_DISPLAY_TIME 5000 // 5 sec
-
 class HAQuDA_ErrorHandler : HAQuDA_EffectsHandler {
 	static error_type currentError;
 
@@ -24,9 +22,13 @@ class HAQuDA_ErrorHandler : HAQuDA_EffectsHandler {
 		return currentError;
 	}
 
+	// Sets the error effect and logs it, does not block. Loop task only (setup runs in it).
 	void FailedToConnectToWiFi();
+	// Sets the error effect and logs it, does not block. Loop task only.
 	void FailedToCreateAP();
+	// Sets the error effect, does not block and does not log (the file system is not available). Loop task only.
 	void FailedToStartFS();
+	// Sets the error effect and logs it, does not block. Loop task only.
 	void FailedToStartSensors();
 	// Only sets the error effect, does not block. Called by the logger, so loop task only.
 	void FailedToUpdateNTP();
