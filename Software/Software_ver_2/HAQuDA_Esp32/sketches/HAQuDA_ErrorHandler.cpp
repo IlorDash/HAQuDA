@@ -45,11 +45,11 @@ void HAQuDA_ErrorHandler::Show() {
 			break;
 		}
 		case failedToStartFS: {
-			show_random(failedToStartSensorsEffect);
+			show_fading(failedToStartFSEffect);
 			break;
 		}
 		case failedToStartSensors: {
-			show_fading(failedToStartFSEffect);
+			show_random(failedToStartSensorsEffect);
 			break;
 		}
 		case failedToUpdateNTP: {

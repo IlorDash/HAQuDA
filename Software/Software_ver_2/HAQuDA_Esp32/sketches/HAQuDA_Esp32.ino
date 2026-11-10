@@ -106,7 +106,7 @@ void setup() {
 }
 
 // Loop task only. SetMode() refuses to leave the error mode while currentError is set, so clear it first; the error
-// effects (NTP fade, red fading) leave the LEDs dim and lit, so ShowTask clears them and re-applies the user's brightness
+// effects (NTP fade, random pixels) leave the LEDs dim and lit, so ShowTask clears them and re-applies the user's brightness
 // when meas mode starts.
 void leaveSensorsError() {
 	HAQuDA_DisplayManip::RestoreBrightnessOnMeas();
