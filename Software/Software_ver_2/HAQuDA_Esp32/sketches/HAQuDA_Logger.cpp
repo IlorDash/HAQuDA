@@ -39,10 +39,11 @@ void HAQuDA_Logger::PrepareLogsFile() {
 
 void HAQuDA_Logger::fillTimestamp(char *timestamp, size_t timestampSize) {
 	if (HAQuDA_TimeService::GetTimeClientStarted()) {
-		if (HAQuDA_TimeService::GetDateTime(timestamp)) {
+		if (HAQuDA_TimeService::GetDateTime(timestamp, timestampSize)) {
 			return;
 		}
-		// NTP runs but gave no time: a real failure. The handler only sets the error effect (ShowTask draws it), so the log call stays fast.
+		// NTP runs but gave no time. Rare: GetFormattedDate() reports most failed updates as success, so an unreachable server usually
+		// shows up as a 1970 date instead. The handler only sets the error effect (ShowTask draws it), so the log call stays fast.
 		if (errHandler != nullptr) {
 			errHandler->FailedToUpdateNTP();
 		}

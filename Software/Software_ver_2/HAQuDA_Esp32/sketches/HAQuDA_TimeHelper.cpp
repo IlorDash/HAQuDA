@@ -83,21 +83,19 @@ bool HAQuDA_TimeService::GetDateTime(DateTimeStruct *_time) {
 	return true;
 }
 
-bool HAQuDA_TimeService::GetDateTime(char *_time) {
-	DateTimeStruct currTime;
+static_assert(DATE_TIME_STR_LEN == DATE_TIME_TEXT_LEN + 1, "DATE_TIME_STR_LEN must hold the date text and its terminator");
 
+bool HAQuDA_TimeService::GetDateTime(char *_time, size_t timeSize) {
+	if ((_time == nullptr) || (timeSize < DATE_TIME_STR_LEN)) {
+		return false;
+	}
+
+	DateTimeStruct currTime;
 	if (!HAQuDA_TimeService::GetDateTime(&currTime)) {
 		return false;
 	}
 
-	char buffer[DATE_TIME_STR_LEN] = {0}; // plus null term
-	uint8_t ret = snprintf(buffer, DATE_TIME_STR_LEN, "%02d.%02d.%4d %02d:%02d:%02d", currTime.date, currTime.month, currTime.year, currTime.hour, currTime.min,
-						   currTime.sec);
-	if (ret != DATE_TIME_STR_LEN) {
-		return false;
-	}
-	strncpy(_time, buffer, sizeof(buffer));
-	return true;
+	return HAQuDA_FormatDateTime(_time, timeSize, currTime.date, currTime.month, currTime.year, currTime.hour, currTime.min, currTime.sec);
 }
 
 uint32_t IRAM_ATTR HAQuDA_TimeService::GetDuration(uint32_t watchedTime) {
