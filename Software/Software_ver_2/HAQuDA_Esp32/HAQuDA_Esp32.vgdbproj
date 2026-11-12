@@ -42,6 +42,10 @@
         <string>sketches\HAQuDA_ColorScale.h</string>
         <string>sketches\HAQuDA_ILEDs.h</string>
         <string>sketches\HAQuDA_ZH03BFrame.h</string>
+        <string>sketches\HAQuDA_PMResult.h</string>
+        <string>sketches\HAQuDA_PMWarmup.h</string>
+        <string>sketches\HAQuDA_IPMSerial.h</string>
+        <string>sketches\HAQuDA_PMReader.h</string>
       </OtherFiles>
     </ProjectModeSettings>
   </Project>

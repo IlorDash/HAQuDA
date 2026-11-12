@@ -477,3 +477,39 @@ TEST(ZH03BFrameTest, GetPM2Dot5MaxWordIs65535) {
 
 	EXPECT_EQ(exp_pm, res);
 }
+
+TEST(ZH03BFrameTest, GetPM1Dot0NullPayloadIsZero) {
+	const uint16_t exp_pm = 0;
+
+	const uint8_t *payload = nullptr;
+
+	uint16_t res;
+
+	res = HAQuDA_GetZH03BPM1_0(payload);
+
+	EXPECT_EQ(exp_pm, res);
+}
+
+TEST(ZH03BFrameTest, GetPM2Dot5NullPayloadIsZero) {
+	const uint16_t exp_pm = 0;
+
+	const uint8_t *payload = nullptr;
+
+	uint16_t res;
+
+	res = HAQuDA_GetZH03BPM2_5(payload);
+
+	EXPECT_EQ(exp_pm, res);
+}
+
+TEST(ZH03BFrameTest, GetPM10NullPayloadIsZero) {
+	const uint16_t exp_pm = 0;
+
+	const uint8_t *payload = nullptr;
+
+	uint16_t res;
+
+	res = HAQuDA_GetZH03BPM10(payload);
+
+	EXPECT_EQ(exp_pm, res);
+}

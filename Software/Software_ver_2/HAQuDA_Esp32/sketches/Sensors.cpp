@@ -1,5 +1,6 @@
 #include "Sensors.h"
 #include "Board.h"
+#include "HAQuDA_PMReader.h"
 #include "HAQuDA_ZH03BFrame.h"
 
 #define SENS_POW 23
@@ -10,11 +11,6 @@
 
 #define ZH03B_RX_PIN 17
 #define ZH03B_TX_PIN 16
-constexpr size_t PM_RX_BUF_SIZE = 256;
-// For 10 s after power-on the ZH03B PM2.5 field holds its firmware version number, not a reading (datasheet p.5 note 1).
-// 12 s = 10 s + one 1 s frame period (a frame sent just before the end of the window can still be waiting in the buffer
-// at the first read after it) + 1 s for the module's boot, since its own 10 s start after SENS_POW goes HIGH.
-constexpr uint32_t PM_WARMUP_MS = 12 * 1000;
 
 #define SENS_REBOOT_DELAY 1000
 
@@ -29,15 +25,35 @@ meas_data temp_meas;
 meas_data humid_meas;
 
 uint8_t pm_buf[ZH03B_PAYLOAD_LEN];
-const uint8_t pm_frame_marker[] = {ZH03B_MARKER_FIRST, ZH03B_MARKER_SECOND};
-
-// Written and read in the loop task only
-static uint32_t pmPowerOnMs = 0;
-static bool pmPowered = false;
 
 DHT dht(DHTPIN, DHTTYPE);
 
 SoftwareSerial PMSerial;
+
+namespace {
+	// Thin adapter: the PM read flow sees only the calls it needs
+	class PMSerialAdapter : public HAQuDA_IPMSerial {
+	  public:
+		int Available() override {
+			return PMSerial.available();
+		}
+		int Read() override {
+			return PMSerial.read();
+		}
+		bool Find(const uint8_t *marker, size_t len) override {
+			return PMSerial.find(marker, len);
+		}
+		size_t ReadBytes(uint8_t *buf, size_t len) override {
+			return PMSerial.readBytes(buf, len);
+		}
+	};
+} // namespace
+
+// Sensors is a free-function module with no owning object, so the PM objects live here until it becomes a class.
+// Used in the loop task only.
+static PMSerialAdapter pmSerialAdapter;
+static HAQuDA_PMWarmup pmWarmup;
+static HAQuDA_PMReader pmReader(pmSerialAdapter, pmWarmup);
 
 void pmSerialBegin() {
 	// 256 is the RX buffer size; begin() also allocates a ~2560-entry (~10 KB) ISR buffer before freeing the old one,
@@ -50,8 +66,7 @@ bool sensorsBegin() {
 	pinMode(SENS_POW, OUTPUT);
 	digitalWrite(SENS_POW, HIGH);
 	// Every power cycle (first start, retries, sensors_reboot()) passes through here, so this is always the latest power-on
-	pmPowerOnMs = millis();
-	pmPowered = true;
+	pmWarmup.PowerOn(millis());
 
 	pinMode(CCS811_WAK, OUTPUT);
 	digitalWrite(CCS811_WAK, LOW);
@@ -116,57 +131,17 @@ bool getCCS811_meas() {
 	return false;
 }
 
-// Empties the RX buffer and copies the payload (the 22 bytes after 42 4D) of the newest checksum-valid frame into pm_buf.
-// The ZH03B sends one frame per second while polling is slower, so older frames are stale and are dropped.
-// loop task only.
-static bool readNewestPMFrame() {
-	uint8_t raw[PM_RX_BUF_SIZE] = {};
-	size_t rawLen = 0;
-	while ((rawLen < sizeof(raw)) && (PMSerial.available() > 0)) {
-		raw[rawLen++] = (uint8_t)PMSerial.read();
-	}
-
-	if (HAQuDA_FindNewestZH03BFrame(raw, rawLen, pm_buf)) {
-		return true;
-	}
-
-	// Nothing usable was buffered (sensor just powered up, or only a partial frame): wait for the next frame, up to the 1 s stream timeout per step
-	if (PMSerial.find(pm_frame_marker, sizeof(pm_frame_marker))) {
-		return (PMSerial.readBytes(pm_buf, ZH03B_PAYLOAD_LEN) == ZH03B_PAYLOAD_LEN) && HAQuDA_IsZH03BPayloadValid(pm_buf);
-	}
-	return false;
-}
-
-// Empties the RX buffer without waiting, so frames sent during the warm-up are not left to pile up. loop task only.
-static void drainPMSerial() {
-	while (PMSerial.available() > 0) {
-		PMSerial.read();
-	}
-}
-
-// True inside the warm-up window after the latest power-on. Once the window has passed the flag is cleared for good: the
-// unsigned difference becomes small again every 2^32 ms (49.7 days) and would reopen the window. loop task only.
-static bool isPMWarmingUp() {
-	if (!pmPowered) {
-		return false;
-	}
-	if ((uint32_t)(millis() - pmPowerOnMs) < PM_WARMUP_MS) {
-		return true;
-	}
-	pmPowered = false;
-	return false;
-}
-
 pm_meas_result getPM_meas() {
-	if (isPMWarmingUp()) {
-		drainPMSerial();
+	pm_meas_result result = pmReader.Read(millis(), pm_buf);
+
+	if (result == pm_meas_result::warming_up) {
 		PM_1_0_meas.newMeasDone = false;
 		PM_2_5_meas.newMeasDone = false;
 		PM_10_meas.newMeasDone = false;
 		return pm_meas_result::warming_up;
 	}
 
-	if (readNewestPMFrame()) {
+	if (result == pm_meas_result::ok) {
 		PM_1_0_meas.value += HAQuDA_GetZH03BPM1_0(pm_buf);
 		PM_1_0_meas.measNum++;
 		PM_1_0_meas.newMeasDone = true;

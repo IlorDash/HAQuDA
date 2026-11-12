@@ -23,7 +23,7 @@ bool HAQuDA_IsZH03BPayloadValid(const uint8_t *payload);
 // no valid frame (payloadOut is then untouched), or for nullptr. Any task.
 bool HAQuDA_FindNewestZH03BFrame(const uint8_t *raw, size_t len, uint8_t *payloadOut);
 
-// Concentrations in ug/m3 from a valid payload (ZH03B_PAYLOAD_LEN bytes). Any task.
+// Concentrations in ug/m3 from a valid payload (ZH03B_PAYLOAD_LEN bytes); the payload is not validated here. 0 for nullptr. Any task.
 uint16_t HAQuDA_GetZH03BPM1_0(const uint8_t *payload);
 uint16_t HAQuDA_GetZH03BPM2_5(const uint8_t *payload);
 uint16_t HAQuDA_GetZH03BPM10(const uint8_t *payload);

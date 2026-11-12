@@ -115,7 +115,7 @@ void HAQuDA_MeasHandler::checkMeasCorrect(pm_meas_result pmResult) {
 		errHandler->FailedToGetMeas("Failed to get TVOC meas");
 	}
 	// A sample skipped during the ZH03B warm-up is expected, not a failure
-	if (pmResult == pm_meas_result::failed) {
+	if (HAQuDA_ShouldReportPMFailure(pmResult)) {
 		errHandler->FailedToGetMeas("Failed to get PM 2.5 meas");
 	}
 	if (!temp_meas.newMeasDone) {

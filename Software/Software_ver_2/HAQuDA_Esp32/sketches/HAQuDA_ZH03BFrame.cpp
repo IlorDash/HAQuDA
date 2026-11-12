@@ -41,13 +41,22 @@ bool HAQuDA_FindNewestZH03BFrame(const uint8_t *raw, size_t len, uint8_t *payloa
 }
 
 uint16_t HAQuDA_GetZH03BPM1_0(const uint8_t *payload) {
+	if (payload == nullptr) {
+		return 0;
+	}
 	return readWord(payload, PM1_0_OFFSET);
 }
 
 uint16_t HAQuDA_GetZH03BPM2_5(const uint8_t *payload) {
+	if (payload == nullptr) {
+		return 0;
+	}
 	return readWord(payload, PM2_5_OFFSET);
 }
 
 uint16_t HAQuDA_GetZH03BPM10(const uint8_t *payload) {
+	if (payload == nullptr) {
+		return 0;
+	}
 	return readWord(payload, PM10_OFFSET);
 }

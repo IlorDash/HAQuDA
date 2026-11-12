@@ -3,7 +3,7 @@
 #include "Arduino.h"
 #include "HAQuDA_ErrorHandler.h"
 #include "HAQuDA_ColorScale.h"
-#include "Sensors.h"
+#include "HAQuDA_PMResult.h"
 
 #define MULTI_MODE_PARAM_NUM 3
 #define DIVIDE_DOTS_NUM 3
