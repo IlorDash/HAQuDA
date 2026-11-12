@@ -86,7 +86,7 @@ Each line has the form `time - level : message`.
 
 | Part | Content |
 |------|---------|
-| `time` | `Fail get time!` The clock time in log lines is not ready. <span class="wip">WIP</span> |
+| `time` | In your network, the date and time `DD.MM.YYYY HH:MM:SS`, offset UTC+3. Before the lamp joins the network, in access point mode, and while the time server has not answered since the start, the stamp is the uptime: `up 12.345 s`. After the time server is lost, the clock keeps running from its last answer. |
 | `level` | `Info` or `ERROR`. |
 | `message` | The event. The messages are listed in [Log messages](troubleshooting.md#log-messages). |
 
