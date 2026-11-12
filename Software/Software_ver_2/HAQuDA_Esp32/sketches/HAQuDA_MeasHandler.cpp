@@ -150,6 +150,9 @@ void HAQuDA_MeasHandler::Show(int *show_meas_time) {
 		*show_meas_time = millis();
 		ClearMeas();
 		show_meas_immed = false;
+	} else {
+		// The picture is drawn once a minute; if its frame was dropped during a flash operation, send it again now.
+		HAQuDA_LEDs::getInstance()->ResendSkippedFrame();
 	}
 }
 

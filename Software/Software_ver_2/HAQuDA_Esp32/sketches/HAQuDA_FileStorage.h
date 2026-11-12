@@ -64,6 +64,9 @@ typedef enum {
 	saved_new_WiFi_creds
 } saveNewWiFiCredsReturnMsgs;
 
+// Every function that touches SPIFFS holds the flash lock (HAQuDA_FlashLock.h) for its duration: a flash access stops the
+// cache on both cores, which would corrupt an LED frame being sent. Callers: loop (logger, WiFi credentials), async_tcp
+// (web handlers), setup. Not for ShowTask or ISRs; the functions may wait up to 100 ms for a running LED frame.
 class HAQuDA_FileStorage {
   public:
 	HAQuDA_FileStorage();
@@ -87,6 +90,10 @@ class HAQuDA_FileStorage {
 	static bool ReadFile(const char *path, uint8_t *data, const size_t len);
 	static bool ReadFile(const char *path, const int fromPos, uint8_t *data, const size_t len);
 	const String Read_WiFiCreds();
+
+  private:
+	// Recursion happens here, under the single lock taken by ListDir().
+	static void listDirUnlocked(const char *dirname, const uint8_t levels);
 };
 
 #endif
