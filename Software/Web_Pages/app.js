@@ -16,6 +16,9 @@
 			good: 'Good air', fair: 'Moderate', poor: 'Poor air', none: 'No data',
 			allOk: 'All readings are normal', worst: 'Worst: ', last: 'Last values from ', sensorFail: 'Sensor readings failed: ',
 			connecting: 'Connecting to the lamp…', sta: 'Connected', dbm: 'dBm',
+			staTo: function (n) {
+				return 'Connected to ' + n;
+			},
 			ap: 'Access point · no internet', off: 'WiFi connection lost', down: 'Lamp not responding · retry in 5 s',
 			bAp: 'The lamp couldn’t find a saved network and started its own. Add your home WiFi.',
 			bDown: 'No response from the lamp. It may be rebooting, switched off, or your phone changed networks. Showing the last values; data returns on its own once the lamp answers.',
@@ -29,6 +32,9 @@
 			good: 'Воздух хороший', fair: 'Умеренно', poor: 'Воздух плохой', none: 'Нет данных',
 			allOk: 'Все показатели в норме', worst: 'Хуже всего: ', last: 'Последние значения в ', sensorFail: 'Нет данных датчиков: ',
 			connecting: 'Подключаемся к лампе…', sta: 'Подключена', dbm: 'дБм',
+			staTo: function (n) {
+				return 'Подключена к ' + n;
+			},
 			ap: 'Точка доступа · без интернета', off: 'Нет связи с WiFi', down: 'Лампа не отвечает · повтор через 5 с',
 			bAp: 'Лампа не нашла сохранённую сеть и создала свою. Добавьте домашнюю сеть.',
 			bDown: 'Нет ответа от лампы. Возможно, она перезагружается, выключена или телефон сменил сеть. Показаны последние значения; данные вернутся сами, как только лампа ответит.',
@@ -173,7 +179,8 @@
 				text = T.off;
 			} else {
 				dot = 'ok';
-				text = T.sta + ' · ' + d.rssi + ' ' + T.dbm;
+				// the network name comes from the lamp: text only
+				text = (typeof d.ssid === 'string' && d.ssid ? T.staTo(d.ssid) : T.sta) + ' · ' + d.rssi + ' ' + T.dbm;
 				level = d.rssi > -55 ? 4 : (d.rssi > -65 ? 3 : (d.rssi > -75 ? 2 : 1));
 			}
 		}

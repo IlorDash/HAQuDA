@@ -12,7 +12,7 @@ LED effects and what to do:
 | Lime snake | The lamp starts or reconnects to a stored WiFi network. | Wait for it to end. |
 | Green matrix for 3 seconds | The lamp joined your WiFi network. | Nothing. |
 | Red matrix for 3 seconds, then a lime snake | The lamp lost the WiFi connection and reconnects. | Wait. |
-| Red matrix that fills row by row, again and again, for about 12 seconds, then an aqua fading | No network is stored or the lamp could not join it, so it opens its access point. | Join the access point and add your network. |
+| Red matrix that fills row by row, again and again, for about 12 seconds, then an aqua fading | No network is stored or the lamp could not join it, so it opens its access point. | Join the access point and add your network on the WiFi page. The lamp tests the network first and keeps the access point on. It saves the network and restarts only when it joined, and the page then shows the lamp's new address. A wrong password or a missing network shows a message on the page, and the lamp stays in access point mode. |
 | Red fading, again and again, without end | The file system does not start. The lamp stops. | Unplug the lamp and plug it in again. |
 | Red matrix that fills row by row for at least 10 seconds, then one red pixel running along the matrix without end | The access point cannot be created. The lamp stops. | Unplug the lamp and plug it in again. |
 | In access point mode: random pixels, one by one, again and again. In WiFi station mode: a dark matrix instead of the random pixels, because the failed time read replaces the error effect. | The sensors do not start. The lamp does not restart: the access point, the web pages and WebSerial keep working, and the lamp tries to start the sensors again every 5 minutes. When a retry succeeds, the matrix goes dark and the measurements appear within about a minute. | Check the sensor wiring. Read the reason in the WebSerial log. |
@@ -41,9 +41,9 @@ The firmware does not read these files. It contains their gzipped bytes in `Soft
 
 To design the pages without the lamp, run `py -3 Software/Web_Pages/preview_server.py` from any folder. The script opens `http://127.0.0.1:8080/` in your browser. It serves the page sources from disk on every request, so a saved change shows after a refresh. Press Ctrl+C in the terminal to stop it.
 
-The script answers `/api/status`, `/api/wifi` and the WiFi routes with mock data. The firmware and the lamp's access point are not needed.
+The script answers `/api/status`, `/api/wifi`, `/api/join` and the WiFi routes with mock data. The firmware and the lamp's access point are not needed.
 
-Pick a mock state with `--scenario`: `normal` (default), `bad-air`, `sensor-fail`, `ap`, `sta-offline` or `errors`. The `errors` state returns the lamp's 500 replies. Add `--latency 800` to delay every answer by 800 ms. Use `--port` to change the port and `--no-browser` to keep the browser closed.
+Pick a mock state with `--scenario`: `normal` (default), `bad-air`, `sensor-fail`, `ap`, `sta-offline` or `errors`. The `errors` state returns the lamp's 500 replies. The `ap`, `join-ok`, `join-wrong-pass` and `join-no-network` states run as an access point: a new network is checked for about 4 seconds, then the page shows the address or the failure. `ap` and `join-ok` pass, the other two fail. Add `--latency 800` to delay every answer by 800 ms. Use `--port` to change the port and `--no-browser` to keep the browser closed.
 
 Saved networks live only in the script's memory. The "restarts in 3 seconds" reply is sent, but nothing restarts. The `WebSerial` link opens a stub page, because WebSerial runs only on the lamp.
 

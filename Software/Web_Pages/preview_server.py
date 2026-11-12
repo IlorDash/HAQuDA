@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 """Local preview of the lamp's web pages with mock data, for design work in a browser on the PC.
 
-Run from any directory:  py -3 Software/Web_Pages/preview_server.py [--scenario normal|bad-air|sensor-fail|ap|sta-offline|errors]
-                                                                    [--host 127.0.0.1] [--port 8080] [--latency MS] [--no-browser]
+Run from any directory:  py -3 Software/Web_Pages/preview_server.py
+                         [--scenario normal|bad-air|sensor-fail|ap|sta-offline|errors|join-ok|join-wrong-pass|join-no-network]
+                         [--host 127.0.0.1] [--port 8080] [--latency MS] [--no-browser]
 
 The page sources next to this script are read from disk on every request (Cache-Control: no-store), so saving a file
 and refreshing the browser shows the change. The routes, JSON shapes, status codes, content types and reply texts of
 HAQuDA_WebServer.cpp are reproduced for the success paths and for these error paths: the 400 and 409 replies of
 /add_wifi_creds, the 500 replies of /api/status, /add_wifi_creds and /delete_wifi_creds (scenario "errors"), and the
-index page for unknown GET URLs in the "ap" scenario (the captive portal). Not reproduced: gzip, the ?v= asset
+index page for unknown GET URLs in the access point scenarios (the captive portal). The access point scenarios ("ap"
+and join-*) answer like the AP-mode firmware: POST /add_wifi_creds answers 202, /api/join reports "checking" for about 4 s and then the result of the
+scenario ("ap" passes like join-ok; join-wrong-pass and join-no-network fail); a network that passed is added to the
+saved list. Not reproduced: gzip, the ?v= asset
 versions (the query is ignored), the restart after saving a network (the reply text is sent, nothing restarts) and the
 WebSerial page. Received passwords are neither printed nor stored.
 """
@@ -35,7 +39,22 @@ ASSETS = {
     "/wifi.js": ("wifi.js", "application/javascript"),
 }
 
-SCENARIOS = ["normal", "bad-air", "sensor-fail", "ap", "sta-offline", "errors"]
+SCENARIOS = ["normal", "bad-air", "sensor-fail", "ap", "sta-offline", "errors", "join-ok", "join-wrong-pass", "join-no-network"]
+# Scenarios in which the lamp runs as an access point: a new network is checked before it is saved
+AP_SCENARIOS = {"ap", "join-ok", "join-wrong-pass", "join-no-network"}
+# How long the mock check runs before it reports its result (the lamp takes up to 20 s)
+JOIN_CHECK_S = 4.0
+# What the mock check reports in each scenario: None = the network works, else the reason
+JOIN_FAIL_REASON = {"ap": None, "join-ok": None, "join-wrong-pass": "wrong_password", "join-no-network": "no_network"}
+# The lamp holds access point and station together this long after a passed check, then restarts
+JOIN_OK_HOLD_S = 20.0
+# Network the mock lamp is joined to in station mode
+STA_SSID = "HomeNet"
+JOIN_HOST = "haquda.local"
+JOIN_IP = "192.168.1.77"
+JOIN_BUSY_TEXT = "The lamp is already checking a network. Wait for the result."
+JOIN_RESTARTING_TEXT = "The network is saved. The lamp is restarting."
+JOIN_ACCEPTED_TEXT = "The lamp is checking the network. Open this page again in 30 seconds."
 
 # Replies of the lamp's 500 paths
 STATUS_FAIL_TEXT = "Status unavailable."
@@ -111,13 +130,16 @@ class MockLamp:
         self.networks = ["HomeNet", 'Cafe "Wi\\Fi"', "Café 咖啡 \U0001F4F6"]
         self.rssi = -58
         self.failures = 0
+        # The check of the last POST in a join-* scenario: (ssid, start time); None until one was started
+        self.join = None
+        self.join_saved = False
 
     def status_json(self):
         """Returns (status code, body)."""
         with self.lock:
             if self.scenario == "errors":
                 return 500, STATUS_FAIL_TEXT
-            station = self.scenario != "ap"
+            station = self.scenario not in AP_SCENARIOS
             connected = self.scenario != "sta-offline"
             uptime = self.uptime_offset_s + int(time.monotonic() - self.started)
             parts = []
@@ -141,8 +163,10 @@ class MockLamp:
             else:
                 # An unconnected station has no address yet
                 ip = "192.168.1.50" if connected else "0.0.0.0"
-            return 200, '{{"fw":"{0}","mode":"{1}","ip":"{2}","uptime":{3},"rssi":{4},"meas":{{{5}}}}}'.format(
-                FW_VERSION, "sta" if station else "ap", ip, uptime, rssi, ",".join(parts)
+            # The lamp sends the joined network's name in station mode and null otherwise
+            ssid = json.dumps(STA_SSID, ensure_ascii=False) if station and connected else "null"
+            return 200, '{{"fw":"{0}","mode":"{1}","ssid":{2},"ip":"{3}","uptime":{4},"rssi":{5},"meas":{{{6}}}}}'.format(
+                FW_VERSION, "sta" if station else "ap", ssid, ip, uptime, rssi, ",".join(parts)
             )
 
     def wifi_json(self):
@@ -159,6 +183,16 @@ class MockLamp:
         if len(password.encode("utf-8")) >= WIFI_PASS_LEN:
             return 400, "The password is too long (31 bytes at most)."
         with self.lock:
+            if self.scenario in JOIN_FAIL_REASON:
+                # Access point mode: the lamp hands the network to its check and saves it only when the join works.
+                # A check that is running, or one that passed (the lamp restarts), refuses the next request.
+                if self.join is not None and self.join_state() == "checking":
+                    return 409, JOIN_BUSY_TEXT
+                if self.join is not None and self.join_state() == "ok":
+                    return 409, JOIN_RESTARTING_TEXT
+                self.join = (ssid, time.monotonic())
+                self.join_saved = False
+                return 202, JOIN_ACCEPTED_TEXT
             if self.scenario == "errors":
                 # Alternate the two 500 texts of the lamp: unreadable list, unwritable record
                 self.failures += 1
@@ -171,6 +205,34 @@ class MockLamp:
                              "Press Delete all networks on the WiFi networks page, then add this network again.")
             self.networks.append(ssid)
         return 200, "Saved. The lamp restarts in 3 seconds."
+
+    def join_state(self):
+        """State of the mock check: idle, checking, ok or fail. The caller holds the lock."""
+        if self.join is None:
+            return "idle"
+        if time.monotonic() - self.join[1] < JOIN_CHECK_S:
+            return "checking"
+        return "fail" if JOIN_FAIL_REASON[self.scenario] else "ok"
+
+    def join_json(self):
+        """Body of /api/join like the lamp builds it: ip only when ok, reason only when fail."""
+        with self.lock:
+            state = self.join_state()
+            ssid = self.join[0] if self.join else ""
+            if state == "ok" and not self.join_saved:
+                # The lamp saves the network when the join works
+                self.join_saved = True
+                if ssid not in self.networks and len(self.networks) < MAX_WIFI_CREDS_NUM:
+                    self.networks.append(ssid)
+            body = {"state": state, "ssid": ssid}
+            if state == "ok":
+                body["ip"] = JOIN_IP
+                left_s = JOIN_OK_HOLD_S - (time.monotonic() - self.join[1] - JOIN_CHECK_S)
+                body["restart_ms"] = max(0, int(left_s * 1000))
+            body["host"] = JOIN_HOST
+            if state == "fail":
+                body["reason"] = JOIN_FAIL_REASON[self.scenario]
+            return json.dumps(body, ensure_ascii=False, separators=(",", ":"))
 
     def delete_networks(self):
         with self.lock:
@@ -221,9 +283,11 @@ class PreviewHandler(BaseHTTPRequestHandler):
             self.send_body(code, "application/json" if code == 200 else "text/plain", body)
         elif path == "/api/wifi":
             self.send_body(200, "application/json", self.lamp.wifi_json())
+        elif path == "/api/join":
+            self.send_body(200, "application/json", self.lamp.join_json())
         elif path == "/webserial":
             self.send_body(200, "text/html", WEBSERIAL_STUB)
-        elif self.lamp.scenario == "ap":
+        elif self.lamp.scenario in AP_SCENARIOS:
             # The lamp's captive portal answers every unknown URL with the index page for AP clients
             self.send_asset("/")
         else:
@@ -278,7 +342,9 @@ def main():
     parser = argparse.ArgumentParser(description="Preview the HAQuDA web pages with mock data")
     parser.add_argument("--scenario", choices=SCENARIOS, default="normal",
                         help="normal; bad-air (high CO2, TVOC, PM2.5); sensor-fail (null values); ap (access point mode); "
-                             "sta-offline (station not connected); errors (the lamp's 500 replies)")
+                             "sta-offline (station not connected); errors (the lamp's 500 replies); "
+                             "join-ok, join-wrong-pass, join-no-network (access point mode: a new network is checked for "
+                             "about 4 s, then the result is reported)")
     parser.add_argument("--host", default="127.0.0.1", help="address to bind (default 127.0.0.1)")
     parser.add_argument("--port", type=int, default=8080, help="port to listen on (default 8080)")
     parser.add_argument("--latency", type=int, default=0, metavar="MS", help="delay every answer by MS milliseconds")

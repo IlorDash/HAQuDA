@@ -4,14 +4,21 @@
 #include "HAQuDA_Version.h"
 
 #include <esp_timer.h>
+#include <esp_wifi.h>
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
 
-constexpr size_t STATUS_JSON_LEN = 512;
+// The escaped network name adds up to JSON_ESCAPED_SSID_LEN
+constexpr size_t STATUS_JSON_LEN = 768;
 constexpr size_t WIFI_LIST_JSON_LEN = 2048;
 // A SSID byte is escaped to at most 6 characters (\u00XX)
 constexpr size_t JSON_ESCAPED_SSID_LEN = WIFI_SSID_LEN * 6 + 1;
+// state, escaped name, address, host and reason of /api/join
+constexpr size_t JOIN_JSON_LEN = JSON_ESCAPED_SSID_LEN + 192;
+// Longest wait for the credentials file lock; a file operation takes tens of milliseconds
+constexpr uint32_t CREDS_LOCK_WAIT_MS = 2000;
+static_assert(JOIN_SSID_BUF_LEN == WIFI_SSID_LEN, "the check keeps the same name length as the stored record");
 constexpr char CACHE_STATIC[] = "max-age=86400";
 constexpr char CACHE_NONE[] = "no-cache";
 
@@ -33,27 +40,27 @@ namespace {
 		return true;
 	}
 
-	// Writes the JSON string body (no quotes) of a possibly unterminated record field into out
-	void escapeJson(const char *text, size_t maxLen, char *out, size_t outSize) {
-		size_t pos = 0;
-		size_t textLen = strnlen(text, maxLen);
-		for (size_t i = 0; i < textLen; i++) {
-			unsigned char c = static_cast<unsigned char>(text[i]);
-			int written = 0;
-			if ((c == '"') || (c == '\\')) {
-				written = snprintf(out + pos, outSize - pos, "\\%c", c);
-			} else if (c < 0x20) {
-				written = snprintf(out + pos, outSize - pos, "\\u%04x", c);
-			} else {
-				written = snprintf(out + pos, outSize - pos, "%c", c);
-			}
-			if ((written < 0) || (static_cast<size_t>(written) >= outSize - pos)) {
-				break;
-			}
-			pos += written;
+	// Holds the credentials file lock for its lifetime. Held() is false when the lock was not obtained in time.
+	class CredsLock {
+	  public:
+		explicit CredsLock(SemaphoreHandle_t mutexHandle)
+			: mutex(mutexHandle), held((mutexHandle != nullptr) && (xSemaphoreTake(mutexHandle, pdMS_TO_TICKS(CREDS_LOCK_WAIT_MS)) == pdTRUE)) {
 		}
-		out[pos] = '\0';
-	}
+		~CredsLock() {
+			if (held) {
+				xSemaphoreGive(mutex);
+			}
+		}
+		CredsLock(const CredsLock &) = delete;
+		CredsLock &operator=(const CredsLock &) = delete;
+		bool Held() const {
+			return held;
+		}
+
+	  private:
+		SemaphoreHandle_t mutex;
+		bool held;
+	};
 
 	void sendAsset(AsyncWebServerRequest *request, const char *mime, const uint8_t *data, size_t len, const char *cacheControl) {
 		AsyncWebServerResponse *response = request->beginResponse_P(200, mime, data, len);
@@ -133,7 +140,7 @@ void HAQuDA_WebServer::HandleDeferredWork() {
 	if (!restartPending.load()) {
 		return;
 	}
-	if ((uint32_t)(millis() - restartRequestMs.load()) >= RESTART_DELAY_MS) {
+	if ((uint32_t)(millis() - restartRequestMs.load()) >= restartDelayMs.load()) {
 		HAQuDA_Logger::LogInfo("Restart to apply new WiFi credentials");
 		ESP.restart();
 	}
@@ -161,6 +168,21 @@ void HAQuDA_WebServer::handle_NewWiFiCreds(AsyncWebServerRequest *request) {
 	strncpy(newWiFiCreds.ssid, ssidParam->value().c_str(), sizeof(newWiFiCreds.ssid) - 1);
 	strncpy(newWiFiCreds.pass, passParam->value().c_str(), sizeof(newWiFiCreds.pass) - 1);
 
+	// Access point mode: the lamp tests the network first, so a wrong password does not cost the access point
+	if (apMode.load()) {
+		join_queue_result queued = queueJoinRequest(newWiFiCreds);
+		if (queued == join_queue_result::checking) {
+			sendText(request, 409, "The lamp is already checking a network. Wait for the result.");
+			return;
+		}
+		if (queued == join_queue_result::restarting) {
+			sendText(request, 409, "The network is saved. The lamp is restarting.");
+			return;
+		}
+		sendText(request, 202, "The lamp is checking the network. Open this page again in 30 seconds.");
+		return;
+	}
+
 	saveNewWiFiCredsReturnMsgs saveNewWiFiCredsMsg = SaveNew_WiFiCreds(newWiFiCreds);
 
 	switch (saveNewWiFiCredsMsg) {
@@ -184,11 +206,11 @@ void HAQuDA_WebServer::handle_NewWiFiCreds(AsyncWebServerRequest *request) {
 			break;
 		case re_writed_WiFi_creds:
 			sendText(request, 200, "This network was already saved. The password is updated and the lamp restarts in 3 seconds.");
-			scheduleRestart();
+			scheduleRestart(RESTART_DELAY_MS);
 			break;
 		case saved_new_WiFi_creds:
 			sendText(request, 200, "Saved. The lamp restarts in 3 seconds.");
-			scheduleRestart();
+			scheduleRestart(RESTART_DELAY_MS);
 			break;
 		default:
 			postLogError("handle_NewWiFiCreds: unexpected save result");
@@ -197,15 +219,89 @@ void HAQuDA_WebServer::handle_NewWiFiCreds(AsyncWebServerRequest *request) {
 	}
 }
 
-// loop() restarts the lamp: waiting in the async_tcp task would block it
-void HAQuDA_WebServer::scheduleRestart() {
+// loop() restarts the lamp: waiting in the async_tcp task would block it. The time and the delay are stored before the flag.
+void HAQuDA_WebServer::scheduleRestart(uint32_t delayMs) {
 	if (!restartPending.load()) {
 		restartRequestMs.store(millis());
+		restartDelayMs.store(delayMs);
 		restartPending.store(true);
 	}
 }
 
+join_queue_result HAQuDA_WebServer::queueJoinRequest(const TWiFiCreds &creds) {
+	join_queue_result result = join_queue_result::queued;
+	portENTER_CRITICAL(&joinMux);
+	if (restartPending.load() || (joinView.state == join_state::ok)) {
+		result = join_queue_result::restarting;
+	} else if (joinRequestPending.load() || (joinView.state == join_state::checking)) {
+		result = join_queue_result::checking;
+	} else {
+		joinRequest = creds;
+		joinRequestPending.store(true);
+		joinView.state = join_state::checking;
+		joinView.reason = join_reason::none;
+		joinView.ip = 0;
+		HAQuDA_SetJoinSsid(joinView, creds.ssid, sizeof(creds.ssid));
+	}
+	portEXIT_CRITICAL(&joinMux);
+	return result;
+}
+
+bool HAQuDA_WebServer::takeJoinRequest(TWiFiCreds &creds) {
+	bool taken = false;
+	portENTER_CRITICAL(&joinMux);
+	if (joinRequestPending.load()) {
+		creds = joinRequest;
+		memset(&joinRequest, 0, sizeof(joinRequest));
+		joinRequestPending.store(false);
+		taken = true;
+	}
+	portEXIT_CRITICAL(&joinMux);
+	return taken;
+}
+
+void HAQuDA_WebServer::publishJoinState(join_state state, join_reason reason, uint32_t ip) {
+	portENTER_CRITICAL(&joinMux);
+	joinView.state = state;
+	joinView.reason = reason;
+	joinView.ip = ip;
+	portEXIT_CRITICAL(&joinMux);
+}
+
+void HAQuDA_WebServer::handleJoin(AsyncWebServerRequest *request) {
+	join_view view;
+	portENTER_CRITICAL(&joinMux);
+	view = joinView;
+	portEXIT_CRITICAL(&joinMux);
+
+	// Time left until the restart a passed check scheduled; the page counts down from it. The delay and the request
+	// time are stored before the pending flag, so reading them after it is consistent.
+	if ((view.state == join_state::ok) && restartPending.load()) {
+		uint32_t elapsedMs = (uint32_t)(millis() - restartRequestMs.load());
+		uint32_t delayMs = restartDelayMs.load();
+		view.restartMs = (elapsedMs >= delayMs) ? 0 : (delayMs - elapsedMs);
+	}
+
+	char host[32];
+	snprintf(host, sizeof(host), "%s.local", STA_HOSTNAME);
+	char buf[JOIN_JSON_LEN];
+	if (!HAQuDA_BuildJoinJson(buf, sizeof(buf), view, host)) {
+		postLogError("handleJoin: join buffer too small");
+		sendText(request, 500, "Status unavailable.");
+		return;
+	}
+	AsyncWebServerResponse *response = request->beginResponse(200, "application/json", buf);
+	response->addHeader("Cache-Control", "no-store");
+	request->send(response);
+}
+
 void HAQuDA_WebServer::delete_WiFiCreds(AsyncWebServerRequest *request) {
+	CredsLock lock(credsMutex);
+	if (!lock.Held()) {
+		postLogError((credsMutex == nullptr) ? "Delete: creds lock missing" : "Delete: creds file busy");
+		sendText(request, 500, "Error deleting the saved networks.");
+		return;
+	}
 	if (!HAQuDA_FileStorage::Exists(FILE_NAME_WIFI_NET)) {
 		sendText(request, 200, "There are no saved networks.");
 		return;
@@ -227,14 +323,32 @@ void HAQuDA_WebServer::handleStatus(AsyncWebServerRequest *request) {
 	size_t pos = 0;
 	buf[0] = '\0';
 
-	bool stationMode = (WiFi.getMode() & WIFI_MODE_STA) != 0;
+	// While a new network is checked the lamp runs access point and station together, but it still reports access
+	// point mode: the page must not show "WiFi connection lost" for the test join
+	bool stationMode = !apMode.load() && ((WiFi.getMode() & WIFI_MODE_STA) != 0);
 	bool stationUp = stationMode && (WiFi.status() == WL_CONNECTED);
 	IPAddress ip = stationMode ? WiFi.localIP() : WiFi.softAPIP();
 	// esp_timer counts in 64 bits, millis() would wrap after 49 days
 	uint32_t uptimeS = (uint32_t)(esp_timer_get_time() / 1000000LL);
 
-	bool fits = appendFormat(buf, sizeof(buf), pos, "{\"fw\":\"%s\",\"mode\":\"%s\",\"ip\":\"%u.%u.%u.%u\",\"uptime\":%lu,\"rssi\":", FW_VERSION,
-							 stationMode ? "sta" : "ap", ip[0], ip[1], ip[2], ip[3], (unsigned long)uptimeS);
+	// Name of the joined network, read from the driver (no heap, unlike WiFi.SSID()); null when not joined
+	char escapedSsid[JSON_ESCAPED_SSID_LEN] = {0};
+	bool hasSsid = false;
+	if (stationUp) {
+		wifi_ap_record_t apInfo;
+		if (esp_wifi_sta_get_ap_info(&apInfo) == ESP_OK) {
+			HAQuDA_EscapeJson(reinterpret_cast<const char *>(apInfo.ssid), sizeof(apInfo.ssid), escapedSsid, sizeof(escapedSsid));
+			hasSsid = escapedSsid[0] != '\0';
+		}
+	}
+
+	bool fits = appendFormat(buf, sizeof(buf), pos, "{\"fw\":\"%s\",\"mode\":\"%s\",\"ssid\":", FW_VERSION, stationMode ? "sta" : "ap");
+	if (hasSsid) {
+		fits = fits && appendFormat(buf, sizeof(buf), pos, "\"%s\"", escapedSsid);
+	} else {
+		fits = fits && appendFormat(buf, sizeof(buf), pos, "null");
+	}
+	fits = fits && appendFormat(buf, sizeof(buf), pos, ",\"ip\":\"%u.%u.%u.%u\",\"uptime\":%lu,\"rssi\":", ip[0], ip[1], ip[2], ip[3], (unsigned long)uptimeS);
 	if (stationUp) {
 		fits = fits && appendFormat(buf, sizeof(buf), pos, "%d", (int)WiFi.RSSI());
 	} else {
@@ -267,6 +381,12 @@ void HAQuDA_WebServer::handleStatus(AsyncWebServerRequest *request) {
 }
 
 void HAQuDA_WebServer::handleWiFiList(AsyncWebServerRequest *request) {
+	CredsLock lock(credsMutex);
+	if (!lock.Held()) {
+		postLogError((credsMutex == nullptr) ? "List: creds lock missing" : "List: creds file busy");
+		sendText(request, 500, "The lamp cannot read its saved networks. Try again.");
+		return;
+	}
 	char buf[WIFI_LIST_JSON_LEN];
 	char escapedSsid[JSON_ESCAPED_SSID_LEN];
 	size_t pos = 0;
@@ -287,7 +407,7 @@ void HAQuDA_WebServer::handleWiFiList(AsyncWebServerRequest *request) {
 		if (strnlen(creds.ssid, sizeof(creds.ssid)) == 0) {
 			continue;
 		}
-		escapeJson(creds.ssid, sizeof(creds.ssid), escapedSsid, sizeof(escapedSsid));
+		HAQuDA_EscapeJson(creds.ssid, sizeof(creds.ssid), escapedSsid, sizeof(escapedSsid));
 		// The passwords never leave the lamp: only the network name is copied out of the record
 		if (!appendFormat(buf, sizeof(buf), pos, "%s\"%s\"", first ? "" : ",", escapedSsid)) {
 			break;
@@ -322,6 +442,7 @@ void HAQuDA_WebServer::WebServerResponds_init() {
 
 	server.on("/api/status", HTTP_GET, [this](AsyncWebServerRequest *request) { handleStatus(request); });
 	server.on("/api/wifi", HTTP_GET, [this](AsyncWebServerRequest *request) { handleWiFiList(request); });
+	server.on("/api/join", HTTP_GET, [this](AsyncWebServerRequest *request) { handleJoin(request); });
 
 	server.on("/delete_wifi_creds", HTTP_POST, [this](AsyncWebServerRequest *request) { delete_WiFiCreds(request); });
 	server.on("/add_wifi_creds", HTTP_POST, [this](AsyncWebServerRequest *request) { handle_NewWiFiCreds(request); });
@@ -357,6 +478,12 @@ bool HAQuDA_WebServer::getWiFiCredsWriteIndex(uint16_t *index, const TWiFiCreds 
 }
 
 saveNewWiFiCredsReturnMsgs HAQuDA_WebServer::SaveNew_WiFiCreds(TWiFiCreds newWiFiCreds) {
+	CredsLock lock(credsMutex);
+	if (!lock.Held()) {
+		// postLogError() is safe from loop() and the web server task alike: loop() writes the log line
+		postLogError((credsMutex == nullptr) ? "Save: creds lock missing" : "Save: creds file busy");
+		return error_saving_new_WiFi_creds;
+	}
 	uint16_t index = 0;
 	if (!getWiFiCredsWriteIndex(&index, newWiFiCreds)) {
 		return error_reading_stored_WiFi_creds;

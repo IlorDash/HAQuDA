@@ -23,6 +23,23 @@ class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
 	uint32_t dnsPollMs = 0;
 	// Set and read in startMdns() only (called from Connect() in setup: loop task, no sharing)
 	bool mdnsStartTried = false;
+	// Id of the STA_CONNECTED registration made by Connect(); 0 = not registered. Connect() and CreateAP(): loop task.
+	wifi_event_id_t staConnectedEventId = 0;
+
+	// Check of a new network in access point mode. All members below: loop task, except joinDisconnectReason.
+	HAQuDA_JoinCheck joinCheck;
+	// The network under test; the password is wiped when the check ends
+	TWiFiCreds joinCreds;
+	// The disconnect handler is registered once in CreateAP() and never removed: the core keeps its handler list in an
+	// unlocked std::vector that the WiFi event task walks, so loop() must not change it while the lamp runs.
+	// The handler records reasons only while this flag is set. Written by loop(), read by the WiFi event task.
+	std::atomic<bool> joinActive{false};
+	// Written by the WiFi event task, reset and read by loop(). Holds the most telling disconnect reason of the check
+	// (see HAQuDA_MergeDisconnectReason); 0 = none. loop() resets it only while joinActive is false.
+	std::atomic<uint8_t> joinDisconnectReason{0};
+	// Consecutive same-class disconnect events (HAQuDA_AddDisconnectEvent); the event task is its only writer while
+	// joinActive is set, loop() clears it before setting joinActive.
+	std::atomic<uint32_t> joinDisconnectStreak{0};
 
 	static void WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info);
 	static void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info);
@@ -40,12 +57,27 @@ class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
 	// nothing. A failure is logged and is not fatal. Loop task only (it logs); never from the WiFi event task.
 	void startMdns();
 
+	// Runs the check of a new network: takes a queued request, joins it with the access point kept up, saves it on
+	// success. Never waits: every call does one step. loop only.
+	void handleJoinCheck();
+	void startJoinCheck(const TWiFiCreds &creds);
+	void pollJoinCheck();
+	void finishJoinOk();
+	void finishJoinFail();
+	// Called from the WiFi event task - must not block
+	void recordDisconnectReason(uint8_t reason);
+
   public:
 	// snapshot feeds the web page with the latest measurements; it must outlive the handler.
 	HAQuDA_WiFi_handler(HAQuDA_FileStorage *currFS, HAQuDA_DisplayManip *_dispManip, const HAQuDA_MeasSnapshot &snapshot);
 	~HAQuDA_WiFi_handler();
 	static bool WiFiConnected;
+	// Joins a stored network and starts the web server. setup() (loop task) only.
 	bool Connect();
+	// Starts the access point, the captive DNS and the web server, and switches the web server to access point mode
+	// (new networks are checked before they are saved). Drops the station-connected display handler: a test join
+	// must not replace the access point effect. setup() (loop task) only.
 	bool CreateAP();
+	// Serves the captive DNS, the deferred web work, the check of a new network and the station reconnect. loop task only.
 	void HandleConnection();
 };

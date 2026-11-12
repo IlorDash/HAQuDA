@@ -3,6 +3,16 @@
 
 	var POLL_MS = 5000;
 	var FETCH_TIMEOUT_MS = 4000;
+	// while the lamp checks a network: ask for the result this often; when it stops answering (the phone can lose the
+	// lamp's WiFi for a moment while the lamp joins the other network) keep asking quietly this long before giving up
+	var JOIN_POLL_MS = 2000;
+	var JOIN_QUIET_MS = 60000;
+	// After a check passes the lamp holds its own WiFi for the time /api/join reports (restart_ms; 20 s in the firmware),
+	// restarts, and joins the new network about 8-10 s later (2 s boot effect, file system, connect). This much is added
+	// on top, with some margin, so the addresses turn active when the lamp is most likely on the new network and the
+	// phone is back on it. When the lamp does not report restart_ms the hold is assumed to be this long.
+	var JOIN_BOOT_MS = 15000;
+	var JOIN_HOLD_FALLBACK_MS = 20000;
 	// the lamp keeps the name and the password in 31 bytes plus a terminator, and at most 10 networks
 	var MAX_BYTES = 31;
 	var MAX_NETS = 10;
@@ -10,6 +20,12 @@
 	var TEXT = {
 		en: {
 			connecting: 'Connecting to the lamp…', sta: 'Connected', dbm: 'dBm',
+			staTo: function (n) {
+				return 'Connected to ' + n;
+			},
+			wait: function (s) {
+				return 'available in ' + s + ' s';
+			},
 			ap: 'Access point · no internet', off: 'WiFi connection lost', down: 'Lamp not responding · retry in 5 s',
 			title: 'WiFi networks', addTitle: 'Add network', ssid: 'Network name (SSID)', pass: 'Password',
 			ssidPh: 'e.g. HomeNet', passPh: 'Network password', show: 'Show', hide: 'Hide', bytes: 'bytes',
@@ -31,10 +47,43 @@
 			},
 			s3sta: 'If it’s the same network, this page comes back on its own at this address.',
 			s3ap: 'The lamp’s network will disappear. Reconnect your phone to home WiFi and find the lamp’s new address in your router.',
-			main: 'Main page', log: 'Live log', fw: 'Firmware'
+			main: 'Main page', log: 'Live log', fw: 'Firmware',
+			checking: function (n) {
+				return 'Checking “' + n + '”…';
+			},
+			mayLose: 'The phone may lose the lamp’s WiFi for a moment…',
+			fail: function (reason, n) {
+				var q = '“' + n + '”';
+				if (reason === 'wrong_password') {
+					return 'The password for ' + q + ' was not accepted. Check it and try again.';
+				}
+				if (reason === 'no_network') {
+					return 'The lamp cannot find ' + q + '. Check the name and that the router is on and in range, then try again.';
+				}
+				if (reason === 'save_failed') {
+					return 'The lamp joined ' + q + ' but could not save it. Try again. If it fails again, delete all networks and add this one again.';
+				}
+				if (reason === 'lost') {
+					return 'The lamp has probably joined ' + q + ' and restarted. Connect this phone to ' + q + ' and open http://haquda.local/. If the page does not open, reconnect to the lamp’s WiFi and try again.';
+				}
+				return q + ' did not answer in time. Check the password and the signal, then try again.';
+			},
+			okTitle: function (n) {
+				return 'The lamp joined “' + n + '”';
+			},
+			okText: function (n) {
+				return 'Saved. The lamp restarts in a few seconds and joins “' + n + '”. Connect this phone to “' + n + '” and open one of these addresses when it becomes active.';
+			},
+			addrIp: 'By IP address', addrHost: 'By name', copy: 'Copy', copied: 'Copied', copyFail: 'Select and copy'
 		},
 		ru: {
 			connecting: 'Подключаемся к лампе…', sta: 'Подключена', dbm: 'дБм',
+			staTo: function (n) {
+				return 'Подключена к ' + n;
+			},
+			wait: function (s) {
+				return 'доступен через ' + s + ' с';
+			},
 			ap: 'Точка доступа · без интернета', off: 'Нет связи с WiFi', down: 'Лампа не отвечает · повтор через 5 с',
 			title: 'WiFi-сети', addTitle: 'Добавить сеть', ssid: 'Имя сети (SSID)', pass: 'Пароль',
 			ssidPh: 'Например, HomeNet', passPh: 'Пароль сети', show: 'Показать', hide: 'Скрыть', bytes: 'байт',
@@ -56,7 +105,34 @@
 			},
 			s3sta: 'Если сеть та же, страница вернётся сама по этому адресу.',
 			s3ap: 'Сеть лампы исчезнет. Подключите телефон к домашнему WiFi и найдите новый адрес лампы в роутере.',
-			main: 'Главная', log: 'Живой лог', fw: 'Прошивка'
+			main: 'Главная', log: 'Живой лог', fw: 'Прошивка',
+			checking: function (n) {
+				return 'Проверяем «' + n + '»…';
+			},
+			mayLose: 'Телефон может ненадолго потерять WiFi лампы…',
+			fail: function (reason, n) {
+				var q = '«' + n + '»';
+				if (reason === 'wrong_password') {
+					return 'Пароль сети ' + q + ' не принят. Проверьте его и попробуйте снова.';
+				}
+				if (reason === 'no_network') {
+					return 'Лампа не находит сеть ' + q + '. Проверьте имя и что роутер включён и в зоне досягаемости, и попробуйте снова.';
+				}
+				if (reason === 'save_failed') {
+					return 'Лампа подключилась к ' + q + ', но не смогла сохранить сеть. Попробуйте снова. Если не получится, удалите все сети и добавьте эту заново.';
+				}
+				if (reason === 'lost') {
+					return 'Лампа, скорее всего, подключилась к ' + q + ' и перезагрузилась. Подключите этот телефон к ' + q + ' и откройте http://haquda.local/. Если страница не открывается, подключитесь к WiFi лампы и попробуйте снова.';
+				}
+				return 'Сеть ' + q + ' не ответила вовремя. Проверьте пароль и уровень сигнала и попробуйте снова.';
+			},
+			okTitle: function (n) {
+				return 'Лампа подключилась к «' + n + '»';
+			},
+			okText: function (n) {
+				return 'Сохранено. Лампа перезагрузится через несколько секунд и подключится к «' + n + '». Подключите этот телефон к «' + n + '» и откройте один из этих адресов, когда он станет активным.';
+			},
+			addrIp: 'По IP-адресу', addrHost: 'По имени', copy: 'Копировать', copied: 'Скопировано', copyFail: 'Выделите и скопируйте'
 		}
 	};
 
@@ -69,6 +145,12 @@
 	var reboot = null;
 	var busy = false;
 	var confirming = false;
+	// the lamp checks a network before it saves it (access point mode):
+	// join: a check is running, { ssid, lostSinceMs: when the lamp stopped answering, 0 while it answers }
+	// failure: the last check failed, { reason, ssid }; joined: the check passed, { ssid, ip, host }
+	var join = null;
+	var failure = null;
+	var joined = null;
 
 	var form = byId('form');
 	var ssid = byId('ssid');
@@ -170,7 +252,8 @@
 				text = T.off;
 			} else {
 				dot = 'ok';
-				text = T.sta + ' · ' + d.rssi + ' ' + T.dbm;
+				// the network name comes from the lamp: text only
+				text = (typeof d.ssid === 'string' && d.ssid ? T.staTo(d.ssid) : T.sta) + ' · ' + d.rssi + ' ' + T.dbm;
 				level = d.rssi > -55 ? 4 : (d.rssi > -65 ? 3 : (d.rssi > -75 ? 2 : 1));
 			}
 		}
@@ -179,7 +262,7 @@
 		Array.prototype.forEach.call(byId('bars').children, function (bar, i) {
 			bar.className = i < level ? 'on' : '';
 		});
-		byId('banner').hidden = !(d && d.mode === 'ap') || !!reboot;
+		byId('banner').hidden = !(d && d.mode === 'ap') || !!reboot || !!joined;
 		byId('mfw').textContent = d ? T.fw + ' ' + d.fw : '';
 		byId('mip').textContent = d ? 'IP ' + d.ip : '';
 	}
@@ -210,7 +293,9 @@
 
 		byId('showPass').textContent = pass.type === 'password' ? T.show : T.hide;
 		save.textContent = exists ? T.update : T.add;
-		save.disabled = ssidLong || passLong || full || busy;
+		save.disabled = ssidLong || passLong || full || busy || !!join;
+		ssid.disabled = !!join;
+		pass.disabled = !!join;
 		form.classList.toggle('dim-form', full);
 		tagEls.forEach(function (tag, i) {
 			tag.textContent = exists && nets[i] === ssid.value ? T.upd : '';
@@ -249,9 +334,67 @@
 		byId('confirmText').textContent = T.confirm(nets.length);
 	}
 
+	// the check status goes into the form's reply box: the form stays visible with its values
+	function renderJoin() {
+		var box = byId('reply');
+		if (join) {
+			showReply(box, byId('replyText'), T.checking(join.ssid) + (join.lostSinceMs ? ' ' + T.mayLose : ''), false);
+			box.classList.add('wait');
+		} else if (failure) {
+			showReply(box, byId('replyText'), T.fail(failure.reason, failure.ssid), true);
+		}
+	}
+
+	// the address comes from the lamp: only a value that looks like an address is shown, and the link href is built from
+	// that value alone. Until the countdown ends the link has no href, so it cannot be followed
+	function renderAddr(boxId, linkId, waitId, value, pattern, secondsLeft) {
+		var ok = typeof value === 'string' && pattern.test(value);
+		var link = byId(linkId);
+		var wait = byId(waitId);
+		var url = ok ? 'http://' + value + '/' : '';
+		byId(boxId).hidden = !ok;
+		link.textContent = url;
+		if (ok && secondsLeft <= 0) {
+			link.setAttribute('href', url);
+			link.removeAttribute('aria-disabled');
+		} else {
+			link.removeAttribute('href');
+			link.setAttribute('aria-disabled', 'true');
+		}
+		wait.hidden = !ok || secondsLeft <= 0;
+		wait.textContent = secondsLeft > 0 ? T.wait(secondsLeft) : '';
+	}
+
+	function joinedSecondsLeft() {
+		return Math.max(0, Math.ceil((joined.endsAtMs - nowMs()) / 1000));
+	}
+
+	function renderJoined() {
+		byId('jok').hidden = !joined;
+		if (!joined) {
+			return;
+		}
+		var left = joinedSecondsLeft();
+		byId('jokTitle').textContent = T.okTitle(joined.ssid);
+		renderAddr('jokIpBox', 'jokIp', 'jokIpWait', joined.ip, /^\d{1,3}(\.\d{1,3}){3}$/, left);
+		renderAddr('jokHostBox', 'jokHost', 'jokHostWait', joined.host, /^[a-z0-9.-]{1,63}$/i, left);
+		byId('jokText').textContent = T.okText(joined.ssid);
+	}
+
+	// the countdown runs on the page's own clock: it goes on when the lamp's WiFi is gone and the phone loses the lamp
+	function joinedTick() {
+		if (!joined) {
+			return;
+		}
+		renderJoined();
+		if (joinedSecondsLeft() > 0) {
+			setTimeout(joinedTick, 1000);
+		}
+	}
+
 	function renderReboot() {
 		byId('rb').hidden = !reboot;
-		byId('edit').hidden = !!reboot;
+		byId('edit').hidden = !!reboot || !!joined;
 		if (!reboot) {
 			return;
 		}
@@ -266,6 +409,8 @@
 		renderForm();
 		renderConfirm();
 		renderReboot();
+		renderJoin();
+		renderJoined();
 	}
 
 	function setLang(code) {
@@ -354,6 +499,152 @@
 			});
 	}
 
+	function showOk(name, d) {
+		join = null;
+		failure = null;
+		var holdMs = typeof d.restart_ms === 'number' && isFinite(d.restart_ms) && d.restart_ms >= 0 ? d.restart_ms : JOIN_HOLD_FALLBACK_MS;
+		joined = { ssid: name, ip: d.ip, host: d.host, endsAtMs: nowMs() + holdMs + JOIN_BOOT_MS };
+		pass.value = '';
+		renderAll();
+		setTimeout(joinedTick, 1000);
+	}
+
+	function showFail(name, reason) {
+		join = null;
+		failure = { reason: typeof reason === 'string' ? reason : 'timeout', ssid: name };
+		renderAll();
+	}
+
+	function readJoin(r) {
+		if (!r.ok) {
+			throw new Error(r.status);
+		}
+		return r.json();
+	}
+
+	// d: the /api/join reply, null when the lamp did not answer
+	function applyJoin(d) {
+		if (!join) {
+			return;
+		}
+		if (!d || typeof d !== 'object') {
+			var now = nowMs();
+			if (!join.lostSinceMs) {
+				join.lostSinceMs = now;
+			}
+			if (now - join.lostSinceMs > JOIN_QUIET_MS) {
+				showFail(join.ssid, 'lost');
+				return;
+			}
+			setTimeout(joinPoll, JOIN_POLL_MS);
+			renderJoin();
+			return;
+		}
+		join.lostSinceMs = 0;
+		if (d.state === 'checking') {
+			setTimeout(joinPoll, JOIN_POLL_MS);
+			renderJoin();
+		} else if (d.state === 'ok') {
+			showOk(typeof d.ssid === 'string' ? d.ssid : join.ssid, d);
+		} else if (d.state === 'fail') {
+			showFail(join.ssid, d.reason);
+		} else {
+			// idle: the lamp restarted or forgot the check
+			showFail(join.ssid, 'lost');
+		}
+	}
+
+	// polls only while a check runs; the chain ends when join is cleared
+	function joinPoll() {
+		if (!join) {
+			return;
+		}
+		fetchTimed('/api/join', { cache: 'no-store' }, readJoin)
+			.catch(function () {
+				return null;
+			})
+			.then(applyJoin);
+	}
+
+	function startJoin(name) {
+		var fresh = !join;
+		join = { ssid: name, lostSinceMs: 0 };
+		failure = null;
+		renderForm();
+		renderJoin();
+		if (fresh) {
+			setTimeout(joinPoll, JOIN_POLL_MS);
+		}
+	}
+
+	// asks once for a check the page did not start itself (another phone, this page opened again, or a 409 reply).
+	// A running check is picked up always; a finished one only when showFinal is set
+	function probeJoin(showFinal) {
+		fetchTimed('/api/join', { cache: 'no-store' }, readJoin)
+			.then(function (d) {
+				if (!d || join || joined || typeof d.ssid !== 'string') {
+					return;
+				}
+				if (d.state === 'checking') {
+					startJoin(d.ssid);
+				} else if (showFinal && d.state === 'ok') {
+					showOk(d.ssid, d);
+				} else if (showFinal && d.state === 'fail') {
+					if (!ssid.value) {
+						ssid.value = d.ssid;
+					}
+					showFail(d.ssid, d.reason);
+				}
+			})
+			.catch(function () {});
+	}
+
+	// plain http pages have no navigator.clipboard, so the textarea fallback is the usual path on the lamp
+	function copyFallback(text) {
+		var area = null;
+		try {
+			area = document.createElement('textarea');
+			area.value = text;
+			area.setAttribute('readonly', '');
+			area.style.position = 'fixed';
+			area.style.top = '0';
+			area.style.opacity = '0';
+			document.body.appendChild(area);
+			area.select();
+			area.setSelectionRange(0, text.length);
+			var ok = document.execCommand('copy');
+			document.body.removeChild(area);
+			return !!ok;
+		} catch (e) {
+			try {
+				if (area && area.parentNode) {
+					area.parentNode.removeChild(area);
+				}
+			} catch (e2) {}
+			return false;
+		}
+	}
+
+	function copyText(text, button) {
+		function done(ok) {
+			button.textContent = ok ? T.copied : T.copyFail;
+			setTimeout(function () {
+				button.textContent = T.copy;
+			}, 2000);
+		}
+		try {
+			if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
+				navigator.clipboard.writeText(text).then(function () {
+					done(true);
+				}, function () {
+					done(copyFallback(text));
+				});
+				return;
+			}
+		} catch (e) {}
+		done(copyFallback(text));
+	}
+
 	function submit(e) {
 		e.preventDefault();
 		if (save.disabled) {
@@ -369,6 +660,7 @@
 			return;
 		}
 		busy = true;
+		failure = null;
 		renderForm();
 		showReply(byId('reply'), byId('replyText'), T.saving, false);
 		fetch('/add_wifi_creds', {
@@ -379,6 +671,11 @@
 			.then(function (r) {
 				return r.text().then(function (t) {
 					busy = false;
+					// 202: access point mode, the lamp checks the network first; the text is for pages without scripts
+					if (r.status === 202) {
+						startJoin(name);
+						return;
+					}
 					if (r.ok) {
 						byId('reply').hidden = true;
 						startReboot(name, t);
@@ -387,6 +684,10 @@
 					showReply(byId('reply'), byId('replyText'), t, true);
 					renderForm();
 					loadNets();
+					if (r.status === 409) {
+						// a check is running, or one passed and the lamp restarts: show it
+						probeJoin(true);
+					}
 				});
 			})
 			.catch(function () {
@@ -445,8 +746,15 @@
 		renderConfirm();
 	});
 	byId('delYes').addEventListener('click', deleteAll);
+	byId('jokIpCopy').addEventListener('click', function () {
+		copyText(byId('jokIp').textContent, this);
+	});
+	byId('jokHostCopy').addEventListener('click', function () {
+		copyText(byId('jokHost').textContent, this);
+	});
 
 	setLang(saved);
 	poll();
 	loadNets();
+	probeJoin(true);
 })();

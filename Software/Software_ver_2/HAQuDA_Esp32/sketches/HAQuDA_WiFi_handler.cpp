@@ -7,10 +7,6 @@
 
 constexpr uint32_t DNS_POLL_PERIOD_MS = 10;
 
-// Station hostname: sent in the DHCP request, so routers list the lamp under it, and answered by the mDNS
-// responder as <name>.local. Fixed, so the name in the home network does not depend on the build flags.
-constexpr char STA_HOSTNAME[] = "haquda";
-
 bool HAQuDA_WiFi_handler::WiFiConnected = false;
 
 const char *DDNS_token = DDNS_TOKEN;
@@ -25,7 +21,7 @@ HAQuDA_WiFi_handler::HAQuDA_WiFi_handler(HAQuDA_FileStorage *currFS, HAQuDA_Disp
 
 bool HAQuDA_WiFi_handler::Connect() {
 
-	WiFi.onEvent(WiFiStationConnected, ARDUINO_EVENT_WIFI_STA_CONNECTED);
+	staConnectedEventId = WiFi.onEvent(WiFiStationConnected, ARDUINO_EVENT_WIFI_STA_CONNECTED);
 	vTaskDelay(200 / portTICK_PERIOD_MS);
 
 	if (GetStored_WiFiCredsNum()) {
@@ -52,9 +48,21 @@ bool HAQuDA_WiFi_handler::Connect() {
 }
 
 bool HAQuDA_WiFi_handler::CreateAP() {
+	// Connect() registered the display handler for STA_CONNECTED even though it failed. The test join of a new network
+	// fires that event too, and the handler would set the display to static green and then off, replacing the access
+	// point effect. Removed by id: core 2.0.11 can remove a std::function registration only that way.
+	if (staConnectedEventId != 0) {
+		WiFi.removeEvent(staConnectedEventId);
+		staConnectedEventId = 0;
+	}
+	// Registered once, before the access point serves anyone: it only records the reason of a station disconnect while a
+	// check runs. See joinActive for why it is never removed.
+	WiFi.onEvent([this](WiFiEvent_t event, WiFiEventInfo_t info) { recordDisconnectReason(info.wifi_sta_disconnected.reason); },
+				 ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 	if (!createAP()) {
 		return false;
 	}
+	apMode.store(true);
 	dnsServerRunning = dnsServer.start(53, "*", WiFi.softAPIP());
 	if (!dnsServerRunning) {
 		HAQuDA_Logger::LogError("CreateAP: captive DNS not started");
@@ -71,6 +79,7 @@ void HAQuDA_WiFi_handler::HandleConnection() {
 	// EasyDDNS.update(10000, true);
 
 	HandleDeferredWork();
+	handleJoinCheck();
 
 	// Captive portal: answers every DNS query with the AP address so the phone's connectivity probe
 	// reaches the web server. AP mode only; station mode runs no DNS server.
@@ -92,7 +101,9 @@ void HAQuDA_WiFi_handler::HandleConnection() {
 		MyWebSerial.ResetWebSerialOpened();
 	}
 
-	if (WiFiConnected || !(WiFi.getMode() & WIFI_MODE_STA)) {
+	// The reconnect loop below is for station-only mode. In access point mode the station is up only for the check of
+	// a new network (WIFI_AP_STA): the loop would block loop() forever and WiFi.mode(WIFI_STA) would drop the access point.
+	if (WiFiConnected || apMode.load() || !(WiFi.getMode() & WIFI_MODE_STA)) {
 		return;
 	}
 	WiFi.removeEvent(SYSTEM_EVENT_STA_DISCONNECTED);
@@ -104,6 +115,106 @@ void HAQuDA_WiFi_handler::HandleConnection() {
 		connectToStoredWiFi();
 	}
 	WiFi.onEvent(WiFiStationDisconnected, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
+}
+
+void HAQuDA_WiFi_handler::handleJoinCheck() {
+	if (joinCheck.State() == join_state::checking) {
+		pollJoinCheck();
+		return;
+	}
+	if (!joinRequestPending.load()) {
+		return;
+	}
+	TWiFiCreds creds;
+	if (takeJoinRequest(creds)) {
+		startJoinCheck(creds);
+	}
+	memset(&creds, 0, sizeof(creds));
+}
+
+void HAQuDA_WiFi_handler::startJoinCheck(const TWiFiCreds &creds) {
+	joinCreds = creds;
+	// A streak left by the previous check must not count towards this one
+	joinDisconnectReason.store(0);
+	joinDisconnectStreak.store(0);
+	joinActive.store(true);
+	joinCheck.Start(millis());
+	HAQuDA_Logger::LogInfo("WiFi check started");
+
+	// A failed check switches the core's auto-reconnect off; the core retries a join by itself, which is what the
+	// check wants while it runs
+	WiFi.setAutoReconnect(true);
+
+	// WiFi.setHostname() only stores the name; WiFi.mode() hands it to the station interface when it enables the
+	// station, and the DHCP request carries it. So the name must be set before the mode call. The check always starts
+	// from WIFI_AP, so the station is enabled here; had it been enabled already, mode() would return early and keep the old name.
+	if (!WiFi.setHostname(STA_HOSTNAME)) {
+		HAQuDA_Logger::LogError("WiFi check: hostname not set");
+	}
+	// A failure here is not fatal: without a station the check runs into its timeout and reports it
+	// Access point and captive DNS stay up: WIFI_AP_STA only adds the station
+	if (!WiFi.mode(WIFI_AP_STA)) {
+		HAQuDA_Logger::LogError("WiFi check: AP_STA mode failed");
+	}
+	if (WiFi.begin(joinCreds.ssid, joinCreds.pass) == WL_CONNECT_FAILED) {
+		HAQuDA_Logger::LogError("WiFi check: begin failed");
+	}
+}
+
+void HAQuDA_WiFi_handler::pollJoinCheck() {
+	bool connected = (WiFi.status() == WL_CONNECTED);
+	uint32_t ip = connected ? static_cast<uint32_t>(WiFi.localIP()) : 0;
+	join_action action = joinCheck.Poll(millis(), connected, ip, joinDisconnectReason.load(), joinDisconnectStreak.load());
+
+	if (action == join_action::save_network) {
+		saveNewWiFiCredsReturnMsgs result = SaveNew_WiFiCreds(joinCreds);
+		bool saved = (result == saved_new_WiFi_creds) || (result == re_writed_WiFi_creds);
+		action = joinCheck.SaveFinished(saved);
+		if (saved) {
+			finishJoinOk();
+			return;
+		}
+	}
+	if (action == join_action::leave_station) {
+		finishJoinFail();
+	}
+}
+
+void HAQuDA_WiFi_handler::finishJoinOk() {
+	joinActive.store(false);
+	memset(&joinCreds, 0, sizeof(joinCreds));
+	// The restart goes first: a POST that arrives between the two steps must already see it pending
+	scheduleRestart(JOIN_OK_HOLD_MS);
+	publishJoinState(join_state::ok, join_reason::none, joinCheck.Ip());
+	HAQuDA_Logger::LogInfo("WiFi check: ok, network saved");
+}
+
+void HAQuDA_WiFi_handler::finishJoinFail() {
+	joinActive.store(false);
+	memset(&joinCreds, 0, sizeof(joinCreds));
+	// Reasons such as NO_AP_FOUND make the core call disconnect() and begin() from the event task, which would bring the
+	// station back. Auto-reconnect off, and the station config erased so a begin() already under way has nothing to join.
+	WiFi.setAutoReconnect(false);
+	// Station only: WiFi.mode(WIFI_AP) leaves the access point, its IP configuration and the DHCP server as they are
+	WiFi.disconnect(false, true);
+	if (!WiFi.mode(WIFI_AP)) {
+		HAQuDA_Logger::LogError("WiFi check: AP mode failed");
+	}
+	join_reason reason = joinCheck.Reason();
+	publishJoinState(join_state::fail, reason, 0);
+
+	char msg[MSG_DATA_MAX_LEN] = {0};
+	snprintf(msg, sizeof(msg), "WiFi check: %s", HAQuDA_JoinReasonName(reason));
+	HAQuDA_Logger::LogError(msg);
+}
+
+void HAQuDA_WiFi_handler::recordDisconnectReason(uint8_t reason) {
+	if (!joinActive.load()) {
+		return;
+	}
+	// The only writer while a check runs, so the read-merge-store needs no loop
+	joinDisconnectReason.store(HAQuDA_MergeDisconnectReason(joinDisconnectReason.load(), reason));
+	joinDisconnectStreak.store(HAQuDA_AddDisconnectEvent(joinDisconnectStreak.load(), reason));
 }
 
 void HAQuDA_WiFi_handler::startMdns() {
@@ -181,12 +292,14 @@ bool HAQuDA_WiFi_handler::connectToStoredWiFi() {
 }
 
 bool HAQuDA_WiFi_handler::connectToWiFi(const char *ssidLocal, const char *passLocal) {
-	if (!WiFi.mode(WIFI_STA)) {
+	// WiFi.setHostname() only stores the name; WiFi.mode() hands it to the station interface when it enables the
+	// station, and the DHCP request carries it. So the name goes first. When the station is already enabled, mode()
+	// returns early; the name set at the first enable stays, and it is the same constant.
+	if (!WiFi.setHostname(STA_HOSTNAME)) {
 		return false;
 	}
 
-	// Must precede WiFi.begin(): the hostname goes out with the DHCP request
-	if (!WiFi.setHostname(STA_HOSTNAME)) {
+	if (!WiFi.mode(WIFI_STA)) {
 		return false;
 	}
 

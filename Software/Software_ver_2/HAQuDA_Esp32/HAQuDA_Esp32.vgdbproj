@@ -42,6 +42,7 @@
         <string>sketches\HAQuDA_ColorScale.h</string>
         <string>sketches\HAQuDA_ILEDs.h</string>
         <string>sketches\HAQuDA_MeasSnapshot.h</string>
+        <string>sketches\HAQuDA_WiFiJoin.h</string>
       </OtherFiles>
     </ProjectModeSettings>
   </Project>

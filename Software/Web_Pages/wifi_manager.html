@@ -86,6 +86,22 @@
 		<div class="wait" data-i="rbWait">Waiting for the lamp &middot; checking every 5 s</div>
 		<a class="cta" href="/" data-i="toMain">Back to main page</a>
 	</section>
+	<section class="card rb" id="jok" hidden>
+		<div class="rb-t"><span class="rb-dot"></span><span id="jokTitle"></span></div>
+		<div class="addrs">
+			<div class="addr" id="jokIpBox">
+				<div class="addr-l" data-i="addrIp">By IP address</div>
+				<div class="addr-r"><a class="addr-link" id="jokIp"></a><button type="button" class="copy" id="jokIpCopy" data-i="copy">Copy</button></div>
+				<div class="addr-s" id="jokIpWait" hidden></div>
+			</div>
+			<div class="addr" id="jokHostBox">
+				<div class="addr-l" data-i="addrHost">By name</div>
+				<div class="addr-r"><a class="addr-link" id="jokHost"></a><button type="button" class="copy" id="jokHostCopy" data-i="copy">Copy</button></div>
+				<div class="addr-s" id="jokHostWait" hidden></div>
+			</div>
+		</div>
+		<p class="jok-text" id="jokText"></p>
+	</section>
 	<footer class="meta"><span id="mfw"></span><span id="mip"></span></footer>
 </main>
 <script src="/wifi.js"></script>

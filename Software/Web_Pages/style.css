@@ -171,6 +171,11 @@ input {
 	color: var(--muted);
 }
 
+.status span:last-child {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
 .sdot {
 	flex: none;
 	width: 7px;
@@ -849,6 +854,91 @@ main.in {
 	color: var(--muted);
 }
 
+.reply.wait {
+	font-size: 13px;
+	color: inherit;
+}
+
+.reply.wait i {
+	background: var(--muted);
+	animation: blink 1.2s ease-in-out infinite;
+}
+
+@keyframes blink {
+	50% {
+		opacity: 0.25;
+	}
+}
+
+.addrs {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.addr {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 12px;
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	background: var(--bg);
+}
+
+.addr-l {
+	font-size: 12px;
+	color: var(--muted);
+}
+
+.addr-r {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.addr-link {
+	flex: 1;
+	min-width: 0;
+	font-family: ui-monospace, Menlo, Consolas, monospace;
+	font-size: 18px;
+	font-weight: 700;
+	color: inherit;
+	text-decoration: underline;
+	overflow-wrap: anywhere;
+}
+
+/* no href until the lamp is expected on the new network: the link looks and acts inactive */
+.addr-link:not([href]) {
+	color: var(--muted);
+	text-decoration: none;
+	user-select: all;
+}
+
+.addr-s {
+	font-size: 12px;
+	color: var(--muted);
+}
+
+.copy {
+	flex: none;
+	min-height: 44px;
+	padding: 0 16px;
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	background: transparent;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.jok-text {
+	margin: 0;
+	font-size: 14px;
+	line-height: 1.45;
+	overflow-wrap: anywhere;
+}
+
 /* desktop: two columns */
 
 @media (min-width: 900px) {
@@ -994,5 +1084,9 @@ main.in {
 @media (prefers-reduced-motion: reduce) {
 	.matrix i {
 		transition: none;
+	}
+
+	.reply.wait i {
+		animation: none;
 	}
 }
