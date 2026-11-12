@@ -68,16 +68,19 @@
     <ClCompile Include="TestFlashLock.cpp" />
     <ClCompile Include="TestLogDedup.cpp" />
     <ClCompile Include="TestDateFormat.cpp" />
+    <ClCompile Include="TestZH03BFrame.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_ColorScale.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_FlashLock.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_DateFormat.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_LogDedup.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_ZH03BFrame.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\sketches\HAQuDA_ColorScale.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_FlashLock.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_DateFormat.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_LogDedup.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_ZH03BFrame.h" />
     <ClInclude Include="..\fakes\freertos\FreeRTOS.h" />
     <ClInclude Include="..\fakes\freertos\semphr.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_ILEDs.h" />

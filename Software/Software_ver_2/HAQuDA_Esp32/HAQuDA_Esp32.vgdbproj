@@ -41,6 +41,7 @@
         <string>sketches\HAQuDA_Touch.h</string>
         <string>sketches\HAQuDA_ColorScale.h</string>
         <string>sketches\HAQuDA_ILEDs.h</string>
+        <string>sketches\HAQuDA_ZH03BFrame.h</string>
       </OtherFiles>
     </ProjectModeSettings>
   </Project>
