@@ -1,7 +1,18 @@
+#include <atomic>
+
 #include "HAQuDA_TimeHelper.h"
 
 #define DATE_TIME_FIELDS_NUM 6
-#define FORMATTED_DATE_LEN 20
+
+// A forceUpdate() blocks ≈ 1 s while the NTP server does not answer. The fork's update() would send on every call once a refresh
+// failed (a timed-out forceUpdate() leaves _lastUpdate behind), so each log line in STA mode would stall for that second during an
+// outage. Send at most once per minute instead, the client's own update interval, in every state.
+constexpr uint32_t NTP_RETRY_PERIOD_MS = 60 * 1000;
+
+// millis() of the last NTP request, successful or not; starts one period in the past so the first call after StartNTP() sends at
+// once. Loop (log stamps) and ShowTask (night mode) both reach GetFormattedDate(), hence atomic. The shared NTPClient/WiFiUDP
+// behind it is still unprotected - a known, separate issue.
+static std::atomic<uint32_t> lastAttemptMs{0u - NTP_RETRY_PERIOD_MS};
 
 HAQuDA_TimeService *HAQuDA_TimeService::p_instance = 0;
 
@@ -28,27 +39,28 @@ bool HAQuDA_TimeService::GetTimeClientStarted() {
 	return timeClientStarted;
 }
 
-bool HAQuDA_TimeService::GetFormattedDate(char *_formattedDate) {
-	DateTimeStruct currTime;
-
-	if (!timeClientStarted) {
+bool HAQuDA_TimeService::GetFormattedDate(char *formattedDate, size_t size) {
+	if ((formattedDate == nullptr) || (size < FORMATTED_DATE_LEN + 1) || !timeClientStarted) {
 		return false;
 	}
 
-	int time_update_retries = 2;
-
-	while ((!timeClient->update()) && (time_update_retries--)) {
+	const uint32_t nowMs = millis();
+	if (nowMs - lastAttemptMs.load() >= NTP_RETRY_PERIOD_MS) {
+		// Stamp before sending, so the other task sees the attempt while this one waits for the reply. The result does not matter:
+		// after the first sync the client keeps the last time, which is still a valid stamp; before it, isTimeSet() tells.
+		lastAttemptMs.store(nowMs);
 		timeClient->forceUpdate();
 	}
-	if (time_update_retries == 0) {
+	if (!timeClient->isTimeSet()) {
 		return false;
 	}
 
 	// The formattedDate comes with the following format:
 	// 2018-05-28T16:00:13
-	String formattedDate = timeClient->getFormattedDate();
+	String date = timeClient->getFormattedDate();
 
-	strncpy(_formattedDate, formattedDate.c_str(), formattedDate.length());
+	strncpy(formattedDate, date.c_str(), size - 1);
+	formattedDate[size - 1] = '\0';
 	return true;
 }
 
@@ -56,7 +68,7 @@ bool HAQuDA_TimeService::GetDateTime(DateTimeStruct *_time) {
 
 	char formattedDate[FORMATTED_DATE_LEN + 1] = {0}; // plus null term
 
-	if (!HAQuDA_TimeService::GetFormattedDate(formattedDate)) {
+	if (!HAQuDA_TimeService::GetFormattedDate(formattedDate, sizeof(formattedDate))) {
 		return false;
 	}
 

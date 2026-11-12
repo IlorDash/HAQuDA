@@ -8,6 +8,9 @@
 #define GMT_PLUS_3_TZ_SEC 10800
 #define DATE_TIME_STR_LEN 20
 
+// Length of the NTP client's "YYYY-MM-DDTHH:MM:SSZ" (20, the client appends the Z); buffers hold FORMATTED_DATE_LEN + 1 for the terminator.
+constexpr size_t FORMATTED_DATE_LEN = 20;
+
 typedef struct {
 	uint8_t date;
 	uint8_t month;
@@ -30,7 +33,11 @@ class HAQuDA_TimeService {
 
 	static bool timeClientStarted;
 
-	static bool GetFormattedDate(char *_formattedDate);
+	// Copies the client's "YYYY-MM-DDTHH:MM:SSZ" into formattedDate (size >= FORMATTED_DATE_LEN + 1, always terminated). Returns false before
+	// StartNTP() and while NTP has never synced; a stale time after a lost server still counts as valid. Blocks up to ≈ 1 s in forceUpdate()
+	// at most once per NTP_RETRY_PERIOD_MS in every state - the attempt stamp is shared, so the loop task or ShowTask, whichever calls
+	// first, pays it. Loop task and ShowTask.
+	static bool GetFormattedDate(char *formattedDate, size_t size);
 
   public:
 	static HAQuDA_TimeService *getInstance();
@@ -38,9 +45,12 @@ class HAQuDA_TimeService {
 	static void StartNTP();
 
 	static bool GetTimeClientStarted();
+	// Fills _time from the NTP client. Returns false before StartNTP() and while NTP has never synced (the time is unknown, not the epoch).
+	// Blocks up to ≈ 1 s at most once per NTP_RETRY_PERIOD_MS (60 s) in every state, whichever task calls first. Loop task (log stamps) and
+	// ShowTask (night mode).
 	static bool GetDateTime(DateTimeStruct *_time);
 	// Writes "DD.MM.YYYY HH:MM:SS" into _time, which must hold at least DATE_TIME_STR_LEN bytes (timeSize). Returns false when NTP is not started,
-	// no time could be read or the buffer is too small; _time is then not a valid stamp. Can block in forceUpdate(). Loop task.
+	// has never synced or the buffer is too small; _time is then not a valid stamp. Blocks like GetDateTime(DateTimeStruct *). Loop task.
 	static bool GetDateTime(char *_time, size_t timeSize);
 
 	static uint32_t GetDuration(uint32_t watchedTime);
