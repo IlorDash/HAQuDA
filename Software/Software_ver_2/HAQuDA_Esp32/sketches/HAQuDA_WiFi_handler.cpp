@@ -63,6 +63,9 @@ bool HAQuDA_WiFi_handler::CreateAP() {
 		return false;
 	}
 	apMode.store(true);
+	// The captive DNS cannot serve http://haquda.local/: iOS, macOS and newer Android resolve *.local names only by
+	// multicast mDNS and never ask the unicast DNS server. The AP is up here, so the responder attaches to the AP interface.
+	startMdns();
 	dnsServerRunning = dnsServer.start(53, "*", WiFi.softAPIP());
 	if (!dnsServerRunning) {
 		HAQuDA_Logger::LogError("CreateAP: captive DNS not started");

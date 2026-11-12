@@ -20,8 +20,8 @@ constexpr uint32_t RESTART_DELAY_MS = 3000;
 // TCP port of the web server; the mDNS http service advertises the same port
 constexpr uint16_t WEB_SERVER_PORT = 80;
 
-// Station hostname: sent in the DHCP request, so routers list the lamp under it, and answered by the mDNS
-// responder as <name>.local. Fixed, so the name in the home network does not depend on the build flags.
+// Hostname: sent in the station's DHCP request, so routers list the lamp under it, and answered by the mDNS responder
+// as <name>.local in station mode and on the access point. Fixed, so the name does not depend on the build flags.
 constexpr char STA_HOSTNAME[] = "haquda";
 
 class HAQuDA_WebServer {

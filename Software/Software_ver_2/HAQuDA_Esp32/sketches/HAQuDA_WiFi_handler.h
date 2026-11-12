@@ -21,7 +21,7 @@ class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
 	bool dnsServerRunning = false;
 	// loop() only
 	uint32_t dnsPollMs = 0;
-	// Set and read in startMdns() only (called from Connect() in setup: loop task, no sharing)
+	// Set and read in startMdns() only (called from Connect() or CreateAP() in setup: loop task, no sharing)
 	bool mdnsStartTried = false;
 	// Id of the STA_CONNECTED registration made by Connect(); 0 = not registered. Connect() and CreateAP(): loop task.
 	wifi_event_id_t staConnectedEventId = 0;
@@ -52,8 +52,9 @@ class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
 	bool createAP();
 	bool connectToWiFi(const char *ssidLocal, const char *passLocal);
 	void waitUntilWiFiConnected();
-	// Starts the mDNS responder so the page opens as http://haquda.local/ in the home network. Station mode
-	// only: in access point mode the captive DNS already answers every name. Tries once; later calls do
+	// Starts the mDNS responder so the page opens as http://haquda.local/ in the home network and on the lamp's own
+	// access point. The access point needs it too: iOS, macOS and newer Android resolve *.local only by multicast
+	// mDNS, so the captive DNS that answers every name does not help there. Tries once; later calls do
 	// nothing. A failure is logged and is not fatal. Loop task only (it logs); never from the WiFi event task.
 	void startMdns();
 
