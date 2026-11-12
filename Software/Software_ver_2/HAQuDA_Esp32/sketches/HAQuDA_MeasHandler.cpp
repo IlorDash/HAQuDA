@@ -93,11 +93,11 @@ void HAQuDA_MeasHandler::UpdateMeas(int *sensors_meas_time) {
 	if ((millis() - *sensors_meas_time) > SENSORS_MEAS_PERIOD_MS) {
 		getDHT22_meas();
 		getCCS811_meas();
-		getPM_meas();
+		pm_meas_result pmResult = getPM_meas();
 		meas_num++;
 		*sensors_meas_time = millis();
 
-		checkMeasCorrect();
+		checkMeasCorrect(pmResult);
 
 		eCO2_meas.newMeasDone = false;
 		TVOC_meas.newMeasDone = false;
@@ -107,14 +107,15 @@ void HAQuDA_MeasHandler::UpdateMeas(int *sensors_meas_time) {
 	}
 }
 
-void HAQuDA_MeasHandler::checkMeasCorrect() {
+void HAQuDA_MeasHandler::checkMeasCorrect(pm_meas_result pmResult) {
 	if (!eCO2_meas.newMeasDone) {
 		errHandler->FailedToGetMeas("Failed to get eCO2 meas");
 	}
 	if (!TVOC_meas.newMeasDone) {
 		errHandler->FailedToGetMeas("Failed to get TVOC meas");
 	}
-	if (!PM_2_5_meas.newMeasDone) {
+	// A sample skipped during the ZH03B warm-up is expected, not a failure
+	if (pmResult == pm_meas_result::failed) {
 		errHandler->FailedToGetMeas("Failed to get PM 2.5 meas");
 	}
 	if (!temp_meas.newMeasDone) {

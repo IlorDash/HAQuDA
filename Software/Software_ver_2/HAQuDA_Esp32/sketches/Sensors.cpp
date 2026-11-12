@@ -13,6 +13,13 @@
 // 42 4D + PM_BUF_LEN bytes
 constexpr size_t PM_FRAME_LEN = PM_BUF_LEN + 2;
 constexpr size_t PM_RX_BUF_SIZE = 256;
+// Frame length field (bytes 3-4, big-endian): the 9 data words + checksum that follow it = 20 bytes
+constexpr uint8_t PM_FRAME_LEN_HI = 0x00;
+constexpr uint8_t PM_FRAME_LEN_LO = 0x14;
+// For 10 s after power-on the ZH03B PM2.5 field holds its firmware version number, not a reading (datasheet p.5 note 1).
+// 12 s = 10 s + one 1 s frame period (a frame sent just before the end of the window can still be waiting in the buffer
+// at the first read after it) + 1 s for the module's boot, since its own 10 s start after SENS_POW goes HIGH.
+constexpr uint32_t PM_WARMUP_MS = 12 * 1000;
 
 #define SENS_REBOOT_DELAY 1000
 
@@ -28,6 +35,10 @@ meas_data humid_meas;
 
 unsigned char pm_buf[PM_BUF_LEN];
 const uint16_t pm_data_marker = 0x4D42;
+
+// Written and read in the loop task only
+static uint32_t pmPowerOnMs = 0;
+static bool pmPowered = false;
 
 DHT dht(DHTPIN, DHTTYPE);
 
@@ -47,6 +58,11 @@ char checkValue(unsigned char *thebuf) {
 		receiveflag = 1;
 	}
 	return receiveflag;
+}
+
+// payload = the 22 bytes after 42 4D: accepted only when the length field and the checksum both match
+static bool isPMPayloadValid(unsigned char *payload) {
+	return (payload[0] == PM_FRAME_LEN_HI) && (payload[1] == PM_FRAME_LEN_LO) && checkValue(payload);
 }
 
 int transmitPM01(unsigned char *thebuf) {
@@ -77,6 +93,9 @@ void pmSerialBegin() {
 bool sensorsBegin() {
 	pinMode(SENS_POW, OUTPUT);
 	digitalWrite(SENS_POW, HIGH);
+	// Every power cycle (first start, retries, sensors_reboot()) passes through here, so this is always the latest power-on
+	pmPowerOnMs = millis();
+	pmPowered = true;
 
 	pinMode(CCS811_WAK, OUTPUT);
 	digitalWrite(CCS811_WAK, LOW);
@@ -154,7 +173,7 @@ static bool readNewestPMFrame() {
 
 	if (rawLen >= PM_FRAME_LEN) {
 		for (size_t i = rawLen - PM_FRAME_LEN + 1; i-- > 0;) {
-			if ((raw[i] == (pm_data_marker & 0xff)) && (raw[i + 1] == ((pm_data_marker >> 8) & 0xff)) && checkValue(&raw[i + 2])) {
+			if ((raw[i] == (pm_data_marker & 0xff)) && (raw[i + 1] == ((pm_data_marker >> 8) & 0xff)) && isPMPayloadValid(&raw[i + 2])) {
 				memcpy(pm_buf, &raw[i + 2], PM_BUF_LEN);
 				return true;
 			}
@@ -163,12 +182,40 @@ static bool readNewestPMFrame() {
 
 	// Nothing usable was buffered (sensor just powered up, or only a partial frame): wait for the next frame, up to the 1 s stream timeout per step
 	if (PMSerial.find((uint8_t *)&pm_data_marker, sizeof(pm_data_marker))) {
-		return (PMSerial.readBytes(pm_buf, PM_BUF_LEN) == PM_BUF_LEN) && checkValue(pm_buf);
+		return (PMSerial.readBytes(pm_buf, PM_BUF_LEN) == PM_BUF_LEN) && isPMPayloadValid(pm_buf);
 	}
 	return false;
 }
 
-bool getPM_meas() {
+// Empties the RX buffer without waiting, so frames sent during the warm-up are not left to pile up. loop task only.
+static void drainPMSerial() {
+	while (PMSerial.available() > 0) {
+		PMSerial.read();
+	}
+}
+
+// True inside the warm-up window after the latest power-on. Once the window has passed the flag is cleared for good: the
+// unsigned difference becomes small again every 2^32 ms (49.7 days) and would reopen the window. loop task only.
+static bool isPMWarmingUp() {
+	if (!pmPowered) {
+		return false;
+	}
+	if ((uint32_t)(millis() - pmPowerOnMs) < PM_WARMUP_MS) {
+		return true;
+	}
+	pmPowered = false;
+	return false;
+}
+
+pm_meas_result getPM_meas() {
+	if (isPMWarmingUp()) {
+		drainPMSerial();
+		PM_1_0_meas.newMeasDone = false;
+		PM_2_5_meas.newMeasDone = false;
+		PM_10_meas.newMeasDone = false;
+		return pm_meas_result::warming_up;
+	}
+
 	if (readNewestPMFrame()) {
 		PM_1_0_meas.value += transmitPM01(pm_buf);
 		PM_1_0_meas.measNum++;
@@ -182,13 +229,13 @@ bool getPM_meas() {
 		PM_10_meas.measNum++;
 		PM_10_meas.newMeasDone = true;
 
-		return true;
+		return pm_meas_result::ok;
 	}
 	PM_1_0_meas.newMeasDone = false;
 	PM_2_5_meas.newMeasDone = false;
 	PM_10_meas.newMeasDone = false;
 
-	return false;
+	return pm_meas_result::failed;
 }
 
 bool getDHT22_meas() {

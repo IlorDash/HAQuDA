@@ -3,6 +3,7 @@
 #include "Arduino.h"
 #include "HAQuDA_ErrorHandler.h"
 #include "HAQuDA_ColorScale.h"
+#include "Sensors.h"
 
 #define MULTI_MODE_PARAM_NUM 3
 #define DIVIDE_DOTS_NUM 3
@@ -45,7 +46,7 @@ class HAQuDA_MeasHandler {
 	static night_time night_m_time;
 	static meas_div_dots dots;
 
-	static void checkMeasCorrect();
+	static void checkMeasCorrect(pm_meas_result pmResult);
 	static meas_type checkBadMeas();
 	static uint8_t get_nightMode_hour(night_time timeBorder);
 	static void standardMode();
