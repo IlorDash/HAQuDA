@@ -380,6 +380,26 @@ void HAQuDA_WebServer::handleStatus(AsyncWebServerRequest *request) {
 	request->send(response);
 }
 
+// Identifies the lamp and tells how long it has run, nothing else. The WiFi page opened on the lamp's access point reads
+// it cross-origin from the new network's address after a passed check, to see that the lamp has restarted. It is the only
+// route that allows cross-origin reads, so it must not carry the network name, the address or measurements. A simple
+// GET, so no preflight.
+void HAQuDA_WebServer::handleBoot(AsyncWebServerRequest *request) {
+	char buf[96];
+	// esp_timer counts in 64 bits, millis() would wrap after 49 days
+	uint32_t uptimeS = (uint32_t)(esp_timer_get_time() / 1000000LL);
+	int written = snprintf(buf, sizeof(buf), "{\"fw\":\"%s\",\"uptime\":%lu,\"host\":\"%s\"}", FW_VERSION, (unsigned long)uptimeS, STA_HOSTNAME);
+	if ((written < 0) || (static_cast<size_t>(written) >= sizeof(buf))) {
+		postLogError("handleBoot: boot buffer too small");
+		sendText(request, 500, "Status unavailable.");
+		return;
+	}
+	AsyncWebServerResponse *response = request->beginResponse(200, "application/json", buf);
+	response->addHeader("Cache-Control", "no-store");
+	response->addHeader("Access-Control-Allow-Origin", "*");
+	request->send(response);
+}
+
 void HAQuDA_WebServer::handleWiFiList(AsyncWebServerRequest *request) {
 	CredsLock lock(credsMutex);
 	if (!lock.Held()) {
@@ -442,6 +462,7 @@ void HAQuDA_WebServer::WebServerResponds_init() {
 
 	server.on("/api/status", HTTP_GET, [this](AsyncWebServerRequest *request) { handleStatus(request); });
 	server.on("/api/wifi", HTTP_GET, [this](AsyncWebServerRequest *request) { handleWiFiList(request); });
+	server.on("/api/boot", HTTP_GET, [this](AsyncWebServerRequest *request) { handleBoot(request); });
 	server.on("/api/join", HTTP_GET, [this](AsyncWebServerRequest *request) { handleJoin(request); });
 
 	server.on("/delete_wifi_creds", HTTP_POST, [this](AsyncWebServerRequest *request) { delete_WiFiCreds(request); });

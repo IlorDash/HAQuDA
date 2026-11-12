@@ -13,6 +13,14 @@
 	// phone is back on it. When the lamp does not report restart_ms the hold is assumed to be this long.
 	var JOIN_BOOT_MS = 15000;
 	var JOIN_HOLD_FALLBACK_MS = 20000;
+	// Opening the new address by itself: the page asks both addresses every PROBE_ROUND_MS and goes to the first that
+	// answers. Probing starts only PROBE_MARGIN_MS after the lamp's restart: during the hold the lamp owns the new
+	// station address too and answers it on its own access point, so an earlier probe from a phone still on the lamp's
+	// WiFi would succeed. A probe also counts only when the answer shows the lamp has restarted (see lampRestarted), which
+	// covers a restart that comes late. Probing stops PROBE_TOTAL_MS later.
+	var PROBE_MARGIN_MS = 2000;
+	var PROBE_ROUND_MS = 3000;
+	var PROBE_TOTAL_MS = 120000;
 	// the lamp keeps the name and the password in 31 bytes plus a terminator, and at most 10 networks
 	var MAX_BYTES = 31;
 	var MAX_NETS = 10;
@@ -72,7 +80,7 @@
 				return 'The lamp joined “' + n + '”';
 			},
 			okText: function (n) {
-				return 'Saved. The lamp restarts in a few seconds and joins “' + n + '”. Connect this phone to “' + n + '” and open one of these addresses when it becomes active.';
+				return 'Saved. The lamp restarts in a few seconds and joins “' + n + '”. Connect this phone to “' + n + '”: this page then opens the new address by itself once the lamp is reachable. The addresses below work by hand and turn active shortly.';
 			},
 			addrIp: 'By IP address', addrHost: 'By name', copy: 'Copy', copied: 'Copied', copyFail: 'Select and copy'
 		},
@@ -130,7 +138,7 @@
 				return 'Лампа подключилась к «' + n + '»';
 			},
 			okText: function (n) {
-				return 'Сохранено. Лампа перезагрузится через несколько секунд и подключится к «' + n + '». Подключите этот телефон к «' + n + '» и откройте один из этих адресов, когда он станет активным.';
+				return 'Сохранено. Лампа перезагрузится через несколько секунд и подключится к «' + n + '». Подключите этот телефон к «' + n + '»: эта страница сама откроет новый адрес, когда лампа станет доступна. Адреса ниже работают вручную и скоро станут активными.';
 			},
 			addrIp: 'По IP-адресу', addrHost: 'По имени', copy: 'Копировать', copied: 'Скопировано', copyFail: 'Выделите и скопируйте'
 		}
@@ -378,7 +386,68 @@
 		byId('jokTitle').textContent = T.okTitle(joined.ssid);
 		renderAddr('jokIpBox', 'jokIp', 'jokIpWait', joined.ip, /^\d{1,3}(\.\d{1,3}){3}$/, left);
 		renderAddr('jokHostBox', 'jokHost', 'jokHostWait', joined.host, /^[a-z0-9.-]{1,63}$/i, left);
-		byId('jokText').textContent = T.okText(joined.ssid);
+		// after the probing gave up the user is told what to do by hand
+		byId('jokText').textContent = joined.gaveUp ? T.fail('lost', joined.ssid) : T.okText(joined.ssid);
+	}
+
+	// the validated address URLs, the IP first; the same values the links use
+	function joinedUrls() {
+		var urls = [];
+		if (typeof joined.ip === 'string' && /^\d{1,3}(\.\d{1,3}){3}$/.test(joined.ip)) {
+			urls.push('http://' + joined.ip + '/');
+		}
+		if (typeof joined.host === 'string' && /^[a-z0-9.-]{1,63}$/i.test(joined.host)) {
+			urls.push('http://' + joined.host + '/');
+		}
+		return urls;
+	}
+
+	// the answer is the lamp's /api/boot (the only route that allows a cross-origin read; it holds no network data), and its
+	// uptime is shorter than the time since the page saw the check pass: the lamp booted after the check, so it has
+	// restarted. A lamp that is late with its restart, or another device that has the address on another network, fails
+	// this. Date.now(), not nowMs(): the wall clock keeps counting while a sleeping phone stops performance.now(), and
+	// the lamp's uptime counts that time too
+	function lampRestarted(d) {
+		return !!d && typeof d === 'object' && typeof d.fw === 'string' && typeof d.host === 'string' &&
+			typeof d.uptime === 'number' && isFinite(d.uptime) && d.uptime >= 0 && d.uptime * 1000 < Date.now() - joined.okAtMs;
+	}
+
+	function probe(url) {
+		return fetchTimed(url + 'api/boot', { cache: 'no-store' }, function (r) {
+			if (!r.ok) {
+				throw new Error(r.status);
+			}
+			return r.json();
+		}).then(function (d) {
+			return !!joined && lampRestarted(d);
+		}, function () {
+			return false;
+		});
+	}
+
+	// one chain: a round asks every address, goes to the first that answered as the restarted lamp, else schedules the next round
+	function probeRound() {
+		if (!joined || joined.navigating) {
+			return;
+		}
+		var urls = joinedUrls();
+		if (nowMs() > joined.probeUntilMs || !urls.length) {
+			joined.gaveUp = true;
+			renderJoined();
+			return;
+		}
+		Promise.all(urls.map(probe)).then(function (answers) {
+			if (!joined) {
+				return;
+			}
+			var at = answers.indexOf(true);
+			if (at >= 0) {
+				joined.navigating = true;
+				location.href = urls[at];
+				return;
+			}
+			setTimeout(probeRound, PROBE_ROUND_MS);
+		});
 	}
 
 	// the countdown runs on the page's own clock: it goes on when the lamp's WiFi is gone and the phone loses the lamp
@@ -503,10 +572,15 @@
 		join = null;
 		failure = null;
 		var holdMs = typeof d.restart_ms === 'number' && isFinite(d.restart_ms) && d.restart_ms >= 0 ? d.restart_ms : JOIN_HOLD_FALLBACK_MS;
-		joined = { ssid: name, ip: d.ip, host: d.host, endsAtMs: nowMs() + holdMs + JOIN_BOOT_MS };
+		var probeFromMs = nowMs() + holdMs + PROBE_MARGIN_MS;
+		joined = {
+			ssid: name, ip: d.ip, host: d.host, okAtMs: Date.now(), endsAtMs: nowMs() + holdMs + JOIN_BOOT_MS,
+			probeUntilMs: probeFromMs + PROBE_TOTAL_MS, gaveUp: false, navigating: false
+		};
 		pass.value = '';
 		renderAll();
 		setTimeout(joinedTick, 1000);
+		setTimeout(probeRound, holdMs + PROBE_MARGIN_MS);
 	}
 
 	function showFail(name, reason) {

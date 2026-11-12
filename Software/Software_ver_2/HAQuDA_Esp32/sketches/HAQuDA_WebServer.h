@@ -95,6 +95,7 @@ class HAQuDA_WebServer {
 	void handleStatus(AsyncWebServerRequest *request);
 	void handleWiFiList(AsyncWebServerRequest *request);
 	void handleJoin(AsyncWebServerRequest *request);
+	void handleBoot(AsyncWebServerRequest *request);
 	void WebSerialPrintStoredLogs();
 
 	// Writes the log record a web handler posted and restarts the lamp once the delay after saving new WiFi

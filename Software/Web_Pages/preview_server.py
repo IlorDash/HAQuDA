@@ -51,7 +51,10 @@ JOIN_OK_HOLD_S = 20.0
 # Network the mock lamp is joined to in station mode
 STA_SSID = "HomeNet"
 JOIN_HOST = "haquda.local"
-JOIN_IP = "192.168.1.77"
+# The address the mock check reports as the lamp's new one. It points back at this machine, so the page's automatic
+# redirect can be tried: start the preview with --port 80 and the redirect after a passed check (about 22 s plus the
+# probe round) lands on this server's own page; on any other port the probe of http://127.0.0.1/ finds nothing
+JOIN_IP = "127.0.0.1"
 JOIN_BUSY_TEXT = "The lamp is already checking a network. Wait for the result."
 JOIN_RESTARTING_TEXT = "The network is saved. The lamp is restarting."
 JOIN_ACCEPTED_TEXT = "The lamp is checking the network. Open this page again in 30 seconds."
@@ -134,6 +137,22 @@ class MockLamp:
         self.join = None
         self.join_saved = False
 
+    def current_uptime_s(self):
+        """Uptime of the mock lamp. The caller holds the lock."""
+        uptime = self.uptime_offset_s + int(time.monotonic() - self.started)
+        if self.scenario in JOIN_FAIL_REASON and self.join is not None and self.join_state() == "ok":
+            # After a passed check the mock lamp "restarts" once its hold is over: the uptime starts again at zero,
+            # which is what the page waits for before it follows the redirect
+            since_restart_s = time.monotonic() - self.join[1] - JOIN_CHECK_S - JOIN_OK_HOLD_S
+            if since_restart_s >= 0:
+                uptime = int(since_restart_s)
+        return uptime
+
+    def boot_json(self):
+        """Body of /api/boot like the lamp builds it: the firmware version, the uptime and the host name, nothing else."""
+        with self.lock:
+            return '{{"fw":"{0}","uptime":{1},"host":"{2}"}}'.format(FW_VERSION, self.current_uptime_s(), JOIN_HOST.split(".")[0])
+
     def status_json(self):
         """Returns (status code, body)."""
         with self.lock:
@@ -141,7 +160,7 @@ class MockLamp:
                 return 500, STATUS_FAIL_TEXT
             station = self.scenario not in AP_SCENARIOS
             connected = self.scenario != "sta-offline"
-            uptime = self.uptime_offset_s + int(time.monotonic() - self.started)
+            uptime = self.current_uptime_s()
             parts = []
             for key, decimals, dots, calm, bad_value, step in PARAMS:
                 target = bad_value if self.scenario == "bad-air" else calm
@@ -254,13 +273,16 @@ class PreviewHandler(BaseHTTPRequestHandler):
     lamp = None
     latency_s = 0.0
 
-    def send_body(self, code, content_type, body):
+    def send_body(self, code, content_type, body, cors=False):
         if isinstance(body, str):
             body = body.encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
+        if cors:
+            # Only /api/boot carries it, like the lamp: the page reads it cross-origin to see the lamp has restarted
+            self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(body)
 
@@ -281,6 +303,8 @@ class PreviewHandler(BaseHTTPRequestHandler):
         elif path == "/api/status":
             code, body = self.lamp.status_json()
             self.send_body(code, "application/json" if code == 200 else "text/plain", body)
+        elif path == "/api/boot":
+            self.send_body(200, "application/json", self.lamp.boot_json(), cors=True)
         elif path == "/api/wifi":
             self.send_body(200, "application/json", self.lamp.wifi_json())
         elif path == "/api/join":
