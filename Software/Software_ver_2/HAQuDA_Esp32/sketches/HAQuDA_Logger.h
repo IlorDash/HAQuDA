@@ -31,7 +31,8 @@ static_assert(LOG_DEDUP_TEXT_SIZE == sizeof(LogMsgStruct::data), "LOG_DEDUP_TEXT
 // so the dedup table and the rotation need no lock. Calling them from ShowTask or a callback requires adding one.
 class HAQuDA_Logger {
 	// Fills the stamp with the date, or with the uptime when the date is not available.
-	// Does not block on the time when NTP is not started (access point mode). In station mode GetFormattedDate() can still call forceUpdate() up to twice.
+	// Does not block on the time when NTP is not started (access point mode). In station mode every call waits for NTP round trips:
+	// two forceUpdate() calls when the server answers, about 5 s of timeouts when it never answered.
 	static void fillTimestamp(char *timestamp, size_t timestampSize);
 	// Prints to the UART (errors with log_e, info with log_i) and to live WebSerial, dedups, stores. The level picks the record prefix and the UART function.
 	static void logMessage(log_dedup_level level, const char *msg);

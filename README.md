@@ -15,7 +15,7 @@ LED effects and what to do:
 | Red matrix that fills row by row, again and again, for about 12 seconds, then an aqua fading | No network is stored or the lamp could not join it, so it opens its access point. | Join the access point and add your network. |
 | Red fading, again and again, without end | The file system does not start. The lamp stops. | Unplug the lamp and plug it in again. |
 | Red matrix that fills row by row for at least 10 seconds, then one red pixel running along the matrix without end | The access point cannot be created. The lamp stops. | Unplug the lamp and plug it in again. |
-| In access point mode: random pixels, one by one, again and again. In WiFi station mode: a dark matrix instead of the random pixels, because the failed time read replaces the error effect. | The sensors do not start. The lamp does not restart: the access point, the web pages and WebSerial keep working, and the lamp tries to start the sensors again every 5 minutes. When a retry succeeds, the matrix goes dark and the measurements appear within about a minute. | Check the sensor wiring. Read the reason in the WebSerial log. |
+| Random pixels, one by one, again and again. | The sensors do not start. The lamp does not restart: the access point, the web pages and WebSerial keep working, and the lamp tries to start the sensors again every 5 minutes. When a retry succeeds, the matrix goes dark and the measurements appear within about a minute. | Check the sensor wiring. Read the reason in the WebSerial log. |
 
 The user guide below explains each effect in detail.
 

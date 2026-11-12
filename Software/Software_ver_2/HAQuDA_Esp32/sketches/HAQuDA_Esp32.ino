@@ -110,7 +110,7 @@ void setup() {
 
 // Loop task only. SetMode() refuses to leave the error mode while currentError is set, so clear it first; the error
 // effects (NTP fade, random pixels) leave the LEDs dim and lit, so ShowTask clears them and re-applies the user's brightness
-// when meas mode starts.
+// when meas mode starts. Nothing may be logged between this call and SetMeasMode() in enableMeasurements().
 void leaveSensorsError() {
 	HAQuDA_DisplayManip::RestoreBrightnessOnMeas();
 	ErrHandler.ClearError();
@@ -118,12 +118,14 @@ void leaveSensorsError() {
 
 void enableMeasurements() {
 	sensorsRunning = true;
-	HAQuDA_Logger::LogInfo("Started sensors");
 	// A mode picked on the web page while the error was shown is kept. The mode is none only if nothing set one before
 	// boot (the constructor default), so none falls back to multi.
 	const meas_mode selectedMode = DispManip.GetMeasDispMode();
+	// Before the first log line: while NTP has never synced every log line sets the NTP error, and SetMode() refuses to leave
+	// the error mode while an error is set. Once the mode is meas, later log lines only set a stale error that nothing draws.
 	HAQuDA_DisplayManip::SetMeasMode((selectedMode == noneMeas) ? multi : selectedMode);
 	meas_start_time = 0;
+	HAQuDA_Logger::LogInfo("Started sensors");
 }
 
 // Called from loop(). TryRebootSensors() blocks loop for up to ~8 s, so retries are rare.
