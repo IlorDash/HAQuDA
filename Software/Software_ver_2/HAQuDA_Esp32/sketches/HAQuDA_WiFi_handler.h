@@ -1,5 +1,7 @@
 #pragma once
 
+#include <atomic>
+
 #include <WiFi.h>
 #include <DNSServer.h>
 #include <EasyDDNS.h>
@@ -33,11 +35,15 @@ class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
 	bool createAP();
 	bool connectToWiFi(const char *ssidLocal, const char *passLocal);
 	void waitUntilWiFiConnected();
+	// Green matrix for 3 s, then off. Loop task only (setup / HandleConnection): blocks for the flash.
+	void showJoinedWiFi();
 
   public:
 	HAQuDA_WiFi_handler(HAQuDA_FileStorage *currFS, HAQuDA_DisplayManip *_dispManip);
 	~HAQuDA_WiFi_handler();
-	static bool WiFiConnected;
+	// True from GOT_IP until DISCONNECTED (LOST_IP does not clear it). Written by the WiFi event task and by
+	// waitUntilWiFiConnected() in the loop task, read in the loop task.
+	static std::atomic<bool> WiFiConnected;
 	bool Connect();
 	bool CreateAP();
 	void HandleConnection();
