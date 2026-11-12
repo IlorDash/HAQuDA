@@ -14,27 +14,27 @@ plug.
 2. Watch the matrix. A lime snake runs while the lamp starts the file system and looks for a
    stored WiFi network.
 3. If a network is stored and the lamp joins it, the whole matrix turns green for about 3 seconds
-   and then goes dark.
-4. If no network is stored, or the lamp cannot join it, the matrix goes dark for about twenty
-   seconds. Then the lamp has opened its own access point, and an aqua fading plays once. This
-   is normal on the first start.
+   and then goes dark. The green flash starts once your router has given the lamp an address.
+4. If no network is stored, the matrix shows a red growing for about 12 seconds. Then the lamp
+   has opened its own access point, and an aqua fading plays once. This is normal on the first
+   start. If a network is stored but the lamp cannot join it, the lime snake runs for about 30
+   seconds first, and then the same red growing and aqua fading follow.
 5. Wait about one minute. The lamp averages the sensor readings of the first minute before it
    draws the first colours.
 6. Read the colours as described in [Display modes](display-modes.md).
 
 !!! warning "If it fails"
-    - **Pixels light up one by one in random colours and nothing else happens** — the lamp
-      cannot start its file system and stops. Known bug: the intended effect is a red fading;
-      the firmware swaps the effects of the file system and sensor errors. Unplug the lamp and plug it in again. If this
+    - **The whole matrix fades in red again and again and nothing else happens** — the lamp
+      cannot start its file system and stops. Unplug the lamp and plug it in again. If this
       repeats, the flash memory needs attention: flash the lamp again.
     - **The matrix goes dark and stays dark, and the lamp's WiFi network usually does not
       appear** — the lamp cannot create its access point and stops. Unplug the lamp and plug it
       in again. If this repeats, check the access point password in your build (8 to 63
       characters).
-    - **The matrix goes dark for about 15–20 seconds after the green flash or the aqua fading,
-      then the lime snake starts again, again and again** — the lamp cannot start its sensors and
-      restarts itself. Check the sensor wiring; see
-      [LED codes and troubleshooting](troubleshooting.md).
+    - **Pixels light up one by one in random colours after the green flash or the aqua fading,
+      and the colours do not start** — the lamp cannot start its sensors. It tries again every
+      5 minutes and starts the colours as soon as the sensors answer. Check the sensor wiring;
+      see [LED codes and troubleshooting](troubleshooting.md).
 
 → [All LED effects](troubleshooting.md#start-up-effects)
 
@@ -74,9 +74,9 @@ at most 31 characters long.
       on the main page, then add your network again.
     - **Error saving stored WiFi credentials** — the lamp could not write the file. Try once
       more; if it repeats, unplug the lamp and plug it in again.
-    - **The lamp restarts but the matrix goes dark for about twenty seconds again** — it could
-      not join your network. Check the name and the password and that the router is in range,
-      then add the network again.
+    - **The lamp restarts, the lime snake runs for about 30 seconds, then a red growing and the
+      aqua fading follow** — the lamp could not join your network. Check the name and the
+      password and that the router is in range, then add the network again.
 
 → [Every control of the web pages](web-interface.md)
 
