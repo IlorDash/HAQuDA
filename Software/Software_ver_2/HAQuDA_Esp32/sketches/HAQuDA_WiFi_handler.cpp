@@ -1,3 +1,5 @@
+#include <ESPmDNS.h>
+
 #include "HAQuDA_WiFi_handler.h"
 
 #define CONNECT_WIFI_TIMEOUT 3000
@@ -5,9 +7,12 @@
 
 constexpr uint32_t DNS_POLL_PERIOD_MS = 10;
 
+// Station hostname: sent in the DHCP request, so routers list the lamp under it, and answered by the mDNS
+// responder as <name>.local. Fixed, so the name in the home network does not depend on the build flags.
+constexpr char STA_HOSTNAME[] = "haquda";
+
 bool HAQuDA_WiFi_handler::WiFiConnected = false;
 
-const char *hostname = AP_SSID;
 const char *DDNS_token = DDNS_TOKEN;
 const char *DDNS_domain = DDNS_DOMAIN;
 
@@ -28,6 +33,7 @@ bool HAQuDA_WiFi_handler::Connect() {
 			WiFi.onEvent(WiFiStationDisconnected, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 			vTaskDelay(200 / portTICK_PERIOD_MS);
 			HAQuDA_WebServer::beginWebServer();
+			startMdns();
 			EasyDDNS.service("duckdns");
 			EasyDDNS.client(DDNS_domain, DDNS_token); // Enter your DDNS Domain & Token
 
@@ -100,6 +106,22 @@ void HAQuDA_WiFi_handler::HandleConnection() {
 	WiFi.onEvent(WiFiStationDisconnected, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 }
 
+void HAQuDA_WiFi_handler::startMdns() {
+	if (mdnsStartTried) {
+		return;
+	}
+	// One attempt only: the page stays reachable by IP, and the responder re-announces by itself after a reconnect.
+	mdnsStartTried = true;
+
+	if (!MDNS.begin(STA_HOSTNAME)) {
+		HAQuDA_Logger::LogError("startMdns: mDNS responder not started");
+		return;
+	}
+	if (!MDNS.addService("http", "tcp", WEB_SERVER_PORT)) {
+		HAQuDA_Logger::LogError("startMdns: http service not added to mDNS");
+	}
+}
+
 bool HAQuDA_WiFi_handler::checkStoredWiFiCreds() {
 	return false;
 }
@@ -163,7 +185,8 @@ bool HAQuDA_WiFi_handler::connectToWiFi(const char *ssidLocal, const char *passL
 		return false;
 	}
 
-	if (!WiFi.setHostname(hostname)) { // define hostname)
+	// Must precede WiFi.begin(): the hostname goes out with the DHCP request
+	if (!WiFi.setHostname(STA_HOSTNAME)) {
 		return false;
 	}
 

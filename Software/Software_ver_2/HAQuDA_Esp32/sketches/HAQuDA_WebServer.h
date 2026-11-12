@@ -16,6 +16,8 @@
 
 // Delay between the "saved" reply and the restart, so the browser receives the reply first
 constexpr uint32_t RESTART_DELAY_MS = 3000;
+// TCP port of the web server; the mDNS http service advertises the same port
+constexpr uint16_t WEB_SERVER_PORT = 80;
 
 class HAQuDA_WebServer {
 	static void recvMsg(uint8_t *data, size_t len);
@@ -27,7 +29,7 @@ class HAQuDA_WebServer {
 
   protected:
 	HAQuDA_FileStorage *_myFS;
-	AsyncWebServer server = AsyncWebServer(80);
+	AsyncWebServer server = AsyncWebServer(WEB_SERVER_PORT);
 
 	bool newWiFiCredsFound = false;
 	static bool WebServerStarted;
