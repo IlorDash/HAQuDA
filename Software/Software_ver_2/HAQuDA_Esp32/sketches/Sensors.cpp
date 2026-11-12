@@ -10,6 +10,9 @@
 #define ZH03B_RX_PIN 17
 #define ZH03B_TX_PIN 16
 #define PM_BUF_LEN 22
+// 42 4D + PM_BUF_LEN bytes
+constexpr size_t PM_FRAME_LEN = PM_BUF_LEN + 2;
+constexpr size_t PM_RX_BUF_SIZE = 256;
 
 #define SENS_REBOOT_DELAY 1000
 
@@ -48,26 +51,26 @@ char checkValue(unsigned char *thebuf) {
 
 int transmitPM01(unsigned char *thebuf) {
 	int PM01Val;
-	PM01Val = ((thebuf[3] << 8) + thebuf[4]);
+	PM01Val = ((thebuf[8] << 8) + thebuf[9]);
 	return PM01Val;
 }
 
 int transmitPM2_5(unsigned char *thebuf) {
 	int PM2_5Val;
-	PM2_5Val = ((thebuf[5] << 8) + thebuf[6]);
+	PM2_5Val = ((thebuf[10] << 8) + thebuf[11]);
 	return PM2_5Val;
 }
 
 int transmitPM10(unsigned char *thebuf) {
 	int PM10Val;
-	PM10Val = ((thebuf[7] << 8) + thebuf[8]);
+	PM10Val = ((thebuf[12] << 8) + thebuf[13]);
 	return PM10Val;
 }
 
 void pmSerialBegin() {
 	// 256 is the RX buffer size; begin() also allocates a ~2560-entry (~10 KB) ISR buffer before freeing the old one,
 	// so it runs once: retries only power-cycle the sensors, the pins and the buffers stay configured.
-	PMSerial.begin(9600, SWSERIAL_8N1, ZH03B_RX_PIN, ZH03B_TX_PIN, false, 256);
+	PMSerial.begin(9600, SWSERIAL_8N1, ZH03B_RX_PIN, ZH03B_TX_PIN, false, PM_RX_BUF_SIZE);
 	PMSerial.setTimeout(1000);
 }
 
@@ -138,27 +141,48 @@ bool getCCS811_meas() {
 	return false;
 }
 
-bool getPM_meas() {
-	if (PMSerial.find((uint8_t *)&pm_data_marker, sizeof(pm_data_marker))) {
-		PMSerial.readBytes(pm_buf, PM_BUF_LEN);
-		if (checkValue(pm_buf)) {
-			PM_1_0_meas.value += transmitPM01(pm_buf);
-			PM_1_0_meas.measNum++;
-			PM_1_0_meas.newMeasDone = true;
+// Empties the RX buffer and copies the payload (the 22 bytes after 42 4D) of the newest checksum-valid frame into pm_buf.
+// The ZH03B sends one frame per second while polling is slower, so older frames are stale and are dropped. Scanning
+// backwards from the newest byte needs no frame sync: a frame cut by a buffer overflow or a partial tail just fails the checksum.
+// loop task only.
+static bool readNewestPMFrame() {
+	uint8_t raw[PM_RX_BUF_SIZE] = {};
+	size_t rawLen = 0;
+	while ((rawLen < sizeof(raw)) && (PMSerial.available() > 0)) {
+		raw[rawLen++] = (uint8_t)PMSerial.read();
+	}
 
-			PM_2_5_meas.value += transmitPM2_5(pm_buf);
-			PM_2_5_meas.measNum++;
-			PM_2_5_meas.newMeasDone = true;
-
-			PM_10_meas.value += transmitPM10(pm_buf);
-			PM_10_meas.measNum++;
-			PM_10_meas.newMeasDone = true;
-
-			return true;
+	if (rawLen >= PM_FRAME_LEN) {
+		for (size_t i = rawLen - PM_FRAME_LEN + 1; i-- > 0;) {
+			if ((raw[i] == (pm_data_marker & 0xff)) && (raw[i + 1] == ((pm_data_marker >> 8) & 0xff)) && checkValue(&raw[i + 2])) {
+				memcpy(pm_buf, &raw[i + 2], PM_BUF_LEN);
+				return true;
+			}
 		}
 	}
-	while (PMSerial.available() > 0) {
-		char t = PMSerial.read();
+
+	// Nothing usable was buffered (sensor just powered up, or only a partial frame): wait for the next frame, up to the 1 s stream timeout per step
+	if (PMSerial.find((uint8_t *)&pm_data_marker, sizeof(pm_data_marker))) {
+		return (PMSerial.readBytes(pm_buf, PM_BUF_LEN) == PM_BUF_LEN) && checkValue(pm_buf);
+	}
+	return false;
+}
+
+bool getPM_meas() {
+	if (readNewestPMFrame()) {
+		PM_1_0_meas.value += transmitPM01(pm_buf);
+		PM_1_0_meas.measNum++;
+		PM_1_0_meas.newMeasDone = true;
+
+		PM_2_5_meas.value += transmitPM2_5(pm_buf);
+		PM_2_5_meas.measNum++;
+		PM_2_5_meas.newMeasDone = true;
+
+		PM_10_meas.value += transmitPM10(pm_buf);
+		PM_10_meas.measNum++;
+		PM_10_meas.newMeasDone = true;
+
+		return true;
 	}
 	PM_1_0_meas.newMeasDone = false;
 	PM_2_5_meas.newMeasDone = false;
