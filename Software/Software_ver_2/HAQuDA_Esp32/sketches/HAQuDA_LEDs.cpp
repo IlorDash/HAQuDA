@@ -1,4 +1,5 @@
 #include "HAQuDA_LEDs.h"
+#include "HAQuDA_FlashLock.h"
 
 Adafruit_NeoPixel *pixels;
 
@@ -37,14 +38,38 @@ void HAQuDA_LEDs::Clear() {
 	HAQuDA_LEDs::Show();
 }
 
-void HAQuDA_LEDs::Show() {
+// A flash operation can last seconds (format). The frame is skipped after this wait: the LEDs keep the previous picture and
+// the frame is sent again by the next Show() or by ResendSkippedFrame().
+constexpr uint32_t LED_FRAME_LOCK_TIMEOUT_MS = 500;
+
+// Holds the flash lock only for the ~3.3 ms transmission, never for the delay that follows, so file storage is not starved.
+// Returns false when the frame was skipped.
+bool HAQuDA_LEDs::showFrame() {
+	HAQuDA_FlashLockGuard guard(LED_FRAME_LOCK_TIMEOUT_MS);
+	if (!guard.Acquired()) {
+		frameSkipped = true;
+		return false;
+	}
 	pixels->show();
-	vTaskDelay(200 / portTICK_PERIOD_MS);
+	frameSkipped = false;
+	return true;
+}
+
+void HAQuDA_LEDs::Show() {
+	showFrame();
+	vTaskDelay(pdMS_TO_TICKS(200));
 }
 
 void HAQuDA_LEDs::Show(uint16_t delay) {
-	pixels->show();
-	vTaskDelay(delay / portTICK_PERIOD_MS);
+	showFrame();
+	vTaskDelay(pdMS_TO_TICKS(delay));
+}
+
+void HAQuDA_LEDs::ResendSkippedFrame() {
+	// exchange() claims the retry; a skipped retry sets the flag again inside showFrame().
+	if (frameSkipped.exchange(false)) {
+		showFrame();
+	}
 }
 
 void HAQuDA_LEDs::SetPixelColor(uint16_t pixelNum, uint32_t color) {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <Adafruit_NeoPixel.h>
 #include "HAQuDA_LEDsParams.h"
 #include "HAQuDA_ILEDs.h"
@@ -7,6 +8,11 @@
 class HAQuDA_LEDs : public HAQuDA_ILEDs {
 
 	static HAQuDA_LEDs *p_instance;
+
+	// Set by a Show() whose frame was dropped, cleared by the send that follows. Written by ShowTask and loop.
+	std::atomic<bool> frameSkipped{false};
+
+	bool showFrame();
 
 	HAQuDA_LEDs() {};
 	HAQuDA_LEDs(const HAQuDA_LEDs *);
@@ -24,6 +30,10 @@ class HAQuDA_LEDs : public HAQuDA_ILEDs {
 	void Clear() override;
 	void Show() override;
 	void Show(uint16_t delay) override;
+
+	// Sends the buffer again if an earlier Show() dropped its frame because a flash operation held the lock; otherwise
+	// does nothing and does not wait. Lets a picture that is redrawn only rarely (meas mode) recover at once. ShowTask or loop.
+	void ResendSkippedFrame();
 
 	void SetPixelColor(uint16_t pixelNum, uint32_t color) override;
 

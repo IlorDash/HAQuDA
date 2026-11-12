@@ -65,13 +65,18 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="TestColorScale.cpp" />
+    <ClCompile Include="TestFlashLock.cpp" />
     <ClCompile Include="TestLogDedup.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_ColorScale.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_FlashLock.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_LogDedup.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\sketches\HAQuDA_ColorScale.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_FlashLock.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_LogDedup.h" />
+    <ClInclude Include="..\fakes\freertos\FreeRTOS.h" />
+    <ClInclude Include="..\fakes\freertos\semphr.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_ILEDs.h" />
     <ClInclude Include="..\mocks\MockLEDs.h" />
   </ItemGroup>
