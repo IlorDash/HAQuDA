@@ -50,6 +50,7 @@ Effects in the tables use these names:
 | The matrix is dark for the first minute after a start | The lamp averages the first minute of readings before it draws. | Wait. In the standard and night mode the matrix can show a meaningless colour during this minute. |
 | The picture does not change for several minutes | In multi mode, one of temperature, eCO2 or PM2.5 delivers no reading, and the lamp keeps the old picture. One missed CCS811 reading discards the whole minute of eCO2 and TVOC. | Open the log and look for `Failed to get ... meas` lines (see [Log messages](#log-messages)). Check the wiring of that sensor. |
 | eCO2 and TVOC never show green | The lamp shows these two values in steps. | Nothing; see [Colour scale](display-modes.md#colour-scale). |
+| An animation, for example the lime snake, pauses for a moment | The lamp reads or writes its file system (log lines, saved WiFi networks). A picture that has to wait more than half a second is skipped, and the matrix keeps the previous one. The measurement colours are sent again soon after. | Nothing. Parts of the matrix no longer flash random colours during these writes. |
 | The LED on the ESP32 board does not blink | The lamp has not finished its start, or its main loop is blocked, usually while it retries a lost WiFi connection. | Wait for the start or the reconnect. If the LED stays still for minutes, unplug the lamp and plug it in again. |
 
 The LED on the ESP32 board blinks once per second while the lamp works normally.

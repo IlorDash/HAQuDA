@@ -30,6 +30,9 @@
   a lost WiFi connection returns, the green flash shows and the colours come back.
 - **Sensors that do not start.** The lamp no longer restarts itself. It shows random pixels and
   tries the sensors again every 5 minutes; the colours start when they answer.
+- **No random colour flashes.** Parts of the matrix no longer flash random colours when the lamp
+  writes to its file system. While the lamp reads or writes it, an animation can pause for a
+  moment; see [The matrix looks wrong](troubleshooting.md#the-matrix-looks-wrong).
 - **File system error.** The matrix shows the red fading.
 
 ## Known limitations (WIP)
