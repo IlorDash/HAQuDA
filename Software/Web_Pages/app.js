@@ -19,6 +19,9 @@
 	var DISP_BACKOFF_MS = 15000;
 	// the page restarts a picture when its clock and the lamp's age differ by more than this (the lamp restarted, or the page slept)
 	var DISP_RESYNC_MS = 2000;
+	// the longest time in a picture the lamp can send: a snake or random step at the lamp's slowest pause (65535 ms) is
+	// (109 * 65535 + 100) / 24 = 297642 ms, a growing step 2 * 65535, a fading level 65935; all fit in 300 s
+	var DISP_MAX_MS = 300000;
 	var DISP_SOURCES = ['none', 'effect', 'meas', 'error', 'event'];
 	var DISP_LAYOUTS = ['standard', 'multi', 'night'];
 	var DISP_KEYS = ['total', 'temp', 'humid', 'eco2', 'tvoc', 'pm25'];
@@ -278,8 +281,8 @@
 	}
 
 	// everything below comes from the lamp: only whitelisted words, plain #rrggbb colours and range-checked numbers get through.
-	// Returns { seq, age, pic } or null when the reply is not as expected. pic.kind: static, fading, meas, hold, or legacy
-	// (snake, growing, random: drawn as the readings until the page can play them)
+	// Returns { seq, age, pic } or null when the reply is not as expected. pic.kind: static, fading, snake, growing, meas, hold, or legacy
+	// (random: drawn as the readings until the page can play it)
 	function parseDisp(d) {
 		if (!d || typeof d !== 'object' || !intIn(d.seq, 0, 4294967295) || !intIn(d.age, 0, 2147483647) || DISP_SOURCES.indexOf(d.src) < 0) {
 			return null;
@@ -288,8 +291,22 @@
 		var i;
 		if (d.fx === 'hold') {
 			pic.kind = 'hold';
-		} else if (d.fx === 'snake' || d.fx === 'growing' || d.fx === 'random') {
+		} else if (d.fx === 'random') {
 			pic.kind = 'legacy';
+		} else if (d.fx === 'snake' || d.fx === 'growing') {
+			// the lamp's snake lap always has the 100 ms pause, so its step is never 0; a growing step is 0 for a pause of 0
+			if (!validColor(d.color) || !intIn(d.step, d.fx === 'snake' ? 1 : 0, DISP_MAX_MS) || (d.dark !== undefined && !intIn(d.dark, 0, DISP_MAX_MS))) {
+				return null;
+			}
+			if (d.fx === 'snake' ? !intIn(d.tail, 1, GRID_COLS * GRID_ROWS) : !intIn(d.end, 0, DISP_MAX_MS)) {
+				return null;
+			}
+			pic.kind = d.fx;
+			pic.color = d.color;
+			pic.step = d.step;
+			pic.dark = d.dark === undefined ? 0 : d.dark;
+			pic.tail = d.fx === 'snake' ? d.tail : 0;
+			pic.end = d.fx === 'growing' ? d.end : 0;
 		} else if (d.fx === 'static') {
 			if (!validColor(d.color)) {
 				return null;
@@ -297,12 +314,12 @@
 			pic.kind = 'static';
 			pic.color = d.color;
 		} else if (d.fx === 'fading') {
-			if (!validColor(d.color) || !intIn(d.from, 0, 100) || !intIn(d.to, 0, 100) || !intIn(d.steps, 1, 100) || !intIn(d.step, 1, 100000) || !intIn(d.end, 0, 100000)) {
+			if (!validColor(d.color) || !intIn(d.from, 0, 100) || !intIn(d.to, 0, 100) || !intIn(d.steps, 1, 100) || !intIn(d.step, 1, DISP_MAX_MS) || !intIn(d.end, 0, DISP_MAX_MS)) {
 				return null;
 			}
 			// dark: dark time at the start of the cycle, first: time of the first level; a reply without them (older firmware) has
 			// no dark part and a first level as long as the others
-			if ((d.dark !== undefined && !intIn(d.dark, 0, 100000)) || (d.first !== undefined && !intIn(d.first, 1, 200000))) {
+			if ((d.dark !== undefined && !intIn(d.dark, 0, DISP_MAX_MS)) || (d.first !== undefined && !intIn(d.first, 1, DISP_MAX_MS))) {
 				return null;
 			}
 			pic.kind = 'fading';
@@ -440,6 +457,45 @@
 		return '#' + hex2(off[0] + (((n >> 16) & 255) - off[0]) * alpha) + hex2(off[1] + (((n >> 8) & 255) - off[1]) * alpha) + hex2(off[2] + ((n & 255) - off[2]) * alpha);
 	}
 
+	// Index in the grid (row from the top times columns, plus column) of step n of the snake's path. The lamp's strip is a column
+	// serpentine that starts at the bottom: column 0 runs bottom to top, column 1 top to bottom, and so on.
+	function snakeCell(n) {
+		var col = Math.floor(n / GRID_ROWS);
+		var r = n % GRID_ROWS;
+		return (col % 2 === 0 ? GRID_ROWS - 1 - r : r) * GRID_COLS + col;
+	}
+
+	// The snake at page time t. A cycle: pic.dark of dark, then one step per cell of the path. At step k the lamp lights the cells
+	// k .. k + tail - 1 of the strip (cut at its end) and puts out cell k afterwards: the full tail is there from the first step,
+	// and at the end of the lap it runs off the strip and shortens. Colour '' is an unlit cell.
+	function snakeFrame(pic, t) {
+		var cellsNum = GRID_COLS * GRID_ROWS;
+		var colors = fillGrid('');
+		var p = t % (pic.dark + cellsNum * pic.step);
+		if (p >= pic.dark) {
+			var k = Math.min(cellsNum - 1, Math.floor((p - pic.dark) / pic.step));
+			for (var n = k; n < Math.min(cellsNum, k + pic.tail); n++) {
+				colors[snakeCell(n)] = pic.color;
+			}
+		}
+		return colors;
+	}
+
+	// Growing at page time t. A cycle: pic.dark of dark, then one row per step from the top down, earlier rows stay lit, the last
+	// step is pic.end longer. With step 0 the whole grid is lit at once after the dark part
+	function growingFrame(pic, t) {
+		var colors = fillGrid('');
+		var cycle = pic.dark + GRID_ROWS * pic.step + pic.end;
+		var p = cycle > 0 ? t % cycle : 0;
+		if (p >= pic.dark) {
+			var rows = pic.step > 0 ? Math.min(GRID_ROWS, 1 + Math.floor((p - pic.dark) / pic.step)) : GRID_ROWS;
+			for (var i = 0; i < rows * GRID_COLS; i++) {
+				colors[i] = pic.color;
+			}
+		}
+		return colors;
+	}
+
 	// the theme changed: the colour of an unlit cell must be read again
 	function themeChanged() {
 		offRgb = null;
@@ -447,20 +503,25 @@
 		paintGrid((state.data && state.data.meas) || {}, state.down);
 	}
 
-	// draws the grid; down shows it dark, as before. While a fading picture plays, requestAnimationFrame calls it again,
-	// the DOM is touched only when the frame changed. With reduced motion a fading picture stays at its first level
+	// draws the grid; down shows it dark, as before. While a fading, snake or growing picture plays, requestAnimationFrame calls it
+	// again, the DOM is touched only when the frame changed. With reduced motion the picture stays still, without flashing:
+	// fading at its first level, snake at its first step (the tail at the start of the path), growing as the full grid
 	function paintGrid(meas, down) {
 		var pic = down ? null : disp.pic;
 		var colors;
-		var fading = false;
+		var animated = !!pic && (pic.kind === 'fading' || pic.kind === 'snake' || pic.kind === 'growing');
+		var still = !!reduceMotion && reduceMotion.matches;
+		var t = disp.frozenAt === null ? now() : disp.frozenAt;
 		if (down) {
 			colors = fillGrid('');
 		} else if (pic && pic.kind === 'static') {
 			colors = fillGrid(pic.color);
 		} else if (pic && pic.kind === 'fading') {
-			var still = !!reduceMotion && reduceMotion.matches;
-			colors = fillGrid(fadeColor(pic.color, still ? pic.from / 100 : fadeAlpha(pic, (disp.frozenAt === null ? now() : disp.frozenAt) - disp.t0)));
-			fading = !still && disp.frozenAt === null && !document.hidden;
+			colors = fillGrid(fadeColor(pic.color, still ? pic.from / 100 : fadeAlpha(pic, t - disp.t0)));
+		} else if (pic && pic.kind === 'snake') {
+			colors = snakeFrame(pic, still ? pic.dark : t - disp.t0);
+		} else if (pic && pic.kind === 'growing') {
+			colors = still ? fillGrid(pic.color) : growingFrame(pic, t - disp.t0);
 		} else if (pic && pic.kind === 'meas') {
 			colors = measFrame(pic, meas);
 		} else {
@@ -478,8 +539,9 @@
 				cell.style.boxShadow = c ? '0 0 10px ' + c + '80' : '';
 			});
 		}
-		byId('matrix').classList.toggle('anim', !!pic && pic.kind === 'fading');
-		if (fading && !disp.raf) {
+		var animating = animated && !still && disp.frozenAt === null && !document.hidden;
+		byId('matrix').classList.toggle('anim', animated);
+		if (animating && !disp.raf) {
 			disp.raf = requestAnimationFrame(function () {
 				disp.raf = 0;
 				paintGrid((state.data && state.data.meas) || {}, state.down);
@@ -491,7 +553,7 @@
 	// The lamp's "event" and "none" sources arrive as "hold": the grid keeps its last frame, and so does this caption
 	function fxNoteKey() {
 		var p = disp.pic;
-		if (state.down || !p || (p.kind !== 'static' && p.kind !== 'fading')) {
+		if (state.down || !p || ['static', 'fading', 'snake', 'growing'].indexOf(p.kind) < 0) {
 			return '';
 		}
 		return p.src === 'error' ? 'fxError' : (p.src === 'effect' ? 'fxEffect' : '');
@@ -773,6 +835,14 @@
 		});
 	});
 	document.addEventListener('visibilitychange', onVisible);
+	// the setting can change while the page is open: repaint at once, the frame set is different
+	if (reduceMotion) {
+		if (reduceMotion.addEventListener) {
+			reduceMotion.addEventListener('change', themeChanged);
+		} else if (reduceMotion.addListener) {
+			reduceMotion.addListener(themeChanged);
+		}
+	}
 	if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').addEventListener) {
 		window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
 	}

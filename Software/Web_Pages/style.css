@@ -380,7 +380,7 @@ main.in {
 	transition: background-color 0.3s, box-shadow 0.3s;
 }
 
-/* the brightness of a fading effect is set at every frame: a colour transition would lag behind it */
+/* an animated picture is redrawn at every frame: a colour transition would lag behind it */
 .matrix.anim i {
 	transition: none;
 }
