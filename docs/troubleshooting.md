@@ -24,7 +24,7 @@ Effects in the tables use these names:
 | Red growing for about 12 seconds, then an aqua fading. Before the red growing the lime snake runs for about 2 seconds, or for about 30 seconds when a network is stored | No network is stored, or the lamp could not join the stored one. It opens its access point. | Nothing on the first start. Otherwise check the name and the password of your network and add it again ([Quick guide](quick-guide.md#connect-the-lamp-to-your-wifi)). |
 | Aqua fading, once | The access point runs and the sensors start. | Join the lamp's network and open `http://192.168.4.22/`. |
 | Dark matrix that stays dark, the lamp's WiFi network usually does not appear, the LED on the ESP32 board does not blink | The lamp could not create its access point and stops. | Unplug the lamp and plug it in again. If it repeats, check the access point password in your build (8 to 63 characters). |
-| Random pixels after the green flash or the aqua fading, until the sensors start | The lamp could not start its sensors (the CCS811 does not answer). It tries up to three times to power the sensors off and on, keeps the effect, and tries again every 5 minutes. Each try blocks the lamp for several seconds. | Check the sensor power and the I2C wiring. The colours start by themselves once the sensors answer. In your network, when the time server has not answered since the start, the matrix stays dark instead of showing the effect. |
+| Random pixels after the green flash or the aqua fading, until the sensors start | The lamp could not start its sensors (the CCS811, the DHT22 or the ZH03B does not answer). It tries up to three times to power the sensors off and on, keeps the effect, and tries again every 5 minutes. Each round of tries blocks the lamp for several seconds, up to about 27 seconds when the DHT22 or the ZH03B is missing. | Check the sensor power and the wiring; the log names the missing sensor (see [Log messages](#log-messages)). The colours start by themselves once the sensors answer. In your network, when the time server has not answered since the start, the matrix stays dark instead of showing the effect. |
 | Red fading, again and again; it does not stop | The lamp could not start its file system and stops. | Unplug the lamp and plug it in again. If it repeats, flash the lamp again. |
 
 ---
@@ -69,7 +69,10 @@ Each line has the form `time - level : message`; see [Log page](web-interface.md
 | `Started sensors` | Info | The sensors answer. | Nothing. |
 | `Failed connection to WiFi` | ERROR | The lamp could not join a stored network. | Check the name and the password of your network. |
 | `Failed creating Acces Point` | ERROR | The access point cannot start. | See the dark matrix above. |
-| `Failed to start sensors` | ERROR | The CCS811 does not answer. | See the random pixels above. |
+| `Sensors start: CCS811 not found` | ERROR | The CCS811 does not answer. | Check the CCS811 power and I2C wiring. |
+| `Sensors start: DHT22 not responding` | ERROR | The DHT22 gave no reading within 5 seconds after the sensors powered on. | Check the DHT22 wiring. |
+| `Sensors start: ZH03B sends no frames` | ERROR | The ZH03B sent no valid frame within 5 seconds after the sensors powered on. | Check the ZH03B wiring and its 5 V supply. |
+| `Failed to start sensors` | ERROR | At least one of the CCS811, DHT22 and ZH03B did not answer; the lines above say which. | See the random pixels above. |
 | `Sensors off, retry in 5 min` | ERROR | The sensors did not start after the power cycles. | The lamp tries again by itself; check the sensor wiring. |
 | `Sensors retry failed` | ERROR | A retry did not start the sensors. | As above. |
 | `Failed to get eCO2 meas` | ERROR | The CCS811 delivered no eCO2 reading in the last 2 seconds. | A single line is harmless. Lines that repeat point to the CCS811 wiring. |

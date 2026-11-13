@@ -30,6 +30,14 @@
   a lost WiFi connection returns, the green flash shows and the colours come back.
 - **Sensors that do not start.** The lamp no longer restarts itself. It shows random pixels and
   tries the sensors again every 5 minutes; the colours start when they answer.
+- **All three sensors must answer.** The lamp starts the measurements only when the CCS811, the
+  DHT22 and the ZH03B all answer. A missing DHT22 or ZH03B now gives the random pixels, and the
+  log names each missing sensor (`Sensors start: DHT22 not responding`, `Sensors start: ZH03B
+  sends no frames`, `Sensors start: CCS811 not found`) instead of repeating `Failed to get ... meas`.
+- **Slower start, longer retry.** With working sensors the start takes about 2 seconds longer. With
+  a missing DHT22 or ZH03B each start attempt waits up to 5 seconds, so the start and every 5-minute
+  retry block the lamp (the web pages, the blinking LED) for up to about 27 seconds instead of
+  about 6 seconds.
 - **No random colour flashes.** Parts of the matrix no longer flash random colours when the lamp
   writes to its file system. While the lamp reads or writes it, an animation can pause for a
   moment; see [The matrix looks wrong](troubleshooting.md#the-matrix-looks-wrong).
