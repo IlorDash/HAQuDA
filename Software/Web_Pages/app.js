@@ -23,6 +23,8 @@
 	// (109 * 65535 + 100) / 24 = 297642 ms, a growing step 2 * 65535, a fading level 65935; all fit in 300 s
 	var DISP_MAX_MS = 300000;
 	var DISP_SOURCES = ['none', 'effect', 'meas', 'error', 'event'];
+	// the error words of /api/disp; index 0 means no error
+	var DISP_ERRORS = ['none', 'wifi', 'ap', 'fs', 'sensors', 'ntp'];
 	var DISP_LAYOUTS = ['standard', 'multi', 'night'];
 	var DISP_KEYS = ['total', 'temp', 'humid', 'eco2', 'tvoc', 'pm25'];
 	// the readings the lamp averages for the "total" picture
@@ -47,6 +49,10 @@
 			bAp: 'The lamp couldn’t find a saved network and started its own. Add your home WiFi.',
 			bDown: 'No response from the lamp. It may be rebooting, switched off, or your phone changed networks. Showing the last values; data returns on its own once the lamp answers.',
 			fxEffect: 'The lamp is showing an effect, not readings', fxError: 'The lamp is signalling a problem, not showing readings',
+			fxConnecting: 'Starting or connecting to WiFi…', fxConnected: 'Connected to WiFi', fxLost: 'WiFi connection lost',
+			fxAp: 'Access point mode: add your WiFi',
+			errWifi: 'Can’t connect to WiFi', errAp: 'Can’t start the access point', errFs: 'Storage error', errSensors: 'Sensor error',
+			errNtp: 'Can’t get the time',
 			cta: 'Add WiFi network', noData: 'no data', close: 'Close',
 			lastFail: function (reason, n, cur) {
 				var why = 'no answer in time';
@@ -77,6 +83,10 @@
 			bAp: 'Лампа не нашла сохранённую сеть и создала свою. Добавьте домашнюю сеть.',
 			bDown: 'Нет ответа от лампы. Возможно, она перезагружается, выключена или телефон сменил сеть. Показаны последние значения; данные вернутся сами, как только лампа ответит.',
 			fxEffect: 'Лампа показывает эффект, а не показания', fxError: 'Лампа сигнализирует о проблеме, а не показывает показания',
+			fxConnecting: 'Запуск или подключение к WiFi…', fxConnected: 'Подключена к WiFi', fxLost: 'Связь с WiFi потеряна',
+			fxAp: 'Режим точки доступа: добавьте свою WiFi-сеть',
+			errWifi: 'Не удаётся подключиться к WiFi', errAp: 'Не удаётся создать точку доступа', errFs: 'Ошибка хранилища', errSensors: 'Ошибка датчиков',
+			errNtp: 'Не удаётся получить время',
 			cta: 'Добавить WiFi-сеть', noData: 'нет данных', close: 'Закрыть',
 			lastFail: function (reason, n, cur) {
 				var why = 'нет ответа вовремя';
@@ -107,7 +117,7 @@
 	var tileEls = {};
 	// disp: the picture of the lamp. pic is null until /api/disp answers (and after it failed): the matrix then shows the readings.
 	// t0: page time at which the picture started, frozenAt: page time of a "hold" that stopped the animation, or null
-	var disp = { pic: null, seq: -1, t0: 0, frozenAt: null, fails: 0, busy: false, timer: 0, raf: 0, sig: '' };
+	var disp = { pic: null, seq: -1, t0: 0, frozenAt: null, fails: 0, busy: false, timer: 0, raf: 0, sig: '', rnd: null };
 	// the outcome of a network switch that failed and restarted the lamp: { ssid, reason }, or null.
 	// lastAsked: /api/join has answered since the lamp last came back, so the outcome is known
 	var lastJoin = null;
@@ -281,18 +291,25 @@
 	}
 
 	// everything below comes from the lamp: only whitelisted words, plain #rrggbb colours and range-checked numbers get through.
-	// Returns { seq, age, pic } or null when the reply is not as expected. pic.kind: static, fading, snake, growing, meas, hold, or legacy
-	// (random: drawn as the readings until the page can play it)
+	// Returns { seq, age, pic } or null when the reply is not as expected. pic.kind: static, fading, snake, growing, random, meas, hold
 	function parseDisp(d) {
 		if (!d || typeof d !== 'object' || !intIn(d.seq, 0, 4294967295) || !intIn(d.age, 0, 2147483647) || DISP_SOURCES.indexOf(d.src) < 0) {
 			return null;
 		}
-		var pic = { kind: '', src: d.src };
+		// err: which error the lamp signals (only with src "error"), '' for an unknown word
+		var pic = { kind: '', src: d.src, err: DISP_ERRORS.indexOf(d.err) > 0 ? d.err : '' };
 		var i;
 		if (d.fx === 'hold') {
 			pic.kind = 'hold';
 		} else if (d.fx === 'random') {
-			pic.kind = 'legacy';
+			// the lamp's step is the pause of a pixel scaled to a page cell: 0 for a pause of 0
+			if (!intIn(d.step, 0, DISP_MAX_MS) || !intIn(d.end, 0, DISP_MAX_MS) || (d.dark !== undefined && !intIn(d.dark, 0, DISP_MAX_MS))) {
+				return null;
+			}
+			pic.kind = 'random';
+			pic.step = d.step;
+			pic.end = d.end;
+			pic.dark = d.dark === undefined ? 0 : d.dark;
 		} else if (d.fx === 'snake' || d.fx === 'growing') {
 			// the lamp's snake lap always has the 100 ms pause, so its step is never 0; a growing step is 0 for a pause of 0
 			if (!validColor(d.color) || !intIn(d.step, d.fx === 'snake' ? 1 : 0, DISP_MAX_MS) || (d.dark !== undefined && !intIn(d.dark, 0, DISP_MAX_MS))) {
@@ -496,6 +513,62 @@
 		return colors;
 	}
 
+	// a random channel value like the lamp's (0..254), but the brightest channel of a colour is lifted to at least 100 so that no
+	// cell looks unlit
+	function randomColor() {
+		var ch = [0, 0, 0].map(function () {
+			return Math.floor(Math.random() * 255);
+		});
+		var top = Math.max(ch[0], ch[1], ch[2]);
+		if (top < 100) {
+			ch[Math.floor(Math.random() * 3)] = 100 + Math.floor(Math.random() * 155);
+		}
+		return '#' + hex2(ch[0]) + hex2(ch[1]) + hex2(ch[2]);
+	}
+
+	// the order the cells light up in and their colours for one cycle of the random effect. The page's own randomness, made once per
+	// cycle and kept, so every repaint inside the cycle draws the same picture (the frame signature does not change)
+	function randomCycle(n) {
+		if (disp.rnd && disp.rnd.n === n) {
+			return disp.rnd;
+		}
+		var cellsNum = GRID_COLS * GRID_ROWS;
+		var order = [];
+		var colors = [];
+		var i;
+		for (i = 0; i < cellsNum; i++) {
+			order.push(i);
+			colors.push(randomColor());
+		}
+		for (i = cellsNum - 1; i > 0; i--) {
+			var j = Math.floor(Math.random() * (i + 1));
+			var swap = order[i];
+			order[i] = order[j];
+			order[j] = swap;
+		}
+		disp.rnd = { n: n, order: order, colors: colors };
+		return disp.rnd;
+	}
+
+	// Random at page time t. A cycle: pic.dark of dark, then one cell per step in a random order with a random colour, the full grid
+	// stays for pic.end more. With step 0 the whole grid is lit at once after the dark part. full: the finished grid of the first
+	// cycle, for reduced motion
+	function randomFrame(pic, t, full) {
+		var cellsNum = GRID_COLS * GRID_ROWS;
+		var colors = fillGrid('');
+		var cycle = pic.dark + cellsNum * pic.step + pic.end;
+		var n = full || cycle <= 0 ? 0 : Math.floor(t / cycle);
+		var p = full ? cycle : (cycle > 0 ? t % cycle : 0);
+		if (p >= pic.dark) {
+			var lit = pic.step > 0 ? Math.min(cellsNum, 1 + Math.floor((p - pic.dark) / pic.step)) : cellsNum;
+			var rnd = randomCycle(n);
+			for (var k = 0; k < lit; k++) {
+				colors[rnd.order[k]] = rnd.colors[k];
+			}
+		}
+		return colors;
+	}
+
 	// the theme changed: the colour of an unlit cell must be read again
 	function themeChanged() {
 		offRgb = null;
@@ -503,13 +576,13 @@
 		paintGrid((state.data && state.data.meas) || {}, state.down);
 	}
 
-	// draws the grid; down shows it dark, as before. While a fading, snake or growing picture plays, requestAnimationFrame calls it
-	// again, the DOM is touched only when the frame changed. With reduced motion the picture stays still, without flashing:
-	// fading at its first level, snake at its first step (the tail at the start of the path), growing as the full grid
+	// draws the grid; down shows it dark, as before. While a fading, snake, growing or random picture plays, requestAnimationFrame
+	// calls it again, the DOM is touched only when the frame changed. With reduced motion the picture stays still, without flashing:
+	// fading at its first level, snake at its first step (the tail at the start of the path), growing and random as the full grid
 	function paintGrid(meas, down) {
 		var pic = down ? null : disp.pic;
 		var colors;
-		var animated = !!pic && (pic.kind === 'fading' || pic.kind === 'snake' || pic.kind === 'growing');
+		var animated = !!pic && (pic.kind === 'fading' || pic.kind === 'snake' || pic.kind === 'growing' || pic.kind === 'random');
 		var still = !!reduceMotion && reduceMotion.matches;
 		var t = disp.frozenAt === null ? now() : disp.frozenAt;
 		if (down) {
@@ -522,6 +595,8 @@
 			colors = snakeFrame(pic, still ? pic.dark : t - disp.t0);
 		} else if (pic && pic.kind === 'growing') {
 			colors = still ? fillGrid(pic.color) : growingFrame(pic, t - disp.t0);
+		} else if (pic && pic.kind === 'random') {
+			colors = randomFrame(pic, t - disp.t0, still);
 		} else if (pic && pic.kind === 'meas') {
 			colors = measFrame(pic, meas);
 		} else {
@@ -550,13 +625,33 @@
 	}
 
 	// the legend lists readings: while the grid shows an effect or an error signal it gives a caption instead.
-	// The lamp's "event" and "none" sources arrive as "hold": the grid keeps its last frame, and so does this caption
+	// The lamp's "event" and "none" sources arrive as "hold": applyDisp keeps disp.pic then (its kind is never "hold"), so the grid
+	// keeps its last frame and this caption stays.
+	// An error names itself (err). An effect has no reason attached, so it is told by what the firmware does: a snake is the
+	// start and the reconnect, a fading effect in access point mode is the access point, a green static colour is "connected",
+	// a red one "connection lost" (the dark one between them gets no caption); anything else gets the generic text
 	function fxNoteKey() {
 		var p = disp.pic;
-		if (state.down || !p || ['static', 'fading', 'snake', 'growing'].indexOf(p.kind) < 0) {
+		if (state.down || !p || ['static', 'fading', 'snake', 'growing', 'random'].indexOf(p.kind) < 0) {
 			return '';
 		}
-		return p.src === 'error' ? 'fxError' : (p.src === 'effect' ? 'fxEffect' : '');
+		if (p.src === 'error') {
+			return { wifi: 'errWifi', ap: 'errAp', fs: 'errFs', sensors: 'errSensors', ntp: 'errNtp' }[p.err] || 'fxError';
+		}
+		if (p.src !== 'effect') {
+			return '';
+		}
+		if (p.kind === 'snake') {
+			return 'fxConnecting';
+		}
+		if (p.kind === 'fading' && state.data && state.data.mode === 'ap') {
+			return 'fxAp';
+		}
+		if (p.kind === 'static') {
+			var c = p.color.toLowerCase();
+			return c === '#01ff00' ? 'fxConnected' : (c === '#ff0000' ? 'fxLost' : (c === '#000000' ? '' : 'fxEffect'));
+		}
+		return 'fxEffect';
 	}
 
 	function renderMatrix(meas, down) {
@@ -745,6 +840,10 @@
 		if (p.seq !== disp.seq || !disp.pic || disp.frozenAt !== null || Math.abs(p.age - (t - disp.t0)) > DISP_RESYNC_MS) {
 			disp.t0 = t - p.age;
 			disp.frozenAt = null;
+		}
+		// a new picture (or another kind) starts the random effect over: it must not replay the order and colours of an earlier cycle 0
+		if (p.seq !== disp.seq || !disp.pic || disp.pic.kind !== p.pic.kind) {
+			disp.rnd = null;
 		}
 		disp.seq = p.seq;
 		disp.pic = p.pic;
