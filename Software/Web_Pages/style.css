@@ -380,6 +380,11 @@ main.in {
 	transition: background-color 0.3s, box-shadow 0.3s;
 }
 
+/* the brightness of a fading effect is set at every frame: a colour transition would lag behind it */
+.matrix.anim i {
+	transition: none;
+}
+
 .legend {
 	display: flex;
 	flex-direction: column;
@@ -394,6 +399,33 @@ main.in {
 	justify-content: center;
 	gap: 2px;
 	height: 58px;
+}
+
+/* while the grid shows an effect: the readings give way to a caption. The caption is always in the page, so a screen reader
+   announces its text when it changes; without an effect it is empty and visually hidden */
+.legend p {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	font-size: 12px;
+	color: var(--muted);
+}
+
+.legend.fx div {
+	display: none;
+}
+
+.legend.fx p {
+	position: static;
+	width: auto;
+	height: auto;
+	overflow: visible;
+	clip-path: none;
+	white-space: normal;
 }
 
 .legend span {

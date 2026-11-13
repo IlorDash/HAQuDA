@@ -10,6 +10,27 @@
 	// matrix rows from the top: the lamp shows temperature at the bottom, then eCO2, then dust
 	var MATRIX_ROWS = ['pm25', 'pm25', 'eco2', 'eco2', 'temp', 'temp'];
 	var LEGEND_KEYS = ['pm25', 'eco2', 'temp'];
+	var GRID_COLS = 4;
+	var GRID_ROWS = 6;
+	// the picture the lamp draws (/api/disp), asked once a second. Three failed answers in a row switch back to the measurements
+	var DISP_POLL_MS = 1000;
+	var DISP_FAIL_LIMIT = 3;
+	// after DISP_FAIL_LIMIT failures in a row the lamp is asked this rarely, until one answer comes through
+	var DISP_BACKOFF_MS = 15000;
+	// the page restarts a picture when its clock and the lamp's age differ by more than this (the lamp restarted, or the page slept)
+	var DISP_RESYNC_MS = 2000;
+	var DISP_SOURCES = ['none', 'effect', 'meas', 'error', 'event'];
+	var DISP_LAYOUTS = ['standard', 'multi', 'night'];
+	var DISP_KEYS = ['total', 'temp', 'humid', 'eco2', 'tvoc', 'pm25'];
+	// the readings the lamp averages for the "total" picture
+	var TOTAL_KEYS = ['temp', 'humid', 'eco2', 'tvoc', 'pm25'];
+	// the white of the night bar: the lamp drives a white channel at WHITE_BRIGHTNESS_COEFF (70) while its colours peak at
+	// MAX_BRIGHTNESS (150), so white is 70/150 of a full channel at any brightness: 255 * 70 / 150 = 119
+	var WHITE = '#777777';
+	// colour of an unlit cell, read from --led-off of the current theme when first needed (null: read again)
+	var offRgb = null;
+	// the mediaquery is live: matches always tells the current setting
+	var reduceMotion = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
 
 	var TEXT = {
 		en: {
@@ -22,6 +43,7 @@
 			ap: 'Access point · no internet', off: 'WiFi connection lost', down: 'Lamp not responding · retry in 5 s',
 			bAp: 'The lamp couldn’t find a saved network and started its own. Add your home WiFi.',
 			bDown: 'No response from the lamp. It may be rebooting, switched off, or your phone changed networks. Showing the last values; data returns on its own once the lamp answers.',
+			fxEffect: 'The lamp is showing an effect, not readings', fxError: 'The lamp is signalling a problem, not showing readings',
 			cta: 'Add WiFi network', noData: 'no data', close: 'Close',
 			lastFail: function (reason, n, cur) {
 				var why = 'no answer in time';
@@ -51,6 +73,7 @@
 			ap: 'Точка доступа · без интернета', off: 'Нет связи с WiFi', down: 'Лампа не отвечает · повтор через 5 с',
 			bAp: 'Лампа не нашла сохранённую сеть и создала свою. Добавьте домашнюю сеть.',
 			bDown: 'Нет ответа от лампы. Возможно, она перезагружается, выключена или телефон сменил сеть. Показаны последние значения; данные вернутся сами, как только лампа ответит.',
+			fxEffect: 'Лампа показывает эффект, а не показания', fxError: 'Лампа сигнализирует о проблеме, а не показывает показания',
 			cta: 'Добавить WiFi-сеть', noData: 'нет данных', close: 'Закрыть',
 			lastFail: function (reason, n, cur) {
 				var why = 'нет ответа вовремя';
@@ -79,6 +102,9 @@
 	var state = { data: null, down: false, err: '', lastOk: '' };
 	var cells = [];
 	var tileEls = {};
+	// disp: the picture of the lamp. pic is null until /api/disp answers (and after it failed): the matrix then shows the readings.
+	// t0: page time at which the picture started, frozenAt: page time of a "hold" that stopped the animation, or null
+	var disp = { pic: null, seq: -1, t0: 0, frozenAt: null, fails: 0, busy: false, timer: 0, raf: 0, sig: '' };
 	// the outcome of a network switch that failed and restarted the lamp: { ssid, reason }, or null.
 	// lastAsked: /api/join has answered since the lamp last came back, so the outcome is known
 	var lastJoin = null;
@@ -243,17 +269,239 @@
 		byId('lastBannerText').textContent = lastJoin ? T.lastFail(lastJoin.reason, lastJoin.ssid, cur) : '';
 	}
 
-	function renderMatrix(meas, down) {
-		cells.forEach(function (cell, i) {
-			var m = meas[MATRIX_ROWS[Math.floor(i / 4)]];
-			if (!down && validMeas(m) && validColor(m.c)) {
-				cell.style.background = m.c;
-				cell.style.boxShadow = '0 0 10px ' + m.c + '80';
-			} else {
-				cell.style.background = '';
-				cell.style.boxShadow = '';
+	function now() {
+		return window.performance && performance.now ? performance.now() : Date.now();
+	}
+
+	function intIn(v, lo, hi) {
+		return typeof v === 'number' && isFinite(v) && Math.floor(v) === v && v >= lo && v <= hi;
+	}
+
+	// everything below comes from the lamp: only whitelisted words, plain #rrggbb colours and range-checked numbers get through.
+	// Returns { seq, age, pic } or null when the reply is not as expected. pic.kind: static, fading, meas, hold, or legacy
+	// (snake, growing, random: drawn as the readings until the page can play them)
+	function parseDisp(d) {
+		if (!d || typeof d !== 'object' || !intIn(d.seq, 0, 4294967295) || !intIn(d.age, 0, 2147483647) || DISP_SOURCES.indexOf(d.src) < 0) {
+			return null;
+		}
+		var pic = { kind: '', src: d.src };
+		var i;
+		if (d.fx === 'hold') {
+			pic.kind = 'hold';
+		} else if (d.fx === 'snake' || d.fx === 'growing' || d.fx === 'random') {
+			pic.kind = 'legacy';
+		} else if (d.fx === 'static') {
+			if (!validColor(d.color)) {
+				return null;
+			}
+			pic.kind = 'static';
+			pic.color = d.color;
+		} else if (d.fx === 'fading') {
+			if (!validColor(d.color) || !intIn(d.from, 0, 100) || !intIn(d.to, 0, 100) || !intIn(d.steps, 1, 100) || !intIn(d.step, 1, 100000) || !intIn(d.end, 0, 100000)) {
+				return null;
+			}
+			// dark: dark time at the start of the cycle, first: time of the first level; a reply without them (older firmware) has
+			// no dark part and a first level as long as the others
+			if ((d.dark !== undefined && !intIn(d.dark, 0, 100000)) || (d.first !== undefined && !intIn(d.first, 1, 200000))) {
+				return null;
+			}
+			pic.kind = 'fading';
+			pic.color = d.color;
+			pic.from = d.from;
+			pic.to = d.to;
+			pic.steps = d.steps;
+			pic.step = d.step;
+			pic.end = d.end;
+			pic.dark = d.dark === undefined ? 0 : d.dark;
+			pic.first = d.first === undefined ? d.step : d.first;
+		} else if (d.fx === 'meas') {
+			var need = d.layout === 'multi' ? 3 : 1;
+			if (DISP_LAYOUTS.indexOf(d.layout) < 0 || !Array.isArray(d.keys) || d.keys.length < need) {
+				return null;
+			}
+			pic.kind = 'meas';
+			pic.layout = d.layout;
+			pic.keys = [];
+			for (i = 0; i < need; i++) {
+				if (DISP_KEYS.indexOf(d.keys[i]) < 0) {
+					return null;
+				}
+				pic.keys.push(d.keys[i]);
+			}
+			pic.white = 0;
+			if (d.layout === 'night') {
+				if (!intIn(d.white, 0, GRID_ROWS)) {
+					return null;
+				}
+				pic.white = d.white;
+			}
+		} else {
+			return null;
+		}
+		return { seq: d.seq, age: d.age, pic: pic };
+	}
+
+	function hex2(v) {
+		var n = Math.round(v);
+		return (n < 16 ? '0' : '') + n.toString(16);
+	}
+
+	// the colour of one reading, or of the average of the readings the lamp averages for "total"; '' when there is none.
+	// The average is taken over the readings that have a colour, so one failed sensor does not blank the picture
+	function measColor(meas, key) {
+		var keys = key === 'total' ? TOTAL_KEYS : [key];
+		var sum = [0, 0, 0];
+		var n = 0;
+		var last = '';
+		keys.forEach(function (k) {
+			var m = meas[k];
+			if (validMeas(m) && validColor(m.c)) {
+				var v = parseInt(m.c.slice(1), 16);
+				sum[0] += (v >> 16) & 255;
+				sum[1] += (v >> 8) & 255;
+				sum[2] += v & 255;
+				n++;
+				last = m.c;
 			}
 		});
+		if (n <= 1) {
+			return last;
+		}
+		return '#' + hex2(sum[0] / n) + hex2(sum[1] / n) + hex2(sum[2] / n);
+	}
+
+	function fillGrid(color) {
+		var a = [];
+		for (var i = 0; i < GRID_COLS * GRID_ROWS; i++) {
+			a.push(color);
+		}
+		return a;
+	}
+
+	// Row 0 is the top. The lamp's strip starts at its bottom end: multi draws keys[0] nearest to it and the night bar grows from it,
+	// so keys[0] takes the two bottom rows and the white bar counts rows from the bottom.
+	function measFrame(pic, meas) {
+		var colors = fillGrid('');
+		var keyColors = pic.keys.map(function (k) {
+			return measColor(meas, k);
+		});
+		for (var i = 0; i < colors.length; i++) {
+			var col = i % GRID_COLS;
+			var fromBottom = GRID_ROWS - 1 - Math.floor(i / GRID_COLS);
+			if (pic.layout === 'standard') {
+				colors[i] = keyColors[0];
+			} else if (pic.layout === 'multi') {
+				colors[i] = keyColors[Math.floor(fromBottom / 2)];
+			} else if (col % 2 === 0) {
+				colors[i] = keyColors[0];
+			} else if (fromBottom < pic.white) {
+				colors[i] = WHITE;
+			}
+		}
+		return colors;
+	}
+
+	// the brightness the lamp shows at page time t (ms since the picture started), as a share of the full colour; 0 is dark.
+	// A cycle: pic.dark of dark, the first level for pic.first, every further level for pic.step (pic.steps levels in all),
+	// the last one pic.end longer. Then the cycle repeats
+	function fadeAlpha(pic, t) {
+		var p = t % (pic.dark + pic.first + (pic.steps - 1) * pic.step + pic.end);
+		if (p < pic.dark) {
+			return 0;
+		}
+		p -= pic.dark;
+		var k = p < pic.first ? 0 : Math.min(pic.steps - 1, 1 + Math.floor((p - pic.first) / pic.step));
+		return Math.round(pic.from + ((pic.to - pic.from) * k) / pic.steps) / 100;
+	}
+
+	// colour of an unlit cell in the current theme, as [r, g, b]
+	function ledOff() {
+		if (!offRgb) {
+			var v = '';
+			try {
+				v = getComputedStyle(root).getPropertyValue('--led-off').trim();
+			} catch (e) {}
+			var n = parseInt((validColor(v) ? v : '#1f2937').slice(1), 16);
+			offRgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+		}
+		return offRgb;
+	}
+
+	// the colour at brightness alpha (0..1): a lit cell fades toward the unlit one, not toward the page background
+	function fadeColor(color, alpha) {
+		if (alpha <= 0) {
+			return '';
+		}
+		if (alpha >= 1) {
+			return color;
+		}
+		var off = ledOff();
+		var n = parseInt(color.slice(1), 16);
+		return '#' + hex2(off[0] + (((n >> 16) & 255) - off[0]) * alpha) + hex2(off[1] + (((n >> 8) & 255) - off[1]) * alpha) + hex2(off[2] + ((n & 255) - off[2]) * alpha);
+	}
+
+	// the theme changed: the colour of an unlit cell must be read again
+	function themeChanged() {
+		offRgb = null;
+		disp.sig = '';
+		paintGrid((state.data && state.data.meas) || {}, state.down);
+	}
+
+	// draws the grid; down shows it dark, as before. While a fading picture plays, requestAnimationFrame calls it again,
+	// the DOM is touched only when the frame changed. With reduced motion a fading picture stays at its first level
+	function paintGrid(meas, down) {
+		var pic = down ? null : disp.pic;
+		var colors;
+		var fading = false;
+		if (down) {
+			colors = fillGrid('');
+		} else if (pic && pic.kind === 'static') {
+			colors = fillGrid(pic.color);
+		} else if (pic && pic.kind === 'fading') {
+			var still = !!reduceMotion && reduceMotion.matches;
+			colors = fillGrid(fadeColor(pic.color, still ? pic.from / 100 : fadeAlpha(pic, (disp.frozenAt === null ? now() : disp.frozenAt) - disp.t0)));
+			fading = !still && disp.frozenAt === null && !document.hidden;
+		} else if (pic && pic.kind === 'meas') {
+			colors = measFrame(pic, meas);
+		} else {
+			colors = fillGrid('');
+			for (var i = 0; i < colors.length; i++) {
+				colors[i] = measColor(meas, MATRIX_ROWS[Math.floor(i / GRID_COLS)]);
+			}
+		}
+		var sig = colors.join();
+		if (sig !== disp.sig) {
+			disp.sig = sig;
+			cells.forEach(function (cell, i) {
+				var c = colors[i];
+				cell.style.background = c;
+				cell.style.boxShadow = c ? '0 0 10px ' + c + '80' : '';
+			});
+		}
+		byId('matrix').classList.toggle('anim', !!pic && pic.kind === 'fading');
+		if (fading && !disp.raf) {
+			disp.raf = requestAnimationFrame(function () {
+				disp.raf = 0;
+				paintGrid((state.data && state.data.meas) || {}, state.down);
+			});
+		}
+	}
+
+	// the legend lists readings: while the grid shows an effect or an error signal it gives a caption instead.
+	// The lamp's "event" and "none" sources arrive as "hold": the grid keeps its last frame, and so does this caption
+	function fxNoteKey() {
+		var p = disp.pic;
+		if (state.down || !p || (p.kind !== 'static' && p.kind !== 'fading')) {
+			return '';
+		}
+		return p.src === 'error' ? 'fxError' : (p.src === 'effect' ? 'fxEffect' : '');
+	}
+
+	function renderMatrix(meas, down) {
+		paintGrid(meas, down);
+		var note = fxNoteKey();
+		byId('legend').classList.toggle('fx', !!note);
+		byId('legendNote').textContent = note ? T[note] : '';
 		LEGEND_KEYS.forEach(function (k) {
 			var m = meas[k];
 			byId('lv-' + k).textContent = validMeas(m) ? fmt(k, m.v) + ' ' + UNITS[k] : (state.data ? T.noData : '--');
@@ -361,6 +609,7 @@
 		var next = cur === 'dark' ? 'light' : 'dark';
 		root.setAttribute('data-theme', next);
 		store('theme', next);
+		themeChanged();
 	}
 
 	// a hung request would stop the 5 s chain: abort it after FETCH_TIMEOUT_MS where the browser can.
@@ -410,6 +659,73 @@
 		fetch('/api/join/dismiss', { method: 'POST' }).catch(function () {});
 	}
 
+	// p: parseDisp result, or null when the request or the reply failed
+	function applyDisp(p) {
+		if (!p) {
+			disp.fails++;
+			if (disp.fails >= DISP_FAIL_LIMIT) {
+				disp.pic = null;
+			}
+			return;
+		}
+		disp.fails = 0;
+		var t = now();
+		if (p.pic.kind === 'hold') {
+			// the lamp keeps its last frame: so does the grid, with the animation stopped
+			if (disp.pic && disp.frozenAt === null) {
+				disp.frozenAt = t;
+			}
+			disp.seq = p.seq;
+			return;
+		}
+		// a new picture starts the animation in phase with the lamp; the same one keeps running on the page clock
+		// unless the two clocks have drifted apart (the lamp restarted, or the page was suspended)
+		if (p.seq !== disp.seq || !disp.pic || disp.frozenAt !== null || Math.abs(p.age - (t - disp.t0)) > DISP_RESYNC_MS) {
+			disp.t0 = t - p.age;
+			disp.frozenAt = null;
+		}
+		disp.seq = p.seq;
+		disp.pic = p.pic;
+	}
+
+	// a separate chain from poll(): once a second, one request at a time, stopped while the page is hidden.
+	// The next request is scheduled before the page is redrawn, so a drawing error cannot stop it
+	function pollDisp() {
+		disp.timer = 0;
+		if (document.hidden || disp.busy) {
+			return;
+		}
+		disp.busy = true;
+		fetchTimed('/api/disp', { cache: 'no-store' }, function (r) {
+			if (!r.ok) {
+				throw new Error(r.status);
+			}
+			return r.json();
+		})
+			.then(function (d) {
+				applyDisp(parseDisp(d));
+			})
+			.catch(function () {
+				applyDisp(null);
+			})
+			.then(function () {
+				disp.busy = false;
+				disp.timer = setTimeout(pollDisp, disp.fails >= DISP_FAIL_LIMIT ? DISP_BACKOFF_MS : DISP_POLL_MS);
+				renderMatrix((state.data && state.data.meas) || {}, state.down);
+			});
+	}
+
+	function onVisible() {
+		if (document.hidden) {
+			return;
+		}
+		if (!disp.busy) {
+			clearTimeout(disp.timer);
+			pollDisp();
+		}
+		paintGrid((state.data && state.data.meas) || {}, state.down);
+	}
+
 	// one request at a time: the next poll is scheduled before the page is redrawn, so a drawing error cannot stop polling
 	function poll() {
 		fetchTimed('/api/status', { cache: 'no-store' }, function (r) {
@@ -456,6 +772,11 @@
 			setLang(b.getAttribute('data-lang'));
 		});
 	});
+	document.addEventListener('visibilitychange', onVisible);
+	if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').addEventListener) {
+		window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
+	}
 	setLang(saved);
 	poll();
+	pollDisp();
 })();
