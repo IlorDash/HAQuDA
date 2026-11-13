@@ -21,6 +21,12 @@ pm_meas_result HAQuDA_PMReader::Read(uint32_t nowMs, uint8_t *payloadOut) {
 }
 
 bool HAQuDA_PMReader::HasValidFrame() {
+	// A frame takes ~25 ms on the wire, so a poll can catch one half-received. Reading that head out of the buffer would lose
+	// the frame (the next poll sees only the tail); leave it buffered until a whole frame's worth of bytes is waiting.
+	if (serial.Available() < (int)ZH03B_FRAME_LEN) {
+		return false;
+	}
+
 	uint8_t payload[ZH03B_PAYLOAD_LEN] = {};
 	return readBufferedFrame(payload);
 }

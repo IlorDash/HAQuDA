@@ -534,9 +534,8 @@ TEST(PMReaderTest, HasValidFrameBadChecksumFalse) {
 	EXPECT_EQ(exp_result, res);
 }
 
-// Wrong behaviour reproduced: HasValidFrame() drains the RX buffer and throws away a partial frame, so a frame that straddles
-// two polls is never recognised - its head is gone when the tail arrives. The second call should report the sensor alive.
-TEST(PMReaderTest, DISABLED_HasValidFrameFrameSplitAcrossTwoCallsTrue) {
+// A poll that catches a frame half-received must leave the head buffered, so the frame is recognised on the next poll.
+TEST(PMReaderTest, HasValidFrameFrameSplitAcrossTwoCallsTrue) {
 	const size_t firstPartLen = 10;
 
 	const bool exp_result = true;
@@ -557,4 +556,74 @@ TEST(PMReaderTest, DISABLED_HasValidFrameFrameSplitAcrossTwoCallsTrue) {
 	res = reader.HasValidFrame();
 
 	EXPECT_EQ(exp_result, res);
+}
+
+TEST(PMReaderTest, HasValidFramePartialFrameLeavesBytesBuffered) {
+	const size_t partLen = ZH03B_FRAME_LEN - 1;
+
+	const bool exp_result = false;
+	const size_t exp_waiting = partLen;
+	const int exp_read_calls = 0;
+
+	const uint8_t frameA[ZH03B_FRAME_LEN]
+		= {0x42, 0x4D, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0A, 0x01, 0x2C, 0x00, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x0C};
+	FakePMSerial serial;
+	serial.rx.assign(frameA, frameA + partLen);
+	HAQuDA_PMWarmup warmup;
+	HAQuDA_PMReader reader(serial, warmup);
+
+	bool res;
+
+	res = reader.HasValidFrame();
+
+	EXPECT_EQ(exp_result, res);
+	EXPECT_EQ(exp_waiting, serial.rx.size() - serial.pos);
+	EXPECT_EQ(exp_read_calls, serial.readCalls);
+}
+
+// The poll lands after the tail of the previous frame and the next frame is already complete: the scan skips the tail.
+TEST(PMReaderTest, HasValidFrameTailOfPreviousFrameBeforeFrameTrue) {
+	const size_t tailLen = 10;
+
+	const bool exp_result = true;
+
+	const uint8_t frameA[ZH03B_FRAME_LEN]
+		= {0x42, 0x4D, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0A, 0x01, 0x2C, 0x00, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x0C};
+	FakePMSerial serial;
+	serial.rx.assign(frameA + ZH03B_FRAME_LEN - tailLen, frameA + ZH03B_FRAME_LEN);
+	serial.rx.insert(serial.rx.end(), frameA, frameA + ZH03B_FRAME_LEN);
+	HAQuDA_PMWarmup warmup;
+	HAQuDA_PMReader reader(serial, warmup);
+
+	bool res;
+
+	res = reader.HasValidFrame();
+
+	EXPECT_EQ(exp_result, res);
+}
+
+// Known limit, accepted: the tail of the previous frame plus the head of the next one add up to a whole frame's worth of
+// bytes, so the poll reads them all, finds no complete frame and the head is lost. The result is false and the buffer is
+// empty; the following frame is recognised again on a later poll.
+TEST(PMReaderTest, HasValidFrameTailPlusIncompleteHeadConsumesBufferFalse) {
+	const size_t tailLen = 10;
+	const size_t headLen = ZH03B_FRAME_LEN - tailLen;
+
+	const bool exp_result = false;
+	const size_t exp_waiting = 0;
+
+	const uint8_t frameA[ZH03B_FRAME_LEN]
+		= {0x42, 0x4D, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0A, 0x01, 0x2C, 0x00, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x0C};
+	FakePMSerial serial;
+	serial.rx.assign(frameA + ZH03B_FRAME_LEN - tailLen, frameA + ZH03B_FRAME_LEN);
+	serial.rx.insert(serial.rx.end(), frameA, frameA + headLen);
+	HAQuDA_PMWarmup warmup;
+	HAQuDA_PMReader reader(serial, warmup);
+
+	bool res;
+
+	res = reader.HasValidFrame();
+
+	EXPECT_EQ(exp_result, res);
+	EXPECT_EQ(exp_waiting, serial.rx.size() - serial.pos);
 }
