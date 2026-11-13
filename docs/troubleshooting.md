@@ -74,7 +74,7 @@ Each line has the form `time - level : message`; see [Log page](web-interface.md
 | `Sensors retry failed` | ERROR | A retry did not start the sensors. | As above. |
 | `Failed to get eCO2 meas` | ERROR | The CCS811 delivered no eCO2 reading in the last 2 seconds. | A single line is harmless. Lines that repeat point to the CCS811 wiring. |
 | `Failed to get TVOC meas` | ERROR | The CCS811 delivered no TVOC reading. | As above. |
-| `Failed to get PM 2.5 meas` | ERROR | The ZH03B sent no valid frame. | Check the ZH03B wiring and its 5 V supply. |
+| `Failed to get PM 2.5 meas` | ERROR | The ZH03B sent no valid frame. The lamp does not log this line during the first 12 seconds after the sensors power on (boot, the 5-minute retry), while the ZH03B warms up. | Check the ZH03B wiring and its 5 V supply. |
 | `Failed to get TEMP meas` | ERROR | The DHT22 delivered no temperature. | Check the DHT22 wiring. |
 | `Failed to get HUMID meas` | ERROR | The DHT22 delivered no humidity. | Check the DHT22 wiring. |
 

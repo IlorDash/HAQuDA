@@ -34,6 +34,15 @@
   writes to its file system. While the lamp reads or writes it, an animation can pause for a
   moment; see [The matrix looks wrong](troubleshooting.md#the-matrix-looks-wrong).
 - **File system error.** The matrix shows the red fading.
+- **Correct PM values.** The lamp reads PM1.0, PM2.5 and PM10 from the right fields of the ZH03B
+  frame. The PM2.5 colour in the multi, standard and night modes can differ from earlier builds.
+- **Fresh PM readings.** Every 2 seconds the lamp uses the newest frame the ZH03B has sent, so the
+  PM2.5 colour follows the air instead of lagging by up to about 30 seconds.
+- **PM warm-up.** For 12 seconds after the sensors power on (start, the 5-minute retry, a sensor
+  reboot) the lamp takes no PM readings, so the ZH03B's start-up number does not end up in the
+  first PM2.5 average. The line `Failed to get PM 2.5 meas` is not logged in this window.
+- **Quieter log.** With the ZH03B connected, `Failed to get PM 2.5 meas` no longer appears every
+  40 to 50 seconds. With the ZH03B disconnected it still repeats every few seconds.
 
 ## Known limitations (WIP)
 
