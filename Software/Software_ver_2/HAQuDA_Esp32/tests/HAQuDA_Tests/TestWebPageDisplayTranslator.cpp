@@ -12,7 +12,8 @@ TEST(WebPageDisplayTranslatorTest, SnakeShape) {
 	const size_t buf_size = 256;
 
 	// lap 21900 ms / 24 cells = 912.5, rounded up; tail 5 * 24 / 109 = 1.1
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#99ff33\",\"step\":913,\"tail\":1}";
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#99ff33\",\"dark\":200,\"step\":913,\"tail\":1}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -36,7 +37,8 @@ TEST(WebPageDisplayTranslatorTest, SnakeStepRoundsDown) {
 	const size_t buf_size = 256;
 
 	// lap 11000 ms / 24 = 458.33
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"step\":458,\"tail\":1}";
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"dark\":200,\"step\":458,\"tail\":1}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -60,7 +62,8 @@ TEST(WebPageDisplayTranslatorTest, SnakeStepRoundsUp) {
 	const size_t buf_size = 256;
 
 	// lap 209 ms / 24 = 8.71
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"step\":9,\"tail\":1}";
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"dark\":200,\"step\":9,\"tail\":1}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -84,7 +87,8 @@ TEST(WebPageDisplayTranslatorTest, SnakeZeroPauseStepIsShowPauseOnly) {
 	const size_t buf_size = 256;
 
 	// lap = only the 100 ms show pause, 100 / 24 = 4.17
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"step\":4,\"tail\":1}";
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"dark\":200,\"step\":4,\"tail\":1}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -108,7 +112,8 @@ TEST(WebPageDisplayTranslatorTest, SnakeMaxPauseDoesNotOverflow) {
 	const size_t buf_size = 256;
 
 	// lap 7143415 ms / 24 = 297642.3
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"step\":297642,\"tail\":1}";
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"dark\":200,\"step\":297642,\"tail\":1}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -131,7 +136,8 @@ TEST(WebPageDisplayTranslatorTest, SnakeMaxPauseDoesNotOverflow) {
 TEST(WebPageDisplayTranslatorTest, SnakeTailZeroClampsToOne) {
 	const size_t buf_size = 256;
 
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"step\":458,\"tail\":1}";
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"dark\":200,\"step\":458,\"tail\":1}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -155,7 +161,8 @@ TEST(WebPageDisplayTranslatorTest, SnakeTailScalesToPageCells) {
 	const size_t buf_size = 256;
 
 	// tail 50 * 24 / 109 = 11.01
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"step\":458,\"tail\":11}";
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"dark\":200,\"step\":458,\"tail\":11}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -179,7 +186,8 @@ TEST(WebPageDisplayTranslatorTest, SnakeTailFullLampIsPageCells) {
 	const size_t buf_size = 256;
 
 	// tail 109 * 24 / 109 = 24 exactly, no cap needed
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"step\":458,\"tail\":24}";
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"dark\":200,\"step\":458,\"tail\":24}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -203,7 +211,8 @@ TEST(WebPageDisplayTranslatorTest, SnakeTailCapsAtPageCells) {
 	const size_t buf_size = 256;
 
 	// 255 * 24 / 109 = 56 before the cap
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"step\":458,\"tail\":24}";
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"dark\":200,\"step\":458,\"tail\":24}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -229,7 +238,8 @@ TEST(WebPageDisplayTranslatorTest, GrowingShape) {
 	const size_t buf_size = 256;
 
 	// two lamp rows per page row: 2 * 100 ms
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"growing\",\"color\":\"#ff0000\",\"step\":200,\"end\":100}";
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"growing\",\"color\":\"#ff0000\",\"dark\":200,\"step\":200,\"end\":100}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -252,7 +262,8 @@ TEST(WebPageDisplayTranslatorTest, GrowingShape) {
 TEST(WebPageDisplayTranslatorTest, GrowingZeroPause) {
 	const size_t buf_size = 256;
 
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"growing\",\"color\":\"#00ff00\",\"step\":0,\"end\":100}";
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"growing\",\"color\":\"#00ff00\",\"dark\":200,\"step\":0,\"end\":100}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -275,7 +286,8 @@ TEST(WebPageDisplayTranslatorTest, GrowingZeroPause) {
 TEST(WebPageDisplayTranslatorTest, GrowingMaxPauseDoesNotOverflow) {
 	const size_t buf_size = 256;
 
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"growing\",\"color\":\"#ff0000\",\"step\":131070,\"end\":100}";
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"growing\",\"color\":\"#ff0000\",\"dark\":200,\"step\":131070,\"end\":100}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -301,7 +313,7 @@ TEST(WebPageDisplayTranslatorTest, RandomShape) {
 	const size_t buf_size = 256;
 
 	// 109 * 50 ms / 24 cells = 227.08; end 500 + 100 ms show pause
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"random\",\"step\":227,\"end\":600}";
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"random\",\"dark\":200,\"step\":227,\"end\":600}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -325,7 +337,7 @@ TEST(WebPageDisplayTranslatorTest, RandomStepRoundsUp) {
 	const size_t buf_size = 256;
 
 	// 109 / 24 = 4.54
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"random\",\"step\":5,\"end\":100}";
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"random\",\"dark\":200,\"step\":5,\"end\":100}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -348,7 +360,7 @@ TEST(WebPageDisplayTranslatorTest, RandomStepRoundsUp) {
 TEST(WebPageDisplayTranslatorTest, RandomZeroPauseStepIsZero) {
 	const size_t buf_size = 256;
 
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"random\",\"step\":0,\"end\":100}";
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"random\",\"dark\":200,\"step\":0,\"end\":100}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -372,7 +384,7 @@ TEST(WebPageDisplayTranslatorTest, RandomMaxValuesDoNotOverflow) {
 	const size_t buf_size = 256;
 
 	// 109 * 65535 / 24 = 297638.6
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"random\",\"step\":297638,\"end\":65635}";
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"random\",\"dark\":200,\"step\":297638,\"end\":65635}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -397,9 +409,9 @@ TEST(WebPageDisplayTranslatorTest, RandomMaxValuesDoNotOverflow) {
 TEST(WebPageDisplayTranslatorTest, FadingShape) {
 	const size_t buf_size = 256;
 
-	// steps = (100 - 0) / 5
+	// lamp: 3 x 200 ms (Clear, SetBright, fill), 20 x (200 + 10) ms, 100 ms pause = 4900 ms; page: 400 + 410 + 19 x 210 + 100
 	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"fading\",\"color\":\"#ff0000\",\"from\":100,\"to\":0,\"steps\":"
-						   "20,\"step\":10,\"end\":100}";
+						   "20,\"dark\":400,\"first\":410,\"step\":210,\"end\":100}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -422,9 +434,9 @@ TEST(WebPageDisplayTranslatorTest, FadingShape) {
 TEST(WebPageDisplayTranslatorTest, FadingStepsRoundUp) {
 	const size_t buf_size = 256;
 
-	// 100 / 30 = 3.33
+	// 100 / 30 = 3.33, so 4 loop passes
 	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"fading\",\"color\":\"#ff0000\",\"from\":100,\"to\":0,\"steps\":"
-						   "4,\"step\":10,\"end\":100}";
+						   "4,\"dark\":400,\"first\":410,\"step\":210,\"end\":100}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -448,7 +460,7 @@ TEST(WebPageDisplayTranslatorTest, FadingStepsExactDivision) {
 	const size_t buf_size = 256;
 
 	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"fading\",\"color\":\"#ff0000\",\"from\":100,\"to\":50,\"steps\":"
-						   "5,\"step\":10,\"end\":100}";
+						   "5,\"dark\":400,\"first\":410,\"step\":210,\"end\":100}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -472,7 +484,7 @@ TEST(WebPageDisplayTranslatorTest, FadingRangeOfOneIsOneStep) {
 	const size_t buf_size = 256;
 
 	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"fading\",\"color\":\"#ff0000\",\"from\":51,\"to\":50,\"steps\":"
-						   "1,\"step\":10,\"end\":100}";
+						   "1,\"dark\":400,\"first\":410,\"step\":210,\"end\":100}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -496,7 +508,7 @@ TEST(WebPageDisplayTranslatorTest, FadingStepLargerThanRangeIsOneStep) {
 	const size_t buf_size = 256;
 
 	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"fading\",\"color\":\"#ff0000\",\"from\":100,\"to\":0,\"steps\":"
-						   "1,\"step\":10,\"end\":100}";
+						   "1,\"dark\":400,\"first\":410,\"step\":210,\"end\":100}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -516,10 +528,85 @@ TEST(WebPageDisplayTranslatorTest, FadingStepLargerThanRangeIsOneStep) {
 	EXPECT_STREQ(exp_json, buf);
 }
 
+TEST(WebPageDisplayTranslatorTest, FadingStepIsShowTimePlusFadePause) {
+	const size_t buf_size = 256;
+
+	// no fade pause: SetBright() alone takes 200 ms; first = 200 + step = 400; lamp cycle 600 + 2 x 200 + 100 = 1100 = 400 + 400 + 200 + 100
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"fading\",\"color\":\"#ff0000\",\"from\":100,\"to\":0,\"steps\":"
+						   "2,\"dark\":400,\"first\":400,\"step\":200,\"end\":100}";
+	const size_t exp_len = std::strlen(exp_json);
+
+	web_display_state state{};
+	state.seq = 17;
+	state.ageMs = 4200;
+	state.source = web_source::effect;
+	state.brightPercent = 50;
+	state.effect = web_effect::fading;
+	state.fading = {0xFF0000, 0, 100, 0, 50};
+	char buf[buf_size];
+
+	size_t res;
+
+	res = HAQuDA_TranslateDisplayToJson(state, buf, buf_size);
+
+	EXPECT_EQ(exp_len, res);
+	EXPECT_STREQ(exp_json, buf);
+}
+
+TEST(WebPageDisplayTranslatorTest, FadingFirstIsShowTimePlusStep) {
+	const size_t buf_size = 256;
+
+	// step = 200 + 800 = 1000; first = 200 (fill) + step = 1200
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"fading\",\"color\":\"#ff0000\",\"from\":100,\"to\":0,\"steps\":"
+						   "2,\"dark\":400,\"first\":1200,\"step\":1000,\"end\":100}";
+	const size_t exp_len = std::strlen(exp_json);
+
+	web_display_state state{};
+	state.seq = 17;
+	state.ageMs = 4200;
+	state.source = web_source::effect;
+	state.brightPercent = 50;
+	state.effect = web_effect::fading;
+	state.fading = {0xFF0000, 800, 100, 0, 50};
+	char buf[buf_size];
+
+	size_t res;
+
+	res = HAQuDA_TranslateDisplayToJson(state, buf, buf_size);
+
+	EXPECT_EQ(exp_len, res);
+	EXPECT_STREQ(exp_json, buf);
+}
+
+TEST(WebPageDisplayTranslatorTest, FadingMaxFadePauseDoesNotOverflow) {
+	const size_t buf_size = 256;
+
+	// step = 200 + 65535 = 65735, first = 200 + step = 65935; dark stays 400
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"fading\",\"color\":\"#ff0000\",\"from\":100,\"to\":0,\"steps\":"
+						   "2,\"dark\":400,\"first\":65935,\"step\":65735,\"end\":100}";
+	const size_t exp_len = std::strlen(exp_json);
+
+	web_display_state state{};
+	state.seq = 17;
+	state.ageMs = 4200;
+	state.source = web_source::effect;
+	state.brightPercent = 50;
+	state.effect = web_effect::fading;
+	state.fading = {0xFF0000, 65535, 100, 0, 50};
+	char buf[buf_size];
+
+	size_t res;
+
+	res = HAQuDA_TranslateDisplayToJson(state, buf, buf_size);
+
+	EXPECT_EQ(exp_len, res);
+	EXPECT_STREQ(exp_json, buf);
+}
+
 TEST(WebPageDisplayTranslatorTest, FadingStepZeroIsStaticAtStartBright) {
 	const size_t buf_size = 256;
 
-	// no decrement: the lamp stays at startBright
+	// no decrement: the lamp loops at startBright until it is stopped
 	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"static\",\"color\":\"#ff0000\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
@@ -540,11 +627,11 @@ TEST(WebPageDisplayTranslatorTest, FadingStepZeroIsStaticAtStartBright) {
 	EXPECT_STREQ(exp_json, buf);
 }
 
-TEST(WebPageDisplayTranslatorTest, FadingStartBelowStopIsStaticScaledByStart) {
+TEST(WebPageDisplayTranslatorTest, FadingStepZeroStaticScalesEveryChannel) {
 	const size_t buf_size = 256;
 
-	// the NTP error effect: starts and stays dark
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"static\",\"color\":\"#000000\"}";
+	// 0x33 -> 0x1a, 0x66 -> 0x33, 0x99 -> 0x4d at 50 %
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"static\",\"color\":\"#1a334d\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -553,7 +640,7 @@ TEST(WebPageDisplayTranslatorTest, FadingStartBelowStopIsStaticScaledByStart) {
 	state.source = web_source::effect;
 	state.brightPercent = 50;
 	state.effect = web_effect::fading;
-	state.fading = {0xFFFF00, 10, 0, 100, 10};
+	state.fading = {0x336699, 10, 50, 0, 0};
 	char buf[buf_size];
 
 	size_t res;
@@ -564,11 +651,36 @@ TEST(WebPageDisplayTranslatorTest, FadingStartBelowStopIsStaticScaledByStart) {
 	EXPECT_STREQ(exp_json, buf);
 }
 
-TEST(WebPageDisplayTranslatorTest, FadingStartEqualsStopIsStaticScaledByStart) {
+TEST(WebPageDisplayTranslatorTest, FadingStepZeroStartAbove100IsFullColor) {
 	const size_t buf_size = 256;
 
-	// 0xFF * 50 / 100 = 127.5, rounded up to 0x80
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"static\",\"color\":\"#800000\"}";
+	// start clamps to 100
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"static\",\"color\":\"#ff0000\"}";
+	const size_t exp_len = std::strlen(exp_json);
+
+	web_display_state state{};
+	state.seq = 17;
+	state.ageMs = 4200;
+	state.source = web_source::effect;
+	state.brightPercent = 50;
+	state.effect = web_effect::fading;
+	state.fading = {0xFF0000, 10, 255, 0, 0};
+	char buf[buf_size];
+
+	size_t res;
+
+	res = HAQuDA_TranslateDisplayToJson(state, buf, buf_size);
+
+	EXPECT_EQ(exp_len, res);
+	EXPECT_STREQ(exp_json, buf);
+}
+
+TEST(WebPageDisplayTranslatorTest, FadingStartEqualsStopFlashes) {
+	const size_t buf_size = 256;
+
+	// the loop never runs: dark 400 ms, lit 200 ms + 100 ms pause = 700 ms, repeat
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"fading\",\"color\":\"#ff0000\",\"from\":50,\"to\":50,\"steps\":"
+						   "1,\"dark\":400,\"first\":200,\"step\":210,\"end\":100}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -588,11 +700,12 @@ TEST(WebPageDisplayTranslatorTest, FadingStartEqualsStopIsStaticScaledByStart) {
 	EXPECT_STREQ(exp_json, buf);
 }
 
-TEST(WebPageDisplayTranslatorTest, FadingStaticScalesEveryChannel) {
+TEST(WebPageDisplayTranslatorTest, FadingStartBelowStopFlashesAtStart) {
 	const size_t buf_size = 256;
 
-	// 0x33 -> 0x1a, 0x66 -> 0x33, 0x99 -> 0x4d at 50 %
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"static\",\"color\":\"#1a334d\"}";
+	// to is reported equal to from because the lamp never counts up
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"fading\",\"color\":\"#ff0000\",\"from\":30,\"to\":30,\"steps\":"
+						   "1,\"dark\":400,\"first\":200,\"step\":210,\"end\":100}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -601,7 +714,32 @@ TEST(WebPageDisplayTranslatorTest, FadingStaticScalesEveryChannel) {
 	state.source = web_source::effect;
 	state.brightPercent = 50;
 	state.effect = web_effect::fading;
-	state.fading = {0x336699, 10, 50, 50, 5};
+	state.fading = {0xFF0000, 10, 30, 100, 10};
+	char buf[buf_size];
+
+	size_t res;
+
+	res = HAQuDA_TranslateDisplayToJson(state, buf, buf_size);
+
+	EXPECT_EQ(exp_len, res);
+	EXPECT_STREQ(exp_json, buf);
+}
+
+TEST(WebPageDisplayTranslatorTest, FadingStartZeroBelowStopStaysDark) {
+	const size_t buf_size = 256;
+
+	// the NTP error effect: brightness 0 all the time, the page cycle is 400 + 200 + 100 = 700 ms
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"fading\",\"color\":\"#ffff00\",\"from\":0,\"to\":0,\"steps\":1,"
+						   "\"dark\":400,\"first\":200,\"step\":210,\"end\":100}";
+	const size_t exp_len = std::strlen(exp_json);
+
+	web_display_state state{};
+	state.seq = 17;
+	state.ageMs = 4200;
+	state.source = web_source::effect;
+	state.brightPercent = 50;
+	state.effect = web_effect::fading;
+	state.fading = {0xFFFF00, 10, 0, 100, 10};
 	char buf[buf_size];
 
 	size_t res;
@@ -616,7 +754,7 @@ TEST(WebPageDisplayTranslatorTest, FadingStartAbove100IsClamped) {
 	const size_t buf_size = 256;
 
 	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"fading\",\"color\":\"#ff0000\",\"from\":100,\"to\":0,\"steps\":"
-						   "10,\"step\":10,\"end\":100}";
+						   "10,\"dark\":400,\"first\":410,\"step\":210,\"end\":100}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -636,11 +774,12 @@ TEST(WebPageDisplayTranslatorTest, FadingStartAbove100IsClamped) {
 	EXPECT_STREQ(exp_json, buf);
 }
 
-TEST(WebPageDisplayTranslatorTest, FadingStopAbove100IsClamped) {
+TEST(WebPageDisplayTranslatorTest, FadingStopAbove100IsClampedAndFlashes) {
 	const size_t buf_size = 256;
 
-	// stop clamps to 100 = start, so nothing to fade
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"static\",\"color\":\"#ff0000\"}";
+	// stop clamps to 100 = start, so the loop never runs
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"fading\",\"color\":\"#ff0000\",\"from\":100,\"to\":100,"
+						   "\"steps\":1,\"dark\":400,\"first\":200,\"step\":210,\"end\":100}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1004,7 +1143,8 @@ TEST(WebPageDisplayTranslatorTest, ErrorKindNtpWithoutEffectIsHold) {
 TEST(WebPageDisplayTranslatorTest, ErrorSensorsRandomShape) {
 	const size_t buf_size = 256;
 
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"error\",\"err\":\"sensors\",\"bright\":50,\"fx\":\"random\",\"step\":227,\"end\":600}";
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"error\",\"err\":\"sensors\",\"bright\":50,\"fx\":\"random\",\"dark\":200,\"step\":227,\"end\":600}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1025,10 +1165,11 @@ TEST(WebPageDisplayTranslatorTest, ErrorSensorsRandomShape) {
 	EXPECT_STREQ(exp_json, buf);
 }
 
-TEST(WebPageDisplayTranslatorTest, ErrorNtpFadingEndsDark) {
+TEST(WebPageDisplayTranslatorTest, ErrorNtpFadingStaysDark) {
 	const size_t buf_size = 256;
 
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"error\",\"err\":\"ntp\",\"bright\":50,\"fx\":\"static\",\"color\":\"#000000\"}";
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"error\",\"err\":\"ntp\",\"bright\":50,\"fx\":\"fading\",\"color\":\"#ffff00\",\"from\":0,\"to\":"
+						   "0,\"steps\":1,\"dark\":400,\"first\":200,\"step\":210,\"end\":100}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1052,8 +1193,8 @@ TEST(WebPageDisplayTranslatorTest, ErrorNtpFadingEndsDark) {
 TEST(WebPageDisplayTranslatorTest, ErrorWifiGrowingShape) {
 	const size_t buf_size = 256;
 
-	const char *exp_json
-		= "{\"seq\":17,\"age\":4200,\"src\":\"error\",\"err\":\"wifi\",\"bright\":50,\"fx\":\"growing\",\"color\":\"#ff0000\",\"step\":200,\"end\":100}";
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"error\",\"err\":\"wifi\",\"bright\":50,\"fx\":\"growing\",\"color\":\"#ff0000\",\"dark\":200,"
+						   "\"step\":200,\"end\":100}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1077,8 +1218,8 @@ TEST(WebPageDisplayTranslatorTest, ErrorWifiGrowingShape) {
 TEST(WebPageDisplayTranslatorTest, ErrorApSnakeShape) {
 	const size_t buf_size = 256;
 
-	const char *exp_json
-		= "{\"seq\":17,\"age\":4200,\"src\":\"error\",\"err\":\"ap\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"step\":458,\"tail\":1}";
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"error\",\"err\":\"ap\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"dark\":200,"
+						   "\"step\":458,\"tail\":1}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1103,7 +1244,7 @@ TEST(WebPageDisplayTranslatorTest, ErrorFsFadingShape) {
 	const size_t buf_size = 256;
 
 	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"error\",\"err\":\"fs\",\"bright\":50,\"fx\":\"fading\",\"color\":\"#ff0000\",\"from\":100,"
-						   "\"to\":0,\"steps\":20,\"step\":10,\"end\":100}";
+						   "\"to\":0,\"steps\":20,\"dark\":400,\"first\":410,\"step\":210,\"end\":100}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1902,83 +2043,11 @@ TEST(WebPageDisplayTranslatorTest, UnknownErrorOfErrorSourceReturnsZeroAndEmptyS
 	EXPECT_EQ(exp_first, buf[0]);
 }
 
-TEST(WebPageDisplayTranslatorTest, UnknownErrorIsIgnoredForEffectSource) {
-	const size_t buf_size = 256;
+// ---------------------------------------------------------------- worst case
 
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"static\",\"color\":\"#01ff00\"}";
-	const size_t exp_len = std::strlen(exp_json);
-
-	web_display_state state{};
-	state.seq = 17;
-	state.ageMs = 4200;
-	state.source = web_source::effect;
-	state.brightPercent = 50;
-	state.effect = web_effect::static_color;
-	state.staticColor = 0x01FF00;
-	state.error = static_cast<web_error>(99);
-	char buf[buf_size];
-
-	size_t res;
-
-	res = HAQuDA_TranslateDisplayToJson(state, buf, buf_size);
-
-	EXPECT_EQ(exp_len, res);
-	EXPECT_STREQ(exp_json, buf);
-}
-
-TEST(WebPageDisplayTranslatorTest, UnknownErrorIsIgnoredForNoneSource) {
-	const size_t buf_size = 256;
-
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"none\",\"bright\":50,\"fx\":\"hold\"}";
-	const size_t exp_len = std::strlen(exp_json);
-
-	web_display_state state{};
-	state.seq = 17;
-	state.ageMs = 4200;
-	state.source = web_source::none;
-	state.brightPercent = 50;
-	state.error = static_cast<web_error>(99);
-	char buf[buf_size];
-
-	size_t res;
-
-	res = HAQuDA_TranslateDisplayToJson(state, buf, buf_size);
-
-	EXPECT_EQ(exp_len, res);
-	EXPECT_STREQ(exp_json, buf);
-}
-
-TEST(WebPageDisplayTranslatorTest, UnknownErrorIsIgnoredForMeasSource) {
-	const size_t buf_size = 256;
-
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"standard\",\"keys\":[\"pm25\"]}";
-	const size_t exp_len = std::strlen(exp_json);
-
-	web_display_state state{};
-	state.seq = 17;
-	state.ageMs = 4200;
-	state.source = web_source::meas;
-	state.brightPercent = 50;
-	state.layout = web_meas_layout::standard;
-	state.keys[0] = web_meas_key::pm25;
-	state.error = static_cast<web_error>(99);
-	char buf[buf_size];
-
-	size_t res;
-
-	res = HAQuDA_TranslateDisplayToJson(state, buf, buf_size);
-
-	EXPECT_EQ(exp_len, res);
-	EXPECT_STREQ(exp_json, buf);
-}
-
-// ---------------------------------------------------------------- longest output
-
-TEST(WebPageDisplayTranslatorTest, LongestFadingOutputFitsIn256Bytes) {
-	const size_t buf_size = 256;
-
+TEST(WebPageDisplayTranslatorTest, WorstCaseErrorFadingFitsJsonBufLen) {
 	const char *exp_json = "{\"seq\":4294967295,\"age\":4294967295,\"src\":\"error\",\"err\":\"sensors\",\"bright\":100,\"fx\":\"fading\",\"color\":\"#"
-						   "ffffff\",\"from\":100,\"to\":0,\"steps\":100,\"step\":65535,\"end\":100}";
+						   "ffffff\",\"from\":100,\"to\":0,\"steps\":100,\"dark\":400,\"first\":65935,\"step\":65735,\"end\":100}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1989,11 +2058,11 @@ TEST(WebPageDisplayTranslatorTest, LongestFadingOutputFitsIn256Bytes) {
 	state.error = web_error::sensors;
 	state.effect = web_effect::fading;
 	state.fading = {0xFFFFFF, 65535, 100, 0, 1};
-	char buf[buf_size];
+	char buf[WEB_DISPLAY_JSON_BUF_LEN];
 
 	size_t res;
 
-	res = HAQuDA_TranslateDisplayToJson(state, buf, buf_size);
+	res = HAQuDA_TranslateDisplayToJson(state, buf, WEB_DISPLAY_JSON_BUF_LEN);
 
 	EXPECT_EQ(exp_len, res);
 	EXPECT_STREQ(exp_json, buf);
@@ -2344,29 +2413,4 @@ TEST(WebPageNightHourTest, SameDayWindowLongerThan12HoursGivesValueAbove12) {
 	res = HAQuDA_NightHour(1, 20, 15);
 
 	EXPECT_EQ(exp_hour, res);
-}
-
-// ---------------------------------------------------------------- worst case
-
-TEST(WebPageDisplayTranslatorTest, WorstCaseErrorFadingFitsJsonBufLen) {
-	const char *exp_json = "{\"seq\":4294967295,\"age\":4294967295,\"src\":\"error\",\"err\":\"sensors\",\"bright\":100,\"fx\":\"fading\",\"color\":\"#"
-						   "ffffff\",\"from\":100,\"to\":0,\"steps\":100,\"step\":65535,\"end\":100}";
-	const size_t exp_len = std::strlen(exp_json);
-
-	web_display_state state{};
-	state.seq = 4294967295u;
-	state.ageMs = 4294967295u;
-	state.source = web_source::error;
-	state.brightPercent = 100;
-	state.error = web_error::sensors;
-	state.effect = web_effect::fading;
-	state.fading = {0xFFFFFF, 65535, 100, 0, 1};
-	char buf[WEB_DISPLAY_JSON_BUF_LEN];
-
-	size_t res;
-
-	res = HAQuDA_TranslateDisplayToJson(state, buf, WEB_DISPLAY_JSON_BUF_LEN);
-
-	EXPECT_EQ(exp_len, res);
-	EXPECT_STREQ(exp_json, buf);
 }

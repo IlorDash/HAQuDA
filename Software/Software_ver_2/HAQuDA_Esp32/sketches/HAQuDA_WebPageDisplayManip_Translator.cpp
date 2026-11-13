@@ -5,11 +5,17 @@
 
 namespace {
 
-	// Lamp geometry and timing, mirrors HAQuDA_LEDsParams.h (LED_NUM_PIXELS, LED_ROW_NUM) and the 100 ms pause
-	// HAQuDA_DisplayManip::Show adds after every draw. Not included from there: that header pulls in Arduino.h.
+	// Lamp geometry and timing, mirrors HAQuDA_LEDsParams.h (LED_NUM_PIXELS, LED_ROW_NUM), the 100 ms pause
+	// HAQuDA_DisplayManip::Show adds after every draw and the 200 ms HAQuDA_LEDs::Show() blocks without an argument (so do
+	// Clear() and SetBright(), which call it). Not included from there: that header pulls in Arduino.h.
 	constexpr uint32_t LAMP_PIXELS = 109;
 	constexpr uint32_t LAMP_ROWS = 12;
 	constexpr uint32_t SHOW_PAUSE_MS = 100;
+	constexpr uint32_t LEDS_SHOW_MS = 200;
+	// Every effect starts with Clear(): the matrix is dark for LEDS_SHOW_MS before the first frame.
+	constexpr uint32_t CLEAR_DARK_MS = LEDS_SHOW_MS;
+	// show_fading() is dark for Clear() and for SetBright(start) (still dark, the pixels are cleared).
+	constexpr uint32_t FADING_DARK_MS = 2 * LEDS_SHOW_MS;
 
 	// Page grid: 4 columns x 6 rows (the lamp is 9 columns x 12 rows).
 	constexpr uint32_t PAGE_CELLS = 24;
@@ -99,47 +105,62 @@ namespace {
 		return KEY_NAMES[(index < countOf(KEY_NAMES)) ? index : 0];
 	}
 
-	// Lamp: one lap = LAMP_PIXELS draws of movePauseMs plus the 100 ms pause. Page: the same lap over PAGE_CELLS cells.
+	// Lamp: Clear() (dark), then one lap = LAMP_PIXELS draws of movePauseMs plus the 100 ms pause. Page: "dark" ms, then the same
+	// lap over PAGE_CELLS cells.
 	void appendSnake(JsonWriter &w, const web_snake_params &p) {
 		const uint32_t lapMs = LAMP_PIXELS * p.movePauseMs + SHOW_PAUSE_MS;
 		const uint32_t stepMs = divRound(lapMs, PAGE_CELLS);
 		const uint32_t tail = clampU32(divRound(static_cast<uint32_t>(p.tailLen) * PAGE_CELLS, LAMP_PIXELS), 1, PAGE_CELLS);
 		w.Append(",\"fx\":\"snake\"");
 		appendColor(w, p.color);
-		w.Append(",\"step\":%lu,\"tail\":%lu", static_cast<unsigned long>(stepMs), static_cast<unsigned long>(tail));
+		w.Append(",\"dark\":%lu,\"step\":%lu,\"tail\":%lu", static_cast<unsigned long>(CLEAR_DARK_MS), static_cast<unsigned long>(stepMs),
+				 static_cast<unsigned long>(tail));
 	}
 
-	// Lamp: LAMP_ROWS rows, one per growPauseMs. Page: PAGE_ROWS rows, so each page row takes two lamp rows.
+	// Lamp: Clear() (dark), LAMP_ROWS rows, one per growPauseMs, then the full matrix for the 100 ms pause. Page: "dark" ms, then
+	// PAGE_ROWS rows, so each page row takes two lamp rows.
 	void appendGrowing(JsonWriter &w, const web_growing_params &p) {
 		const uint32_t stepMs = (LAMP_ROWS / PAGE_ROWS) * p.growPauseMs;
 		w.Append(",\"fx\":\"growing\"");
 		appendColor(w, p.color);
-		w.Append(",\"step\":%lu,\"end\":%lu", static_cast<unsigned long>(stepMs), static_cast<unsigned long>(SHOW_PAUSE_MS));
+		w.Append(",\"dark\":%lu,\"step\":%lu,\"end\":%lu", static_cast<unsigned long>(CLEAR_DARK_MS), static_cast<unsigned long>(stepMs),
+				 static_cast<unsigned long>(SHOW_PAUSE_MS));
 	}
 
-	// Lamp: LAMP_PIXELS pixels, one per pauseMs, then endPauseMs and the 100 ms pause. Page: PAGE_CELLS cells over the same time.
+	// Lamp: Clear() (dark), LAMP_PIXELS pixels, one per pauseMs, then endPauseMs and the 100 ms pause. Page: "dark" ms, then
+	// PAGE_CELLS cells over the same time.
 	void appendRandom(JsonWriter &w, const web_random_params &p) {
 		const uint32_t stepMs = divRound(LAMP_PIXELS * p.pauseMs, PAGE_CELLS);
 		const uint32_t endMs = static_cast<uint32_t>(p.endPauseMs) + SHOW_PAUSE_MS;
-		w.Append(",\"fx\":\"random\",\"step\":%lu,\"end\":%lu", static_cast<unsigned long>(stepMs), static_cast<unsigned long>(endMs));
+		w.Append(",\"fx\":\"random\",\"dark\":%lu,\"step\":%lu,\"end\":%lu", static_cast<unsigned long>(CLEAR_DARK_MS), static_cast<unsigned long>(stepMs),
+				 static_cast<unsigned long>(endMs));
 	}
 
-	// Lamp: brightness counts down from startBright to stopBright in `step` decrements, one per fadePauseMs. When startBright <=
-	// stopBright the countdown never runs; with step == 0 the lamp loops at startBright until the effect is stopped. Either way
-	// the colour stays at startBright, so the page shows it as a static colour.
+	// Lamp: Clear() and SetBright(start) are dark (2 x 200 ms), the fill shows startBright for 200 ms, then brightness counts down
+	// from startBright to stopBright in `step` decrements: every one is SetBright() = 200 ms plus fadePauseMs, the first is
+	// startBright again. The last level stays for the 100 ms pause, then the cycle restarts. So the page gets: "dark" ms, the
+	// first level for "first" ms, every further level for "step" ms (steps levels in all), the last level "end" ms longer.
+	// When startBright <= stopBright the countdown never runs: the lamp is dark for 400 ms, lit at startBright for 200 ms plus the
+	// 100 ms pause, and starts over, so it flashes. The page gets one level (steps 1, from = to = startBright, first 200 ms),
+	// a cycle of 700 ms; with startBright 0 the lamp stays dark for the whole cycle and so does the page. Only step == 0 with
+	// startBright > stopBright is steady: the lamp loops at startBright until the effect is stopped, the page shows a static colour.
 	void appendFading(JsonWriter &w, const web_fading_params &p) {
 		const uint32_t from = clampU32(p.startBright, 0, MAX_PERCENT);
 		const uint32_t to = clampU32(p.stopBright, 0, MAX_PERCENT);
-		const uint32_t steps = ((from > to) && (p.step > 0)) ? divCeil(from - to, p.step) : 0;
-		if (steps == 0) {
+		const bool counts = from > to;
+		if (counts && (p.step == 0)) {
 			w.Append(",\"fx\":\"static\"");
 			appendColor(w, scaleColor(p.color, from));
 			return;
 		}
+		const uint32_t steps = counts ? divCeil(from - to, p.step) : 1;
+		const uint32_t stepMs = LEDS_SHOW_MS + p.fadePauseMs;
+		const uint32_t firstMs = counts ? (LEDS_SHOW_MS + stepMs) : LEDS_SHOW_MS;
 		w.Append(",\"fx\":\"fading\"");
 		appendColor(w, p.color);
-		w.Append(",\"from\":%lu,\"to\":%lu,\"steps\":%lu,\"step\":%lu,\"end\":%lu", static_cast<unsigned long>(from), static_cast<unsigned long>(to),
-				 static_cast<unsigned long>(steps), static_cast<unsigned long>(p.fadePauseMs), static_cast<unsigned long>(SHOW_PAUSE_MS));
+		w.Append(",\"from\":%lu,\"to\":%lu,\"steps\":%lu,\"dark\":%lu,\"first\":%lu,\"step\":%lu,\"end\":%lu", static_cast<unsigned long>(from),
+				 static_cast<unsigned long>(counts ? to : from), static_cast<unsigned long>(steps), static_cast<unsigned long>(FADING_DARK_MS),
+				 static_cast<unsigned long>(firstMs), static_cast<unsigned long>(stepMs), static_cast<unsigned long>(SHOW_PAUSE_MS));
 	}
 
 	void appendEffect(JsonWriter &w, const web_display_state &s) {

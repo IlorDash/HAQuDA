@@ -6,6 +6,10 @@
 // Translates what the lamp draws into the compact JSON the web page uses to mirror the LED picture on its 4 columns x 6 rows grid.
 // All durations in the JSON are already converted to page cells and milliseconds for that 4 columns x 6 rows grid (the lamp is
 // 9 columns x 12 rows), so the page plays them as they are.
+// Timing fields of the effects: "dark" is the time the matrix is dark at the start of every cycle (the lamp clears it first),
+// "step" the time of one page step, "end" the extra time the last frame stays at the end of the cycle; a fading effect also has
+// "first", the time of its first level (the lamp shows the start level twice). A fading cycle is exactly
+// dark + first + (steps - 1) x step + end, and equals the lamp's cycle.
 // Hardware-free: the firmware fills web_display_state from its own enums, this module only does arithmetic and text.
 
 // What the lamp is drawing (mirrors display_modes). Mode event and none draw nothing, the LEDs keep their last frame.
@@ -66,7 +70,7 @@ struct web_display_state {
 };
 
 // Buffer size that holds every JSON the translator writes: the longest one (an error with a fading effect, every number at its
-// maximum) is about 170 bytes.
+// maximum) is about 200 bytes.
 constexpr size_t WEB_DISPLAY_JSON_BUF_LEN = 256;
 
 // Night hour the lamp passes to its progress bar for `hour` (0..23, local time): hours since `start` while the hour is inside the

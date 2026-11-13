@@ -151,6 +151,10 @@ LAMP_ROWS = 12
 PAGE_CELLS = 24
 PAGE_ROWS = 6
 SHOW_PAUSE_MS = 100
+# HAQuDA_LEDs::Show() without an argument blocks 200 ms, so do Clear() and SetBright(); every effect starts with Clear()
+LEDS_SHOW_MS = 200
+CLEAR_DARK_MS = LEDS_SHOW_MS
+FADING_DARK_MS = 2 * LEDS_SHOW_MS
 DISP_BRIGHT = 50
 DISP_EFFECT_SLOT_S = 25.0
 DISP_ERROR_SLOT_S = 15.0
@@ -166,22 +170,43 @@ def div_round(numerator, denominator):
 def fx_snake(color, move_pause_ms, tail_len):
     lap_ms = LAMP_PIXELS * move_pause_ms + SHOW_PAUSE_MS
     tail = min(max(div_round(tail_len * PAGE_CELLS, LAMP_PIXELS), 1), PAGE_CELLS)
-    return {"fx": "snake", "color": color, "step": div_round(lap_ms, PAGE_CELLS), "tail": tail}
+    return {"fx": "snake", "color": color, "dark": CLEAR_DARK_MS, "step": div_round(lap_ms, PAGE_CELLS), "tail": tail}
 
 
 def fx_growing(color, grow_pause_ms):
-    return {"fx": "growing", "color": color, "step": (LAMP_ROWS // PAGE_ROWS) * grow_pause_ms, "end": SHOW_PAUSE_MS}
+    return {"fx": "growing", "color": color, "dark": CLEAR_DARK_MS, "step": (LAMP_ROWS // PAGE_ROWS) * grow_pause_ms,
+            "end": SHOW_PAUSE_MS}
 
 
 def fx_random(pause_ms, end_pause_ms):
-    return {"fx": "random", "step": div_round(LAMP_PIXELS * pause_ms, PAGE_CELLS), "end": end_pause_ms + SHOW_PAUSE_MS}
+    return {"fx": "random", "dark": CLEAR_DARK_MS, "step": div_round(LAMP_PIXELS * pause_ms, PAGE_CELLS),
+            "end": end_pause_ms + SHOW_PAUSE_MS}
 
 
 def fx_fading(color, fade_pause_ms, start_bright, stop_bright, step):
-    """Fade from start down to stop; the countdown must run (start above stop, step above 0)."""
-    steps = -(-(start_bright - stop_bright) // step)
-    return {"fx": "fading", "color": color, "from": start_bright, "to": stop_bright, "steps": steps, "step": fade_pause_ms,
+    """The lamp is dark for Clear() and SetBright(start), shows the start level for 200 ms, then every level (the first is the
+    start level again) for 200 ms + the pause; the last level stays 100 ms longer.
+
+    When the countdown does not run (start not above stop) the lamp flashes: one level, from = to = start, shown for 200 ms
+    (cycle 700 ms). Start above stop with step 0 is steady, a static colour.
+    """
+    counts = start_bright > stop_bright
+    if counts and step == 0:
+        return fx_static(scale_percent(color, start_bright))
+    steps = -(-(start_bright - stop_bright) // step) if counts else 1
+    step_ms = LEDS_SHOW_MS + fade_pause_ms
+    return {"fx": "fading", "color": color, "from": start_bright, "to": stop_bright if counts else start_bright, "steps": steps,
+            "dark": FADING_DARK_MS, "first": LEDS_SHOW_MS + step_ms if counts else LEDS_SHOW_MS, "step": step_ms,
             "end": SHOW_PAUSE_MS}
+
+
+def scale_percent(color, percent):
+    """The colour with every channel scaled by percent (0..100), rounded half up like the firmware."""
+    value = int(color[1:], 16)
+    scaled = 0
+    for shift in (16, 8, 0):
+        scaled |= div_round(((value >> shift) & 0xFF) * percent, 100) << shift
+    return "#{0:06x}".format(scaled)
 
 
 def fx_static(color):
@@ -206,13 +231,13 @@ DISP_EFFECTS = [
     ("fading", DISP_AP_PICTURE),
     ("static", fx_static("#01ff00")),
 ]
-# The five error effects in disp-errors: (error kind, picture). The NTP error fades up from 0, which the lamp shows as dark.
+# The five error effects in disp-errors: (error kind, picture). The NTP error starts at brightness 0 and never counts down, so the lamp stays dark.
 DISP_ERRORS = [
     ("wifi", fx_growing("#ff0000", 100)),
     ("ap", fx_snake("#ff0000", 100, 1)),
     ("fs", fx_fading("#ff0000", 10, 100, 0, 5)),
     ("sensors", fx_random(50, 500)),
-    ("ntp", fx_static("#000000")),
+    ("ntp", fx_fading("#ffff00", 10, 0, 100, 10)),
 ]
 
 
