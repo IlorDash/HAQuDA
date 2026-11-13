@@ -7,6 +7,13 @@
 	// lamp's WiFi for a moment while the lamp joins the other network) keep asking quietly this long before giving up
 	var JOIN_POLL_MS = 2000;
 	var JOIN_QUIET_MS = 60000;
+	// station mode: the lamp leaves the network this page is served over, joins the new one, and restarts. The page asks its own
+	// origin every STA_PROBE_MS while the lamp is away and waits this long for it to come back before it says the lamp has
+	// probably joined the new network. A failed switch restarts the lamp, which then tries its saved networks in file order,
+	// up to about 32 s per network, so a lamp whose old network is not the first record is back only after several of those
+	// plus the boot; 180 s covers about four unreachable records ahead of it.
+	var STA_PROBE_MS = 3000;
+	var STA_QUIET_MS = 180000;
 	// After a check passes the lamp holds its own WiFi for the time /api/join reports (restart_ms; 20 s in the firmware),
 	// restarts, and joins the new network about 8-10 s later (2 s boot effect, file system, connect). This much is added
 	// on top, with some margin, so the addresses turn active when the lamp is most likely on the new network and the
@@ -41,23 +48,38 @@
 			badChars: 'The name or the password contains a character the lamp cannot receive.',
 			tooLong: 'Over 31 bytes: emoji and non-Latin letters take 2–4 bytes each.',
 			exists: 'This network is already saved — its password will be updated.',
-			full: '10 networks saved — that’s the limit. Delete all to add a new one.',
+			full: function (oldest) {
+				return '10 networks saved: adding this one removes “' + oldest + '”.';
+			},
 			saved: 'Saved networks', empty: 'No saved networks yet.', upd: 'will update', listFail: 'Cannot read the saved networks.',
 			delAll: 'Delete all networks', cancel: 'Cancel', delYes: 'Delete all',
 			confirm: function (n) {
 				return 'Delete all ' + n + ' networks? After its next restart the lamp starts its own access point.';
 			},
 			bAp: 'You’re on the lamp’s own network. Add your home WiFi — the lamp will restart and join it.',
-			rbTitle: 'Saved. The lamp is restarting', rbWait: 'Waiting for the lamp · checking every 5 s', toMain: 'Back to main page',
-			s1: 'Restart, about 3 seconds.',
-			s2: function (n) {
-				return 'The lamp joins “' + n + '”.';
-			},
-			s3sta: 'If it’s the same network, this page comes back on its own at this address.',
-			s3ap: 'The lamp’s network will disappear. Reconnect your phone to home WiFi and find the lamp’s new address in your router.',
 			main: 'Main page', log: 'Live log', fw: 'Firmware',
 			checking: function (n) {
 				return 'Checking “' + n + '”…';
+			},
+			switching: function (from, n) {
+				return 'The lamp leaves ' + (from ? '“' + from + '”' : 'its network') + ' to try “' + n + '”; this page loses it for about a minute.';
+			},
+			staOk: function (n) {
+				return 'The lamp joined “' + n + '”. If this page stops answering, connect this phone to “' + n + '” and open http://haquda.local/.';
+			},
+			close: 'Close',
+			lastFail: function (reason, n, cur) {
+				var why = 'no answer in time';
+				if (reason === 'wrong_password') {
+					why = 'the password was not accepted';
+				} else if (reason === 'no_network') {
+					why = 'the network was not found (the lamp works only with 2.4 GHz WiFi)';
+				} else if (reason === 'save_failed') {
+					why = 'the lamp could not save it';
+				} else if (reason === 'scan_failed') {
+					why = 'the lamp could not search for networks';
+				}
+				return 'Could not join “' + n + '”: ' + why + '.' + (cur ? ' The lamp is back on “' + cur + '”.' : '');
 			},
 			mayLose: 'The phone may lose the lamp’s WiFi for a moment…',
 			fail: function (reason, n) {
@@ -66,13 +88,22 @@
 					return 'The password for ' + q + ' was not accepted. Check it and try again.';
 				}
 				if (reason === 'no_network') {
-					return 'The lamp cannot find ' + q + '. Check the name and that the router is on and in range, then try again.';
+					return 'The lamp cannot see ' + q + '. The lamp works only with 2.4 GHz WiFi: if this is a 5 GHz network, choose the router’s 2.4 GHz network or turn 2.4 GHz on in the router. Otherwise check the name and that the router is on and in range, then try again.';
 				}
 				if (reason === 'save_failed') {
 					return 'The lamp joined ' + q + ' but could not save it. Try again. If it fails again, delete all networks and add this one again.';
 				}
 				if (reason === 'lost') {
 					return 'The lamp has probably joined ' + q + ' and restarted. Connect this phone to ' + q + ' and open http://haquda.local/. If the page does not open, reconnect to the lamp’s WiFi and try again.';
+				}
+				if (reason === 'scan_failed') {
+					return 'The lamp could not search for networks, so it did not try ' + q + '. Try again.';
+				}
+				if (reason === 'unknown') {
+					return 'The lamp is back, but it did not report how the switch to ' + q + ' ended. It is probably on its previous network. Try again.';
+				}
+				if (reason === 'lostSta') {
+					return 'The lamp has probably joined ' + q + '. Connect this phone to ' + q + ' and open http://haquda.local/.';
 				}
 				return q + ' did not answer in time. Check the password and the signal, then try again.';
 			},
@@ -99,23 +130,38 @@
 			badChars: 'Имя или пароль содержит символ, который лампа не сможет принять.',
 			tooLong: 'Длиннее 31 байта: эмодзи и кириллица занимают 2–4 байта на символ.',
 			exists: 'Эта сеть уже сохранена — пароль будет обновлён.',
-			full: 'Сохранено 10 сетей — это максимум. Удалите все, чтобы добавить новую.',
+			full: function (oldest) {
+				return 'Сохранено 10 сетей: при добавлении этой будет удалена «' + oldest + '».';
+			},
 			saved: 'Сохранённые сети', empty: 'Сохранённых сетей пока нет.', upd: 'обновится', listFail: 'Не удалось прочитать сохранённые сети.',
 			delAll: 'Удалить все сети', cancel: 'Отмена', delYes: 'Удалить все',
 			confirm: function (n) {
 				return 'Удалить все сети (' + n + ')? После следующей перезагрузки лампа включит свою точку доступа.';
 			},
 			bAp: 'Вы подключены к сети лампы. Добавьте домашний WiFi — лампа перезагрузится и подключится к нему.',
-			rbTitle: 'Сохранено. Лампа перезагружается', rbWait: 'Ждём лампу · проверка каждые 5 с', toMain: 'На главную',
-			s1: 'Перезагрузка, около 3 секунд.',
-			s2: function (n) {
-				return 'Лампа подключается к «' + n + '».';
-			},
-			s3sta: 'Если сеть та же, страница вернётся сама по этому адресу.',
-			s3ap: 'Сеть лампы исчезнет. Подключите телефон к домашнему WiFi и найдите новый адрес лампы в роутере.',
 			main: 'Главная', log: 'Живой лог', fw: 'Прошивка',
 			checking: function (n) {
 				return 'Проверяем «' + n + '»…';
+			},
+			switching: function (from, n) {
+				return 'Лампа покидает ' + (from ? '«' + from + '»' : 'свою сеть') + ', чтобы попробовать «' + n + '»; эта страница потеряет лампу примерно на минуту.';
+			},
+			staOk: function (n) {
+				return 'Лампа подключилась к «' + n + '». Если страница перестанет отвечать, подключите этот телефон к «' + n + '» и откройте http://haquda.local/.';
+			},
+			close: 'Закрыть',
+			lastFail: function (reason, n, cur) {
+				var why = 'нет ответа вовремя';
+				if (reason === 'wrong_password') {
+					why = 'пароль не принят';
+				} else if (reason === 'no_network') {
+					why = 'сеть не найдена (лампа работает только с WiFi 2,4 ГГц)';
+				} else if (reason === 'save_failed') {
+					why = 'лампа не смогла сохранить сеть';
+				} else if (reason === 'scan_failed') {
+					why = 'лампа не смогла искать сети';
+				}
+				return 'Не удалось подключиться к «' + n + '»: ' + why + '.' + (cur ? ' Лампа снова в сети «' + cur + '».' : '');
 			},
 			mayLose: 'Телефон может ненадолго потерять WiFi лампы…',
 			fail: function (reason, n) {
@@ -124,13 +170,22 @@
 					return 'Пароль сети ' + q + ' не принят. Проверьте его и попробуйте снова.';
 				}
 				if (reason === 'no_network') {
-					return 'Лампа не находит сеть ' + q + '. Проверьте имя и что роутер включён и в зоне досягаемости, и попробуйте снова.';
+					return 'Лампа не видит сеть ' + q + '. Лампа работает только с WiFi 2,4 ГГц: если это сеть 5 ГГц, выберите сеть роутера на 2,4 ГГц или включите 2,4 ГГц в настройках роутера. Иначе проверьте имя и что роутер включён и в зоне досягаемости, и попробуйте снова.';
 				}
 				if (reason === 'save_failed') {
 					return 'Лампа подключилась к ' + q + ', но не смогла сохранить сеть. Попробуйте снова. Если не получится, удалите все сети и добавьте эту заново.';
 				}
 				if (reason === 'lost') {
 					return 'Лампа, скорее всего, подключилась к ' + q + ' и перезагрузилась. Подключите этот телефон к ' + q + ' и откройте http://haquda.local/. Если страница не открывается, подключитесь к WiFi лампы и попробуйте снова.';
+				}
+				if (reason === 'scan_failed') {
+					return 'Лампа не смогла искать сети и не стала пробовать ' + q + '. Попробуйте снова.';
+				}
+				if (reason === 'unknown') {
+					return 'Лампа снова на связи, но не сообщила, чем закончился переход на ' + q + '. Скорее всего, она в прежней сети. Попробуйте снова.';
+				}
+				if (reason === 'lostSta') {
+					return 'Лампа, скорее всего, подключилась к ' + q + '. Подключите этот телефон к ' + q + ' и откройте http://haquda.local/.';
 				}
 				return 'Сеть ' + q + ' не ответила вовремя. Проверьте пароль и уровень сигнала и попробуйте снова.';
 			},
@@ -149,16 +204,17 @@
 	var state = { data: null, down: false };
 	var nets = [];
 	var tagEls = [];
-	// reboot: set after the lamp accepted a network; upBefore and sawDown tell the restart apart from a lamp that never went away
-	var reboot = null;
 	var busy = false;
 	var confirming = false;
 	// the lamp checks a network before it saves it (access point mode):
-	// join: a check is running, { ssid, lostSinceMs: when the lamp stopped answering, 0 while it answers }
+	// join: a check is running, { ssid, lostSinceMs: when the lamp stopped answering, 0 while it answers, sta: station mode (the
+	// lamp leaves this page's network for the check), fromSsid: the network it leaves, switching: the lamp has announced the leave }
 	// failure: the last check failed, { reason, ssid }; joined: the check passed, { ssid, ip, host }
 	var join = null;
 	var failure = null;
 	var joined = null;
+	// the outcome of an earlier station mode switch that failed and restarted the lamp: { ssid, reason }, or null
+	var lastJoin = null;
 
 	var form = byId('form');
 	var ssid = byId('ssid');
@@ -270,9 +326,25 @@
 		Array.prototype.forEach.call(byId('bars').children, function (bar, i) {
 			bar.className = i < level ? 'on' : '';
 		});
-		byId('banner').hidden = !(d && d.mode === 'ap') || !!reboot || !!joined;
+		byId('banner').hidden = !(d && d.mode === 'ap') || !!joined;
 		byId('mfw').textContent = d ? T.fw + ' ' + d.fw : '';
 		byId('mip').textContent = d ? 'IP ' + d.ip : '';
+		renderLast();
+	}
+
+	// the names come from the lamp: text only
+	function renderLast() {
+		var d = state.data;
+		var cur = d && d.mode === 'sta' && typeof d.ssid === 'string' ? d.ssid : '';
+		byId('lastBanner').hidden = !lastJoin;
+		byId('lastBannerText').textContent = lastJoin ? T.lastFail(lastJoin.reason, lastJoin.ssid, cur) : '';
+	}
+
+	// the lamp forgets the outcome once the user has read it
+	function dismissLast() {
+		lastJoin = null;
+		renderLast();
+		fetch('/api/join/dismiss', { method: 'POST' }).catch(function () {});
 	}
 
 	function renderForm() {
@@ -281,9 +353,10 @@
 		var ssidLong = sb > MAX_BYTES;
 		var passLong = pb > MAX_BYTES;
 		var exists = ssid.value !== '' && nets.indexOf(ssid.value) >= 0;
-		// a saved name can still be updated at 10 networks, a new one cannot
-		var full = nets.length >= MAX_NETS && !exists;
-		var hint = ssidLong ? T.tooLong : (exists ? T.exists : (full ? T.full : ''));
+		// at 10 networks a new name is still saved: the lamp keeps the new one first and drops the last of the list (the list
+		// has the file's order, and the lamp cuts from the end of the file). A saved name is only updated, nothing is removed
+		var oldest = nets.length >= MAX_NETS && !exists ? nets[nets.length - 1] : '';
+		var hint = ssidLong ? T.tooLong : (exists ? T.exists : (oldest ? T.full(oldest) : ''));
 		var hintEl = byId('ssidHint');
 
 		byId('ssidCnt').textContent = sb + ' / ' + MAX_BYTES + ' ' + T.bytes;
@@ -301,10 +374,9 @@
 
 		byId('showPass').textContent = pass.type === 'password' ? T.show : T.hide;
 		save.textContent = exists ? T.update : T.add;
-		save.disabled = ssidLong || passLong || full || busy || !!join;
+		save.disabled = ssidLong || passLong || busy || !!join;
 		ssid.disabled = !!join;
 		pass.disabled = !!join;
-		form.classList.toggle('dim-form', full);
 		tagEls.forEach(function (tag, i) {
 			tag.textContent = exists && nets[i] === ssid.value ? T.upd : '';
 		});
@@ -346,7 +418,12 @@
 	function renderJoin() {
 		var box = byId('reply');
 		if (join) {
-			showReply(box, byId('replyText'), T.checking(join.ssid) + (join.lostSinceMs ? ' ' + T.mayLose : ''), false);
+			var text = T.checking(join.ssid) + (join.lostSinceMs ? ' ' + T.mayLose : '');
+			// station mode: the lamp is leaving or has left this page's network, whether or not the announce was seen
+			if (join.sta && (join.switching || join.lostSinceMs)) {
+				text = T.switching(join.fromSsid, join.ssid);
+			}
+			showReply(box, byId('replyText'), text, false);
 			box.classList.add('wait');
 		} else if (failure) {
 			showReply(box, byId('replyText'), T.fail(failure.reason, failure.ssid), true);
@@ -461,23 +538,16 @@
 		}
 	}
 
-	function renderReboot() {
-		byId('rb').hidden = !reboot;
-		byId('edit').hidden = !!reboot || !!joined;
-		if (!reboot) {
-			return;
-		}
-		byId('rbResp').textContent = reboot.text;
-		byId('rbS1').textContent = T.s1;
-		byId('rbS2').textContent = T.s2(reboot.ssid);
-		byId('rbS3').textContent = reboot.ap ? T.s3ap : T.s3sta;
+	// after a passed access point check the form gives way to the addresses card
+	function renderEdit() {
+		byId('edit').hidden = !!joined;
 	}
 
 	function renderAll() {
 		renderHeader();
 		renderForm();
 		renderConfirm();
-		renderReboot();
+		renderEdit();
 		renderJoin();
 		renderJoined();
 	}
@@ -526,27 +596,6 @@
 			});
 	}
 
-	function startReboot(name, text) {
-		reboot = {
-			ssid: name,
-			text: text,
-			ap: !!state.data && state.data.mode === 'ap',
-			savedAtMs: nowMs()
-		};
-		pass.value = '';
-		renderAll();
-	}
-
-	// the restart is over when the lamp reports an uptime shorter than the time since the save: it booted after the save
-	function checkRestarted() {
-		if (!reboot || state.down || typeof state.data.uptime !== 'number') {
-			return;
-		}
-		if (state.data.uptime < (nowMs() - reboot.savedAtMs) / 1000) {
-			location.reload();
-		}
-	}
-
 	// one request at a time: the next poll is scheduled before the page is redrawn, so a drawing error cannot stop polling
 	function poll() {
 		fetchTimed('/api/status', { cache: 'no-store' }, function (r) {
@@ -564,7 +613,6 @@
 			.then(function () {
 				setTimeout(poll, POLL_MS);
 				renderHeader();
-				checkRestarted();
 			});
 	}
 
@@ -589,6 +637,33 @@
 		renderAll();
 	}
 
+	// the station mode check passed: the lamp is in the new network and this page still reaches it (or the lamp says so
+	// before it restarts). The outcome is shown here, so the lamp forgets it
+	function showStaOk(name) {
+		join = null;
+		failure = null;
+		pass.value = '';
+		renderAll();
+		showReply(byId('reply'), byId('replyText'), T.staOk(name), false);
+		loadNets();
+		dismissLast();
+	}
+
+	// the lamp is back after a station mode switch and tells how it ended; last is the "last" field of /api/join
+	function applyStaLast(last) {
+		var name = last && typeof last.ssid === 'string' && last.ssid ? last.ssid : join.ssid;
+		if (last && last.result === 'ok') {
+			showStaOk(name);
+		} else if (last && last.result === 'fail') {
+			showFail(name, last.reason);
+			dismissLast();
+		} else {
+			// back with nothing to report (a power cut, or another page dismissed it): the outcome is unknown, and a lamp
+			// that answers at this origin again is on the network this page was served over, not on the new one
+			showFail(join.ssid, 'unknown');
+		}
+	}
+
 	function readJoin(r) {
 		if (!r.ok) {
 			throw new Error(r.status);
@@ -606,11 +681,11 @@
 			if (!join.lostSinceMs) {
 				join.lostSinceMs = now;
 			}
-			if (now - join.lostSinceMs > JOIN_QUIET_MS) {
-				showFail(join.ssid, 'lost');
+			if (now - join.lostSinceMs > (join.sta ? STA_QUIET_MS : JOIN_QUIET_MS)) {
+				showFail(join.ssid, join.sta ? 'lostSta' : 'lost');
 				return;
 			}
-			setTimeout(joinPoll, JOIN_POLL_MS);
+			setTimeout(joinPoll, join.sta ? STA_PROBE_MS : JOIN_POLL_MS);
 			renderJoin();
 			return;
 		}
@@ -618,10 +693,25 @@
 		if (d.state === 'checking') {
 			setTimeout(joinPoll, JOIN_POLL_MS);
 			renderJoin();
+		} else if (d.state === 'switching') {
+			join.sta = true;
+			join.switching = true;
+			setTimeout(joinPoll, JOIN_POLL_MS);
+			renderJoin();
 		} else if (d.state === 'ok') {
-			showOk(typeof d.ssid === 'string' ? d.ssid : join.ssid, d);
+			if (join.sta) {
+				showStaOk(typeof d.ssid === 'string' ? d.ssid : join.ssid);
+			} else {
+				showOk(typeof d.ssid === 'string' ? d.ssid : join.ssid, d);
+			}
 		} else if (d.state === 'fail') {
 			showFail(join.ssid, d.reason);
+			if (join.sta) {
+				dismissLast();
+			}
+		} else if (join.sta) {
+			// idle after the lamp restarted: it reports how the switch ended
+			applyStaLast(d.last);
 		} else {
 			// idle: the lamp restarted or forgot the check
 			showFail(join.ssid, 'lost');
@@ -640,9 +730,38 @@
 			.then(applyJoin);
 	}
 
-	function startJoin(name) {
+	// the lamp serves this page over a saved network (not its own access point)
+	function inStationMode() {
+		return !!state.data && state.data.mode === 'sta';
+	}
+
+	// runs next once the lamp's mode is known: the first status poll may not have arrived yet, and a lamp in station mode
+	// disappears during a check, so the mode cannot be read afterwards
+	function withStatus(next) {
+		if (state.data) {
+			next();
+			return;
+		}
+		fetchTimed('/api/status', { cache: 'no-store' }, function (r) {
+			if (!r.ok) {
+				throw new Error(r.status);
+			}
+			return r.json();
+		})
+			.then(function (d) {
+				state.data = d;
+			})
+			.catch(function () {})
+			.then(next);
+	}
+
+	// sta: station mode, the lamp leaves its network for the check. fromSsid is read now: once the lamp is away the status is stale
+	function startJoin(name, sta) {
 		var fresh = !join;
-		join = { ssid: name, lostSinceMs: 0 };
+		join = {
+			ssid: name, lostSinceMs: 0, sta: !!sta, switching: false,
+			fromSsid: sta && state.data && typeof state.data.ssid === 'string' ? state.data.ssid : ''
+		};
 		failure = null;
 		renderForm();
 		renderJoin();
@@ -656,11 +775,26 @@
 	function probeJoin(showFinal) {
 		fetchTimed('/api/join', { cache: 'no-store' }, readJoin)
 			.then(function (d) {
-				if (!d || join || joined || typeof d.ssid !== 'string') {
+				if (!d || typeof d !== 'object') {
+					return;
+				}
+				// a failed switch that restarted the lamp: told on both pages until the user closes it
+				var l = d.last;
+				if (l && l.result === 'fail' && typeof l.ssid === 'string' && l.ssid && !join) {
+					lastJoin = { ssid: l.ssid, reason: typeof l.reason === 'string' ? l.reason : '' };
+					renderLast();
+				}
+				if (join || joined || typeof d.ssid !== 'string') {
 					return;
 				}
 				if (d.state === 'checking') {
-					startJoin(d.ssid);
+					withStatus(function () {
+						if (!join) {
+							startJoin(d.ssid, inStationMode());
+						}
+					});
+				} else if (d.state === 'switching') {
+					startJoin(d.ssid, true);
 				} else if (showFinal && d.state === 'ok') {
 					showOk(d.ssid, d);
 				} else if (showFinal && d.state === 'fail') {
@@ -737,38 +871,37 @@
 		failure = null;
 		renderForm();
 		showReply(byId('reply'), byId('replyText'), T.saving, false);
-		fetch('/add_wifi_creds', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-			body: body
-		})
-			.then(function (r) {
-				return r.text().then(function (t) {
-					busy = false;
-					// 202: access point mode, the lamp checks the network first; the text is for pages without scripts
-					if (r.status === 202) {
-						startJoin(name);
-						return;
-					}
-					if (r.ok) {
-						byId('reply').hidden = true;
-						startReboot(name, t);
-						return;
-					}
-					showReply(byId('reply'), byId('replyText'), t, true);
-					renderForm();
-					loadNets();
-					if (r.status === 409) {
-						// a check is running, or one passed and the lamp restarts: show it
-						probeJoin(true);
-					}
-				});
+		// the mode is read before the request: after it the lamp may already be away
+		withStatus(function () {
+			fetch('/add_wifi_creds', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+				body: body
 			})
-			.catch(function () {
-				busy = false;
-				showReply(byId('reply'), byId('replyText'), T.noAnswer, true);
-				renderForm();
-			});
+				.then(function (r) {
+					return r.text().then(function (t) {
+						busy = false;
+						// 202: the lamp checks the network before it saves it; the text is for pages without scripts. In
+						// station mode the lamp leaves the network this page is served over for the check
+						if (r.status === 202) {
+							startJoin(name, inStationMode());
+							return;
+						}
+						showReply(byId('reply'), byId('replyText'), t, true);
+						renderForm();
+						loadNets();
+						if (r.status === 409) {
+							// a check is running, or one passed and the lamp restarts: show it
+							probeJoin(true);
+						}
+					});
+				})
+				.catch(function () {
+					busy = false;
+					showReply(byId('reply'), byId('replyText'), T.noAnswer, true);
+					renderForm();
+				});
+		});
 	}
 
 	function deleteAll() {
@@ -820,6 +953,7 @@
 		renderConfirm();
 	});
 	byId('delYes').addEventListener('click', deleteAll);
+	byId('lastClose').addEventListener('click', dismissLast);
 	byId('jokIpCopy').addEventListener('click', function () {
 		copyText(byId('jokIp').textContent, this);
 	});

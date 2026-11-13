@@ -68,16 +68,23 @@
     <ClCompile Include="TestLogDedup.cpp" />
     <ClCompile Include="TestMeasSnapshot.cpp" />
     <ClCompile Include="TestWiFiJoin.cpp" />
+    <ClCompile Include="TestWiFiCreds.cpp" />
+    <ClCompile Include="TestJoinLast.cpp" />
+    <ClCompile Include="TestWiFiSwitch.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_ColorScale.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_LogDedup.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_MeasSnapshot.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_WiFiJoin.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_JoinLast.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_WiFiCreds.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\sketches\HAQuDA_ColorScale.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_LogDedup.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_MeasSnapshot.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_WiFiJoin.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_JoinLast.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_WiFiCreds.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_ILEDs.h" />
     <ClInclude Include="..\mocks\MockLEDs.h" />
   </ItemGroup>

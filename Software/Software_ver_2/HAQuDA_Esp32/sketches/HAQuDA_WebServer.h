@@ -10,6 +10,7 @@
 #include "HAQuDA_Logger.h"
 #include "HAQuDA_MeasSnapshot.h"
 #include "HAQuDA_WiFiJoin.h"
+#include "HAQuDA_JoinLast.h"
 
 #define SSID_PARAM_NAME "ssid"
 #define PASS_PARAM_NAME "pass"
@@ -26,9 +27,6 @@ constexpr char STA_HOSTNAME[] = "haquda";
 
 class HAQuDA_WebServer {
 	static void recvMsg(uint8_t *data, size_t len);
-
-	static bool checkStoredWiFiCredsCntLimit();
-	static bool getWiFiCredsWriteIndex(uint16_t *index, const TWiFiCreds newWiFiCreds);
 
   protected:
 	HAQuDA_FileStorage *_myFS;
@@ -47,11 +45,14 @@ class HAQuDA_WebServer {
 	std::atomic<const char *> deferredLogError{nullptr};
 
 	// True when the lamp booted into access point mode. Set once by the WiFi handler in setup(), read by the web server
-	// task and loop(). In this mode a new network is checked before it is saved.
+	// task and loop(). In this mode the check of a new network runs next to the access point; in station mode the lamp scans,
+	// leaves its network and joins the new one instead.
 	std::atomic<bool> apMode{false};
 
-	// Check of a new network, see HAQuDA_WiFiJoin.h. The web server task queues the request and reads the view, loop()
-	// takes the request and writes the view; both sit behind joinMux, held for a copy only (no calls inside).
+	// Check of a new network (access point mode) or switch to it (station mode), see HAQuDA_WiFiJoin.h. The web server
+	// task queues the request and reads the view, loop() takes the request and writes the view; both sit behind joinMux,
+	// held for a copy only (no calls inside). The outcome of a station mode switch (view.last*) is also mirrored into the
+	// record in RTC memory, which survives the restart that ends the switch; it is written under joinMux too.
 	portMUX_TYPE joinMux = portMUX_INITIALIZER_UNLOCKED;
 	join_view joinView;
 	TWiFiCreds joinRequest;
@@ -75,9 +76,22 @@ class HAQuDA_WebServer {
 	bool takeJoinRequest(TWiFiCreds &creds);
 	// Publishes the progress of the running check to /api/join. loop() only.
 	void publishJoinState(join_state state, join_reason reason, uint32_t ip);
+	// Publishes the outcome of a station mode switch to /api/join and keeps it across the restart. Call before
+	// scheduleRestart(). loop() only.
+	void publishLastJoin(join_last_result result, join_reason reason, const char *ssid);
+	// Reads the outcome kept across the restart into the view, when the last reset was a software restart and the record is
+	// valid; otherwise makes the record empty. beginWebServer() only (setup, before the server runs).
+	void restoreLastJoin();
 
-	// Saves the network, or overwrites the record of the same name. Any task; takes the credentials lock.
-	saveNewWiFiCredsReturnMsgs SaveNew_WiFiCreds(TWiFiCreds writeWiFiNet);
+	// Saves the network as the first record of /WiFiNetworks (connectToStoredWiFi() tries the records in file order); a stored
+	// record of the same name goes, the file keeps at most MAX_WIFI_CREDS_NUM records. The file is written whole under the
+	// credentials lock: first to /WiFiNetworks.tmp (a failed write leaves the old list), then the old list is deleted and the
+	// temporary file renamed. A power loss between those two steps leaves only the temporary file; RecoverCredsFile() restores
+	// it at the next boot. Returns false on failure (logged through postLogError). Any task; takes the credentials lock.
+	bool SaveCredsFirst(const TWiFiCreds &newCreds);
+	// Finishes or drops what an interrupted SaveCredsFirst() left (see HAQuDA_DecideCredsRecovery). Call at boot before
+	// the stored networks are read, with no other task using the file. setup() (loop task) only; logs.
+	void RecoverCredsFile();
 
 	void beginWebServer();
 
@@ -95,6 +109,7 @@ class HAQuDA_WebServer {
 	void handleStatus(AsyncWebServerRequest *request);
 	void handleWiFiList(AsyncWebServerRequest *request);
 	void handleJoin(AsyncWebServerRequest *request);
+	void handleJoinDismiss(AsyncWebServerRequest *request);
 	void handleBoot(AsyncWebServerRequest *request);
 	void WebSerialPrintStoredLogs();
 

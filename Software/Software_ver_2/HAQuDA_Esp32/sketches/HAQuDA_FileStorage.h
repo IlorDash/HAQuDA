@@ -7,6 +7,7 @@
 #include "Board.h"
 #include "FS.h"
 #include "SPIFFS.h"
+#include "HAQuDA_WiFiCreds.h"
 
 #define YEAR_DAY 365.24
 #define DAY_HOUR 24
@@ -25,10 +26,6 @@
 #define FILE_NAME_LOGS "/logs"
 #define FILE_NAME_LOGS_OLD "/logs.old" // SPIFFS names are limited to 31 chars with the path
 
-#define MAX_WIFI_CREDS_NUM 10
-#define WIFI_SSID_LEN 32
-#define WIFI_PASS_LEN 32
-
 const int checkPeriod = 10;
 const int checksPerAccumulation = 4;
 const int partTime = 21600;
@@ -46,20 +43,6 @@ typedef struct {
 	float humid_log;
 	float O3_log;
 } TMeasLog;
-
-typedef struct {
-	char ssid[WIFI_SSID_LEN] = "";
-	char pass[WIFI_PASS_LEN] = "";
-} __attribute__((__packed__)) TWiFiCreds;
-
-typedef enum {
-	error_opening_file,
-	too_many_WiFi,
-	error_reading_stored_WiFi_creds,
-	error_saving_new_WiFi_creds,
-	re_writed_WiFi_creds,
-	saved_new_WiFi_creds
-} saveNewWiFiCredsReturnMsgs;
 
 class HAQuDA_FileStorage {
   public:

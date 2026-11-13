@@ -35,6 +35,10 @@
 	<div class="banner" id="banner" hidden>
 		<p data-i="bAp">You&rsquo;re on the lamp&rsquo;s own network. Add your home WiFi &mdash; the lamp will restart and join it.</p>
 	</div>
+	<div class="banner bad" id="lastBanner" hidden>
+		<p id="lastBannerText"></p>
+		<button type="button" class="bx" id="lastClose" data-i="close">Close</button>
+	</div>
 	<div id="edit">
 		<div class="cols">
 			<form class="card" id="form" action="/add_wifi_creds" method="post">
@@ -75,17 +79,6 @@
 			<a class="lk" href="/webserial"><span data-i="log">Live log</span></a>
 		</nav>
 	</div>
-	<section class="card rb" id="rb" hidden>
-		<div class="rb-t"><span class="rb-dot"></span><span data-i="rbTitle">Saved. The lamp is restarting</span></div>
-		<div class="rb-resp" id="rbResp"></div>
-		<div class="steps">
-			<div class="step"><b>1</b><span id="rbS1"></span></div>
-			<div class="step"><b>2</b><span id="rbS2"></span></div>
-			<div class="step"><b>3</b><span id="rbS3"></span></div>
-		</div>
-		<div class="wait" data-i="rbWait">Waiting for the lamp &middot; checking every 5 s</div>
-		<a class="cta" href="/" data-i="toMain">Back to main page</a>
-	</section>
 	<section class="card rb" id="jok" hidden>
 		<div class="rb-t"><span class="rb-dot"></span><span id="jokTitle"></span></div>
 		<div class="addrs">

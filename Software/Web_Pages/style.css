@@ -87,7 +87,6 @@ input {
 .val,
 .cnt,
 .meta,
-.rb-resp,
 .reply span {
 	font-family: ui-monospace, Menlo, Consolas, monospace;
 }
@@ -270,6 +269,23 @@ main.in {
 	font-size: 14px;
 	line-height: 1.45;
 	overflow-wrap: anywhere;
+}
+
+.banner.bad {
+	border-color: #dc2626;
+}
+
+.banner .bx {
+	align-self: flex-end;
+	min-height: 44px;
+	padding: 0 18px;
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	background: transparent;
+	color: inherit;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
 }
 
 .cta {
@@ -617,10 +633,6 @@ main.in {
 	cursor: default;
 }
 
-.card.dim-form {
-	opacity: 0.5;
-}
-
 .reply {
 	display: flex;
 	align-items: flex-start;
@@ -801,57 +813,6 @@ main.in {
 	border-radius: 50%;
 	background: #2fa84a;
 	box-shadow: 0 0 0 4px rgba(47, 168, 74, 0.2);
-}
-
-.rb-resp {
-	padding: 10px 12px;
-	border: 1px solid var(--border);
-	border-radius: 10px;
-	background: var(--bg);
-	font-size: 13px;
-	overflow-wrap: anywhere;
-}
-
-.steps {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-}
-
-.step {
-	display: grid;
-	grid-template-columns: 24px 1fr;
-	gap: 10px;
-	align-items: start;
-}
-
-.step b {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 24px;
-	height: 24px;
-	border-radius: 50%;
-	background: var(--seg);
-	color: var(--muted);
-	font-size: 12px;
-}
-
-.step:first-child b {
-	background: var(--cta);
-	color: var(--cta-ink);
-}
-
-.step span {
-	padding-top: 2px;
-	font-size: 14px;
-	line-height: 1.45;
-	overflow-wrap: anywhere;
-}
-
-.wait {
-	font-size: 12px;
-	color: var(--muted);
 }
 
 .reply.wait {

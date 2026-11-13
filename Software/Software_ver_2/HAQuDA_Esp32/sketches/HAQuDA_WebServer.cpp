@@ -3,6 +3,8 @@
 #include "WebPages.h"
 #include "HAQuDA_Version.h"
 
+#include <esp_attr.h>
+#include <esp_system.h>
 #include <esp_timer.h>
 #include <esp_wifi.h>
 #include <cstdarg>
@@ -14,8 +16,10 @@ constexpr size_t STATUS_JSON_LEN = 768;
 constexpr size_t WIFI_LIST_JSON_LEN = 2048;
 // A SSID byte is escaped to at most 6 characters (\u00XX)
 constexpr size_t JSON_ESCAPED_SSID_LEN = WIFI_SSID_LEN * 6 + 1;
-// state, escaped name, address, host and reason of /api/join
-constexpr size_t JOIN_JSON_LEN = JSON_ESCAPED_SSID_LEN + 192;
+// state, escaped name, address, host and reason of /api/join, then the outcome of the last switch with its own escaped name
+constexpr size_t JOIN_JSON_LEN = JSON_ESCAPED_SSID_LEN * 2 + 320;
+// The credentials file is rewritten through this file, so a failed write leaves the old list (SPIFFS names hold 31 characters)
+constexpr char FILE_NAME_WIFI_NET_TMP[] = "/WiFiNetworks.tmp";
 // Longest wait for the credentials file lock; a file operation takes tens of milliseconds
 constexpr uint32_t CREDS_LOCK_WAIT_MS = 2000;
 static_assert(JOIN_SSID_BUF_LEN == WIFI_SSID_LEN, "the check keeps the same name length as the stored record");
@@ -72,6 +76,22 @@ namespace {
 	void sendText(AsyncWebServerRequest *request, int code, const char *text) {
 		request->send(code, "text/plain", text);
 	}
+
+	// Wipes a buffer that held passwords when it goes out of scope, on every return path
+	class WipeOnExit {
+	  public:
+		WipeOnExit(void *dataToWipe, size_t lenToWipe) : data(dataToWipe), len(lenToWipe) {
+		}
+		~WipeOnExit() {
+			HAQuDA_WipeBytes(data, len);
+		}
+		WipeOnExit(const WipeOnExit &) = delete;
+		WipeOnExit &operator=(const WipeOnExit &) = delete;
+
+	  private:
+		void *data;
+		size_t len;
+	};
 } // namespace
 
 void HAQuDA_SendIndexPage(AsyncWebServerRequest *request) {
@@ -80,7 +100,13 @@ void HAQuDA_SendIndexPage(AsyncWebServerRequest *request) {
 
 bool HAQuDA_WebServer::WebServerStarted = false;
 
+// The one file-scope variable: it must live in RTC memory that the start-up code leaves alone (RTC_NOINIT_ATTR), which a class
+// member cannot. Written by HAQuDA_WebServer under joinMux only (one instance); holds noise after a power-on, hence the
+// magic and the checksum of the record.
+static RTC_NOINIT_ATTR join_last_record rtcLastJoin;
+
 void HAQuDA_WebServer::beginWebServer() {
+	restoreLastJoin();
 	WebServerResponds_init();
 	// WebSerial only registers its page and socket handlers, so it needs nothing from server.begin().
 	// It goes before the captive handler: the server gives a request to the first handler that accepts
@@ -167,56 +193,28 @@ void HAQuDA_WebServer::handle_NewWiFiCreds(AsyncWebServerRequest *request) {
 	memset(&newWiFiCreds, 0, sizeof(newWiFiCreds));
 	strncpy(newWiFiCreds.ssid, ssidParam->value().c_str(), sizeof(newWiFiCreds.ssid) - 1);
 	strncpy(newWiFiCreds.pass, passParam->value().c_str(), sizeof(newWiFiCreds.pass) - 1);
+	WipeOnExit wipeNewCreds(&newWiFiCreds, sizeof(newWiFiCreds));
 
-	// Access point mode: the lamp tests the network first, so a wrong password does not cost the access point
-	if (apMode.load()) {
-		join_queue_result queued = queueJoinRequest(newWiFiCreds);
-		if (queued == join_queue_result::checking) {
-			sendText(request, 409, "The lamp is already checking a network. Wait for the result.");
-			return;
-		}
-		if (queued == join_queue_result::restarting) {
-			sendText(request, 409, "The network is saved. The lamp is restarting.");
-			return;
-		}
+	// Both modes test the network before they save it, so a wrong password costs neither the access point nor the working
+	// station connection. loop() does the work; the page follows it through /api/join.
+	bool accessPoint = apMode.load();
+	join_queue_result queued = queueJoinRequest(newWiFiCreds);
+	if (queued == join_queue_result::checking) {
+		sendText(request, 409, "The lamp is already checking a network. Wait for the result.");
+		return;
+	}
+	if (queued == join_queue_result::restarting) {
+		sendText(request, 409, accessPoint ? "The network is saved. The lamp is restarting." : "The lamp is restarting. Open this page again in a minute.");
+		return;
+	}
+	if (accessPoint) {
 		sendText(request, 202, "The lamp is checking the network. Open this page again in 30 seconds.");
 		return;
 	}
-
-	saveNewWiFiCredsReturnMsgs saveNewWiFiCredsMsg = SaveNew_WiFiCreds(newWiFiCreds);
-
-	switch (saveNewWiFiCredsMsg) {
-		case too_many_WiFi:
-			postLogError("handle_NewWiFiCreds: no room for another network");
-			sendText(request, 409,
-					 "The lamp stores 10 networks and all places are taken. "
-					 "Press Delete all networks on the WiFi networks page, then add this network again.");
-			break;
-		case error_reading_stored_WiFi_creds:
-			postLogError("handle_NewWiFiCreds: cannot read the saved networks");
-			sendText(request, 500,
-					 "The lamp cannot read its saved networks. Try again. "
-					 "If it fails again, press Delete all networks on the WiFi networks page and add the network again.");
-			break;
-		case error_saving_new_WiFi_creds:
-			postLogError("handle_NewWiFiCreds: cannot write the network");
-			sendText(request, 500,
-					 "The lamp cannot save the network. Try again. "
-					 "If it fails again, press Delete all networks on the WiFi networks page and add the network again.");
-			break;
-		case re_writed_WiFi_creds:
-			sendText(request, 200, "This network was already saved. The password is updated and the lamp restarts in 3 seconds.");
-			scheduleRestart(RESTART_DELAY_MS);
-			break;
-		case saved_new_WiFi_creds:
-			sendText(request, 200, "Saved. The lamp restarts in 3 seconds.");
-			scheduleRestart(RESTART_DELAY_MS);
-			break;
-		default:
-			postLogError("handle_NewWiFiCreds: unexpected save result");
-			sendText(request, 500, "The lamp cannot save the network. Try again.");
-			break;
-	}
+	// Station mode: the lamp leaves its network for the check, so this page is unreachable until the lamp is back
+	sendText(request, 202,
+			 "The lamp is checking the network. This page may be unreachable for about a minute while the lamp tries it. "
+			 "Open this page again then to see the result.");
 }
 
 // loop() restarts the lamp: waiting in the async_tcp task would block it. The time and the delay are stored before the flag.
@@ -233,7 +231,7 @@ join_queue_result HAQuDA_WebServer::queueJoinRequest(const TWiFiCreds &creds) {
 	portENTER_CRITICAL(&joinMux);
 	if (restartPending.load() || (joinView.state == join_state::ok)) {
 		result = join_queue_result::restarting;
-	} else if (joinRequestPending.load() || (joinView.state == join_state::checking)) {
+	} else if (joinRequestPending.load() || (joinView.state == join_state::checking) || (joinView.state == join_state::switching)) {
 		result = join_queue_result::checking;
 	} else {
 		joinRequest = creds;
@@ -242,6 +240,9 @@ join_queue_result HAQuDA_WebServer::queueJoinRequest(const TWiFiCreds &creds) {
 		joinView.reason = join_reason::none;
 		joinView.ip = 0;
 		HAQuDA_SetJoinSsid(joinView, creds.ssid, sizeof(creds.ssid));
+		// The outcome of the previous switch is replaced by this one
+		HAQuDA_SetJoinLast(joinView, join_last_result::none, join_reason::none, nullptr, 0);
+		HAQuDA_ClearJoinLastRecord(rtcLastJoin);
 	}
 	portEXIT_CRITICAL(&joinMux);
 	return result;
@@ -266,6 +267,36 @@ void HAQuDA_WebServer::publishJoinState(join_state state, join_reason reason, ui
 	joinView.reason = reason;
 	joinView.ip = ip;
 	portEXIT_CRITICAL(&joinMux);
+}
+
+void HAQuDA_WebServer::publishLastJoin(join_last_result result, join_reason reason, const char *ssid) {
+	portENTER_CRITICAL(&joinMux);
+	HAQuDA_SetJoinLast(joinView, result, reason, ssid, WIFI_SSID_LEN);
+	HAQuDA_EncodeJoinLast(rtcLastJoin, joinView);
+	portEXIT_CRITICAL(&joinMux);
+}
+
+void HAQuDA_WebServer::restoreLastJoin() {
+	join_view restored;
+	// A software restart keeps RTC memory; after a power-on, a brown-out or a crash the record is not ours to trust, even
+	// if the noise happened to pass the checksum
+	bool valid = (esp_reset_reason() == ESP_RST_SW) && HAQuDA_DecodeJoinLast(rtcLastJoin, restored);
+	portENTER_CRITICAL(&joinMux);
+	if (valid) {
+		HAQuDA_SetJoinLast(joinView, restored.lastResult, restored.lastReason, restored.lastSsid, sizeof(restored.lastSsid));
+	} else {
+		HAQuDA_ClearJoinLastRecord(rtcLastJoin);
+	}
+	portEXIT_CRITICAL(&joinMux);
+}
+
+// The page has shown the outcome of the last switch: forget it, so it is not shown again
+void HAQuDA_WebServer::handleJoinDismiss(AsyncWebServerRequest *request) {
+	portENTER_CRITICAL(&joinMux);
+	HAQuDA_SetJoinLast(joinView, join_last_result::none, join_reason::none, nullptr, 0);
+	HAQuDA_ClearJoinLastRecord(rtcLastJoin);
+	portEXIT_CRITICAL(&joinMux);
+	request->send(204);
 }
 
 void HAQuDA_WebServer::handleJoin(AsyncWebServerRequest *request) {
@@ -420,6 +451,7 @@ void HAQuDA_WebServer::handleWiFiList(AsyncWebServerRequest *request) {
 	}
 	for (int i = 0; i < credsNum; i++) {
 		TWiFiCreds creds;
+		WipeOnExit wipeCreds(&creds, sizeof(creds));
 		if (!HAQuDA_FileStorage::ReadFile(FILE_NAME_WIFI_NET, i * (int)sizeof(TWiFiCreds), (uint8_t *)&creds, sizeof(TWiFiCreds))) {
 			postLogError("handleWiFiList: cannot read a saved network");
 			continue;
@@ -464,68 +496,126 @@ void HAQuDA_WebServer::WebServerResponds_init() {
 	server.on("/api/wifi", HTTP_GET, [this](AsyncWebServerRequest *request) { handleWiFiList(request); });
 	server.on("/api/boot", HTTP_GET, [this](AsyncWebServerRequest *request) { handleBoot(request); });
 	server.on("/api/join", HTTP_GET, [this](AsyncWebServerRequest *request) { handleJoin(request); });
+	server.on("/api/join/dismiss", HTTP_POST, [this](AsyncWebServerRequest *request) { handleJoinDismiss(request); });
 
 	server.on("/delete_wifi_creds", HTTP_POST, [this](AsyncWebServerRequest *request) { delete_WiFiCreds(request); });
 	server.on("/add_wifi_creds", HTTP_POST, [this](AsyncWebServerRequest *request) { handle_NewWiFiCreds(request); });
 	server.onNotFound(HAQuDA_WebServer::handle_NotFound);
 }
 
-// True when one more record fits. GetStored_WiFiCredsNum() counts a missing file as zero records, whether
-// SPIFFS reports its size as 0 or as -1.
-bool HAQuDA_WebServer::checkStoredWiFiCredsCntLimit() {
-	return GetStored_WiFiCredsNum() < MAX_WIFI_CREDS_NUM;
-}
-
-// Finds where newWiFiCreds goes: the index of the stored record with the same SSID (it is overwritten), or the
-// record count (it is appended). Returns false when a record cannot be read.
-bool HAQuDA_WebServer::getWiFiCredsWriteIndex(uint16_t *index, const TWiFiCreds newWiFiCreds) {
-	if (index == nullptr) {
-		return false;
-	}
-	int storedWiFiCredsCnt = GetStored_WiFiCredsNum();
-	TWiFiCreds readWiFiCreds;
-
-	for (int i = 0; i < storedWiFiCredsCnt; i++) {
-		if (!HAQuDA_FileStorage::ReadFile(FILE_NAME_WIFI_NET, i * (int)sizeof(TWiFiCreds), (uint8_t *)&readWiFiCreds, sizeof(TWiFiCreds))) {
-			return false;
-		}
-		if (strncmp(readWiFiCreds.ssid, newWiFiCreds.ssid, WIFI_SSID_LEN) == 0) {
-			*index = i;
-			return true;
-		}
-	}
-	*index = storedWiFiCredsCnt;
-	return true;
-}
-
-saveNewWiFiCredsReturnMsgs HAQuDA_WebServer::SaveNew_WiFiCreds(TWiFiCreds newWiFiCreds) {
+bool HAQuDA_WebServer::SaveCredsFirst(const TWiFiCreds &newCreds) {
 	CredsLock lock(credsMutex);
 	if (!lock.Held()) {
-		// postLogError() is safe from loop() and the web server task alike: loop() writes the log line
-		postLogError((credsMutex == nullptr) ? "Save: creds lock missing" : "Save: creds file busy");
-		return error_saving_new_WiFi_creds;
-	}
-	uint16_t index = 0;
-	if (!getWiFiCredsWriteIndex(&index, newWiFiCreds)) {
-		return error_reading_stored_WiFi_creds;
+		postLogError((credsMutex == nullptr) ? "Save first: creds lock missing" : "Save first: creds file busy");
+		return false;
 	}
 
-	// An existing SSID is overwritten in place, so it needs no free record even when the file is full
-	bool overwrite = (index < GetStored_WiFiCredsNum());
-	if (overwrite) {
-		if (!HAQuDA_FileStorage::WriteFile(FILE_NAME_WIFI_NET, index * sizeof(TWiFiCreds), (uint8_t *)&newWiFiCreds, sizeof(TWiFiCreds))) {
-			return error_saving_new_WiFi_creds;
+	// Both lists hold passwords: wiped on every way out
+	TWiFiCreds stored[MAX_WIFI_CREDS_NUM];
+	TWiFiCreds ordered[MAX_WIFI_CREDS_NUM];
+	WipeOnExit wipeStored(stored, sizeof(stored));
+	WipeOnExit wipeOrdered(ordered, sizeof(ordered));
+	int storedNum = GetStored_WiFiCredsNum();
+	if (storedNum > MAX_WIFI_CREDS_NUM) {
+		storedNum = MAX_WIFI_CREDS_NUM;
+	}
+	for (int i = 0; i < storedNum; i++) {
+		if (!HAQuDA_FileStorage::ReadFile(FILE_NAME_WIFI_NET, i * (int)sizeof(TWiFiCreds), (uint8_t *)&stored[i], sizeof(TWiFiCreds))) {
+			postLogError("Save first: cannot read a saved network");
+			return false;
 		}
-		return re_writed_WiFi_creds;
 	}
 
-	if (!checkStoredWiFiCredsCntLimit()) {
-		return too_many_WiFi;
+	size_t orderedNum = HAQuDA_PlaceCredsFirst(stored, storedNum, newCreds, ordered, MAX_WIFI_CREDS_NUM);
+	if (orderedNum == 0) {
+		postLogError("Save first: no network name");
+		return false;
 	}
-	if (!HAQuDA_FileStorage::AppendFile(FILE_NAME_WIFI_NET, (uint8_t *)&newWiFiCreds, sizeof(TWiFiCreds))) {
-		return error_saving_new_WiFi_creds;
+	size_t orderedLen = orderedNum * sizeof(TWiFiCreds);
+
+	// WriteFile() truncates, so a temporary file left by an interrupted earlier save is overwritten
+	if (!HAQuDA_FileStorage::WriteFile(FILE_NAME_WIFI_NET_TMP, (const uint8_t *)ordered, orderedLen)) {
+		HAQuDA_FileStorage::DeleteFile(FILE_NAME_WIFI_NET_TMP);
+		postLogError("Save first: cannot write the temporary file");
+		return false;
 	}
-	return saved_new_WiFi_creds;
+	if (HAQuDA_FileStorage::Exists(FILE_NAME_WIFI_NET) && !HAQuDA_FileStorage::DeleteFile(FILE_NAME_WIFI_NET)) {
+		HAQuDA_FileStorage::DeleteFile(FILE_NAME_WIFI_NET_TMP);
+		postLogError("Save first: cannot replace the credentials file");
+		return false;
+	}
+	if (HAQuDA_FileStorage::RenameFile(FILE_NAME_WIFI_NET_TMP, FILE_NAME_WIFI_NET)) {
+		return true;
+	}
+	// The old list is already gone: write the new one directly rather than leave no file at all
+	postLogError("Save first: rename failed, writing the file directly");
+	bool written = HAQuDA_FileStorage::WriteFile(FILE_NAME_WIFI_NET, (const uint8_t *)ordered, orderedLen);
+	HAQuDA_FileStorage::DeleteFile(FILE_NAME_WIFI_NET_TMP);
+	return written;
+}
+
+// The list is missing and the temporary file holds whole records: makes the valid ones among the first records the list.
+// Boot only, before the web server runs, so nothing else uses the files.
+static void restoreCredsFromTmp(int tmpSize) {
+	// Both buffers hold passwords: wiped on every way out
+	TWiFiCreds read[CREDS_RECOVERY_READ_MAX];
+	TWiFiCreds kept[MAX_WIFI_CREDS_NUM];
+	WipeOnExit wipeRead(read, sizeof(read));
+	WipeOnExit wipeKept(kept, sizeof(kept));
+
+	size_t totalNum = static_cast<size_t>(tmpSize) / sizeof(TWiFiCreds);
+	size_t readNum = (totalNum < CREDS_RECOVERY_READ_MAX) ? totalNum : CREDS_RECOVERY_READ_MAX;
+	for (size_t i = 0; i < readNum; i++) {
+		if (!HAQuDA_FileStorage::ReadFile(FILE_NAME_WIFI_NET_TMP, static_cast<int>(i * sizeof(TWiFiCreds)), (uint8_t *)&read[i], sizeof(TWiFiCreds))) {
+			// Not deleted: the next boot tries again
+			HAQuDA_Logger::LogError("RecoverCredsFile: cannot read the temporary file");
+			return;
+		}
+	}
+	size_t keptNum = HAQuDA_FilterRecoveredCreds(read, readNum, kept, MAX_WIFI_CREDS_NUM);
+
+	if (keptNum == 0) {
+		HAQuDA_Logger::LogError("RecoverCredsFile: no valid saved network in the temporary file, dropped");
+	} else if (keptNum == totalNum) {
+		// Nothing dropped: the rename cannot leave a half-written list
+		if (!HAQuDA_FileStorage::RenameFile(FILE_NAME_WIFI_NET_TMP, FILE_NAME_WIFI_NET)) {
+			HAQuDA_Logger::LogError("RecoverCredsFile: cannot restore the saved networks");
+		} else {
+			HAQuDA_Logger::LogInfo("Saved networks restored after an interrupted save");
+		}
+		return;
+	} else {
+		// Nothing else exists yet, so the list is written directly; the temporary file stays until that worked
+		if (!HAQuDA_FileStorage::WriteFile(FILE_NAME_WIFI_NET, (const uint8_t *)kept, keptNum * sizeof(TWiFiCreds))) {
+			HAQuDA_FileStorage::DeleteFile(FILE_NAME_WIFI_NET);
+			HAQuDA_Logger::LogError("RecoverCredsFile: cannot write the restored networks");
+			return;
+		}
+		HAQuDA_Logger::LogError("RecoverCredsFile: saved networks restored from an interrupted save, some records dropped");
+	}
+	if (!HAQuDA_FileStorage::DeleteFile(FILE_NAME_WIFI_NET_TMP)) {
+		HAQuDA_Logger::LogError("RecoverCredsFile: cannot delete the temporary file");
+	}
+}
+
+void HAQuDA_WebServer::RecoverCredsFile() {
+	bool listExists = HAQuDA_FileStorage::Exists(FILE_NAME_WIFI_NET);
+	bool tmpExists = HAQuDA_FileStorage::Exists(FILE_NAME_WIFI_NET_TMP);
+	int tmpSize = tmpExists ? HAQuDA_FileStorage::FileSize(FILE_NAME_WIFI_NET_TMP) : 0;
+	switch (HAQuDA_DecideCredsRecovery(listExists, tmpExists, tmpSize)) {
+		case creds_recovery::restore_tmp:
+			// The power failed between the delete of the old list and the rename: the temporary file is the new list
+			restoreCredsFromTmp(tmpSize);
+			break;
+		case creds_recovery::delete_tmp:
+			if (!HAQuDA_FileStorage::DeleteFile(FILE_NAME_WIFI_NET_TMP)) {
+				HAQuDA_Logger::LogError("RecoverCredsFile: cannot delete the temporary file");
+			}
+			break;
+		case creds_recovery::none:
+		default:
+			break;
+	}
 }
 
 TWiFiCreds HAQuDA_WebServer::GetStored_WiFi(int num) {

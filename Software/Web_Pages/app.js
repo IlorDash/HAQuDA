@@ -22,7 +22,20 @@
 			ap: 'Access point · no internet', off: 'WiFi connection lost', down: 'Lamp not responding · retry in 5 s',
 			bAp: 'The lamp couldn’t find a saved network and started its own. Add your home WiFi.',
 			bDown: 'No response from the lamp. It may be rebooting, switched off, or your phone changed networks. Showing the last values; data returns on its own once the lamp answers.',
-			cta: 'Add WiFi network', noData: 'no data',
+			cta: 'Add WiFi network', noData: 'no data', close: 'Close',
+			lastFail: function (reason, n, cur) {
+				var why = 'no answer in time';
+				if (reason === 'wrong_password') {
+					why = 'the password was not accepted';
+				} else if (reason === 'no_network') {
+					why = 'the network was not found (the lamp works only with 2.4 GHz WiFi)';
+				} else if (reason === 'save_failed') {
+					why = 'the lamp could not save it';
+				} else if (reason === 'scan_failed') {
+					why = 'the lamp could not search for networks';
+				}
+				return 'Could not join “' + n + '”: ' + why + '.' + (cur ? ' The lamp is back on “' + cur + '”.' : '');
+			},
 			labels: { temp: 'Temperature', humid: 'Humidity', eco2: 'eCO₂', tvoc: 'TVOC', pm1: 'PM1.0', pm25: 'PM2.5', pm10: 'PM10' },
 			lDust: 'Dust PM2.5', lTemp: 'Temperature',
 			wifi: 'WiFi networks', log: 'Live log', guide: 'User guide ↗', offNote: 'needs internet',
@@ -38,7 +51,20 @@
 			ap: 'Точка доступа · без интернета', off: 'Нет связи с WiFi', down: 'Лампа не отвечает · повтор через 5 с',
 			bAp: 'Лампа не нашла сохранённую сеть и создала свою. Добавьте домашнюю сеть.',
 			bDown: 'Нет ответа от лампы. Возможно, она перезагружается, выключена или телефон сменил сеть. Показаны последние значения; данные вернутся сами, как только лампа ответит.',
-			cta: 'Добавить WiFi-сеть', noData: 'нет данных',
+			cta: 'Добавить WiFi-сеть', noData: 'нет данных', close: 'Закрыть',
+			lastFail: function (reason, n, cur) {
+				var why = 'нет ответа вовремя';
+				if (reason === 'wrong_password') {
+					why = 'пароль не принят';
+				} else if (reason === 'no_network') {
+					why = 'сеть не найдена (лампа работает только с WiFi 2,4 ГГц)';
+				} else if (reason === 'save_failed') {
+					why = 'лампа не смогла сохранить сеть';
+				} else if (reason === 'scan_failed') {
+					why = 'лампа не смогла искать сети';
+				}
+				return 'Не удалось подключиться к «' + n + '»: ' + why + '.' + (cur ? ' Лампа снова в сети «' + cur + '».' : '');
+			},
 			labels: { temp: 'Температура', humid: 'Влажность', eco2: 'eCO₂', tvoc: 'Летучие вещества', pm1: 'PM1.0', pm25: 'Частицы PM2.5', pm10: 'PM10' },
 			lDust: 'Пыль PM2.5', lTemp: 'Температура',
 			wifi: 'WiFi-сети', log: 'Живой лог', guide: 'Руководство ↗', offNote: 'нужен интернет',
@@ -53,6 +79,10 @@
 	var state = { data: null, down: false, err: '', lastOk: '' };
 	var cells = [];
 	var tileEls = {};
+	// the outcome of a network switch that failed and restarted the lamp: { ssid, reason }, or null.
+	// lastAsked: /api/join has answered since the lamp last came back, so the outcome is known
+	var lastJoin = null;
+	var lastAsked = false;
 
 	function byId(id) {
 		return document.getElementById(id);
@@ -206,6 +236,13 @@
 		byId('bannerCta').hidden = !cta;
 	}
 
+	// the names come from the lamp: text only
+	function renderLast(d) {
+		var cur = d && d.mode === 'sta' && typeof d.ssid === 'string' ? d.ssid : '';
+		byId('lastBanner').hidden = !lastJoin;
+		byId('lastBannerText').textContent = lastJoin ? T.lastFail(lastJoin.reason, lastJoin.ssid, cur) : '';
+	}
+
 	function renderMatrix(meas, down) {
 		cells.forEach(function (cell, i) {
 			var m = meas[MATRIX_ROWS[Math.floor(i / 4)]];
@@ -292,6 +329,7 @@
 		var meas = (d && d.meas) || {};
 		renderHeader(d, state.down);
 		renderBanner(d, state.down);
+		renderLast(d);
 		renderMatrix(meas, state.down);
 		renderIndex(d, meas, state.down);
 		renderTiles(meas);
@@ -348,15 +386,45 @@
 		});
 	}
 
+	// asks once whether the last network switch failed; asked again after the lamp has been away (it restarts after a switch)
+	function loadLast() {
+		fetchTimed('/api/join', { cache: 'no-store' }, function (r) {
+			if (!r.ok) {
+				throw new Error(r.status);
+			}
+			return r.json();
+		})
+			.then(function (d) {
+				var l = d && d.last;
+				lastAsked = true;
+				lastJoin = l && l.result === 'fail' && typeof l.ssid === 'string' && l.ssid ? { ssid: l.ssid, reason: typeof l.reason === 'string' ? l.reason : '' } : null;
+				render();
+			})
+			.catch(function () {});
+	}
+
+	// the user has read the outcome: the lamp forgets it
+	function dismissLast() {
+		lastJoin = null;
+		render();
+		fetch('/api/join/dismiss', { method: 'POST' }).catch(function () {});
+	}
+
 	// one request at a time: the next poll is scheduled before the page is redrawn, so a drawing error cannot stop polling
 	function poll() {
 		fetchTimed('/api/status', { cache: 'no-store' }, function (r) {
 			if (r.ok) {
 				return r.json().then(function (d) {
+					if (state.down) {
+						lastAsked = false;
+					}
 					state.data = d;
 					state.down = false;
 					state.err = '';
 					state.lastOk = clock();
+					if (!lastAsked) {
+						loadLast();
+					}
 				});
 			}
 			return r.text().then(function (t) {
@@ -382,6 +450,7 @@
 	buildMatrix();
 	buildTiles();
 	byId('theme').addEventListener('click', toggleTheme);
+	byId('lastClose').addEventListener('click', dismissLast);
 	Array.prototype.forEach.call(document.querySelectorAll('[data-lang]'), function (b) {
 		b.addEventListener('click', function () {
 			setLang(b.getAttribute('data-lang'));

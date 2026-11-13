@@ -94,10 +94,23 @@ join_reason HAQuDA_StreakReason(uint32_t streak) {
 	return join_reason::none;
 }
 
+join_scan_status HAQuDA_MapScanResult(int16_t scanComplete) {
+	// WIFI_SCAN_RUNNING is -1, WIFI_SCAN_FAILED is -2
+	if (scanComplete == -1) {
+		return join_scan_status::running;
+	}
+	if (scanComplete < 0) {
+		return join_scan_status::failed;
+	}
+	return (scanComplete == 0) ? join_scan_status::not_found : join_scan_status::found;
+}
+
 const char *HAQuDA_JoinStateName(join_state state) {
 	switch (state) {
 		case join_state::checking:
 			return "checking";
+		case join_state::switching:
+			return "switching";
 		case join_state::ok:
 			return "ok";
 		case join_state::fail:
@@ -118,22 +131,55 @@ const char *HAQuDA_JoinReasonName(join_reason reason) {
 			return "timeout";
 		case join_reason::save_failed:
 			return "save_failed";
+		case join_reason::scan_failed:
+			return "scan_failed";
 		case join_reason::none:
 		default:
 			return "";
 	}
 }
 
+const char *HAQuDA_JoinLastResultName(join_last_result result) {
+	switch (result) {
+		case join_last_result::ok:
+			return "ok";
+		case join_last_result::fail:
+			return "fail";
+		case join_last_result::none:
+		default:
+			return "";
+	}
+}
+
+namespace {
+	// Copies at most outSize - 1 bytes of the NUL-terminated (or maxLen-bounded) text into out, terminated
+	void copyName(char *out, size_t outSize, const char *text, size_t maxLen) {
+		memset(out, 0, outSize);
+		if (text == nullptr) {
+			return;
+		}
+		size_t len = strnlen(text, maxLen);
+		if (len >= outSize) {
+			len = outSize - 1;
+		}
+		memcpy(out, text, len);
+	}
+} // namespace
+
 void HAQuDA_SetJoinSsid(join_view &view, const char *ssid, size_t maxLen) {
-	memset(view.ssid, 0, sizeof(view.ssid));
-	if (ssid == nullptr) {
+	copyName(view.ssid, sizeof(view.ssid), ssid, maxLen);
+}
+
+void HAQuDA_SetJoinLast(join_view &view, join_last_result result, join_reason reason, const char *ssid, size_t maxLen) {
+	if (result == join_last_result::none) {
+		view.lastResult = join_last_result::none;
+		view.lastReason = join_reason::none;
+		memset(view.lastSsid, 0, sizeof(view.lastSsid));
 		return;
 	}
-	size_t len = strnlen(ssid, maxLen);
-	if (len >= sizeof(view.ssid)) {
-		len = sizeof(view.ssid) - 1;
-	}
-	memcpy(view.ssid, ssid, len);
+	view.lastResult = result;
+	view.lastReason = (result == join_last_result::fail) ? reason : join_reason::none;
+	copyName(view.lastSsid, sizeof(view.lastSsid), ssid, maxLen);
 }
 
 void HAQuDA_EscapeJson(const char *text, size_t maxLen, char *out, size_t outSize) {
@@ -183,6 +229,15 @@ bool HAQuDA_BuildJoinJson(char *buf, size_t size, const join_view &view, const c
 	if (fits && (view.state == join_state::fail)) {
 		fits = appendFormat(buf, size, pos, ",\"reason\":\"%s\"", HAQuDA_JoinReasonName(view.reason));
 	}
+	if (fits && (view.lastResult != join_last_result::none)) {
+		char escapedLastSsid[ESCAPED_SSID_LEN];
+		HAQuDA_EscapeJson(view.lastSsid, sizeof(view.lastSsid), escapedLastSsid, sizeof(escapedLastSsid));
+		fits = appendFormat(buf, size, pos, ",\"last\":{\"result\":\"%s\"", HAQuDA_JoinLastResultName(view.lastResult));
+		if (fits && (view.lastResult == join_last_result::fail)) {
+			fits = appendFormat(buf, size, pos, ",\"reason\":\"%s\"", HAQuDA_JoinReasonName(view.lastReason));
+		}
+		fits = fits && appendFormat(buf, size, pos, ",\"ssid\":\"%s\"}", escapedLastSsid);
+	}
 	fits = fits && appendFormat(buf, size, pos, "}");
 	if (!fits) {
 		buf[0] = '\0';
@@ -192,14 +247,66 @@ bool HAQuDA_BuildJoinJson(char *buf, size_t size, const join_view &view, const c
 }
 
 bool HAQuDA_JoinCheck::Start(uint32_t nowMs) {
-	if ((current == phase::checking) || (current == phase::saving)) {
+	if (Active()) {
 		return false;
 	}
 	current = phase::checking;
+	stationFlow = false;
 	failReason = join_reason::none;
 	startMs = nowMs;
 	joinedIp = 0;
 	return true;
+}
+
+bool HAQuDA_JoinCheck::StartSwitch(uint32_t nowMs) {
+	if (Active()) {
+		return false;
+	}
+	current = phase::scanning;
+	stationFlow = true;
+	failReason = join_reason::none;
+	startMs = nowMs;
+	joinedIp = 0;
+	return true;
+}
+
+join_action HAQuDA_JoinCheck::PollSwitch(uint32_t nowMs, join_scan_status scan, bool stationUp) {
+	// Unsigned difference survives the millis() wrap
+	uint32_t phaseMs = static_cast<uint32_t>(nowMs - startMs);
+	switch (current) {
+		case phase::scanning:
+			if (scan == join_scan_status::found) {
+				current = phase::announcing;
+				startMs = nowMs;
+			} else if (scan == join_scan_status::not_found) {
+				failReason = join_reason::no_network;
+				current = phase::fail;
+			} else if ((scan == join_scan_status::failed) || (phaseMs >= SWITCH_SCAN_TIMEOUT_MS)) {
+				// The scan tells nothing about the network: the lamp stays where it is and reports that it could not search
+				failReason = join_reason::scan_failed;
+				current = phase::fail;
+			}
+			return join_action::none;
+		case phase::announcing:
+			if (phaseMs >= SWITCH_ANNOUNCE_MS) {
+				current = phase::leaving;
+				startMs = nowMs;
+				return join_action::disconnect_old;
+			}
+			return join_action::none;
+		case phase::leaving:
+			// The connected state is cleared by the disconnect event, which arrives after the disconnect call returned.
+			// Joining before that would take the stale state of the old network for a join of the new one. A station that
+			// still reports connected after the wait did not disconnect; joining goes on, begin() disconnects again.
+			if (!stationUp || (phaseMs >= SWITCH_LEAVE_TIMEOUT_MS)) {
+				current = phase::checking;
+				startMs = nowMs;
+				return join_action::begin_join;
+			}
+			return join_action::none;
+		default:
+			return join_action::none;
+	}
 }
 
 join_action HAQuDA_JoinCheck::Poll(uint32_t nowMs, bool connected, uint32_t ip, uint8_t lastDisconnectReason, uint32_t disconnectStreak) {
@@ -243,9 +350,14 @@ join_action HAQuDA_JoinCheck::SaveFinished(bool saved) {
 
 join_state HAQuDA_JoinCheck::State() const {
 	switch (current) {
+		case phase::scanning:
+			return join_state::checking;
+		case phase::announcing:
+		case phase::leaving:
+			return join_state::switching;
 		case phase::checking:
 		case phase::saving:
-			return join_state::checking;
+			return stationFlow ? join_state::switching : join_state::checking;
 		case phase::ok:
 			return join_state::ok;
 		case phase::fail:
@@ -262,4 +374,17 @@ join_reason HAQuDA_JoinCheck::Reason() const {
 
 uint32_t HAQuDA_JoinCheck::Ip() const {
 	return joinedIp;
+}
+
+bool HAQuDA_JoinCheck::Scanning() const {
+	return current == phase::scanning;
+}
+
+bool HAQuDA_JoinCheck::Joining() const {
+	return current == phase::checking;
+}
+
+bool HAQuDA_JoinCheck::Active() const {
+	return (current == phase::checking) || (current == phase::saving) || (current == phase::scanning) || (current == phase::announcing)
+		   || (current == phase::leaving);
 }
