@@ -72,6 +72,7 @@
     <ClCompile Include="TestPMWarmup.cpp" />
     <ClCompile Include="TestPMReader.cpp" />
     <ClCompile Include="TestPMResult.cpp" />
+    <ClCompile Include="TestSensorsPresence.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_ColorScale.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_FlashLock.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_DateFormat.cpp" />
@@ -90,6 +91,7 @@
     <ClInclude Include="..\..\sketches\HAQuDA_PMWarmup.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_IPMSerial.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_PMReader.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_SensorsPresence.h" />
     <ClInclude Include="..\fakes\freertos\FreeRTOS.h" />
     <ClInclude Include="..\fakes\freertos\semphr.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_ILEDs.h" />

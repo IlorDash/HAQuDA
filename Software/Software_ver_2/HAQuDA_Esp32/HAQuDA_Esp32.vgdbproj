@@ -46,6 +46,7 @@
         <string>sketches\HAQuDA_PMWarmup.h</string>
         <string>sketches\HAQuDA_IPMSerial.h</string>
         <string>sketches\HAQuDA_PMReader.h</string>
+        <string>sketches\HAQuDA_SensorsPresence.h</string>
       </OtherFiles>
     </ProjectModeSettings>
   </Project>

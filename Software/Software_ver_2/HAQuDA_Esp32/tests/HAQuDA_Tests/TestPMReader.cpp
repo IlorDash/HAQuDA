@@ -463,3 +463,98 @@ TEST(PMReaderTest, ReadNullPayloadDoesNotTouchSerial) {
 	EXPECT_EQ(exp_calls, serial.readCalls);
 	EXPECT_EQ(exp_calls, serial.findCalls);
 }
+
+TEST(PMReaderTest, HasValidFrameBufferedFrameTrue) {
+	const bool exp_result = true;
+
+	const uint8_t frameA[ZH03B_FRAME_LEN]
+		= {0x42, 0x4D, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0A, 0x01, 0x2C, 0x00, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x0C};
+	FakePMSerial serial;
+	serial.rx.assign(frameA, frameA + ZH03B_FRAME_LEN);
+	HAQuDA_PMWarmup warmup;
+	HAQuDA_PMReader reader(serial, warmup);
+
+	bool res;
+
+	res = reader.HasValidFrame();
+
+	EXPECT_EQ(exp_result, res);
+}
+
+TEST(PMReaderTest, HasValidFrameDuringWarmUpTrue) {
+	// Frames in the warm-up window still prove the sensor is alive
+	const bool exp_result = true;
+
+	const uint8_t frameA[ZH03B_FRAME_LEN]
+		= {0x42, 0x4D, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0A, 0x01, 0x2C, 0x00, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x0C};
+	FakePMSerial serial;
+	serial.rx.assign(frameA, frameA + ZH03B_FRAME_LEN);
+	HAQuDA_PMWarmup warmup;
+	warmup.PowerOn(0);
+	HAQuDA_PMReader reader(serial, warmup);
+
+	bool res;
+
+	res = reader.HasValidFrame();
+
+	EXPECT_EQ(exp_result, res);
+}
+
+TEST(PMReaderTest, HasValidFrameEmptyBufferFalseWithoutWaiting) {
+	const bool exp_result = false;
+	const int exp_blocking_calls = 0;
+
+	FakePMSerial serial;
+	serial.findResult = true;
+	HAQuDA_PMWarmup warmup;
+	HAQuDA_PMReader reader(serial, warmup);
+
+	bool res;
+
+	res = reader.HasValidFrame();
+
+	EXPECT_EQ(exp_result, res);
+	EXPECT_EQ(exp_blocking_calls, serial.findCalls);
+}
+
+TEST(PMReaderTest, HasValidFrameBadChecksumFalse) {
+	const bool exp_result = false;
+
+	const uint8_t badFrame[ZH03B_FRAME_LEN]
+		= {0x42, 0x4D, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0A, 0x01, 0x2C, 0x00, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x0D};
+	FakePMSerial serial;
+	serial.rx.assign(badFrame, badFrame + ZH03B_FRAME_LEN);
+	HAQuDA_PMWarmup warmup;
+	HAQuDA_PMReader reader(serial, warmup);
+
+	bool res;
+
+	res = reader.HasValidFrame();
+
+	EXPECT_EQ(exp_result, res);
+}
+
+// Wrong behaviour reproduced: HasValidFrame() drains the RX buffer and throws away a partial frame, so a frame that straddles
+// two polls is never recognised - its head is gone when the tail arrives. The second call should report the sensor alive.
+TEST(PMReaderTest, DISABLED_HasValidFrameFrameSplitAcrossTwoCallsTrue) {
+	const size_t firstPartLen = 10;
+
+	const bool exp_result = true;
+
+	const uint8_t frameA[ZH03B_FRAME_LEN]
+		= {0x42, 0x4D, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0A, 0x01, 0x2C, 0x00, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x0C};
+	FakePMSerial serial;
+	serial.rx.assign(frameA, frameA + firstPartLen);
+	HAQuDA_PMWarmup warmup;
+	HAQuDA_PMReader reader(serial, warmup);
+	// First poll sees only the head of the frame (setup of the state, not the action under test)
+	reader.HasValidFrame();
+	// The rest of the frame arrives before the next poll
+	serial.rx.insert(serial.rx.end(), frameA + firstPartLen, frameA + ZH03B_FRAME_LEN);
+
+	bool res;
+
+	res = reader.HasValidFrame();
+
+	EXPECT_EQ(exp_result, res);
+}

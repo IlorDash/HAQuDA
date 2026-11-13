@@ -1,6 +1,8 @@
 #include "Sensors.h"
 #include "Board.h"
+#include "HAQuDA_Logger.h"
 #include "HAQuDA_PMReader.h"
+#include "HAQuDA_SensorsPresence.h"
 #include "HAQuDA_ZH03BFrame.h"
 
 #define SENS_POW 23
@@ -66,7 +68,8 @@ bool sensorsBegin() {
 	pinMode(SENS_POW, OUTPUT);
 	digitalWrite(SENS_POW, HIGH);
 	// Every power cycle (first start, retries, sensors_reboot()) passes through here, so this is always the latest power-on
-	pmWarmup.PowerOn(millis());
+	const uint32_t powerOnMs = millis();
+	pmWarmup.PowerOn(powerOnMs);
 
 	pinMode(CCS811_WAK, OUTPUT);
 	digitalWrite(CCS811_WAK, LOW);
@@ -102,12 +105,22 @@ bool sensorsBegin() {
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 
 	if (!CCS811.begin()) {
-		// Serial.println("Failed to start sensor! Please check your wiring.");
+		HAQuDA_Logger::LogError("Sensors start: CCS811 not found");
 		return false;
 	}
 
 	dht.begin();
-	return true;
+	// Force bypasses the library's 2 s cache, which would otherwise hand back the failed result of the previous probe
+	const sensors_presence presence
+		= HAQuDA_WaitForSensors([]() { return !isnan(dht.readTemperature(false, true)); }, []() { return pmReader.HasValidFrame(); }, []() { return millis(); },
+								[](uint32_t ms) { vTaskDelay(pdMS_TO_TICKS(ms)); }, powerOnMs);
+	if (!presence.dht22) {
+		HAQuDA_Logger::LogError("Sensors start: DHT22 not responding");
+	}
+	if (!presence.zh03b) {
+		HAQuDA_Logger::LogError("Sensors start: ZH03B sends no frames");
+	}
+	return presence.dht22 && presence.zh03b;
 }
 
 bool getCCS811_meas() {

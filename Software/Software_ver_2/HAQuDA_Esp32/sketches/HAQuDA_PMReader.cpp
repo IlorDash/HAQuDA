@@ -20,15 +20,24 @@ pm_meas_result HAQuDA_PMReader::Read(uint32_t nowMs, uint8_t *payloadOut) {
 	return readNewestFrame(payloadOut) ? pm_meas_result::ok : pm_meas_result::failed;
 }
 
+bool HAQuDA_PMReader::HasValidFrame() {
+	uint8_t payload[ZH03B_PAYLOAD_LEN] = {};
+	return readBufferedFrame(payload);
+}
+
 // The ZH03B sends one frame per second while polling is slower, so older frames are stale and are dropped.
-bool HAQuDA_PMReader::readNewestFrame(uint8_t *payloadOut) {
+bool HAQuDA_PMReader::readBufferedFrame(uint8_t *payloadOut) {
 	uint8_t raw[PM_RX_BUF_SIZE] = {};
 	size_t rawLen = 0;
 	while ((rawLen < sizeof(raw)) && (serial.Available() > 0)) {
 		raw[rawLen++] = (uint8_t)serial.Read();
 	}
 
-	if (HAQuDA_FindNewestZH03BFrame(raw, rawLen, payloadOut)) {
+	return HAQuDA_FindNewestZH03BFrame(raw, rawLen, payloadOut);
+}
+
+bool HAQuDA_PMReader::readNewestFrame(uint8_t *payloadOut) {
+	if (readBufferedFrame(payloadOut)) {
 		return true;
 	}
 

@@ -32,7 +32,8 @@ int meas_start_time = 0;
 int builtin_blink_start_time = 0;
 
 // A missing sensor is usually a loose connector or a slow CCS811 start, fixed by the user plugging it in.
-// 5 minutes keeps the ~8 s power-cycle block of loop() rare and the log free of retry spam.
+// 5 minutes keeps the power-cycle block of loop() (up to ~27 s: 4 start attempts of up to ~5 s plus 3 power-offs of 2 s) rare
+// and the log free of retry spam.
 constexpr uint32_t SENSORS_START_RETRY_PERIOD_MS = 5 * 60 * 1000;
 
 constexpr uint32_t WIFI_ERROR_DISPLAY_MS = 10 * 1000;
@@ -128,7 +129,7 @@ void enableMeasurements() {
 	HAQuDA_Logger::LogInfo("Started sensors");
 }
 
-// Called from loop(). TryRebootSensors() blocks loop for up to ~8 s, so retries are rare.
+// Called from loop(). TryRebootSensors() blocks loop for up to ~27 s, so retries are rare.
 void retrySensorsStart() {
 	if (sensorsRunning || ((millis() - sensorsStartRetryMs) < SENSORS_START_RETRY_PERIOD_MS)) {
 		return;

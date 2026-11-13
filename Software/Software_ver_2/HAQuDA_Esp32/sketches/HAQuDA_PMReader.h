@@ -19,7 +19,12 @@ class HAQuDA_PMReader {
 	// failed. payloadOut is untouched unless ok; nullptr gives failed. loop task only.
 	pm_meas_result Read(uint32_t nowMs, uint8_t *payloadOut);
 
+	// True when the RX buffer holds a checksum-valid frame; consumes the buffered bytes and never waits. Works during the warm-up
+	// too (frames carry the firmware version in PM2.5 then, but they prove the sensor is alive). loop task only.
+	bool HasValidFrame();
+
   private:
+	bool readBufferedFrame(uint8_t *payloadOut);
 	bool readNewestFrame(uint8_t *payloadOut);
 	void drain();
 
