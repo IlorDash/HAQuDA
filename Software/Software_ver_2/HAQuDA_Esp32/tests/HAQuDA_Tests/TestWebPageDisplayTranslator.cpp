@@ -2190,3 +2190,183 @@ TEST(WebPageDisplayTranslatorTest, BufferNullReturnsZero) {
 
 	EXPECT_EQ(exp_len, res);
 }
+
+// ---------------------------------------------------------------- night hour
+
+TEST(WebPageNightHourTest, WindowAcrossMidnightFirstHourIsZero) {
+	const uint8_t exp_hour = 0;
+
+	uint8_t res;
+
+	res = HAQuDA_NightHour(21, 9, 21);
+
+	EXPECT_EQ(exp_hour, res);
+}
+
+TEST(WebPageNightHourTest, WindowAcrossMidnightBeforeMidnight) {
+	const uint8_t exp_hour = 2;
+
+	uint8_t res;
+
+	res = HAQuDA_NightHour(21, 9, 23);
+
+	EXPECT_EQ(exp_hour, res);
+}
+
+TEST(WebPageNightHourTest, WindowAcrossMidnightAtMidnight) {
+	const uint8_t exp_hour = 3;
+
+	uint8_t res;
+
+	res = HAQuDA_NightHour(21, 9, 0);
+
+	EXPECT_EQ(exp_hour, res);
+}
+
+TEST(WebPageNightHourTest, WindowAcrossMidnightLastFullHour) {
+	const uint8_t exp_hour = 11;
+
+	uint8_t res;
+
+	res = HAQuDA_NightHour(21, 9, 8);
+
+	EXPECT_EQ(exp_hour, res);
+}
+
+// The finish hour belongs to the window, but it is 12 hours after the start, which is the "outside" value too
+TEST(WebPageNightHourTest, WindowAcrossMidnightFinishHour) {
+	const uint8_t exp_hour = 12;
+
+	uint8_t res;
+
+	res = HAQuDA_NightHour(21, 9, 9);
+
+	EXPECT_EQ(exp_hour, res);
+}
+
+TEST(WebPageNightHourTest, WindowAcrossMidnightDayHourIsOutside) {
+	const uint8_t exp_hour = 12;
+
+	uint8_t res;
+
+	res = HAQuDA_NightHour(21, 9, 15);
+
+	EXPECT_EQ(exp_hour, res);
+}
+
+TEST(WebPageNightHourTest, WindowAcrossMidnightHourBeforeStartIsOutside) {
+	const uint8_t exp_hour = 12;
+
+	uint8_t res;
+
+	res = HAQuDA_NightHour(21, 9, 20);
+
+	EXPECT_EQ(exp_hour, res);
+}
+
+TEST(WebPageNightHourTest, WindowInOneDayInside) {
+	const uint8_t exp_hour = 4;
+
+	uint8_t res;
+
+	res = HAQuDA_NightHour(1, 6, 5);
+
+	EXPECT_EQ(exp_hour, res);
+}
+
+TEST(WebPageNightHourTest, WindowInOneDayFinishHourIsInside) {
+	const uint8_t exp_hour = 5;
+
+	uint8_t res;
+
+	res = HAQuDA_NightHour(1, 6, 6);
+
+	EXPECT_EQ(exp_hour, res);
+}
+
+TEST(WebPageNightHourTest, WindowInOneDayBeforeStartIsOutside) {
+	const uint8_t exp_hour = 12;
+
+	uint8_t res;
+
+	res = HAQuDA_NightHour(1, 6, 0);
+
+	EXPECT_EQ(exp_hour, res);
+}
+
+TEST(WebPageNightHourTest, WindowInOneDayAfterFinishIsOutside) {
+	const uint8_t exp_hour = 12;
+
+	uint8_t res;
+
+	res = HAQuDA_NightHour(1, 6, 7);
+
+	EXPECT_EQ(exp_hour, res);
+}
+
+TEST(WebPageNightHourTest, HourAbove23IsOutside) {
+	const uint8_t exp_hour = 12;
+
+	uint8_t res;
+
+	res = HAQuDA_NightHour(21, 9, 24);
+
+	EXPECT_EQ(exp_hour, res);
+}
+
+// A window with start == finish holds only that one hour
+TEST(WebPageNightHourTest, StartEqualsFinishAtThatHourIsZero) {
+	const uint8_t exp_hour = 0;
+
+	uint8_t res;
+
+	res = HAQuDA_NightHour(5, 5, 5);
+
+	EXPECT_EQ(exp_hour, res);
+}
+
+TEST(WebPageNightHourTest, StartEqualsFinishOtherHourIsOutside) {
+	const uint8_t exp_hour = 12;
+
+	uint8_t res;
+
+	res = HAQuDA_NightHour(5, 5, 6);
+
+	EXPECT_EQ(exp_hour, res);
+}
+
+// Current behaviour as is: a window longer than 12 hours gives hours-in above 12 (the lamp's own function does the same)
+TEST(WebPageNightHourTest, SameDayWindowLongerThan12HoursGivesValueAbove12) {
+	const uint8_t exp_hour = 14;
+
+	uint8_t res;
+
+	res = HAQuDA_NightHour(1, 20, 15);
+
+	EXPECT_EQ(exp_hour, res);
+}
+
+// ---------------------------------------------------------------- worst case
+
+TEST(WebPageDisplayTranslatorTest, WorstCaseErrorFadingFitsJsonBufLen) {
+	const char *exp_json = "{\"seq\":4294967295,\"age\":4294967295,\"src\":\"error\",\"err\":\"sensors\",\"bright\":100,\"fx\":\"fading\",\"color\":\"#"
+						   "ffffff\",\"from\":100,\"to\":0,\"steps\":100,\"step\":65535,\"end\":100}";
+	const size_t exp_len = std::strlen(exp_json);
+
+	web_display_state state{};
+	state.seq = 4294967295u;
+	state.ageMs = 4294967295u;
+	state.source = web_source::error;
+	state.brightPercent = 100;
+	state.error = web_error::sensors;
+	state.effect = web_effect::fading;
+	state.fading = {0xFFFFFF, 65535, 100, 0, 1};
+	char buf[WEB_DISPLAY_JSON_BUF_LEN];
+
+	size_t res;
+
+	res = HAQuDA_TranslateDisplayToJson(state, buf, WEB_DISPLAY_JSON_BUF_LEN);
+
+	EXPECT_EQ(exp_len, res);
+	EXPECT_STREQ(exp_json, buf);
+}

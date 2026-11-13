@@ -72,7 +72,9 @@
     <ClCompile Include="TestJoinLast.cpp" />
     <ClCompile Include="TestWiFiSwitch.cpp" />
     <ClCompile Include="TestWebPageDisplayTranslator.cpp" />
+    <ClCompile Include="TestWebPageDisplayState.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_WebPageDisplayManip_Translator.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_WebPageDisplayState.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_ColorScale.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_LogDedup.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_MeasSnapshot.cpp" />
@@ -88,6 +90,7 @@
     <ClInclude Include="..\..\sketches\HAQuDA_JoinLast.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_WiFiCreds.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_WebPageDisplayManip_Translator.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_WebPageDisplayState.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_ILEDs.h" />
     <ClInclude Include="..\mocks\MockLEDs.h" />
   </ItemGroup>

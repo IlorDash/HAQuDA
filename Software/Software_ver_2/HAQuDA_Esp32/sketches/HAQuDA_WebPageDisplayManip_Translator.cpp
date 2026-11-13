@@ -202,6 +202,25 @@ namespace {
 
 } // namespace
 
+uint8_t HAQuDA_NightHour(uint8_t start, uint8_t finish, uint8_t hour) {
+	constexpr uint8_t OUTSIDE_WINDOW = 12;
+	constexpr int HOURS_PER_DAY = 24;
+
+	if (hour >= HOURS_PER_DAY) {
+		return OUTSIDE_WINDOW;
+	}
+	const bool crossesMidnight = finish < start;
+	const bool inWindow = crossesMidnight ? ((hour >= start) || (hour <= finish)) : ((hour >= start) && (hour <= finish));
+	if (!inWindow) {
+		return OUTSIDE_WINDOW;
+	}
+	int hoursIn = static_cast<int>(hour) - static_cast<int>(start);
+	if (hoursIn < 0) {
+		hoursIn += HOURS_PER_DAY;
+	}
+	return static_cast<uint8_t>(hoursIn);
+}
+
 size_t HAQuDA_TranslateDisplayToJson(const web_display_state &state, char *buf, size_t size) {
 	if ((buf == nullptr) || (size == 0)) {
 		return 0;

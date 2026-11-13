@@ -5,6 +5,8 @@
 typedef enum { failedToConnectToWiFi, failedToCreateAP, failedToStartFS, failedToStartSensors, failedToUpdateNTP, noneError } error_type;
 
 class HAQuDA_ErrorHandler : HAQuDA_EffectsHandler {
+	friend class HAQuDA_WebPageDisplayManip;
+
 	static error_type currentError;
 
 	static snake_params failedToCreateAPEffect;

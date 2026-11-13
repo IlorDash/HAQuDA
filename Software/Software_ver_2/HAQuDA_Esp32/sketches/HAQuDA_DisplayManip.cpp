@@ -3,6 +3,7 @@
 #include "HAQuDA_DisplayManip.h"
 #include "HAQuDA_LEDsParams.h"
 #include "HAQuDA_LEDs.h"
+#include "HAQuDA_WebPageDisplayManip.h"
 
 uint8_t HAQuDA_DisplayManip::brighntessPerCent;
 display_modes HAQuDA_DisplayManip::mode;
@@ -10,17 +11,20 @@ display_modes HAQuDA_DisplayManip::mode;
 static HAQuDA_MeasHandler *measHandler;
 static HAQuDA_EffectsHandler *effectsHandler;
 static HAQuDA_ErrorHandler *errHandler;
+static HAQuDA_WebPageDisplayManip *webDisp;
 
 // Set in the loop task, consumed in ShowTask.
 static std::atomic<bool> restoreBrightnessPending{false};
 
-HAQuDA_DisplayManip::HAQuDA_DisplayManip(HAQuDA_MeasHandler *_meas_handler, HAQuDA_EffectsHandler *_effects_handler, HAQuDA_ErrorHandler *_err_handler) {
+HAQuDA_DisplayManip::HAQuDA_DisplayManip(HAQuDA_MeasHandler *_meas_handler, HAQuDA_EffectsHandler *_effects_handler, HAQuDA_ErrorHandler *_err_handler,
+										 HAQuDA_WebPageDisplayManip *_web_disp) {
 	brighntessPerCent = DEFAULT_BRIGHTNESS;
 	mode = noneMode;
 
 	measHandler = _meas_handler;
 	effectsHandler = _effects_handler;
 	errHandler = _err_handler;
+	webDisp = _web_disp;
 }
 
 void HAQuDA_DisplayManip::Show(int *show_meas_time) {
@@ -50,6 +54,7 @@ void HAQuDA_DisplayManip::Show(int *show_meas_time) {
 void HAQuDA_DisplayManip::SetBrightness(const uint8_t new_brightness) {
 	brighntessPerCent = new_brightness;
 	HAQuDA_LEDs::getInstance()->SetBright(brighntessPerCent);
+	webDisp->SetBrightness(brighntessPerCent);
 }
 
 void HAQuDA_DisplayManip::RestoreBrightnessOnMeas() {
@@ -90,6 +95,7 @@ bool HAQuDA_DisplayManip::SetMode(const display_modes m) {
 		default:
 			break;
 	}
+	webDisp->SetMode(mode);
 	return true;
 }
 
@@ -101,6 +107,7 @@ void HAQuDA_DisplayManip::SetMeasMode(const meas_mode m) {
 
 	if (mode != meas)
 		SetMode(meas);
+	webDisp->SetMeasMode(m);
 }
 
 meas_mode HAQuDA_DisplayManip::GetMeasDispMode() {
@@ -109,13 +116,16 @@ meas_mode HAQuDA_DisplayManip::GetMeasDispMode() {
 
 void HAQuDA_DisplayManip::SetStandardMeasParam(const meas_type p) {
 	measHandler->SetStandardMeasParam(p);
+	webDisp->SetStandardMeasParam(p);
 }
 void HAQuDA_DisplayManip::SetMultiMeasParam(const multi_mode_params p) {
 	measHandler->SetMultiMeasParam(p);
+	webDisp->SetMultiMeasParam(p);
 }
 
 void HAQuDA_DisplayManip::SetNightTime(const night_time t) {
 	measHandler->SetNightTime(t);
+	webDisp->SetNightTime(t);
 }
 
 void HAQuDA_DisplayManip::SetMeasDivDots(const meas_div_dots d) {
@@ -129,6 +139,7 @@ void HAQuDA_DisplayManip::SetEffect(const effect_type e) {
 
 	if (mode != effect)
 		SetMode(effect);
+	webDisp->SetEffect(e);
 }
 
 effect_type HAQuDA_DisplayManip::GetEffect() {
@@ -137,22 +148,27 @@ effect_type HAQuDA_DisplayManip::GetEffect() {
 
 void HAQuDA_DisplayManip::SetEffectParam(const snake_params p) {
 	effectsHandler->SetSnakeParam(p);
+	webDisp->SetEffectParam(p);
 }
 
 void HAQuDA_DisplayManip::SetEffectParam(const growing_params p) {
 	effectsHandler->SetGrowParam(p);
+	webDisp->SetEffectParam(p);
 }
 
 void HAQuDA_DisplayManip::SetEffectParam(const fading_params p) {
 	effectsHandler->SetFadeParam(p);
+	webDisp->SetEffectParam(p);
 }
 
 void HAQuDA_DisplayManip::SetEffectParam(const random_led_params p) {
 	effectsHandler->SetRandomLedParam(p);
+	webDisp->SetEffectParam(p);
 }
 
 void HAQuDA_DisplayManip::SetEffectParam(const uint32_t p) {
 	effectsHandler->SetStaticColorParam(p);
+	webDisp->SetEffectParam(p);
 }
 
 /***************************************************************/

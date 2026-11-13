@@ -38,6 +38,11 @@ class HAQuDA_TimeService {
 	static bool GetTimeClientStarted();
 	static bool GetDateTime(DateTimeStruct *_time);
 	static bool GetDateTime(char *_time);
+	// Hour of the day (0..23, local time) from the time the NTP client already holds, extended by millis(): no network round trip,
+	// no heap, no update of the client. False before NTP started or before its first successful sync. loop task only. The client is
+	// written unlocked by the callers of GetDateTime(): the loop task (the logger) and ShowTask (get_nightMode_hour() while the night
+	// layout is shown). A read that overlaps a sync can give a wrong hour for that one read; the next call corrects it.
+	static bool GetCachedHour(uint8_t *hour);
 
 	static uint32_t GetDuration(uint32_t watchedTime);
 	static bool PeriodInRange(uint32_t watchedTime, uint32_t minTime, uint32_t maxTime);

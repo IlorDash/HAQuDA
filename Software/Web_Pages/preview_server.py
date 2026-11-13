@@ -3,7 +3,8 @@
 
 Run from any directory:  py -3 Software/Web_Pages/preview_server.py
                          [--scenario normal|bad-air|sensor-fail|ap|sta-offline|errors|join-ok|join-wrong-pass|join-no-network|
-                                     sta-switch-ok|sta-switch-wrong-pass|sta-switch-no-network]
+                                     sta-switch-ok|sta-switch-wrong-pass|sta-switch-no-network|
+                                     disp-effects|disp-errors|disp-night]
                          [--host 127.0.0.1] [--port 8080] [--latency MS] [--no-browser]
 
 The page sources next to this script are read from disk on every request (Cache-Control: no-store), so saving a file
@@ -20,6 +21,16 @@ lamp scans, announces the switch ("switching"), goes offline and comes back with
 which stays until POST /api/join/dismiss or the next check. sta-switch-ok (and the plain scenarios) join the new network,
 which becomes the first saved one; sta-switch-wrong-pass returns to the old network with "last" fail; sta-switch-no-network
 fails at the scan at once and the lamp stays reachable. While offline the server closes every connection without an answer.
+
+GET /api/disp answers with the picture the lamp shows, in the format of HAQuDA_TranslateDisplayToJson (the page grid is
+4 columns x 6 rows). Scenario by scenario: the access point scenarios ("ap" and join-*) show the aqua fading effect the lamp
+runs in access point mode, sta-offline the lime snake it runs while it reconnects, sensor-fail the random pixels of the sensors
+error, "errors" the 500 reply of /api/status, every other scenario the multi layout (temperature, eCO2, PM2.5). Three scenarios
+exist only to look at the pictures: disp-effects plays snake, growing, random, fading and static colour for 25 s each,
+disp-errors plays the five error effects (WiFi, access point, file system, sensors, NTP) for 15 s each, disp-night shows the
+night layout with the white part of the bar growing every 4 s. In the cycling scenarios seq rises and age restarts at each
+change; elsewhere seq stays 1 and age counts from the start of the server. The disp-* scenarios otherwise answer like a
+station mode lamp.
 
 Not reproduced: gzip, the ?v= asset
 versions (the query is ignored), the restart after saving a network in the access point scenarios (the reply text is sent,
@@ -49,7 +60,7 @@ ASSETS = {
 }
 
 SCENARIOS = ["normal", "bad-air", "sensor-fail", "ap", "sta-offline", "errors", "join-ok", "join-wrong-pass", "join-no-network",
-             "sta-switch-ok", "sta-switch-wrong-pass", "sta-switch-no-network"]
+             "sta-switch-ok", "sta-switch-wrong-pass", "sta-switch-no-network", "disp-effects", "disp-errors", "disp-night"]
 # Scenarios in which the lamp runs as an access point: a new network is checked before it is saved
 AP_SCENARIOS = {"ap", "join-ok", "join-wrong-pass", "join-no-network"}
 # How long the mock check runs before it reports its result (the lamp takes up to 20 s)
@@ -132,6 +143,77 @@ def scale_color(value, dots):
         t = (value - mid) / (last - mid)
         rgb = tuple(round(green[i] + (red[i] - green[i]) * t) for i in range(3))
     return "#{0:02x}{1:02x}{2:02x}".format(*rgb)
+
+
+# The lamp's picture for the page (HAQuDA_TranslateDisplayToJson): the lamp is 109 pixels in 12 rows, the page grid 24 cells in 6 rows
+LAMP_PIXELS = 109
+LAMP_ROWS = 12
+PAGE_CELLS = 24
+PAGE_ROWS = 6
+SHOW_PAUSE_MS = 100
+DISP_BRIGHT = 50
+DISP_EFFECT_SLOT_S = 25.0
+DISP_ERROR_SLOT_S = 15.0
+DISP_NIGHT_SLOT_S = 4.0
+# The keys the lamp shows in its multi layout by default
+DISP_MULTI_KEYS = ["temp", "eco2", "pm25"]
+
+
+def div_round(numerator, denominator):
+    return (numerator + denominator // 2) // denominator
+
+
+def fx_snake(color, move_pause_ms, tail_len):
+    lap_ms = LAMP_PIXELS * move_pause_ms + SHOW_PAUSE_MS
+    tail = min(max(div_round(tail_len * PAGE_CELLS, LAMP_PIXELS), 1), PAGE_CELLS)
+    return {"fx": "snake", "color": color, "step": div_round(lap_ms, PAGE_CELLS), "tail": tail}
+
+
+def fx_growing(color, grow_pause_ms):
+    return {"fx": "growing", "color": color, "step": (LAMP_ROWS // PAGE_ROWS) * grow_pause_ms, "end": SHOW_PAUSE_MS}
+
+
+def fx_random(pause_ms, end_pause_ms):
+    return {"fx": "random", "step": div_round(LAMP_PIXELS * pause_ms, PAGE_CELLS), "end": end_pause_ms + SHOW_PAUSE_MS}
+
+
+def fx_fading(color, fade_pause_ms, start_bright, stop_bright, step):
+    """Fade from start down to stop; the countdown must run (start above stop, step above 0)."""
+    steps = -(-(start_bright - stop_bright) // step)
+    return {"fx": "fading", "color": color, "from": start_bright, "to": stop_bright, "steps": steps, "step": fade_pause_ms,
+            "end": SHOW_PAUSE_MS}
+
+
+def fx_static(color):
+    return {"fx": "static", "color": color}
+
+
+def fx_meas(layout, keys, white=None):
+    picture = {"fx": "meas", "layout": layout, "keys": keys}
+    if white is not None:
+        picture["white"] = white
+    return picture
+
+
+# The effect the lamp runs in access point mode (aqua fading) and while it reconnects (lime snake), the defaults of the lamp
+DISP_AP_PICTURE = fx_fading("#00ffff", 10, 100, 0, 5)
+DISP_RECONNECT_PICTURE = fx_snake("#99ff33", 200, 5)
+# One effect after the other in disp-effects: (effect name, picture)
+DISP_EFFECTS = [
+    ("snake", DISP_RECONNECT_PICTURE),
+    ("growing", fx_growing("#00ffff", 200)),
+    ("random", fx_random(200, 1000)),
+    ("fading", DISP_AP_PICTURE),
+    ("static", fx_static("#01ff00")),
+]
+# The five error effects in disp-errors: (error kind, picture). The NTP error fades up from 0, which the lamp shows as dark.
+DISP_ERRORS = [
+    ("wifi", fx_growing("#ff0000", 100)),
+    ("ap", fx_snake("#ff0000", 100, 1)),
+    ("fs", fx_fading("#ff0000", 10, 100, 0, 5)),
+    ("sensors", fx_random(50, 500)),
+    ("ntp", fx_static("#000000")),
+]
 
 
 class MockLamp:
@@ -256,6 +338,44 @@ class MockLamp:
             return 200, '{{"fw":"{0}","mode":"{1}","ssid":{2},"ip":"{3}","uptime":{4},"rssi":{5},"meas":{{{6}}}}}'.format(
                 FW_VERSION, "sta" if station else "ap", ssid, ip, uptime, rssi, ",".join(parts)
             )
+
+    def disp_json(self):
+        """Returns (status code, body): the picture the lamp shows, like /api/disp of the firmware."""
+        if self.scenario == "errors":
+            return 500, STATUS_FAIL_TEXT
+        elapsed_s = time.monotonic() - self.started
+        error = None
+        if self.scenario == "disp-effects":
+            seq, age_s = divmod(elapsed_s, DISP_EFFECT_SLOT_S)
+            picture = DISP_EFFECTS[int(seq) % len(DISP_EFFECTS)][1]
+            source = "effect"
+        elif self.scenario == "disp-errors":
+            seq, age_s = divmod(elapsed_s, DISP_ERROR_SLOT_S)
+            error, picture = DISP_ERRORS[int(seq) % len(DISP_ERRORS)]
+            source = "error"
+        elif self.scenario == "disp-night":
+            # The hour into the night window runs 0..12, 12 fills the bar
+            seq, age_s = divmod(elapsed_s, DISP_NIGHT_SLOT_S)
+            hour = int(seq) % 13
+            picture = fx_meas("night", ["temp"], (hour * PAGE_ROWS + 11) // 12)
+            source = "meas"
+        else:
+            seq, age_s = 0, elapsed_s
+            if self.scenario in AP_SCENARIOS:
+                picture, source = DISP_AP_PICTURE, "effect"
+            elif self.scenario == "sta-offline":
+                picture, source = DISP_RECONNECT_PICTURE, "effect"
+            elif self.scenario == "sensor-fail":
+                error, picture = DISP_ERRORS[3]
+                source = "error"
+            else:
+                picture, source = fx_meas("multi", DISP_MULTI_KEYS), "meas"
+        body = {"seq": int(seq) + 1, "age": int(age_s * 1000), "src": source}
+        if error is not None:
+            body["err"] = error
+        body["bright"] = DISP_BRIGHT
+        body.update(picture)
+        return 200, json.dumps(body, separators=(",", ":"))
 
     def wifi_json(self):
         with self.lock:
@@ -391,6 +511,9 @@ class PreviewHandler(BaseHTTPRequestHandler):
         elif path == "/api/status":
             code, body = self.lamp.status_json()
             self.send_body(code, "application/json" if code == 200 else "text/plain", body)
+        elif path == "/api/disp":
+            code, body = self.lamp.disp_json()
+            self.send_body(code, "application/json" if code == 200 else "text/plain", body)
         elif path == "/api/boot":
             self.send_body(200, "application/json", self.lamp.boot_json(), cors=True)
         elif path == "/api/wifi":
@@ -463,7 +586,9 @@ def main():
                              "join-ok, join-wrong-pass, join-no-network (access point mode: a new network is checked for "
                              "about 4 s, then the result is reported); "
                              "sta-switch-ok, sta-switch-wrong-pass, sta-switch-no-network (station mode: the lamp scans, "
-                             "leaves its network for about 10 s and comes back with the outcome; no-network fails at the scan)")
+                             "leaves its network for about 10 s and comes back with the outcome; no-network fails at the scan); "
+                             "disp-effects, disp-errors, disp-night (the picture of /api/disp cycles through the effects, "
+                             "the error effects, the night bar)")
     parser.add_argument("--host", default="127.0.0.1", help="address to bind (default 127.0.0.1)")
     parser.add_argument("--port", type=int, default=8080, help="port to listen on (default 8080)")
     parser.add_argument("--latency", type=int, default=0, metavar="MS", help="delay every answer by MS milliseconds")

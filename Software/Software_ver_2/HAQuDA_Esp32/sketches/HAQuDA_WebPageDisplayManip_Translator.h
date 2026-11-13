@@ -65,6 +65,16 @@ struct web_display_state {
 	uint8_t brightPercent;
 };
 
+// Buffer size that holds every JSON the translator writes: the longest one (an error with a fading effect, every number at its
+// maximum) is about 170 bytes.
+constexpr size_t WEB_DISPLAY_JSON_BUF_LEN = 256;
+
+// Night hour the lamp passes to its progress bar for `hour` (0..23, local time): hours since `start` while the hour is inside the
+// window start..finish (both ends included; finish < start means the window crosses midnight), 12 outside it, and also for an
+// hour above 23. Same result as the lamp's get_nightMode_hour(); a window longer than 12 hours gives values above 12, the
+// translator clamps them. The caller passes 0 when the time is unknown, as the lamp does. Any task.
+uint8_t HAQuDA_NightHour(uint8_t start, uint8_t finish, uint8_t hour);
+
 // Writes the JSON of `state` into buf (NUL-terminated) and returns its length. Returns 0 when it does not fit or buf is
 // null / size is 0, when source is out of range, or when source is web_source::error and error is out of range (error is
 // ignored for every other source); then buf[0] is '\0' (if size > 0) and nothing is written past size. No heap. Any task.

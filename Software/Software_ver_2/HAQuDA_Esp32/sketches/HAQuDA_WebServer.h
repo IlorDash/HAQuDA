@@ -11,6 +11,7 @@
 #include "HAQuDA_MeasSnapshot.h"
 #include "HAQuDA_WiFiJoin.h"
 #include "HAQuDA_JoinLast.h"
+#include "HAQuDA_WebPageDisplayManip.h"
 
 #define SSID_PARAM_NAME "ssid"
 #define PASS_PARAM_NAME "pass"
@@ -36,6 +37,8 @@ class HAQuDA_WebServer {
 	static bool WebServerStarted;
 
 	const HAQuDA_MeasSnapshot &measSnapshot;
+	// The picture the lamp shows, for /api/disp
+	HAQuDA_WebPageDisplayManip &webDisp;
 	// Written by the async_tcp task (handle_NewWiFiCreds), read by loop(). The time is stored before the flag.
 	std::atomic<bool> restartPending{false};
 	std::atomic<uint32_t> restartRequestMs{0};
@@ -95,7 +98,8 @@ class HAQuDA_WebServer {
 
 	void beginWebServer();
 
-	HAQuDA_WebServer(HAQuDA_FileStorage *curr_FS, const HAQuDA_MeasSnapshot &snapshot) : _myFS(curr_FS), measSnapshot(snapshot) {};
+	HAQuDA_WebServer(HAQuDA_FileStorage *curr_FS, const HAQuDA_MeasSnapshot &snapshot, HAQuDA_WebPageDisplayManip &webDispIn)
+		: _myFS(curr_FS), measSnapshot(snapshot), webDisp(webDispIn) {};
 	~HAQuDA_WebServer();
 
 	TWiFiCreds GetStored_WiFi(int num);
@@ -107,6 +111,8 @@ class HAQuDA_WebServer {
 	static void handle_NotFound(AsyncWebServerRequest *request);
 	void delete_WiFiCreds(AsyncWebServerRequest *request);
 	void handleStatus(AsyncWebServerRequest *request);
+	// JSON of the picture the lamp shows (effect, error or measurement layout), polled by the page
+	void handleDisp(AsyncWebServerRequest *request);
 	void handleWiFiList(AsyncWebServerRequest *request);
 	void handleJoin(AsyncWebServerRequest *request);
 	void handleJoinDismiss(AsyncWebServerRequest *request);

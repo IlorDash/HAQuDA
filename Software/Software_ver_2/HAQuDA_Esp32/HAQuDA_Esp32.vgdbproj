@@ -46,6 +46,8 @@
         <string>sketches\HAQuDA_JoinLast.h</string>
         <string>sketches\HAQuDA_WiFiCreds.h</string>
         <string>sketches\HAQuDA_WebPageDisplayManip_Translator.h</string>
+        <string>sketches\HAQuDA_WebPageDisplayManip.h</string>
+        <string>sketches\HAQuDA_WebPageDisplayState.h</string>
       </OtherFiles>
     </ProjectModeSettings>
   </Project>

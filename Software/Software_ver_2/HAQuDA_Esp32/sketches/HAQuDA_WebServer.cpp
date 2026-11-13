@@ -411,6 +411,18 @@ void HAQuDA_WebServer::handleStatus(AsyncWebServerRequest *request) {
 	request->send(response);
 }
 
+void HAQuDA_WebServer::handleDisp(AsyncWebServerRequest *request) {
+	char buf[WEB_DISPLAY_JSON_BUF_LEN];
+	if (webDisp.BuildJson(buf, sizeof(buf)) == 0) {
+		postLogError("handleDisp: picture buffer too small");
+		sendText(request, 500, "Status unavailable.");
+		return;
+	}
+	AsyncWebServerResponse *response = request->beginResponse(200, "application/json", buf);
+	response->addHeader("Cache-Control", "no-store");
+	request->send(response);
+}
+
 // Identifies the lamp and tells how long it has run, nothing else. The WiFi page opened on the lamp's access point reads
 // it cross-origin from the new network's address after a passed check, to see that the lamp has restarted. It is the only
 // route that allows cross-origin reads, so it must not carry the network name, the address or measurements. A simple
@@ -493,6 +505,7 @@ void HAQuDA_WebServer::WebServerResponds_init() {
 			  [](AsyncWebServerRequest *request) { sendAsset(request, "application/javascript", WEB_WIFI_JS_GZ, WEB_WIFI_JS_GZ_LEN, CACHE_STATIC); });
 
 	server.on("/api/status", HTTP_GET, [this](AsyncWebServerRequest *request) { handleStatus(request); });
+	server.on("/api/disp", HTTP_GET, [this](AsyncWebServerRequest *request) { handleDisp(request); });
 	server.on("/api/wifi", HTTP_GET, [this](AsyncWebServerRequest *request) { handleWiFiList(request); });
 	server.on("/api/boot", HTTP_GET, [this](AsyncWebServerRequest *request) { handleBoot(request); });
 	server.on("/api/join", HTTP_GET, [this](AsyncWebServerRequest *request) { handleJoin(request); });

@@ -15,8 +15,9 @@ const char *DDNS_domain = DDNS_DOMAIN;
 
 static HAQuDA_DisplayManip *dispManip;
 
-HAQuDA_WiFi_handler::HAQuDA_WiFi_handler(HAQuDA_FileStorage *currFS, HAQuDA_DisplayManip *_dispManip, const HAQuDA_MeasSnapshot &snapshot)
-	: HAQuDA_WebServer(currFS, snapshot) {
+HAQuDA_WiFi_handler::HAQuDA_WiFi_handler(HAQuDA_FileStorage *currFS, HAQuDA_DisplayManip *_dispManip, const HAQuDA_MeasSnapshot &snapshot,
+										 HAQuDA_WebPageDisplayManip &webDispIn)
+	: HAQuDA_WebServer(currFS, snapshot, webDispIn) {
 	dispManip = _dispManip;
 };
 

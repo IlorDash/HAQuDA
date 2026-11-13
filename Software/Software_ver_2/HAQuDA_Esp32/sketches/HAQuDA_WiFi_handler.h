@@ -94,8 +94,10 @@ class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
 	bool joinedNetwork(const char *ssid) const;
 
   public:
-	// snapshot feeds the web page with the latest measurements; it must outlive the handler.
-	HAQuDA_WiFi_handler(HAQuDA_FileStorage *currFS, HAQuDA_DisplayManip *_dispManip, const HAQuDA_MeasSnapshot &snapshot);
+	// snapshot feeds the web page with the latest measurements and webDisp with the picture the lamp shows; both must
+	// outlive the handler.
+	HAQuDA_WiFi_handler(HAQuDA_FileStorage *currFS, HAQuDA_DisplayManip *_dispManip, const HAQuDA_MeasSnapshot &snapshot,
+						HAQuDA_WebPageDisplayManip &webDispIn);
 	~HAQuDA_WiFi_handler();
 	static bool WiFiConnected;
 	// Joins a stored network, registers the disconnect-reason recorder and starts the web server. setup() (loop task) only.
