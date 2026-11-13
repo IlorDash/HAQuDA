@@ -110,6 +110,10 @@ bool sensorsBegin() {
 	}
 
 	dht.begin();
+	// The buffer may hold bytes received before this attempt (the ZH03B streams into it while nobody reads, or line noise from a
+	// power cycle), so only bytes received from here on may prove the sensor is alive now. A healthy ZH03B sends the next frame
+	// within 1 s, inside the 5 s budget.
+	pmReader.DiscardBuffered();
 	// Force bypasses the library's 2 s cache, which would otherwise hand back the failed result of the previous probe
 	const sensors_presence presence
 		= HAQuDA_WaitForSensors([]() { return !isnan(dht.readTemperature(false, true)); }, []() { return pmReader.HasValidFrame(); }, []() { return millis(); },

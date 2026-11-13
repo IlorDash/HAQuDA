@@ -13,7 +13,7 @@ pm_meas_result HAQuDA_PMReader::Read(uint32_t nowMs, uint8_t *payloadOut) {
 	}
 
 	if (warmup.IsWarmingUp(nowMs)) {
-		drain();
+		DiscardBuffered();
 		return pm_meas_result::warming_up;
 	}
 
@@ -59,8 +59,8 @@ bool HAQuDA_PMReader::readNewestFrame(uint8_t *payloadOut) {
 	return false;
 }
 
-// Frames sent during the warm-up must not pile up in the buffer
-void HAQuDA_PMReader::drain() {
+// Also keeps frames sent during the warm-up from piling up in the buffer
+void HAQuDA_PMReader::DiscardBuffered() {
 	while (serial.Available() > 0) {
 		serial.Read();
 	}

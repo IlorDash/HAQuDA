@@ -55,7 +55,7 @@ TEST(PMReaderTest, ReadWhileWarmingUpReturnsWarmingUp) {
 }
 
 TEST(PMReaderTest, ReadWhileWarmingUpDrainsAllAvailableBytes) {
-	// More bytes than the scan buffer holds: the drain must not stop at PM_RX_BUF_SIZE
+	// More bytes than the scan buffer holds: the discard must not stop at PM_RX_BUF_SIZE
 	const uint32_t powerOnMs = 0;
 	const uint32_t nowMs = 1000;
 	const size_t rxBytes = 300;
@@ -626,4 +626,93 @@ TEST(PMReaderTest, HasValidFrameTailPlusIncompleteHeadConsumesBufferFalse) {
 
 	EXPECT_EQ(exp_result, res);
 	EXPECT_EQ(exp_waiting, serial.rx.size() - serial.pos);
+}
+
+TEST(PMReaderTest, DiscardBufferedConsumesAllBytesBeyondScanBuffer) {
+	// More bytes than the scan buffer holds: the discard must not stop at PM_RX_BUF_SIZE
+	const size_t rxBytes = 300;
+
+	const size_t exp_waiting = 0;
+
+	FakePMSerial serial;
+	serial.rx.assign(rxBytes, 0x00);
+	HAQuDA_PMWarmup warmup;
+	HAQuDA_PMReader reader(serial, warmup);
+
+	reader.DiscardBuffered();
+
+	EXPECT_EQ(exp_waiting, serial.rx.size() - serial.pos);
+}
+
+TEST(PMReaderTest, DiscardBufferedNeverCallsFindOrReadBytes) {
+	const int exp_calls = 0;
+
+	const uint8_t frameA[ZH03B_FRAME_LEN]
+		= {0x42, 0x4D, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0A, 0x01, 0x2C, 0x00, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x0C};
+	FakePMSerial serial;
+	serial.rx.assign(frameA, frameA + ZH03B_FRAME_LEN);
+	HAQuDA_PMWarmup warmup;
+	HAQuDA_PMReader reader(serial, warmup);
+
+	reader.DiscardBuffered();
+
+	EXPECT_EQ(exp_calls, serial.findCalls);
+	EXPECT_EQ(exp_calls, serial.readBytesCalls);
+}
+
+TEST(PMReaderTest, DiscardBufferedOnEmptyBufferIsHarmless) {
+	const int exp_read_calls = 0;
+
+	FakePMSerial serial;
+	HAQuDA_PMWarmup warmup;
+	HAQuDA_PMReader reader(serial, warmup);
+
+	reader.DiscardBuffered();
+
+	EXPECT_EQ(exp_read_calls, serial.readCalls);
+}
+
+// The stale-frame case: a frame buffered before the discard must not count as presence.
+TEST(PMReaderTest, HasValidFrameAfterDiscardOfStaleFrameFalse) {
+	const bool exp_result = false;
+	const size_t exp_waiting = 0;
+
+	const uint8_t frameA[ZH03B_FRAME_LEN]
+		= {0x42, 0x4D, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0A, 0x01, 0x2C, 0x00, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x0C};
+	FakePMSerial serial;
+	serial.rx.assign(frameA, frameA + ZH03B_FRAME_LEN);
+	HAQuDA_PMWarmup warmup;
+	HAQuDA_PMReader reader(serial, warmup);
+	// The stale frame is dropped first (setup of the state, not the action under test)
+	reader.DiscardBuffered();
+
+	bool res;
+
+	res = reader.HasValidFrame();
+
+	EXPECT_EQ(exp_result, res);
+	EXPECT_EQ(exp_waiting, serial.rx.size() - serial.pos);
+}
+
+// A frame that arrives after the discard is recognised as before.
+TEST(PMReaderTest, HasValidFrameFrameArrivingAfterDiscardTrue) {
+	const size_t staleBytes = 300;
+
+	const bool exp_result = true;
+
+	const uint8_t frameA[ZH03B_FRAME_LEN]
+		= {0x42, 0x4D, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0A, 0x01, 0x2C, 0x00, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x0C};
+	FakePMSerial serial;
+	serial.rx.assign(staleBytes, 0x00);
+	HAQuDA_PMWarmup warmup;
+	HAQuDA_PMReader reader(serial, warmup);
+	// Stale bytes are dropped first, then the real frame arrives (setup of the state, not the action under test)
+	reader.DiscardBuffered();
+	serial.rx.insert(serial.rx.end(), frameA, frameA + ZH03B_FRAME_LEN);
+
+	bool res;
+
+	res = reader.HasValidFrame();
+
+	EXPECT_EQ(exp_result, res);
 }

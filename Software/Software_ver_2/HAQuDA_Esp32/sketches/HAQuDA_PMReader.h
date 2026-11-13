@@ -25,10 +25,13 @@ class HAQuDA_PMReader {
 	// whole frame). Works during the warm-up too (frames carry the firmware version in PM2.5 then, but they prove the sensor is alive). loop task only.
 	bool HasValidFrame();
 
+	// Throws away every byte waiting in the RX buffer without waiting for more. The sensor keeps streaming into the buffer while
+	// nobody reads it, so a presence check must start from an empty buffer or it accepts a frame sent before the sensor died. loop task only.
+	void DiscardBuffered();
+
   private:
 	bool readBufferedFrame(uint8_t *payloadOut);
 	bool readNewestFrame(uint8_t *payloadOut);
-	void drain();
 
 	HAQuDA_IPMSerial &serial;
 	HAQuDA_PMWarmup &warmup;
