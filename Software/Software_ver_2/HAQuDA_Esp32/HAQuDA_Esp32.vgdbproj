@@ -41,6 +41,13 @@
         <string>sketches\HAQuDA_Touch.h</string>
         <string>sketches\HAQuDA_ColorScale.h</string>
         <string>sketches\HAQuDA_ILEDs.h</string>
+        <string>sketches\HAQuDA_MeasSnapshot.h</string>
+        <string>sketches\HAQuDA_WiFiJoin.h</string>
+        <string>sketches\HAQuDA_JoinLast.h</string>
+        <string>sketches\HAQuDA_WiFiCreds.h</string>
+        <string>sketches\HAQuDA_WebPageDisplayManip_Translator.h</string>
+        <string>sketches\HAQuDA_WebPageDisplayManip.h</string>
+        <string>sketches\HAQuDA_WebPageDisplayState.h</string>
         <string>sketches\HAQuDA_ZH03BFrame.h</string>
         <string>sketches\HAQuDA_PMResult.h</string>
         <string>sketches\HAQuDA_PMWarmup.h</string>

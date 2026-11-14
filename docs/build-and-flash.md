@@ -42,7 +42,7 @@ The firmware reads four texts from build variables. They are not in the source o
 
 | Variable | Used for |
 |----------|----------|
-| `AP_ssid_uv` | Name of the lamp's access point. Also the lamp's host name in your network. |
+| `AP_ssid_uv` | Name of the lamp's access point. The lamp's host name in your network is fixed: `haquda`. |
 | `AP_pass_uv` | Password of the access point, 8 to 63 characters. |
 | `DDNS_Domain_uv` | DuckDNS domain. <span class="wip">WIP</span> |
 | `DDNS_Token_uv` | DuckDNS token. <span class="wip">WIP</span> |

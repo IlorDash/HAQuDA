@@ -6,13 +6,17 @@
 
 typedef enum { effect, meas, error, event, noneMode } display_modes;
 
+class HAQuDA_WebPageDisplayManip;
+
 class HAQuDA_DisplayManip {
 
 	static uint8_t brighntessPerCent;
 	static display_modes mode;
 
   public:
-	HAQuDA_DisplayManip(HAQuDA_MeasHandler *_meas_handler, HAQuDA_EffectsHandler *_effects_handler, HAQuDA_ErrorHandler *_err_handler);
+	// webDisp gets a copy of every setter call, for the web page; it must outlive this object.
+	HAQuDA_DisplayManip(HAQuDA_MeasHandler *_meas_handler, HAQuDA_EffectsHandler *_effects_handler, HAQuDA_ErrorHandler *_err_handler,
+						HAQuDA_WebPageDisplayManip *_web_disp);
 
 	static void Show(int *show_meas_time);
 

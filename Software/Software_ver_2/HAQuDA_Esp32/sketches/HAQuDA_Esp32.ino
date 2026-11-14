@@ -6,6 +6,7 @@
 #include "HAQuDA_MeasHandler.h"
 #include "HAQuDA_EffectsHandler.h"
 #include "HAQuDA_ErrorHandler.h"
+#include "HAQuDA_WebPageDisplayManip.h"
 
 #include "HAQuDA_FileStorage.h"
 #include "HAQuDA_Logger.h"
@@ -24,9 +25,11 @@ HAQuDA_ErrorHandler ErrHandler;
 HAQuDA_FileStorage FileStorage;
 HAQuDA_LogDedup LogDedup;
 HAQuDA_EffectsHandler EffectsHandler;
-HAQuDA_MeasHandler MeasHandler(&ErrHandler);
-HAQuDA_DisplayManip DispManip(&MeasHandler, &EffectsHandler, &ErrHandler);
-HAQuDA_WiFi_handler WiFiHandler(&FileStorage, &DispManip);
+HAQuDA_MeasSnapshot MeasSnapshot;
+HAQuDA_WebPageDisplayManip WebDisp;
+HAQuDA_MeasHandler MeasHandler(&ErrHandler, MeasSnapshot, WebDisp);
+HAQuDA_DisplayManip DispManip(&MeasHandler, &EffectsHandler, &ErrHandler, &WebDisp);
+HAQuDA_WiFi_handler WiFiHandler(&FileStorage, &DispManip, MeasSnapshot, WebDisp);
 
 int meas_start_time = 0;
 int builtin_blink_start_time = 0;
@@ -148,6 +151,7 @@ void loop() {
 	WiFiHandler.HandleConnection();
 	retrySensorsStart();
 	MeasHandler.UpdateMeas(&meas_start_time);
+	WebDisp.RefreshHour();
 	HAQuDA_Logger::FlushExpiredRepeats();
 	if ((millis() - builtin_blink_start_time) > BUILTIN_LED_PERIOD) {
 		digitalWrite(BUILTIN_LED, !digitalRead(BUILTIN_LED));

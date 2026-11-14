@@ -1,55 +1,102 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>ESP Wi-Fi Manager</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-html {
-    font-family: Arial, Helvetica, sans-serif;
-    display: inline-block;
-    text-align: center;
-}
-h1 {
-    font-size: 1.8rem;
-    color: white;
-}
-p {
-    font-size: 1.4rem;
-}
-.topnav {
-    overflow: hidden;
-    background-color: #0A1128;
-}
-body {
-    margin: 0;
-}
-.content {
-    padding: 5%;
-}
-</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>HAQuDA WiFi manager</title>
+<script>try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}</script>
+<link rel="stylesheet" href="/style.css">
 </head>
-<body>
-    <div class="topnav">
-        <h1>ESP Wi-Fi Manager</h1>
-    </div>
-    <div class="content">
-        <div class="card-grid">
-            <div class="card">
-                <form action="/add_wifi_creds" method="POST">
-                    <p>
-                        <label for="ssid">SSID</label>
-                        <input type="text" id="ssid" name="ssid"><br>
-                        <label for="pass">Password</label>
-                        <input type="text" id="pass" name="pass"><br>
-                        <label for="ip">IP Address</label>
-                        <input type="text" id="static_ip" name="static_ip" value="192.168.1.200"><br>
-                        <label for="gateway">Gateway Address</label>
-                        <input type="text" id="gateway" name="gateway" value="192.168.1.1"><br>
-                        <input type="submit" value="Submit">
-                    </p>
-                </form>
-            </div>
-        </div>
-    </div>
+<body class="wifi">
+<header class="hdr">
+	<div class="in hdr-in">
+		<div class="hdr-l">
+			<div class="brand">
+				<span class="logo">HAQuDA</span>
+				<span class="bars" id="bars"><i></i><i></i><i></i><i></i></span>
+			</div>
+			<div class="status"><span class="sdot" id="sdot"></span><span id="stext" role="status">Connecting to the lamp&hellip;</span></div>
+		</div>
+		<div class="hdr-r">
+			<div class="seg" role="group" aria-label="Language">
+				<button type="button" data-lang="en" aria-pressed="true">EN</button>
+				<button type="button" data-lang="ru" aria-pressed="false">RU</button>
+			</div>
+			<button type="button" class="themebtn" id="theme" aria-label="Toggle theme"><span></span></button>
+		</div>
+	</div>
+</header>
+<main class="in">
+	<div class="pgt">
+		<a class="back" href="/" aria-label="Main page">&larr;</a>
+		<h1 data-i="title">WiFi networks</h1>
+	</div>
+	<div class="banner" id="banner" hidden>
+		<p data-i="bAp">You&rsquo;re on the lamp&rsquo;s own network. Add your home WiFi &mdash; the lamp will restart and join it.</p>
+	</div>
+	<div class="banner bad" id="lastBanner" hidden>
+		<p id="lastBannerText"></p>
+		<button type="button" class="bx" id="lastClose" data-i="close">Close</button>
+	</div>
+	<div id="edit">
+		<div class="cols">
+			<form class="card" id="form" action="/add_wifi_creds" method="post">
+				<div class="card-t" data-i="addTitle">Add network</div>
+				<div class="fld">
+					<div class="fl"><label for="ssid" data-i="ssid">Network name (SSID)</label><span class="cnt" id="ssidCnt">0 / 31 bytes</span></div>
+					<div class="inp" id="ssidBox"><input type="text" id="ssid" name="ssid" required autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="e.g. HomeNet"></div>
+					<div class="hint" id="ssidHint" hidden></div>
+				</div>
+				<div class="fld">
+					<div class="fl"><label for="pass" data-i="pass">Password</label><span class="cnt" id="passCnt">0 / 31 bytes</span></div>
+					<div class="inp" id="passBox"><input type="password" id="pass" name="pass" required autocomplete="off" placeholder="Network password"><button type="button" class="show" id="showPass">Show</button></div>
+					<div class="hint bad" id="passHint" hidden></div>
+				</div>
+				<button type="submit" class="submit" id="save">Save and restart</button>
+				<div class="reply" id="reply" role="status" hidden><i></i><span id="replyText"></span></div>
+			</form>
+			<section class="card saved">
+				<div class="sh"><span class="card-t" data-i="saved">Saved networks</span><span class="cnt" id="netCnt">0 / 10</span></div>
+				<div class="hint bad" id="listErr" data-i="listFail" hidden>Cannot read the saved networks.</div>
+				<div class="empty" id="empty" data-i="empty" hidden>No saved networks yet.</div>
+				<div id="nets"></div>
+				<div id="delBox" hidden>
+					<button type="button" class="delbtn" id="delAsk" data-i="delAll">Delete all networks</button>
+					<div class="confirm" id="confirm" hidden>
+						<p id="confirmText"></p>
+						<div class="btns">
+							<button type="button" id="delNo" data-i="cancel">Cancel</button>
+							<button type="button" class="yes" id="delYes" data-i="delYes">Delete all</button>
+						</div>
+					</div>
+				</div>
+				<div class="reply" id="delReply" role="status" hidden><i></i><span id="delReplyText"></span></div>
+			</section>
+		</div>
+		<nav class="links">
+			<a class="lk" href="/"><span data-i="main">Main page</span></a>
+			<a class="lk" href="/webserial"><span data-i="log">Live log</span></a>
+		</nav>
+	</div>
+	<section class="card rb" id="jok" hidden>
+		<div class="rb-t"><span class="rb-dot"></span><span id="jokTitle"></span></div>
+		<div class="addrs">
+			<div class="addr" id="jokIpBox">
+				<div class="addr-l" data-i="addrIp">By IP address</div>
+				<div class="addr-r"><a class="addr-link" id="jokIp"></a><button type="button" class="copy" id="jokIpCopy" data-i="copy">Copy</button></div>
+				<div class="addr-s" id="jokIpWait" hidden></div>
+			</div>
+			<div class="addr" id="jokHostBox">
+				<div class="addr-l" data-i="addrHost">By name</div>
+				<div class="addr-r"><a class="addr-link" id="jokHost"></a><button type="button" class="copy" id="jokHostCopy" data-i="copy">Copy</button></div>
+				<div class="addr-s" id="jokHostWait" hidden></div>
+			</div>
+		</div>
+		<p class="jok-text" id="jokText"></p>
+	</section>
+	<footer class="meta"><span id="mfw"></span><span id="mip"></span></footer>
+</main>
+<script src="/wifi.js"></script>
 </body>
 </html>

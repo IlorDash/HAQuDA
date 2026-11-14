@@ -1,8 +1,9 @@
 # LED codes and troubleshooting
 
 The lamp reports problems as LED effects and as lines in its log. Most errors turn the matrix
-dark, so the log tells you more than the matrix. Open `/webserial` when the lamp runs in your
-network (see [Web interface](web-interface.md#log-page)) and copy the log lines when you report a
+dark, so the log tells you more than the matrix. Open `/webserial` on the lamp, in your
+network or at `http://192.168.4.22/webserial` on its access point (see
+[Web interface](web-interface.md#log-page)), and copy the log lines when you report a
 problem.
 
 Effects in the tables use these names:
@@ -34,6 +35,7 @@ Effects in the tables use these names:
 | Effect | Cause | Action |
 |------------------------|-------|------------|
 | Red, whole matrix, about 3 seconds, then a lime snake | The lamp lost the WiFi connection and reconnects. | Wait. |
+| Red, whole matrix, about 3 seconds, then a dark matrix | You added a network while the lamp ran in your network, and it left its network to try the new one. | Wait for the restart; see [While the lamp is in your network](web-interface.md#add-in-station-mode). |
 | Lime snake that does not end after the lamp lost its WiFi <span class="wip">WIP</span> | The router is gone. The lamp retries without a limit. | Bring the router back, or unplug the lamp and plug it in again. |
 
 !!! note "WIP"
@@ -69,6 +71,18 @@ Each line has the form `time - level : message`; see [Log page](web-interface.md
 | `Started sensors` | Info | The sensors answer. | Nothing. |
 | `Failed connection to WiFi` | ERROR | The lamp could not join a stored network. | Check the name and the password of your network. |
 | `Failed creating Acces Point` | ERROR | The access point cannot start. | See the dark matrix above. |
+| `CreateAP: captive DNS not started` | ERROR | The lamp's DNS for the access point did not start. | Open `http://192.168.4.22/` by hand. |
+| `startMdns: mDNS responder not started` | ERROR | The name `haquda.local` does not work. | Open the page by the IP address. |
+| `startMdns: http service not added to mDNS` | ERROR | The name `haquda.local` may not work. | Open the page by the IP address. |
+| `WiFi check started` | Info | The lamp began to check a new network in access point mode. | Nothing. |
+| `WiFi check: ok, network saved` | Info | The check passed. The lamp restarts in about 20 seconds. | Nothing. |
+| `WiFi check: wrong_password` | ERROR | The router refused the password. Nothing is saved. Other endings: `no_network`, `timeout`, `save_failed`. | See [Results of adding a network](web-interface.md#add-results). |
+| `WiFi switch: scanning for the network` | Info | The lamp began to check a new network in your network. | Nothing. |
+| `WiFi switch: network found, leaving the current one` | Info | The lamp found the network and leaves its own to try it. | Nothing. |
+| `WiFi switch: ok, network saved first` | Info | The lamp joined the new network. It restarts in about 1 second. | Nothing. |
+| `WiFi switch: no_network, staying on the current network` | ERROR | The lamp does not see the network. Nothing changes. The ending can also be `scan_failed`. | See [Results of adding a network](web-interface.md#add-results). |
+| `WiFi switch: wrong_password, restarting to rejoin the saved networks` | ERROR | The lamp could not join the new network and restarts. Other reasons: `no_network`, `timeout`, `save_failed`. | Wait; both pages then show the reason. |
+| `Restarting after a WiFi network change` | Info | The lamp restarts after a passed check or after a switch. | Nothing. |
 | `Sensors start: CCS811 not found` | ERROR | The CCS811 does not answer. | Check the CCS811 power and I2C wiring. |
 | `Sensors start: DHT22 not responding` | ERROR | The DHT22 gave no reading within 5 seconds after the sensors powered on. | Check the DHT22 wiring. |
 | `Sensors start: ZH03B sends no frames` | ERROR | The ZH03B sent no valid frame within 5 seconds after the sensors powered on. | Check the ZH03B wiring and its 5 V supply. |

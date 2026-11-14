@@ -1,0 +1,26 @@
+name: Web pages
+on:
+  push:
+    paths:
+    - 'Software/Web_Pages/**'
+    - 'Software/Software_ver_2/HAQuDA_Esp32/sketches/WebPages.h'
+    - '.github/workflows/web-pages.yml'
+  pull_request:
+    paths:
+    - 'Software/Web_Pages/**'
+    - 'Software/Software_ver_2/HAQuDA_Esp32/sketches/WebPages.h'
+    - '.github/workflows/web-pages.yml'
+permissions:
+  contents: read
+jobs:
+  Check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      # The firmware build compiles the committed sketches/WebPages.h and has no generator, so a page
+      # source changed without regenerating the header would ship the old page.
+      - name: Check WebPages.h is generated from the sources
+        run: python3 Software/Web_Pages/gen_web_pages.py --check
+      - name: Check the preview server compiles
+        run: python3 -m py_compile Software/Web_Pages/preview_server.py

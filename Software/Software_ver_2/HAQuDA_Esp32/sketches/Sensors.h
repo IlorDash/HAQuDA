@@ -30,4 +30,6 @@ bool getCCS811_meas();
 pm_meas_result getPM_meas();
 bool getDHT22_meas();
 void ClearMeas();
+// Zeroes the count first, then the sum. ShowTask only (loop() reads the pair for the web page).
+void ClearMeasData(meas_data &data);
 void sensors_reboot();

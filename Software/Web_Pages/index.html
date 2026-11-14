@@ -1,59 +1,69 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>HAQuDA WEB SERVER</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-html {
-    font-family: Arial, Helvetica, sans-serif;
-    display: inline-block;
-    text-align: center;
-}
-h1 {
-    font-size: 1.8rem;
-    color: white;
-}
-p {
-    font-size: 1.4rem;
-}
-.topnav {
-    overflow: hidden;
-    background-color: #0A1128;
-}
-body {
-    margin: 0;
-}
-.content {
-    padding: 5%;
-}
-</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>HAQuDA</title>
+<script>try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}</script>
+<link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <div class="topnav">
-        <h1>HAQuDA WEB SERVER</h1>
-    </div>
-    <div>
-        <h2>Hello, world!</h2>
-            <p class="text">
-                <a href="wifi_manager">Add WiFi credentials</a>
-            </p>
-    </div>
-	
-	 <div>
-        <p>Delete stored WiFi credentials</p>
-            <form action="/delete_wifi_creds" method="POST">
-				<button name="Delete">Delete</button>
-			</form>
-    </div>
-	
-	<div>
-        <p>Show stored WiFi credentials</p>
-            <form action="/show_wifi_creds" method="POST">
-				<button name="Show">Show</button>
-			</form>
-    </div>
-	
-	
-	
+<header class="hdr">
+	<div class="in hdr-in">
+		<div class="hdr-l">
+			<div class="brand">
+				<span class="logo">HAQuDA</span>
+				<span class="bars" id="bars"><i></i><i></i><i></i><i></i></span>
+			</div>
+			<div class="status"><span class="sdot" id="sdot"></span><span id="stext" role="status">Connecting to the lamp&hellip;</span></div>
+		</div>
+		<div class="hdr-r">
+			<div class="seg" role="group" aria-label="Language">
+				<button type="button" data-lang="en" aria-pressed="true">EN</button>
+				<button type="button" data-lang="ru" aria-pressed="false">RU</button>
+			</div>
+			<button type="button" class="themebtn" id="theme" aria-label="Toggle theme"><span></span></button>
+		</div>
+	</div>
+</header>
+<main class="in">
+	<div class="banner" id="banner" hidden>
+		<p id="bannerText"></p>
+		<a class="cta" id="bannerCta" href="/wifi_manager" data-i="cta" hidden>Add WiFi network</a>
+	</div>
+	<div class="banner bad" id="lastBanner" hidden>
+		<p id="lastBannerText"></p>
+		<button type="button" class="bx" id="lastClose" data-i="close">Close</button>
+	</div>
+	<div class="grid">
+		<section class="lamp" id="lamp">
+			<div class="mrow">
+				<div class="matrix" id="matrix" aria-hidden="true"></div>
+				<div class="legend" id="legend">
+					<div><span data-i="lDust">Dust PM2.5</span><b id="lv-pm25">--</b></div>
+					<div><span>eCO&#8322;</span><b id="lv-eco2">--</b></div>
+					<div><span data-i="lTemp">Temperature</span><b id="lv-temp">--</b></div>
+					<p id="legendNote" role="status"></p>
+				</div>
+			</div>
+			<div class="idx">
+				<div class="idx-word" id="idxWord">&mdash;</div>
+				<div class="idx-sub" id="idxSub"></div>
+			</div>
+		</section>
+		<div class="side">
+			<div class="tiles" id="tiles"></div>
+			<nav class="links">
+				<a class="lk" href="/wifi_manager"><span data-i="wifi">WiFi networks</span></a>
+				<a class="lk" href="/webserial"><span data-i="log">Live log</span></a>
+				<a class="lk ext" href="https://ilordash.github.io/HAQuDA/" target="_blank" rel="noopener"><span data-i="guide">User guide &#8599;</span><span class="note" data-i="offNote">needs internet</span></a>
+				<a class="lk ext" href="https://github.com/IlorDash/HAQuDA" target="_blank" rel="noopener"><span>GitHub &#8599;</span><span class="note" data-i="offNote">needs internet</span></a>
+			</nav>
+			<footer class="meta"><span id="mfw"></span><span id="mip"></span><span id="mup"></span></footer>
+		</div>
+	</div>
+</main>
+<script src="/app.js"></script>
 </body>
 </html>

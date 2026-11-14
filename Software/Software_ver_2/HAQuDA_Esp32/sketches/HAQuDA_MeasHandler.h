@@ -3,6 +3,7 @@
 #include "Arduino.h"
 #include "HAQuDA_ErrorHandler.h"
 #include "HAQuDA_ColorScale.h"
+#include "HAQuDA_MeasSnapshot.h"
 #include "HAQuDA_PMResult.h"
 
 #define MULTI_MODE_PARAM_NUM 3
@@ -34,7 +35,13 @@ typedef struct {
 	div_dots PM2_5;
 } meas_div_dots;
 
+// Declared, not included: HAQuDA_WebPageDisplayManip.h includes HAQuDA_DisplayManip.h, which includes this header.
+class HAQuDA_WebPageDisplayManip;
+
 class HAQuDA_MeasHandler {
+
+	HAQuDA_MeasSnapshot &measSnapshot;
+	void publishSnapshots();
 
 	static bool sens_start;
 	static int meas_num;
@@ -58,7 +65,8 @@ class HAQuDA_MeasHandler {
 	static void showMeas_night(float data, div_dots divideDots, uint8_t time);
 
   public:
-	HAQuDA_MeasHandler(HAQuDA_ErrorHandler *_err_handler);
+	// snapshot receives the latest averages for the web page and webDisp the colours the lamp draws; both must outlive the handler.
+	HAQuDA_MeasHandler(HAQuDA_ErrorHandler *_err_handler, HAQuDA_MeasSnapshot &snapshot, HAQuDA_WebPageDisplayManip &webDisp);
 
 	// Starts the sensors once. loop task only (setup or loop), never from ShowTask.
 	bool SensorsBegin();
@@ -66,7 +74,8 @@ class HAQuDA_MeasHandler {
 	// loop task only (setup or loop), never from ShowTask.
 	bool TryRebootSensors();
 
-	static void UpdateMeas(int *sensors_meas_time);
+	// Polls the sensors every SENSORS_MEAS_PERIOD_MS and publishes the averages to the snapshot. loop only.
+	void UpdateMeas(int *sensors_meas_time);
 
 	static void Show(int *show_meas_time);
 

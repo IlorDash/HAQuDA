@@ -64,6 +64,14 @@ bool HAQuDA_TimeService::GetFormattedDate(char *formattedDate, size_t size) {
 	return true;
 }
 
+bool HAQuDA_TimeService::GetCachedHour(uint8_t *hour) {
+	if ((hour == nullptr) || !timeClientStarted || !timeClient->isTimeSet()) {
+		return false;
+	}
+	*hour = static_cast<uint8_t>(timeClient->getHours());
+	return true;
+}
+
 bool HAQuDA_TimeService::GetDateTime(DateTimeStruct *_time) {
 
 	char formattedDate[FORMATTED_DATE_LEN + 1] = {0}; // plus null term

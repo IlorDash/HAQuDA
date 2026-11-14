@@ -15,6 +15,28 @@
 - **Version at start.** The lamp prints `HAQuDA firmware v{{ app_version }}` on its serial port
   at 115200 baud when it starts, so you can tell which firmware runs on a lamp.
 
+- **New web pages.** The main page shows the readings in tiles with an air index, the signal
+  bars and the name of the network the lamp is in. It loads nothing from the internet. Both pages
+  come in English and Russian, in a light and a dark theme; see [Main page](web-interface.md#main-page).
+- **The lamp's picture on the page.** A grid of 4 × 6 cells repeats what the matrix shows: the
+  measurement layouts in the colours the lamp drew, the snake, the growing, the random pixels, the
+  fading and the single colours, and a caption that names what the lamp is doing. See
+  [The lamp's picture](web-interface.md#lamp-picture).
+- **Address `haquda.local`.** The pages open at `http://haquda.local/` in your network and on the
+  lamp's access point, and the router lists the lamp as `haquda`. See
+  [Page addresses](web-interface.md#page-addresses).
+- **WiFi check before saving.** In access point mode the lamp joins a new network before it saves
+  it, for up to 20 seconds, and the page shows the progress, the new address and, after the
+  restart, opens that address by itself. A wrong password, a missing network or no answer is
+  reported and nothing is saved. See [Add a network](web-interface.md#add-a-network).
+- **Adding a network in your network.** The lamp scans for the new network first. If it is there,
+  the page warns that the lamp goes away, and the lamp tries it. After a failure the lamp restarts
+  to its stored networks and both pages show the reason in a banner you can close. See
+  [While the lamp is in your network](web-interface.md#add-in-station-mode).
+- **Up to 10 networks.** The newest network goes first and the lamp tries it first. When the list
+  is full, the page names the oldest network that the new one removes; see
+  [Saved networks](web-interface.md#saved-networks).
+
 ## Improvements
 
 - **Log time.** In your network, log lines carry the date and time, for example
@@ -52,16 +74,17 @@
 - **Quieter log.** With the ZH03B connected, `Failed to get PM 2.5 meas` no longer appears every
   40 to 50 seconds. With the ZH03B disconnected it still repeats every few seconds.
 
+## Removed
+
+- **Old controls.** The main page no longer has **Delete** and **Show**, and the form no longer
+  has **IP Address** and **Gateway Address**. **Delete all networks** is on the
+  [WiFi networks page](web-interface.md#wifi-networks-page).
+
 ## Known limitations (WIP)
 
 These features are not ready in this version.
 
-- [The lamp's address in your network](web-interface.md#page-addresses) is not reported.
 - [Opening the page automatically](web-interface.md#page-addresses) in access point mode.
-- [The **Show** button](web-interface.md#main-page).
-- [The **IP Address** and **Gateway Address** fields, and several stored networks](web-interface.md#add-wifi-credentials-page).
 - [Recovery after a WiFi loss](troubleshooting.md#running-effects).
 - [Display mode selection](quick-guide.md#select-the-display-mode).
 - [DuckDNS updates](build-and-flash.md#set-the-build-variables).
-
-In access point mode the [log page](web-interface.md#log-page) is not available.

@@ -12,7 +12,8 @@ LED effects and what to do:
 | Lime snake | The lamp starts or reconnects to a stored WiFi network. | Wait for it to end. |
 | Green matrix for 3 seconds | The lamp joined your WiFi network. | Nothing. |
 | Red matrix for 3 seconds, then a lime snake | The lamp lost the WiFi connection and reconnects. | Wait. |
-| Red matrix that fills row by row, again and again, for about 12 seconds, then an aqua fading | No network is stored or the lamp could not join it, so it opens its access point. | Join the access point and add your network. |
+| Red matrix for 3 seconds, then a dark matrix | You added a network while the lamp ran in your network, and it left its network to try the new one. | Wait for the restart. |
+| Red matrix that fills row by row, again and again, for about 12 seconds, then an aqua fading | No network is stored or the lamp could not join it, so it opens its access point. | Join the access point and add your network on the WiFi page. The lamp tests the network first and keeps the access point on. It saves the network and restarts only when it joined, and the page then shows the lamp's new address. A wrong password or a missing network shows a message on the page, and the lamp stays in access point mode. |
 | Red fading, again and again, without end | The file system does not start. The lamp stops. | Unplug the lamp and plug it in again. |
 | Red matrix that fills row by row for at least 10 seconds, then one red pixel running along the matrix without end | The access point cannot be created. The lamp stops. | Unplug the lamp and plug it in again. |
 | Random pixels, one by one, again and again. | The sensors do not start. The lamp does not restart: the access point, the web pages and WebSerial keep working, and the lamp tries to start the sensors again every 5 minutes. When a retry succeeds, the matrix goes dark and the measurements appear within about a minute. | Check the sensor wiring. Read the reason in the WebSerial log. |
@@ -33,6 +34,30 @@ To flash the separate parts instead, unzip the artifact and run `esptool.py --ch
 A lamp flashed this way opens its setup access point as `actions_ssid` with the password `actions_pass`. Anyone nearby can join it with this public password until you flash your own build. DuckDNS does not work, because the artifact holds dummy values. To use your own values, build the firmware in Visual Studio.
 
 Build the firmware yourself in Visual Studio with Build -> Build Solution. Then flash over UART with Debug -> Program and Start Without Debugging. To flash over OpenOCD instead, run Debug -> Start Debugging with GDB.
+
+## Open the lamp's web page
+Open `http://haquda.local/` in a browser on the same network as the lamp. The hostname `haquda` is fixed and the lamp answers to it over mDNS, also on its own access point. If your device does not resolve `.local` names, use the lamp's IP address from your router. On the access point the address is `http://192.168.4.22/`.
+
+The main page shows the measurement tiles, the air index and a 4 x 6 grid that mirrors the picture on the lamp's LEDs: the current effect, an error effect or the measurement colours, with a caption. The page has links to the WiFi page and to the WebSerial log.
+
+The WiFi page lists up to 10 saved networks, the newest first, and deletes all of them at once. It does not delete a single network. A network you add is checked before it is saved:
+- On the access point the lamp tests the join and keeps the access point up. When the join works, the lamp saves the network, restarts, and the page shows the new IP address and `http://haquda.local/`, then opens it. A wrong password or a missing network shows a message, and the lamp stays on the access point.
+- On a saved network the lamp first scans for the new one. When the scan does not find it (for example a 5 GHz network), the lamp stays on its network, does not restart, and the page shows the reason at once. When the scan finds it, the lamp switches to it and restarts. The page does not answer for a short time. When the join fails, the lamp returns to the old network and the pages show a failure banner. Close the banner and enter the password again.
+
+## Web pages
+The lamp serves its web pages from `Software/Web_Pages/`: `index.html`, `wifi_manager.html`, `style.css`, `app.js` and `wifi.js`. The pages use no external resources, so they work when the lamp runs as an access point without internet.
+
+The firmware does not read these files. It contains their gzipped bytes in `Software/Software_ver_2/HAQuDA_Esp32/sketches/WebPages.h`. After you change a page source, run `py -3 Software/Web_Pages/gen_web_pages.py` from any folder and commit the changed `WebPages.h` together with the source. The script needs Python 3 and nothing else.
+
+To design the pages without the lamp, run `py -3 Software/Web_Pages/preview_server.py` from any folder. The script opens `http://127.0.0.1:8080/` in your browser. It serves the page sources from disk on every request, so a saved change shows after a refresh. Press Ctrl+C in the terminal to stop it.
+
+The script answers `/api/status`, `/api/disp`, `/api/wifi`, `/api/join` and the WiFi routes with mock data. `/api/disp` returns the picture the lamp shows on its LEDs: an effect, an error effect or the measurement layout. The firmware and the lamp's access point are not needed.
+
+Pick a mock state with `--scenario`: `normal` (default), `bad-air`, `sensor-fail`, `ap`, `sta-offline` or `errors`. The `errors` state returns the lamp's 500 replies. The `ap`, `join-ok`, `join-wrong-pass` and `join-no-network` states run as an access point: a new network is checked for about 4 seconds, then the page shows the address or the failure. `ap` and `join-ok` pass, the other two fail. The `sta-switch-ok`, `sta-switch-wrong-pass` and `sta-switch-no-network` states run as a lamp joined to a saved network: a new network goes through the scan, a switching notice and about 10 seconds with no answer at all, then the lamp comes back and `/api/join` reports the outcome in `last`. `sta-switch-ok` joins the new network and makes it the first saved one, `sta-switch-wrong-pass` returns to the old network and the pages show the failure banner, and `sta-switch-no-network` fails at the scan at once and the lamp keeps answering. The other states answer a new network like `sta-switch-ok`. The `disp-effects`, `disp-errors` and `disp-night` states change the picture of `/api/disp` over time: the five effects for 25 seconds each, the five error effects for 15 seconds each, and the night bar growing every 4 seconds. Add `--latency 800` to delay every answer by 800 ms. Use `--port` to change the port and `--no-browser` to keep the browser closed.
+
+Saved networks live only in the script's memory, and nothing restarts: the script only stops answering for a while. The `WebSerial` link opens a stub page, because WebSerial runs only on the lamp.
+
+The `Web pages` workflow runs `python3 Software/Web_Pages/gen_web_pages.py --check`. The check fails when `WebPages.h` does not match the sources, so a forgotten regeneration shows up in the pull request. The workflow also syntax-checks `preview_server.py`.
 
 ## Commit messages and formatting
 Commit hooks check every message and the formatting of the lines you change. Set them up once per clone:

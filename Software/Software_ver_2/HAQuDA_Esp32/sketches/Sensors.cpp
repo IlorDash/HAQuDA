@@ -5,6 +5,8 @@
 #include "HAQuDA_SensorsPresence.h"
 #include "HAQuDA_ZH03BFrame.h"
 
+#include <atomic>
+
 #define SENS_POW 23
 
 #define DHTPIN 18
@@ -200,21 +202,20 @@ bool getDHT22_meas() {
 	return true;
 }
 
+void ClearMeasData(meas_data &data) {
+	// The count goes first: loop() publishes sum / count for the web page and treats an unchanged count
+	// before and after reading the sum as proof that no clear ran in between.
+	data.measNum = 0;
+	std::atomic_thread_fence(std::memory_order_seq_cst);
+	data.value = 0;
+}
+
 void ClearMeas() {
-	temp_meas.value = 0;
-	temp_meas.measNum = 0;
-
-	humid_meas.value = 0;
-	humid_meas.measNum = 0;
-
-	eCO2_meas.value = 0;
-	eCO2_meas.measNum = 0;
-
-	TVOC_meas.value = 0;
-	TVOC_meas.measNum = 0;
-
-	PM_2_5_meas.value = 0;
-	PM_2_5_meas.measNum = 0;
+	ClearMeasData(temp_meas);
+	ClearMeasData(humid_meas);
+	ClearMeasData(eCO2_meas);
+	ClearMeasData(TVOC_meas);
+	ClearMeasData(PM_2_5_meas);
 }
 
 void sensors_reboot() {
