@@ -12,6 +12,7 @@ LED effects and what to do:
 | Lime snake | The lamp starts or reconnects to a stored WiFi network. | Wait for it to end. |
 | Green matrix for 3 seconds | The lamp joined your WiFi network. | Nothing. |
 | Red matrix for 3 seconds, then a lime snake | The lamp lost the WiFi connection and reconnects. | Wait. |
+| Red matrix for 3 seconds, then a dark matrix | You added a network while the lamp ran in your network, and it left its network to try the new one. | Wait for the restart. |
 | Red matrix that fills row by row, again and again, for about 12 seconds, then an aqua fading | No network is stored or the lamp could not join it, so it opens its access point. | Join the access point and add your network on the WiFi page. The lamp tests the network first and keeps the access point on. It saves the network and restarts only when it joined, and the page then shows the lamp's new address. A wrong password or a missing network shows a message on the page, and the lamp stays in access point mode. |
 | Red fading, again and again, without end | The file system does not start. The lamp stops. | Unplug the lamp and plug it in again. |
 | Red matrix that fills row by row for at least 10 seconds, then one red pixel running along the matrix without end | The access point cannot be created. The lamp stops. | Unplug the lamp and plug it in again. |
@@ -33,6 +34,15 @@ To flash the separate parts instead, unzip the artifact and run `esptool.py --ch
 A lamp flashed this way opens its setup access point as `actions_ssid` with the password `actions_pass`. Anyone nearby can join it with this public password until you flash your own build. DuckDNS does not work, because the artifact holds dummy values. To use your own values, build the firmware in Visual Studio.
 
 Build the firmware yourself in Visual Studio with Build -> Build Solution. Then flash over UART with Debug -> Program and Start Without Debugging. To flash over OpenOCD instead, run Debug -> Start Debugging with GDB.
+
+## Open the lamp's web page
+Open `http://haquda.local/` in a browser on the same network as the lamp. The hostname `haquda` is fixed and the lamp answers to it over mDNS, also on its own access point. If your device does not resolve `.local` names, use the lamp's IP address from your router. On the access point the address is `http://192.168.4.22/`.
+
+The main page shows the measurement tiles, the air index and a 4 x 6 grid that mirrors the picture on the lamp's LEDs: the current effect, an error effect or the measurement colours, with a caption. The page has links to the WiFi page and to the WebSerial log.
+
+The WiFi page lists up to 10 saved networks, the newest first, and deletes all of them at once. It does not delete a single network. A network you add is checked before it is saved:
+- On the access point the lamp tests the join and keeps the access point up. When the join works, the lamp saves the network, restarts, and the page shows the new IP address and `http://haquda.local/`, then opens it. A wrong password or a missing network shows a message, and the lamp stays on the access point.
+- On a saved network the lamp first scans for the new one. When the scan does not find it (for example a 5 GHz network), the lamp stays on its network, does not restart, and the page shows the reason at once. When the scan finds it, the lamp switches to it and restarts. The page does not answer for a short time. When the join fails, the lamp returns to the old network and the pages show a failure banner. Close the banner and enter the password again.
 
 ## Web pages
 The lamp serves its web pages from `Software/Web_Pages/`: `index.html`, `wifi_manager.html`, `style.css`, `app.js` and `wifi.js`. The pages use no external resources, so they work when the lamp runs as an access point without internet.

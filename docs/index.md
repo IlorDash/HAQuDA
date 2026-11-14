@@ -24,8 +24,8 @@ see [Colour scale](display-modes.md#colour-scale).
 | Dimensions | Cylinder, 90 mm diameter, 130 mm high |
 | Power | 5 V through the Micro-USB socket, supply 5 V 2 A |
 | Outputs | Two USB-A sockets for charging other devices |
-| Connectivity | WiFi station on a stored network; own access point at `192.168.4.22` as a fallback |
-| Services | Web server on port 80, WebSerial log, time from NTP with a fixed offset of UTC+3 (station mode only) |
+| Connectivity | WiFi station on one of up to 10 stored networks; own access point at `192.168.4.22` as a fallback; the web pages also answer at `haquda.local` |
+| Services | Web server on port 80 (pages in English and Russian), WebSerial log, time from NTP with a fixed offset of UTC+3 (station mode only) |
 | Dynamic DNS (DuckDNS) | <span class="wip">WIP</span> |
 | Display update | Sensors are read every few seconds; the matrix is redrawn once a minute with the average of that minute |
 | Error indication | LED effects and log lines |
@@ -70,7 +70,7 @@ Details are in [Display modes](display-modes.md).
 |------|---------|
 | [Quick guide](quick-guide.md) | First start, WiFi setup, display mode selection. |
 | [Display modes](display-modes.md) | Picture update, colour scale, the three modes. |
-| [Web interface](web-interface.md) | Pages, controls, replies and the log page. |
+| [Web interface](web-interface.md) | Main page, adding and deleting WiFi networks, the log page. |
 | [LED codes and troubleshooting](troubleshooting.md) | LED effects, matrix symptoms, log messages. |
 | [Building and flashing](build-and-flash.md) | Requirements, build variables, build and flash steps. |
 | [Release notes](release-2-0-0.md) | Changes per version and known limitations. |
@@ -78,4 +78,5 @@ Details are in [Display modes](display-modes.md).
 Features that are not ready are marked <span class="wip">WIP</span>.
 
 This guide comes in English and Russian; use the language switcher in the header. The lamp's web
-pages exist in English only, so both languages quote their texts as they appear on the screen.
+pages come in English and Russian too; each language of this guide quotes their texts in its
+own language.

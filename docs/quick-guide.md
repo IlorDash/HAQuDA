@@ -45,38 +45,40 @@ plug.
 **Before you start:** the lamp runs in access point mode (no network stored, or the stored one
 is out of reach), you have a phone or a laptop with WiFi, and you know the access point name and
 password that were set when the firmware was built. Your own network name and password are each
-at most 31 characters long.
+at most 31 bytes long, and the network works at 2.4 GHz.
 
 1. Unplug the lamp and plug it in again if you are not sure it runs in access point mode. Wait
    for the aqua fading.
 2. On your phone or laptop, join the lamp's WiFi network with the access point name and password
    from the build.
-3. Open `http://192.168.4.22/` in a browser. Type the address: opening the page automatically is
-   <span class="wip">WIP</span>.
-4. If the lamp already stores a network, for example a wrong one, press **Delete** first. The
-   lamp stores one network at a time <span class="wip">WIP</span>.
-5. Press the link **Add WiFi credentials**.
-6. Enter your network name in **SSID** and its password in **Password**. Leave **IP Address** and
-   **Gateway Address** as they are; the lamp ignores both <span class="wip">WIP</span>.
-7. Press **Submit**.
-8. The lamp restarts about 3 seconds after it accepts the network. The browser can show
-   **Success** before that. Wait until the lime snake ends and the matrix flashes green.
-9. Join your phone or laptop to your home network again. The lamp's access point is gone.
-
-!!! note "WIP"
-    The lamp does not report its address in your network. Find it in the client list of your
-    router, under the name of the lamp's access point.
+3. Open `http://192.168.4.22/` or `http://haquda.local/` in a browser. Type the address: opening
+   the page automatically is <span class="wip">WIP</span>.
+4. Press **Add WiFi network** in the banner, or the link **WiFi networks**.
+5. Enter your network name in **Network name (SSID)** and its password in **Password**.
+6. Press **Save and restart**. The lamp checks the network first, for up to 20 seconds, and the
+   page shows **Checking “network”…**. Nothing is saved until the lamp has joined the network.
+7. When the check passes, the page shows **The lamp joined “network”** with two addresses and a
+   countdown. About 20 seconds later the lamp restarts: the lime snake runs and the matrix flashes
+   green.
+8. Join your phone or laptop to your home network. The lamp's access point is gone. The page
+   opens the lamp's new address by itself within 2 minutes; if it does not, open
+   `http://haquda.local/`.
 
 !!! warning "If it fails"
-    - **Error check WiFi creds** — the SSID or the password field is empty. Press **Go back**,
-      which opens the main page, press **Add WiFi credentials** again and fill in both fields.
-    - **Error reading stored WiFi credentials** — a network is already stored. Press **Delete**
-      on the main page, then add your network again.
-    - **Error saving stored WiFi credentials** — the lamp could not write the file. Try once
-      more; if it repeats, unplug the lamp and plug it in again.
+    - **The password for “network” was not accepted** — the router refused the password. Check it
+      and press **Save and restart** again.
+    - **The lamp cannot see “network”** — the lamp works only with 2.4 GHz WiFi. Choose the 2.4 GHz
+      network of your router, check the name and that the router is in range, then try again.
+    - **“network” did not answer in time** — check the password and the signal, then try again.
+    - **The lamp joined “network” but could not save it** — try again. If it repeats, press
+      **Delete all networks** and add the network again.
     - **The lamp restarts, the lime snake runs for about 30 seconds, then a red growing and the
       aqua fading follow** — the lamp could not join your network. Check the name and the
       password and that the router is in range, then add the network again.
+
+Every message of the page is in [Results of adding a network](web-interface.md#add-results). To
+add a network while the lamp already runs in your network, see
+[While the lamp is in your network](web-interface.md#add-in-station-mode).
 
 → [Every control of the web pages](web-interface.md)
 
