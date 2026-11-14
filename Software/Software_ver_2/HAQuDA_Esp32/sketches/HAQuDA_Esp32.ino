@@ -12,6 +12,7 @@
 #include "HAQuDA_Logger.h"
 #include "HAQuDA_TimeHelper.h"
 #include "HAQuDA_LEDs.h"
+#include "HAQuDA_FlashLock.h"
 
 #include "Tasks.h"
 #include "HAQuDA_Version.h"
@@ -34,7 +35,8 @@ int meas_start_time = 0;
 int builtin_blink_start_time = 0;
 
 // A missing sensor is usually a loose connector or a slow CCS811 start, fixed by the user plugging it in.
-// 5 minutes keeps the ~8 s power-cycle block of loop() rare and the log free of retry spam.
+// 5 minutes keeps the power-cycle block of loop() (up to ~27 s: 4 start attempts of up to ~5 s plus 3 power-offs of 2 s) rare
+// and the log free of retry spam.
 constexpr uint32_t SENSORS_START_RETRY_PERIOD_MS = 5 * 60 * 1000;
 
 constexpr uint32_t WIFI_ERROR_DISPLAY_MS = 10 * 1000;
@@ -56,6 +58,8 @@ void setup() {
 	HAQuDA_Logger::SetErrHandler(&ErrHandler);
 	HAQuDA_Logger::SetDedup(&LogDedup);
 	HAQuDA_TimeService::getInstance();
+	// Before the LEDs and the file storage start: they share it so a flash access never overlaps an LED frame.
+	HAQuDA_FlashLock::Create();
 	HAQuDA_LEDs::getInstance()->Begin();
 	createTasks(&DispManip);
 
@@ -110,7 +114,7 @@ void setup() {
 
 // Loop task only. SetMode() refuses to leave the error mode while currentError is set, so clear it first; the error
 // effects (NTP fade, random pixels) leave the LEDs dim and lit, so ShowTask clears them and re-applies the user's brightness
-// when meas mode starts.
+// when meas mode starts. Nothing may be logged between this call and SetMeasMode() in enableMeasurements().
 void leaveSensorsError() {
 	HAQuDA_DisplayManip::RestoreBrightnessOnMeas();
 	ErrHandler.ClearError();
@@ -118,15 +122,17 @@ void leaveSensorsError() {
 
 void enableMeasurements() {
 	sensorsRunning = true;
-	HAQuDA_Logger::LogInfo("Started sensors");
 	// A mode picked on the web page while the error was shown is kept. The mode is none only if nothing set one before
 	// boot (the constructor default), so none falls back to multi.
 	const meas_mode selectedMode = DispManip.GetMeasDispMode();
+	// Before the first log line: while NTP has never synced every log line sets the NTP error, and SetMode() refuses to leave
+	// the error mode while an error is set. Once the mode is meas, later log lines only set a stale error that nothing draws.
 	HAQuDA_DisplayManip::SetMeasMode((selectedMode == noneMeas) ? multi : selectedMode);
 	meas_start_time = 0;
+	HAQuDA_Logger::LogInfo("Started sensors");
 }
 
-// Called from loop(). TryRebootSensors() blocks loop for up to ~8 s, so retries are rare.
+// Called from loop(). TryRebootSensors() blocks loop for up to ~27 s, so retries are rare.
 void retrySensorsStart() {
 	if (sensorsRunning || ((millis() - sensorsStartRetryMs) < SENSORS_START_RETRY_PERIOD_MS)) {
 		return;

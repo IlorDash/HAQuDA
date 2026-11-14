@@ -28,8 +28,13 @@ jobs:
   # --strict turns MkDocs warnings into errors. Pages serves one site per repository, so
   # a pull request cannot be previewed there: the artifact of this job is the preview -
   # download it and open public/index.html.
+  #
+  # Pushes to any branch but the default one run it too: docs edited straight on the
+  # development branch never pass through a pull request, and nothing else builds them
+  # until the release pull request. The default branch is left to the build job, which
+  # runs the same strict build.
   check:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.ref_name != github.event.repository.default_branch
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

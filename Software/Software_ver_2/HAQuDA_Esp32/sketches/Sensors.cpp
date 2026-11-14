@@ -1,5 +1,9 @@
 #include "Sensors.h"
 #include "Board.h"
+#include "HAQuDA_Logger.h"
+#include "HAQuDA_PMReader.h"
+#include "HAQuDA_SensorsPresence.h"
+#include "HAQuDA_ZH03BFrame.h"
 
 #include <atomic>
 
@@ -11,7 +15,6 @@
 
 #define ZH03B_RX_PIN 17
 #define ZH03B_TX_PIN 16
-#define PM_BUF_LEN 22
 
 #define SENS_REBOOT_DELAY 1000
 
@@ -25,57 +28,50 @@ meas_data PM_10_meas;
 meas_data temp_meas;
 meas_data humid_meas;
 
-unsigned char pm_buf[PM_BUF_LEN];
-const uint16_t pm_data_marker = 0x4D42;
+uint8_t pm_buf[ZH03B_PAYLOAD_LEN];
 
 DHT dht(DHTPIN, DHTTYPE);
 
 SoftwareSerial PMSerial;
 
-char checkValue(unsigned char *thebuf) {
-	char receiveflag = 0;
-	int receiveSum = 0;
+namespace {
+	// Thin adapter: the PM read flow sees only the calls it needs
+	class PMSerialAdapter : public HAQuDA_IPMSerial {
+	  public:
+		int Available() override {
+			return PMSerial.available();
+		}
+		int Read() override {
+			return PMSerial.read();
+		}
+		bool Find(const uint8_t *marker, size_t len) override {
+			return PMSerial.find(marker, len);
+		}
+		size_t ReadBytes(uint8_t *buf, size_t len) override {
+			return PMSerial.readBytes(buf, len);
+		}
+	};
+} // namespace
 
-	for (int i = 0; i < (PM_BUF_LEN - 2); i++) {
-		receiveSum += thebuf[i];
-	}
-	receiveSum += (int)(pm_data_marker & 0xff) + (int)((pm_data_marker >> 8) & 0xff);
-
-	if (receiveSum == ((thebuf[PM_BUF_LEN - 2] << 8) + thebuf[PM_BUF_LEN - 1])) {
-		receiveSum = 0;
-		receiveflag = 1;
-	}
-	return receiveflag;
-}
-
-int transmitPM01(unsigned char *thebuf) {
-	int PM01Val;
-	PM01Val = ((thebuf[3] << 8) + thebuf[4]);
-	return PM01Val;
-}
-
-int transmitPM2_5(unsigned char *thebuf) {
-	int PM2_5Val;
-	PM2_5Val = ((thebuf[5] << 8) + thebuf[6]);
-	return PM2_5Val;
-}
-
-int transmitPM10(unsigned char *thebuf) {
-	int PM10Val;
-	PM10Val = ((thebuf[7] << 8) + thebuf[8]);
-	return PM10Val;
-}
+// Sensors is a free-function module with no owning object, so the PM objects live here until it becomes a class.
+// Used in the loop task only.
+static PMSerialAdapter pmSerialAdapter;
+static HAQuDA_PMWarmup pmWarmup;
+static HAQuDA_PMReader pmReader(pmSerialAdapter, pmWarmup);
 
 void pmSerialBegin() {
 	// 256 is the RX buffer size; begin() also allocates a ~2560-entry (~10 KB) ISR buffer before freeing the old one,
 	// so it runs once: retries only power-cycle the sensors, the pins and the buffers stay configured.
-	PMSerial.begin(9600, SWSERIAL_8N1, ZH03B_RX_PIN, ZH03B_TX_PIN, false, 256);
+	PMSerial.begin(9600, SWSERIAL_8N1, ZH03B_RX_PIN, ZH03B_TX_PIN, false, PM_RX_BUF_SIZE);
 	PMSerial.setTimeout(1000);
 }
 
 bool sensorsBegin() {
 	pinMode(SENS_POW, OUTPUT);
 	digitalWrite(SENS_POW, HIGH);
+	// Every power cycle (first start, retries, sensors_reboot()) passes through here, so this is always the latest power-on
+	const uint32_t powerOnMs = millis();
+	pmWarmup.PowerOn(powerOnMs);
 
 	pinMode(CCS811_WAK, OUTPUT);
 	digitalWrite(CCS811_WAK, LOW);
@@ -111,12 +107,26 @@ bool sensorsBegin() {
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 
 	if (!CCS811.begin()) {
-		// Serial.println("Failed to start sensor! Please check your wiring.");
+		HAQuDA_Logger::LogError("Sensors start: CCS811 not found");
 		return false;
 	}
 
 	dht.begin();
-	return true;
+	// The buffer may hold bytes received before this attempt (the ZH03B streams into it while nobody reads, or line noise from a
+	// power cycle), so only bytes received from here on may prove the sensor is alive now. A healthy ZH03B sends the next frame
+	// within 1 s, inside the 5 s budget.
+	pmReader.DiscardBuffered();
+	// Force bypasses the library's 2 s cache, which would otherwise hand back the failed result of the previous probe
+	const sensors_presence presence
+		= HAQuDA_WaitForSensors([]() { return !isnan(dht.readTemperature(false, true)); }, []() { return pmReader.HasValidFrame(); }, []() { return millis(); },
+								[](uint32_t ms) { vTaskDelay(pdMS_TO_TICKS(ms)); }, powerOnMs);
+	if (!presence.dht22) {
+		HAQuDA_Logger::LogError("Sensors start: DHT22 not responding");
+	}
+	if (!presence.zh03b) {
+		HAQuDA_Logger::LogError("Sensors start: ZH03B sends no frames");
+	}
+	return presence.dht22 && presence.zh03b;
 }
 
 bool getCCS811_meas() {
@@ -140,33 +150,36 @@ bool getCCS811_meas() {
 	return false;
 }
 
-bool getPM_meas() {
-	if (PMSerial.find((uint8_t *)&pm_data_marker, sizeof(pm_data_marker))) {
-		PMSerial.readBytes(pm_buf, PM_BUF_LEN);
-		if (checkValue(pm_buf)) {
-			PM_1_0_meas.value += transmitPM01(pm_buf);
-			PM_1_0_meas.measNum++;
-			PM_1_0_meas.newMeasDone = true;
+pm_meas_result getPM_meas() {
+	pm_meas_result result = pmReader.Read(millis(), pm_buf);
 
-			PM_2_5_meas.value += transmitPM2_5(pm_buf);
-			PM_2_5_meas.measNum++;
-			PM_2_5_meas.newMeasDone = true;
-
-			PM_10_meas.value += transmitPM10(pm_buf);
-			PM_10_meas.measNum++;
-			PM_10_meas.newMeasDone = true;
-
-			return true;
-		}
+	if (result == pm_meas_result::warming_up) {
+		PM_1_0_meas.newMeasDone = false;
+		PM_2_5_meas.newMeasDone = false;
+		PM_10_meas.newMeasDone = false;
+		return pm_meas_result::warming_up;
 	}
-	while (PMSerial.available() > 0) {
-		char t = PMSerial.read();
+
+	if (result == pm_meas_result::ok) {
+		PM_1_0_meas.value += HAQuDA_GetZH03BPM1_0(pm_buf);
+		PM_1_0_meas.measNum++;
+		PM_1_0_meas.newMeasDone = true;
+
+		PM_2_5_meas.value += HAQuDA_GetZH03BPM2_5(pm_buf);
+		PM_2_5_meas.measNum++;
+		PM_2_5_meas.newMeasDone = true;
+
+		PM_10_meas.value += HAQuDA_GetZH03BPM10(pm_buf);
+		PM_10_meas.measNum++;
+		PM_10_meas.newMeasDone = true;
+
+		return pm_meas_result::ok;
 	}
 	PM_1_0_meas.newMeasDone = false;
 	PM_2_5_meas.newMeasDone = false;
 	PM_10_meas.newMeasDone = false;
 
-	return false;
+	return pm_meas_result::failed;
 }
 
 bool getDHT22_meas() {

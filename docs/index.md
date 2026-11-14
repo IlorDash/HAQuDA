@@ -18,7 +18,7 @@ see [Colour scale](display-modes.md#colour-scale).
 |-----------|-------|
 | Firmware version | {{ app_version }} |
 | Controller | ESP32-WROOM-32 module |
-| Sensors | DHT11 (temperature, humidity), CCS811 (eCO2, TVOC), ZH03B (particulate matter) |
+| Sensors | DHT22 (temperature, humidity), CCS811 (eCO2, TVOC), ZH03B (particulate matter) |
 | LED matrix | 12 × 9 = 108 addressable WS2812B LEDs on nine strips of twelve, on a tube fixed to the board |
 | Diffuser | Matte translucent white cover over the tube; opaque base with the electronics |
 | Dimensions | Cylinder, 90 mm diameter, 130 mm high |
@@ -36,8 +36,8 @@ see [Colour scale](display-modes.md#colour-scale).
 
 | Parameter | Sensor | Unit | Typical accuracy | Shown on the matrix |
 |-----------|--------|------|------------------|---------------------|
-| Temperature | DHT11 | °C | ±2 °C | Multi (lower zone), standard, night |
-| Humidity | DHT11 | % | ±5 %RH | Standard, night |
+| Temperature | DHT22 | °C | — | Multi (lower zone), standard, night |
+| Humidity | DHT22 | % | — | Standard, night |
 | eCO2 | CCS811 | ppm | — | Multi (middle zone), standard, night |
 | TVOC | CCS811 | ppb | — | Standard, night |
 | PM2.5 | ZH03B | µg/m³ | — | Multi (upper zone), standard, night |

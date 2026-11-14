@@ -48,6 +48,12 @@
         <string>sketches\HAQuDA_WebPageDisplayManip_Translator.h</string>
         <string>sketches\HAQuDA_WebPageDisplayManip.h</string>
         <string>sketches\HAQuDA_WebPageDisplayState.h</string>
+        <string>sketches\HAQuDA_ZH03BFrame.h</string>
+        <string>sketches\HAQuDA_PMResult.h</string>
+        <string>sketches\HAQuDA_PMWarmup.h</string>
+        <string>sketches\HAQuDA_IPMSerial.h</string>
+        <string>sketches\HAQuDA_PMReader.h</string>
+        <string>sketches\HAQuDA_SensorsPresence.h</string>
       </OtherFiles>
     </ProjectModeSettings>
   </Project>

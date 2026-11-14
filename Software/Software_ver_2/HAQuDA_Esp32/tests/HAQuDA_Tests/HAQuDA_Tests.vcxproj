@@ -65,6 +65,7 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="TestColorScale.cpp" />
+    <ClCompile Include="TestFlashLock.cpp" />
     <ClCompile Include="TestLogDedup.cpp" />
     <ClCompile Include="TestMeasSnapshot.cpp" />
     <ClCompile Include="TestWiFiJoin.cpp" />
@@ -75,15 +76,28 @@
     <ClCompile Include="TestWebPageDisplayState.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_WebPageDisplayManip_Translator.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_WebPageDisplayState.cpp" />
+    <ClCompile Include="TestDateFormat.cpp" />
+    <ClCompile Include="TestZH03BFrame.cpp" />
+    <ClCompile Include="TestPMWarmup.cpp" />
+    <ClCompile Include="TestPMReader.cpp" />
+    <ClCompile Include="TestPMResult.cpp" />
+    <ClCompile Include="TestSensorsPresence.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_ColorScale.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_FlashLock.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_DateFormat.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_LogDedup.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_MeasSnapshot.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_WiFiJoin.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_JoinLast.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_WiFiCreds.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_ZH03BFrame.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_PMWarmup.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_PMReader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\sketches\HAQuDA_ColorScale.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_FlashLock.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_DateFormat.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_LogDedup.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_MeasSnapshot.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_WiFiJoin.h" />
@@ -91,8 +105,17 @@
     <ClInclude Include="..\..\sketches\HAQuDA_WiFiCreds.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_WebPageDisplayManip_Translator.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_WebPageDisplayState.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_ZH03BFrame.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_PMResult.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_PMWarmup.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_IPMSerial.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_PMReader.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_SensorsPresence.h" />
+    <ClInclude Include="..\fakes\freertos\FreeRTOS.h" />
+    <ClInclude Include="..\fakes\freertos\semphr.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_ILEDs.h" />
     <ClInclude Include="..\mocks\MockLEDs.h" />
+    <ClInclude Include="..\fakes\FakePMSerial.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -4,6 +4,7 @@
 #include "HAQuDA_ErrorHandler.h"
 #include "HAQuDA_ColorScale.h"
 #include "HAQuDA_MeasSnapshot.h"
+#include "HAQuDA_PMResult.h"
 
 #define MULTI_MODE_PARAM_NUM 3
 #define DIVIDE_DOTS_NUM 3
@@ -52,7 +53,7 @@ class HAQuDA_MeasHandler {
 	static night_time night_m_time;
 	static meas_div_dots dots;
 
-	static void checkMeasCorrect();
+	static void checkMeasCorrect(pm_meas_result pmResult);
 	static meas_type checkBadMeas();
 	static uint8_t get_nightMode_hour(night_time timeBorder);
 	static void standardMode();
@@ -69,7 +70,7 @@ class HAQuDA_MeasHandler {
 
 	// Starts the sensors once. loop task only (setup or loop), never from ShowTask.
 	bool SensorsBegin();
-	// Power-cycles and restarts the sensors up to 3 times, blocks up to ~8 s, enables UpdateMeas() on success.
+	// Power-cycles and restarts the sensors up to 3 times, blocks up to ~27 s, enables UpdateMeas() on success.
 	// loop task only (setup or loop), never from ShowTask.
 	bool TryRebootSensors();
 

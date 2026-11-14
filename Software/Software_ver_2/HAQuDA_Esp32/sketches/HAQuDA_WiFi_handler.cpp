@@ -3,12 +3,18 @@
 
 #include "HAQuDA_WiFi_handler.h"
 
-#define CONNECT_WIFI_TIMEOUT 3000
 #define WAIT_FOR_SEND_WEB_SERIAL_MS 1000
 
 constexpr uint32_t DNS_POLL_PERIOD_MS = 10;
 
-bool HAQuDA_WiFi_handler::WiFiConnected = false;
+constexpr uint32_t JOINED_WIFI_DISPLAY_MS = 3000;
+
+// A wait ends on an IP address, not on association. The router took 4.5 s from association to DHCP
+// lease in the lamp log (2026-11-11), and WiFi.reconnect() after a timeout aborts the attempt in progress
+// (it drops DHCP too), so the wait must outlast association + DHCP on a slow router.
+constexpr uint32_t CONNECT_WIFI_TIMEOUT_MS = 8000;
+
+std::atomic<bool> HAQuDA_WiFi_handler::WiFiConnected{false};
 
 const char *DDNS_token = DDNS_TOKEN;
 const char *DDNS_domain = DDNS_DOMAIN;
@@ -23,7 +29,8 @@ HAQuDA_WiFi_handler::HAQuDA_WiFi_handler(HAQuDA_FileStorage *currFS, HAQuDA_Disp
 
 bool HAQuDA_WiFi_handler::Connect() {
 
-	staConnectedEventId = WiFi.onEvent(WiFiStationConnected, ARDUINO_EVENT_WIFI_STA_CONNECTED);
+	// GOT_IP, not STA_CONNECTED: association comes 1..5 s before DHCP finishes, and NTP / DNS need the address
+	staConnectedEventId = WiFi.onEvent(WiFiStationConnected, ARDUINO_EVENT_WIFI_STA_GOT_IP);
 	vTaskDelay(200 / portTICK_PERIOD_MS);
 
 	// An interrupted save may have left the list in the temporary file: it must be back before the records are counted
@@ -44,6 +51,7 @@ bool HAQuDA_WiFi_handler::Connect() {
 				Serial.print("EasyDDNS - IP Change Detected: ");
 				Serial.println(newIP);
 			});
+			showJoinedWiFi();
 			return true;
 		} else {
 			return false;
@@ -54,9 +62,9 @@ bool HAQuDA_WiFi_handler::Connect() {
 }
 
 bool HAQuDA_WiFi_handler::CreateAP() {
-	// Connect() registered the display handler for STA_CONNECTED even though it failed. The test join of a new network
-	// fires that event too, and the handler would set the display to static green and then off, replacing the access
-	// point effect. Removed by id: core 2.0.11 can remove a std::function registration only that way.
+	// Connect() registered the GOT_IP handler even though it failed. The test join of a new network fires that event too,
+	// and the handler would mark the lamp as joined (WiFiConnected) while it is still an access point that only tests the
+	// network. Removed by id: core 2.0.11 can remove a std::function registration only that way.
 	if (staConnectedEventId != 0) {
 		WiFi.removeEvent(staConnectedEventId);
 		staConnectedEventId = 0;
@@ -125,6 +133,26 @@ void HAQuDA_WiFi_handler::HandleConnection() {
 		connectToStoredWiFi();
 	}
 	WiFi.onEvent(WiFiStationDisconnected, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
+
+	showJoinedWiFi();
+	// An effect call leaves the meas display mode stored in MeasHandler untouched, so it is still the mode that ran
+	// before the disconnect (none only if measurements never started: then SetMeasMode() is skipped). While an error is
+	// shown, SetMode() refuses to leave the error mode, so the error display stays.
+	// Without this the matrix stays dark after the green flash.
+	const meas_mode prevMeasMode = dispManip->GetMeasDispMode();
+	if (prevMeasMode != noneMeas) {
+		HAQuDA_DisplayManip::SetMeasMode(prevMeasMode);
+	}
+}
+
+void HAQuDA_WiFi_handler::showJoinedWiFi() {
+	dispManip->SetEffectParam(COLOR_GREEN);
+	dispManip->SetEffect(staticColor);
+	// Blocks the loop task for the whole flash; ShowTask draws on the other core, and this is not a system task
+	vTaskDelay(pdMS_TO_TICKS(JOINED_WIFI_DISPLAY_MS));
+
+	dispManip->SetEffectParam(COLOR_OFF);
+	dispManip->SetEffect(staticColor);
 }
 
 void HAQuDA_WiFi_handler::handleJoinCheck() {
@@ -424,9 +452,12 @@ bool HAQuDA_WiFi_handler::createAP() {
 
 void HAQuDA_WiFi_handler::waitUntilWiFiConnected() {
 	uint32_t timer = millis();
-	while (!WiFiConnected && !PeriodInRange(timer, CONNECT_WIFI_TIMEOUT)) {
-		WiFiConnected = (WiFi.status() == WL_CONNECTED);
-		vTaskDelay(100 / portTICK_PERIOD_MS);
+	while (!WiFiConnected && !PeriodInRange(timer, CONNECT_WIFI_TIMEOUT_MS)) {
+		// The core reports WL_CONNECTED only after GOT_IP, so this agrees with the event handler
+		if (WiFi.status() == WL_CONNECTED) {
+			WiFiConnected = true;
+		}
+		vTaskDelay(pdMS_TO_TICKS(100));
 	}
 }
 
@@ -481,17 +512,10 @@ bool HAQuDA_WiFi_handler::connectToWiFi(const char *ssidLocal, const char *passL
 	return true;
 }
 
+// WiFi event task: only sets the flag. The matrix is drawn by the loop task (showJoinedWiFi()): the event task may be
+// re-posted GOT_IP on a lease change, and a display write from here would land after setup() has entered meas mode.
 void HAQuDA_WiFi_handler::WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info) {
 	WiFiConnected = true;
-	vTaskDelay(100 / portTICK_PERIOD_MS);
-
-	dispManip->SetEffectParam(COLOR_GREEN);
-	dispManip->SetEffect(staticColor);
-	vTaskDelay(3000 / portTICK_PERIOD_MS);
-
-	dispManip->SetEffectParam(COLOR_OFF);
-	dispManip->SetEffect(staticColor);
-	vTaskDelay(100 / portTICK_PERIOD_MS);
 }
 
 void HAQuDA_WiFi_handler::WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info) {

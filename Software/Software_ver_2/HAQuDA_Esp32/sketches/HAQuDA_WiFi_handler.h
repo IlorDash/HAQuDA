@@ -1,5 +1,7 @@
 #pragma once
 
+#include <atomic>
+
 #include <WiFi.h>
 #include <DNSServer.h>
 #include <EasyDDNS.h>
@@ -23,7 +25,7 @@ class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
 	uint32_t dnsPollMs = 0;
 	// Set and read in startMdns() only (called from Connect() or CreateAP() in setup: loop task, no sharing)
 	bool mdnsStartTried = false;
-	// Id of the STA_CONNECTED registration made by Connect(); 0 = not registered. Connect() and CreateAP(): loop task.
+	// Id of the GOT_IP registration made by Connect(); 0 = not registered. Connect() and CreateAP(): loop task.
 	wifi_event_id_t staConnectedEventId = 0;
 
 	// Check of a new network in access point mode, switch to a new network in station mode. All members below: loop task,
@@ -60,6 +62,8 @@ class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
 	bool createAP();
 	bool connectToWiFi(const char *ssidLocal, const char *passLocal);
 	void waitUntilWiFiConnected();
+	// Green matrix for 3 s, then off. Loop task only (setup / HandleConnection): blocks for the flash.
+	void showJoinedWiFi();
 	// Starts the mDNS responder so the page opens as http://haquda.local/ in the home network and on the lamp's own
 	// access point. The access point needs it too: iOS, macOS and newer Android resolve *.local only by multicast
 	// mDNS, so the captive DNS that answers every name does not help there. Tries once; later calls do
@@ -99,12 +103,14 @@ class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
 	HAQuDA_WiFi_handler(HAQuDA_FileStorage *currFS, HAQuDA_DisplayManip *_dispManip, const HAQuDA_MeasSnapshot &snapshot,
 						HAQuDA_WebPageDisplayManip &webDispIn);
 	~HAQuDA_WiFi_handler();
-	static bool WiFiConnected;
+	// True from GOT_IP until DISCONNECTED (LOST_IP does not clear it). Written by the WiFi event task and by
+	// waitUntilWiFiConnected() in the loop task, read in the loop task.
+	static std::atomic<bool> WiFiConnected;
 	// Joins a stored network, registers the disconnect-reason recorder and starts the web server. setup() (loop task) only.
 	bool Connect();
 	// Starts the access point, the captive DNS and the web server, and switches the web server to access point mode
-	// (new networks are checked before they are saved). Drops the station-connected display handler: a test join
-	// must not replace the access point effect. setup() (loop task) only.
+	// (new networks are checked before they are saved). Drops the GOT_IP handler of Connect(): a test join must not mark
+	// the lamp as joined. setup() (loop task) only.
 	bool CreateAP();
 	// Serves the captive DNS, the deferred web work, the check of a new network (access point mode) or the switch to it
 	// (station mode), and the station reconnect, which is skipped during a switch. loop task only.

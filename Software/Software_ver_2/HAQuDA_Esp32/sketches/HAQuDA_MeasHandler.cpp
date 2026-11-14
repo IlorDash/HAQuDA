@@ -99,11 +99,11 @@ void HAQuDA_MeasHandler::UpdateMeas(int *sensors_meas_time) {
 	if ((millis() - *sensors_meas_time) > SENSORS_MEAS_PERIOD_MS) {
 		getDHT22_meas();
 		getCCS811_meas();
-		getPM_meas();
+		pm_meas_result pmResult = getPM_meas();
 		meas_num++;
 		*sensors_meas_time = millis();
 
-		checkMeasCorrect();
+		checkMeasCorrect(pmResult);
 
 		publishSnapshots();
 
@@ -115,14 +115,15 @@ void HAQuDA_MeasHandler::UpdateMeas(int *sensors_meas_time) {
 	}
 }
 
-void HAQuDA_MeasHandler::checkMeasCorrect() {
+void HAQuDA_MeasHandler::checkMeasCorrect(pm_meas_result pmResult) {
 	if (!eCO2_meas.newMeasDone) {
 		errHandler->FailedToGetMeas("Failed to get eCO2 meas");
 	}
 	if (!TVOC_meas.newMeasDone) {
 		errHandler->FailedToGetMeas("Failed to get TVOC meas");
 	}
-	if (!PM_2_5_meas.newMeasDone) {
+	// A sample skipped during the ZH03B warm-up is expected, not a failure
+	if (HAQuDA_ShouldReportPMFailure(pmResult)) {
 		errHandler->FailedToGetMeas("Failed to get PM 2.5 meas");
 	}
 	if (!temp_meas.newMeasDone) {
@@ -209,6 +210,9 @@ void HAQuDA_MeasHandler::Show(int *show_meas_time) {
 		*show_meas_time = millis();
 		ClearMeas();
 		show_meas_immed = false;
+	} else {
+		// The picture is drawn once a minute; if its frame was dropped during a flash operation, send it again now.
+		HAQuDA_LEDs::getInstance()->ResendSkippedFrame();
 	}
 }
 
