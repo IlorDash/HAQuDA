@@ -67,6 +67,9 @@ bool HAQuDA_DisplayManip::SetMode(const display_modes m) {
 		return false;
 
 	mode = m;
+	// The mirror learns the new source before ShowTask can draw in it: a meas draw reported to the mirror while it still has the
+	// old source is dropped, and the page would hold until the next draw
+	webDisp->SetMode(mode);
 
 	switch (mode) {
 		case noneMode: {
@@ -95,7 +98,6 @@ bool HAQuDA_DisplayManip::SetMode(const display_modes m) {
 		default:
 			break;
 	}
-	webDisp->SetMode(mode);
 	return true;
 }
 
@@ -103,11 +105,12 @@ bool HAQuDA_DisplayManip::SetMode(const display_modes m) {
 
 void HAQuDA_DisplayManip::SetMeasMode(const meas_mode m) {
 
+	// The mirror gets the layout before the handler can draw it (see SetMode())
+	webDisp->SetMeasMode(m);
 	measHandler->SetMeasDispMode(m);
 
 	if (mode != meas)
 		SetMode(meas);
-	webDisp->SetMeasMode(m);
 }
 
 meas_mode HAQuDA_DisplayManip::GetMeasDispMode() {
@@ -115,12 +118,13 @@ meas_mode HAQuDA_DisplayManip::GetMeasDispMode() {
 };
 
 void HAQuDA_DisplayManip::SetStandardMeasParam(const meas_type p) {
-	measHandler->SetStandardMeasParam(p);
+	// Mirror first: a draw that lands in between reports colours of the old key, and those are what the LEDs show
 	webDisp->SetStandardMeasParam(p);
+	measHandler->SetStandardMeasParam(p);
 }
 void HAQuDA_DisplayManip::SetMultiMeasParam(const multi_mode_params p) {
-	measHandler->SetMultiMeasParam(p);
 	webDisp->SetMultiMeasParam(p);
+	measHandler->SetMultiMeasParam(p);
 }
 
 void HAQuDA_DisplayManip::SetNightTime(const night_time t) {

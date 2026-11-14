@@ -29,9 +29,6 @@
 	var DISP_KEYS = ['total', 'temp', 'humid', 'eco2', 'tvoc', 'pm25'];
 	// the readings the lamp averages for the "total" picture
 	var TOTAL_KEYS = ['temp', 'humid', 'eco2', 'tvoc', 'pm25'];
-	// the white of the night bar: the lamp drives a white channel at WHITE_BRIGHTNESS_COEFF (70) while its colours peak at
-	// MAX_BRIGHTNESS (150), so white is 70/150 of a full channel at any brightness: 255 * 70 / 150 = 119
-	var WHITE = '#777777';
 	// colour of an unlit cell, read from --led-off of the current theme when first needed (null: read again)
 	var offRgb = null;
 	// the mediaquery is live: matches always tells the current setting
@@ -362,12 +359,25 @@
 				}
 				pic.keys.push(d.keys[i]);
 			}
+			// the colours the lamp drew, one per key: the grid shows them, not the current readings
+			if (!Array.isArray(d.colors) || d.colors.length !== need) {
+				return null;
+			}
+			pic.colors = [];
+			for (i = 0; i < need; i++) {
+				if (!validColor(d.colors[i])) {
+					return null;
+				}
+				pic.colors.push(d.colors[i]);
+			}
 			pic.white = 0;
+			pic.whiteColor = '';
 			if (d.layout === 'night') {
-				if (!intIn(d.white, 0, GRID_ROWS)) {
+				if (!intIn(d.white, 0, GRID_ROWS) || !validColor(d.whiteColor)) {
 					return null;
 				}
 				pic.white = d.white;
+				pic.whiteColor = d.whiteColor;
 			}
 		} else {
 			return null;
@@ -414,22 +424,19 @@
 
 	// Row 0 is the top. The lamp's strip starts at its bottom end: multi draws keys[0] nearest to it and the night bar grows from it,
 	// so keys[0] takes the two bottom rows and the white bar counts rows from the bottom.
-	function measFrame(pic, meas) {
+	function measFrame(pic) {
 		var colors = fillGrid('');
-		var keyColors = pic.keys.map(function (k) {
-			return measColor(meas, k);
-		});
 		for (var i = 0; i < colors.length; i++) {
 			var col = i % GRID_COLS;
 			var fromBottom = GRID_ROWS - 1 - Math.floor(i / GRID_COLS);
 			if (pic.layout === 'standard') {
-				colors[i] = keyColors[0];
+				colors[i] = pic.colors[0];
 			} else if (pic.layout === 'multi') {
-				colors[i] = keyColors[Math.floor(fromBottom / 2)];
+				colors[i] = pic.colors[Math.floor(fromBottom / 2)];
 			} else if (col % 2 === 0) {
-				colors[i] = keyColors[0];
+				colors[i] = pic.colors[0];
 			} else if (fromBottom < pic.white) {
-				colors[i] = WHITE;
+				colors[i] = pic.whiteColor;
 			}
 		}
 		return colors;
@@ -598,7 +605,7 @@
 		} else if (pic && pic.kind === 'random') {
 			colors = randomFrame(pic, t - disp.t0, still);
 		} else if (pic && pic.kind === 'meas') {
-			colors = measFrame(pic, meas);
+			colors = measFrame(pic);
 		} else {
 			colors = fillGrid('');
 			for (var i = 0; i < colors.length; i++) {

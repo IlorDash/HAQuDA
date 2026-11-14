@@ -67,8 +67,19 @@ struct web_display_state {
 	web_meas_key keys[3]; // standard and night use keys[0], multi uses all three in paramsArr order
 	uint8_t nightHour;	  // get_nightMode_hour(): 0..11 hours into the night window, 12 = outside it
 	uint8_t brightPercent;
+	// The colours the lamp drew for the current measurement picture, full-scale 0xRRGGBB (the lamp's 0..150 channels scaled to
+	// 0..255): measColors[0] for standard, [0] for night, all three for multi in the order of keys. measWhiteColor is the grey of
+	// the night bar. measDrawn false: the lamp has not drawn this picture yet (its LEDs still show the previous frame).
+	bool measDrawn;
+	uint32_t measColors[3];
+	uint32_t measWhiteColor;
 };
 
+// Measurement picture ("fx":"meas"): "layout", "keys" (1 for standard and night, 3 for multi), "colors" (the colours the lamp drew,
+// "#rrggbb": one per key for multi in the order of keys, one for standard and night), and for night "white" (page rows of the bar)
+// and "whiteColor" ("#rrggbb" of the bar). While the lamp has not drawn the picture (measDrawn false) or the layout is none the
+// output is "fx":"hold": the LEDs show their previous frame.
+//
 // Buffer size that holds every JSON the translator writes: the longest one (an error with a fading effect, every number at its
 // maximum) is about 200 bytes.
 constexpr size_t WEB_DISPLAY_JSON_BUF_LEN = 256;

@@ -174,6 +174,11 @@ void HAQuDA_WebPageDisplayManip::SetNightTime(const night_time t) {
 	HAQuDA_WebPictureSetNightWindow(picture, t.start, t.finish, millis());
 }
 
+void HAQuDA_WebPageDisplayManip::SetMeasDrawn(const meas_mode layout, const uint32_t colors[3], const uint32_t whiteColor) {
+	CriticalLock lock(mux);
+	HAQuDA_WebPictureSetMeasDrawn(picture, toLayout(layout), colors, whiteColor, millis());
+}
+
 void HAQuDA_WebPageDisplayManip::SetEffect(const effect_type e) {
 	CriticalLock lock(mux);
 	HAQuDA_WebPictureSetEffect(picture, toEffect(e), millis());

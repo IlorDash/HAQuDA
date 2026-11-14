@@ -25,8 +25,8 @@ HAQuDA_FileStorage FileStorage;
 HAQuDA_LogDedup LogDedup;
 HAQuDA_EffectsHandler EffectsHandler;
 HAQuDA_MeasSnapshot MeasSnapshot;
-HAQuDA_MeasHandler MeasHandler(&ErrHandler, MeasSnapshot);
 HAQuDA_WebPageDisplayManip WebDisp;
+HAQuDA_MeasHandler MeasHandler(&ErrHandler, MeasSnapshot, WebDisp);
 HAQuDA_DisplayManip DispManip(&MeasHandler, &EffectsHandler, &ErrHandler, &WebDisp);
 HAQuDA_WiFi_handler WiFiHandler(&FileStorage, &DispManip, MeasSnapshot, WebDisp);
 

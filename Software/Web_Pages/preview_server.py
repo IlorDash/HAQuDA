@@ -28,7 +28,8 @@ runs in access point mode, sta-offline the lime snake it runs while it reconnect
 error, "errors" the 500 reply of /api/status, every other scenario the multi layout (temperature, eCO2, PM2.5). Three scenarios
 exist only to look at the pictures: disp-effects plays snake, growing, random, fading and static colour for 25 s each,
 disp-errors plays the five error effects (WiFi, access point, file system, sensors, NTP) for 15 s each, disp-night shows the
-night layout with the white part of the bar growing every 4 s. In the cycling scenarios seq rises and age restarts at each
+night layout with the white part of the bar growing every 4 s. The measurement pictures carry "colors" (the scale colour of the
+current mock values of their keys) and, for night, "whiteColor" (the grey the lamp draws at the mock brightness). In the cycling scenarios seq rises and age restarts at each
 change; elsewhere seq stays 1 and age counts from the start of the server. The disp-* scenarios otherwise answer like a
 station mode lamp.
 
@@ -213,10 +214,19 @@ def fx_static(color):
     return {"fx": "static", "color": color}
 
 
-def fx_meas(layout, keys, white=None):
-    picture = {"fx": "meas", "layout": layout, "keys": keys}
+def night_white_color(bright_percent):
+    """The grey of the night bar as the lamp draws it: raw brightness * 70 / 150 as a channel, scaled from 0..150 to 0..255."""
+    raw_bright = bright_percent * 150 // 100
+    channel = raw_bright * 1000 // 150 * 70 // 1000
+    return "#{0:02x}{0:02x}{0:02x}".format(channel * 255 // 150)
+
+
+def fx_meas(layout, keys, colors, white=None):
+    """colors: the colours the lamp drew, one per key (multi) or one (standard, night); white: page rows of the night bar."""
+    picture = {"fx": "meas", "layout": layout, "keys": keys, "colors": colors}
     if white is not None:
         picture["white"] = white
+        picture["whiteColor"] = night_white_color(DISP_BRIGHT)
     return picture
 
 
@@ -364,6 +374,12 @@ class MockLamp:
                 FW_VERSION, "sta" if station else "ap", ssid, ip, uptime, rssi, ",".join(parts)
             )
 
+    def drawn_colors(self, keys):
+        """The colours the mock lamp 'drew' for the keys: the scale colour of their current values, like /api/status gives them."""
+        dots = {name: dot_set for name, _, dot_set, _, _, _ in PARAMS}
+        with self.lock:
+            return [scale_color(self.values[key], dots[key]) for key in keys]
+
     def disp_json(self):
         """Returns (status code, body): the picture the lamp shows, like /api/disp of the firmware."""
         if self.scenario == "errors":
@@ -382,7 +398,7 @@ class MockLamp:
             # The hour into the night window runs 0..12, 12 fills the bar
             seq, age_s = divmod(elapsed_s, DISP_NIGHT_SLOT_S)
             hour = int(seq) % 13
-            picture = fx_meas("night", ["temp"], (hour * PAGE_ROWS + 11) // 12)
+            picture = fx_meas("night", ["temp"], self.drawn_colors(["temp"]), (hour * PAGE_ROWS + 11) // 12)
             source = "meas"
         else:
             seq, age_s = 0, elapsed_s
@@ -394,7 +410,7 @@ class MockLamp:
                 error, picture = DISP_ERRORS[3]
                 source = "error"
             else:
-                picture, source = fx_meas("multi", DISP_MULTI_KEYS), "meas"
+                picture, source = fx_meas("multi", DISP_MULTI_KEYS, self.drawn_colors(DISP_MULTI_KEYS)), "meas"
         body = {"seq": int(seq) + 1, "age": int(age_s * 1000), "src": source}
         if error is not None:
             body["err"] = error

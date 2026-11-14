@@ -34,6 +34,12 @@ class HAQuDA_WebPageDisplayManip {
 	void SetMultiMeasParam(const multi_mode_params p);
 	// Night window in hours. Any task.
 	void SetNightTime(const night_time t);
+	// The lamp has drawn a measurement picture: the colours it put on the LEDs as full-scale 0xRRGGBB (the lamp's 0..150 channels
+	// scaled to 0..255), the same scale /api/status uses. colors[0] for standard and night, all three for multi (the bands in the
+	// order of the keys), unused ones 0; whiteColor is the grey of the night bar, 0 for the others. Ignored when the picture
+	// has changed since (another layout or source). Called by HAQuDA_MeasHandler::showMeas_*() in ShowTask, after the LEDs
+	// are lit; the portMUX critical section makes it safe next to the loop and async_tcp tasks.
+	void SetMeasDrawn(const meas_mode layout, const uint32_t colors[3], const uint32_t whiteColor);
 	// Selects the effect. Any task.
 	void SetEffect(const effect_type e);
 	// Effect parameters; the picture changes only if that effect is the one shown. Any task.

@@ -211,13 +211,23 @@ namespace {
 				w.Append(",\"fx\":\"hold\"");
 				return;
 		}
+		// The LEDs keep their previous frame until the lamp draws this picture
+		if (!s.measDrawn) {
+			w.Append(",\"fx\":\"hold\"");
+			return;
+		}
 		w.Append(",\"fx\":\"meas\",\"layout\":\"%s\",\"keys\":[", layoutName);
 		for (size_t i = 0; i < keysNum; i++) {
 			w.Append("%s\"%s\"", (i == 0) ? "" : ",", keyName(s.keys[i]));
 		}
+		w.Append("],\"colors\":[");
+		for (size_t i = 0; i < keysNum; i++) {
+			w.Append("%s\"#%06lx\"", (i == 0) ? "" : ",", static_cast<unsigned long>(s.measColors[i] & 0xFFFFFF));
+		}
 		w.Append("]");
 		if (s.layout == web_meas_layout::night) {
-			w.Append(",\"white\":%lu", static_cast<unsigned long>(nightWhiteRows(s.nightHour)));
+			w.Append(",\"white\":%lu,\"whiteColor\":\"#%06lx\"", static_cast<unsigned long>(nightWhiteRows(s.nightHour)),
+					 static_cast<unsigned long>(s.measWhiteColor & 0xFFFFFF));
 		}
 	}
 

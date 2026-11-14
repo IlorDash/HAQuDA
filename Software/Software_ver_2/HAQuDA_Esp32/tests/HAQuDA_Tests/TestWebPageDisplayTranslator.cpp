@@ -1294,7 +1294,8 @@ TEST(WebPageDisplayTranslatorTest, ErrorFieldOmittedOutsideErrorSource) {
 TEST(WebPageDisplayTranslatorTest, MeasStandardPm25Shape) {
 	const size_t buf_size = 256;
 
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"standard\",\"keys\":[\"pm25\"]}";
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"standard\",\"keys\":[\"pm25\"],\"colors\":[\"#00ff40\"]}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1304,6 +1305,8 @@ TEST(WebPageDisplayTranslatorTest, MeasStandardPm25Shape) {
 	state.brightPercent = 50;
 	state.layout = web_meas_layout::standard;
 	state.keys[0] = web_meas_key::pm25;
+	state.measDrawn = true;
+	state.measColors[0] = 0x00FF40;
 	char buf[buf_size];
 
 	size_t res;
@@ -1317,7 +1320,8 @@ TEST(WebPageDisplayTranslatorTest, MeasStandardPm25Shape) {
 TEST(WebPageDisplayTranslatorTest, MeasStandardKeyTotal) {
 	const size_t buf_size = 256;
 
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"standard\",\"keys\":[\"total\"]}";
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"standard\",\"keys\":[\"total\"],\"colors\":[\"#112233\"]}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1327,6 +1331,8 @@ TEST(WebPageDisplayTranslatorTest, MeasStandardKeyTotal) {
 	state.brightPercent = 50;
 	state.layout = web_meas_layout::standard;
 	state.keys[0] = web_meas_key::total;
+	state.measDrawn = true;
+	state.measColors[0] = 0x112233;
 	char buf[buf_size];
 
 	size_t res;
@@ -1340,7 +1346,8 @@ TEST(WebPageDisplayTranslatorTest, MeasStandardKeyTotal) {
 TEST(WebPageDisplayTranslatorTest, MeasStandardKeyEco2) {
 	const size_t buf_size = 256;
 
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"standard\",\"keys\":[\"eco2\"]}";
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"standard\",\"keys\":[\"eco2\"],\"colors\":[\"#112233\"]}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1350,6 +1357,8 @@ TEST(WebPageDisplayTranslatorTest, MeasStandardKeyEco2) {
 	state.brightPercent = 50;
 	state.layout = web_meas_layout::standard;
 	state.keys[0] = web_meas_key::eco2;
+	state.measDrawn = true;
+	state.measColors[0] = 0x112233;
 	char buf[buf_size];
 
 	size_t res;
@@ -1363,7 +1372,8 @@ TEST(WebPageDisplayTranslatorTest, MeasStandardKeyEco2) {
 TEST(WebPageDisplayTranslatorTest, MeasStandardKeyTvoc) {
 	const size_t buf_size = 256;
 
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"standard\",\"keys\":[\"tvoc\"]}";
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"standard\",\"keys\":[\"tvoc\"],\"colors\":[\"#112233\"]}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1373,6 +1383,8 @@ TEST(WebPageDisplayTranslatorTest, MeasStandardKeyTvoc) {
 	state.brightPercent = 50;
 	state.layout = web_meas_layout::standard;
 	state.keys[0] = web_meas_key::tvoc;
+	state.measDrawn = true;
+	state.measColors[0] = 0x112233;
 	char buf[buf_size];
 
 	size_t res;
@@ -1386,7 +1398,8 @@ TEST(WebPageDisplayTranslatorTest, MeasStandardKeyTvoc) {
 TEST(WebPageDisplayTranslatorTest, MeasStandardKeyTemp) {
 	const size_t buf_size = 256;
 
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"standard\",\"keys\":[\"temp\"]}";
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"standard\",\"keys\":[\"temp\"],\"colors\":[\"#112233\"]}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1396,6 +1409,8 @@ TEST(WebPageDisplayTranslatorTest, MeasStandardKeyTemp) {
 	state.brightPercent = 50;
 	state.layout = web_meas_layout::standard;
 	state.keys[0] = web_meas_key::temp;
+	state.measDrawn = true;
+	state.measColors[0] = 0x112233;
 	char buf[buf_size];
 
 	size_t res;
@@ -1409,7 +1424,8 @@ TEST(WebPageDisplayTranslatorTest, MeasStandardKeyTemp) {
 TEST(WebPageDisplayTranslatorTest, MeasStandardKeyHumid) {
 	const size_t buf_size = 256;
 
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"standard\",\"keys\":[\"humid\"]}";
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"standard\",\"keys\":[\"humid\"],\"colors\":[\"#112233\"]}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1419,6 +1435,8 @@ TEST(WebPageDisplayTranslatorTest, MeasStandardKeyHumid) {
 	state.brightPercent = 50;
 	state.layout = web_meas_layout::standard;
 	state.keys[0] = web_meas_key::humid;
+	state.measDrawn = true;
+	state.measColors[0] = 0x112233;
 	char buf[buf_size];
 
 	size_t res;
@@ -1429,10 +1447,11 @@ TEST(WebPageDisplayTranslatorTest, MeasStandardKeyHumid) {
 	EXPECT_STREQ(exp_json, buf);
 }
 
-TEST(WebPageDisplayTranslatorTest, MeasStandardIgnoresSecondAndThirdKey) {
+TEST(WebPageDisplayTranslatorTest, MeasStandardIgnoresSecondAndThirdKeyAndColor) {
 	const size_t buf_size = 256;
 
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"standard\",\"keys\":[\"pm25\"]}";
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"standard\",\"keys\":[\"pm25\"],\"colors\":[\"#aa0000\"]}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1444,6 +1463,10 @@ TEST(WebPageDisplayTranslatorTest, MeasStandardIgnoresSecondAndThirdKey) {
 	state.keys[0] = web_meas_key::pm25;
 	state.keys[1] = web_meas_key::eco2;
 	state.keys[2] = web_meas_key::temp;
+	state.measDrawn = true;
+	state.measColors[0] = 0xAA0000;
+	state.measColors[1] = 0x00BB00;
+	state.measColors[2] = 0x0000CC;
 	char buf[buf_size];
 
 	size_t res;
@@ -1457,8 +1480,8 @@ TEST(WebPageDisplayTranslatorTest, MeasStandardIgnoresSecondAndThirdKey) {
 TEST(WebPageDisplayTranslatorTest, MeasMultiShape) {
 	const size_t buf_size = 256;
 
-	const char *exp_json
-		= "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"multi\",\"keys\":[\"pm25\",\"eco2\",\"temp\"]}";
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"multi\",\"keys\":[\"pm25\",\"eco2\",\"temp\"],"
+						   "\"colors\":[\"#ff0000\",\"#00ff00\",\"#0000ff\"]}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1470,6 +1493,10 @@ TEST(WebPageDisplayTranslatorTest, MeasMultiShape) {
 	state.keys[0] = web_meas_key::pm25;
 	state.keys[1] = web_meas_key::eco2;
 	state.keys[2] = web_meas_key::temp;
+	state.measDrawn = true;
+	state.measColors[0] = 0xFF0000;
+	state.measColors[1] = 0x00FF00;
+	state.measColors[2] = 0x0000FF;
 	char buf[buf_size];
 
 	size_t res;
@@ -1480,11 +1507,11 @@ TEST(WebPageDisplayTranslatorTest, MeasMultiShape) {
 	EXPECT_STREQ(exp_json, buf);
 }
 
-TEST(WebPageDisplayTranslatorTest, MeasMultiKeepsKeyOrder) {
+TEST(WebPageDisplayTranslatorTest, MeasMultiKeepsKeyAndColorOrder) {
 	const size_t buf_size = 256;
 
-	const char *exp_json
-		= "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"multi\",\"keys\":[\"humid\",\"total\",\"tvoc\"]}";
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"multi\",\"keys\":[\"humid\",\"total\","
+						   "\"tvoc\"],\"colors\":[\"#010203\",\"#040506\",\"#070809\"]}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1496,6 +1523,10 @@ TEST(WebPageDisplayTranslatorTest, MeasMultiKeepsKeyOrder) {
 	state.keys[0] = web_meas_key::humid;
 	state.keys[1] = web_meas_key::total;
 	state.keys[2] = web_meas_key::tvoc;
+	state.measDrawn = true;
+	state.measColors[0] = 0x010203;
+	state.measColors[1] = 0x040506;
+	state.measColors[2] = 0x070809;
 	char buf[buf_size];
 
 	size_t res;
@@ -1509,7 +1540,8 @@ TEST(WebPageDisplayTranslatorTest, MeasMultiKeepsKeyOrder) {
 TEST(WebPageDisplayTranslatorTest, MeasNightShape) {
 	const size_t buf_size = 256;
 
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"white\":3}";
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
+						   "00ff00\"],\"white\":3,\"whiteColor\":\"#808080\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1519,7 +1551,10 @@ TEST(WebPageDisplayTranslatorTest, MeasNightShape) {
 	state.brightPercent = 50;
 	state.layout = web_meas_layout::night;
 	state.keys[0] = web_meas_key::pm25;
+	state.measDrawn = true;
+	state.measColors[0] = 0x00FF00;
 	state.nightHour = 6;
+	state.measWhiteColor = 0x808080;
 	char buf[buf_size];
 
 	size_t res;
@@ -1530,10 +1565,11 @@ TEST(WebPageDisplayTranslatorTest, MeasNightShape) {
 	EXPECT_STREQ(exp_json, buf);
 }
 
-TEST(WebPageDisplayTranslatorTest, MeasNightIgnoresSecondAndThirdKey) {
+TEST(WebPageDisplayTranslatorTest, MeasNightIgnoresSecondAndThirdKeyAndColor) {
 	const size_t buf_size = 256;
 
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"white\":3}";
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
+						   "00ff00\"],\"white\":3,\"whiteColor\":\"#808080\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1545,7 +1581,12 @@ TEST(WebPageDisplayTranslatorTest, MeasNightIgnoresSecondAndThirdKey) {
 	state.keys[0] = web_meas_key::pm25;
 	state.keys[1] = web_meas_key::eco2;
 	state.keys[2] = web_meas_key::temp;
+	state.measDrawn = true;
+	state.measColors[0] = 0x00FF00;
+	state.measColors[1] = 0x00BB00;
+	state.measColors[2] = 0x0000CC;
 	state.nightHour = 6;
+	state.measWhiteColor = 0x808080;
 	char buf[buf_size];
 
 	size_t res;
@@ -1560,7 +1601,8 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour0WhiteRows) {
 	const size_t buf_size = 256;
 
 	// night start: no white rows
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"white\":0}";
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
+						   "00ff00\"],\"white\":0,\"whiteColor\":\"#808080\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1570,7 +1612,10 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour0WhiteRows) {
 	state.brightPercent = 50;
 	state.layout = web_meas_layout::night;
 	state.keys[0] = web_meas_key::pm25;
+	state.measDrawn = true;
+	state.measColors[0] = 0x00FF00;
 	state.nightHour = 0;
+	state.measWhiteColor = 0x808080;
 	char buf[buf_size];
 
 	size_t res;
@@ -1585,7 +1630,8 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour1WhiteRows) {
 	const size_t buf_size = 256;
 
 	// 1 * 6 / 12 = 0.5, rounded up
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"white\":1}";
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
+						   "00ff00\"],\"white\":1,\"whiteColor\":\"#808080\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1595,7 +1641,10 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour1WhiteRows) {
 	state.brightPercent = 50;
 	state.layout = web_meas_layout::night;
 	state.keys[0] = web_meas_key::pm25;
+	state.measDrawn = true;
+	state.measColors[0] = 0x00FF00;
 	state.nightHour = 1;
+	state.measWhiteColor = 0x808080;
 	char buf[buf_size];
 
 	size_t res;
@@ -1610,7 +1659,8 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour2WhiteRows) {
 	const size_t buf_size = 256;
 
 	// 2 * 6 / 12 = 1 exactly
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"white\":1}";
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
+						   "00ff00\"],\"white\":1,\"whiteColor\":\"#808080\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1620,7 +1670,10 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour2WhiteRows) {
 	state.brightPercent = 50;
 	state.layout = web_meas_layout::night;
 	state.keys[0] = web_meas_key::pm25;
+	state.measDrawn = true;
+	state.measColors[0] = 0x00FF00;
 	state.nightHour = 2;
+	state.measWhiteColor = 0x808080;
 	char buf[buf_size];
 
 	size_t res;
@@ -1635,7 +1688,8 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour6WhiteRows) {
 	const size_t buf_size = 256;
 
 	// 6 * 6 / 12 = 3 exactly
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"white\":3}";
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
+						   "00ff00\"],\"white\":3,\"whiteColor\":\"#808080\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1645,7 +1699,10 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour6WhiteRows) {
 	state.brightPercent = 50;
 	state.layout = web_meas_layout::night;
 	state.keys[0] = web_meas_key::pm25;
+	state.measDrawn = true;
+	state.measColors[0] = 0x00FF00;
 	state.nightHour = 6;
+	state.measWhiteColor = 0x808080;
 	char buf[buf_size];
 
 	size_t res;
@@ -1660,7 +1717,8 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour7WhiteRows) {
 	const size_t buf_size = 256;
 
 	// 7 * 6 / 12 = 3.5, rounded up
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"white\":4}";
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
+						   "00ff00\"],\"white\":4,\"whiteColor\":\"#808080\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1670,7 +1728,10 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour7WhiteRows) {
 	state.brightPercent = 50;
 	state.layout = web_meas_layout::night;
 	state.keys[0] = web_meas_key::pm25;
+	state.measDrawn = true;
+	state.measColors[0] = 0x00FF00;
 	state.nightHour = 7;
+	state.measWhiteColor = 0x808080;
 	char buf[buf_size];
 
 	size_t res;
@@ -1685,7 +1746,8 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour11WhiteRows) {
 	const size_t buf_size = 256;
 
 	// 11 * 6 / 12 = 5.5, rounded up
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"white\":6}";
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
+						   "00ff00\"],\"white\":6,\"whiteColor\":\"#808080\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1695,7 +1757,10 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour11WhiteRows) {
 	state.brightPercent = 50;
 	state.layout = web_meas_layout::night;
 	state.keys[0] = web_meas_key::pm25;
+	state.measDrawn = true;
+	state.measColors[0] = 0x00FF00;
 	state.nightHour = 11;
+	state.measWhiteColor = 0x808080;
 	char buf[buf_size];
 
 	size_t res;
@@ -1710,7 +1775,8 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour12WhiteRows) {
 	const size_t buf_size = 256;
 
 	// 12 = outside the night window: all rows white
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"white\":6}";
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
+						   "00ff00\"],\"white\":6,\"whiteColor\":\"#808080\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1720,7 +1786,10 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour12WhiteRows) {
 	state.brightPercent = 50;
 	state.layout = web_meas_layout::night;
 	state.keys[0] = web_meas_key::pm25;
+	state.measDrawn = true;
+	state.measColors[0] = 0x00FF00;
 	state.nightHour = 12;
+	state.measWhiteColor = 0x808080;
 	char buf[buf_size];
 
 	size_t res;
@@ -1735,7 +1804,8 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour13WhiteRows) {
 	const size_t buf_size = 256;
 
 	// above 12 is clamped to 12
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"white\":6}";
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
+						   "00ff00\"],\"white\":6,\"whiteColor\":\"#808080\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1745,7 +1815,10 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour13WhiteRows) {
 	state.brightPercent = 50;
 	state.layout = web_meas_layout::night;
 	state.keys[0] = web_meas_key::pm25;
+	state.measDrawn = true;
+	state.measColors[0] = 0x00FF00;
 	state.nightHour = 13;
+	state.measWhiteColor = 0x808080;
 	char buf[buf_size];
 
 	size_t res;
@@ -1760,7 +1833,8 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour255WhiteRows) {
 	const size_t buf_size = 256;
 
 	// far above 12 is clamped to 12
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"white\":6}";
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
+						   "00ff00\"],\"white\":6,\"whiteColor\":\"#808080\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1770,7 +1844,10 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour255WhiteRows) {
 	state.brightPercent = 50;
 	state.layout = web_meas_layout::night;
 	state.keys[0] = web_meas_key::pm25;
+	state.measDrawn = true;
+	state.measColors[0] = 0x00FF00;
 	state.nightHour = 255;
+	state.measWhiteColor = 0x808080;
 	char buf[buf_size];
 
 	size_t res;
@@ -1784,7 +1861,8 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour255WhiteRows) {
 TEST(WebPageDisplayTranslatorTest, MeasWhiteOnlyInNightLayout) {
 	const size_t buf_size = 256;
 
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"standard\",\"keys\":[\"pm25\"]}";
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"standard\",\"keys\":[\"pm25\"],\"colors\":[\"#00ff00\"]}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1794,7 +1872,254 @@ TEST(WebPageDisplayTranslatorTest, MeasWhiteOnlyInNightLayout) {
 	state.brightPercent = 50;
 	state.layout = web_meas_layout::standard;
 	state.keys[0] = web_meas_key::pm25;
+	state.measDrawn = true;
+	state.measColors[0] = 0x00FF00;
 	state.nightHour = 6;
+	state.measWhiteColor = 0x808080;
+	char buf[buf_size];
+
+	size_t res;
+
+	res = HAQuDA_TranslateDisplayToJson(state, buf, buf_size);
+
+	EXPECT_EQ(exp_len, res);
+	EXPECT_STREQ(exp_json, buf);
+}
+
+TEST(WebPageDisplayTranslatorTest, MeasStandardNotDrawnIsHold) {
+	const size_t buf_size = 256;
+
+	// the LEDs still show the previous frame
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"hold\"}";
+	const size_t exp_len = std::strlen(exp_json);
+
+	web_display_state state{};
+	state.seq = 17;
+	state.ageMs = 4200;
+	state.source = web_source::meas;
+	state.brightPercent = 50;
+	state.layout = web_meas_layout::standard;
+	state.keys[0] = web_meas_key::pm25;
+	state.measDrawn = false;
+	state.measColors[0] = 0x00FF40;
+	char buf[buf_size];
+
+	size_t res;
+
+	res = HAQuDA_TranslateDisplayToJson(state, buf, buf_size);
+
+	EXPECT_EQ(exp_len, res);
+	EXPECT_STREQ(exp_json, buf);
+}
+
+TEST(WebPageDisplayTranslatorTest, MeasMultiNotDrawnIsHold) {
+	const size_t buf_size = 256;
+
+	// the LEDs still show the previous frame
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"hold\"}";
+	const size_t exp_len = std::strlen(exp_json);
+
+	web_display_state state{};
+	state.seq = 17;
+	state.ageMs = 4200;
+	state.source = web_source::meas;
+	state.brightPercent = 50;
+	state.layout = web_meas_layout::multi;
+	state.keys[0] = web_meas_key::pm25;
+	state.keys[1] = web_meas_key::eco2;
+	state.keys[2] = web_meas_key::temp;
+	state.measDrawn = false;
+	state.measColors[0] = 0xFF0000;
+	state.measColors[1] = 0x00FF00;
+	state.measColors[2] = 0x0000FF;
+	char buf[buf_size];
+
+	size_t res;
+
+	res = HAQuDA_TranslateDisplayToJson(state, buf, buf_size);
+
+	EXPECT_EQ(exp_len, res);
+	EXPECT_STREQ(exp_json, buf);
+}
+
+TEST(WebPageDisplayTranslatorTest, MeasNightNotDrawnIsHold) {
+	const size_t buf_size = 256;
+
+	// the LEDs still show the previous frame
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"hold\"}";
+	const size_t exp_len = std::strlen(exp_json);
+
+	web_display_state state{};
+	state.seq = 17;
+	state.ageMs = 4200;
+	state.source = web_source::meas;
+	state.brightPercent = 50;
+	state.layout = web_meas_layout::night;
+	state.keys[0] = web_meas_key::pm25;
+	state.measDrawn = false;
+	state.measColors[0] = 0x00FF00;
+	state.nightHour = 6;
+	state.measWhiteColor = 0x808080;
+	char buf[buf_size];
+
+	size_t res;
+
+	res = HAQuDA_TranslateDisplayToJson(state, buf, buf_size);
+
+	EXPECT_EQ(exp_len, res);
+	EXPECT_STREQ(exp_json, buf);
+}
+
+TEST(WebPageDisplayTranslatorTest, MeasColorHighByteIsMasked) {
+	const size_t buf_size = 256;
+
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"standard\",\"keys\":[\"pm25\"],\"colors\":[\"#123456\"]}";
+	const size_t exp_len = std::strlen(exp_json);
+
+	web_display_state state{};
+	state.seq = 17;
+	state.ageMs = 4200;
+	state.source = web_source::meas;
+	state.brightPercent = 50;
+	state.layout = web_meas_layout::standard;
+	state.keys[0] = web_meas_key::pm25;
+	state.measDrawn = true;
+	state.measColors[0] = 0xAB123456;
+	char buf[buf_size];
+
+	size_t res;
+
+	res = HAQuDA_TranslateDisplayToJson(state, buf, buf_size);
+
+	EXPECT_EQ(exp_len, res);
+	EXPECT_STREQ(exp_json, buf);
+}
+
+TEST(WebPageDisplayTranslatorTest, MeasWhiteColorHighByteIsMasked) {
+	const size_t buf_size = 256;
+
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
+						   "000000\"],\"white\":0,\"whiteColor\":\"#654321\"}";
+	const size_t exp_len = std::strlen(exp_json);
+
+	web_display_state state{};
+	state.seq = 17;
+	state.ageMs = 4200;
+	state.source = web_source::meas;
+	state.brightPercent = 50;
+	state.layout = web_meas_layout::night;
+	state.keys[0] = web_meas_key::pm25;
+	state.measDrawn = true;
+	state.measColors[0] = 0x000000;
+	state.nightHour = 0;
+	state.measWhiteColor = 0xCD654321;
+	char buf[buf_size];
+
+	size_t res;
+
+	res = HAQuDA_TranslateDisplayToJson(state, buf, buf_size);
+
+	EXPECT_EQ(exp_len, res);
+	EXPECT_STREQ(exp_json, buf);
+}
+
+TEST(WebPageDisplayTranslatorTest, MeasColorIsLowerCase) {
+	const size_t buf_size = 256;
+
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"standard\",\"keys\":[\"pm25\"],\"colors\":[\"#abcdef\"]}";
+	const size_t exp_len = std::strlen(exp_json);
+
+	web_display_state state{};
+	state.seq = 17;
+	state.ageMs = 4200;
+	state.source = web_source::meas;
+	state.brightPercent = 50;
+	state.layout = web_meas_layout::standard;
+	state.keys[0] = web_meas_key::pm25;
+	state.measDrawn = true;
+	state.measColors[0] = 0xABCDEF;
+	char buf[buf_size];
+
+	size_t res;
+
+	res = HAQuDA_TranslateDisplayToJson(state, buf, buf_size);
+
+	EXPECT_EQ(exp_len, res);
+	EXPECT_STREQ(exp_json, buf);
+}
+
+TEST(WebPageDisplayTranslatorTest, MeasColorIsZeroPaddedToSixDigits) {
+	const size_t buf_size = 256;
+
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"standard\",\"keys\":[\"pm25\"],\"colors\":[\"#00000a\"]}";
+	const size_t exp_len = std::strlen(exp_json);
+
+	web_display_state state{};
+	state.seq = 17;
+	state.ageMs = 4200;
+	state.source = web_source::meas;
+	state.brightPercent = 50;
+	state.layout = web_meas_layout::standard;
+	state.keys[0] = web_meas_key::pm25;
+	state.measDrawn = true;
+	state.measColors[0] = 0x00000A;
+	char buf[buf_size];
+
+	size_t res;
+
+	res = HAQuDA_TranslateDisplayToJson(state, buf, buf_size);
+
+	EXPECT_EQ(exp_len, res);
+	EXPECT_STREQ(exp_json, buf);
+}
+
+TEST(WebPageDisplayTranslatorTest, MeasColorZeroIsBlack) {
+	const size_t buf_size = 256;
+
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"standard\",\"keys\":[\"pm25\"],\"colors\":[\"#000000\"]}";
+	const size_t exp_len = std::strlen(exp_json);
+
+	web_display_state state{};
+	state.seq = 17;
+	state.ageMs = 4200;
+	state.source = web_source::meas;
+	state.brightPercent = 50;
+	state.layout = web_meas_layout::standard;
+	state.keys[0] = web_meas_key::pm25;
+	state.measDrawn = true;
+	state.measColors[0] = 0x000000;
+	char buf[buf_size];
+
+	size_t res;
+
+	res = HAQuDA_TranslateDisplayToJson(state, buf, buf_size);
+
+	EXPECT_EQ(exp_len, res);
+	EXPECT_STREQ(exp_json, buf);
+}
+
+TEST(WebPageDisplayTranslatorTest, MeasWhiteColorIsLowerCaseAndZeroPadded) {
+	const size_t buf_size = 256;
+
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
+						   "000000\"],\"white\":0,\"whiteColor\":\"#0a0b0c\"}";
+	const size_t exp_len = std::strlen(exp_json);
+
+	web_display_state state{};
+	state.seq = 17;
+	state.ageMs = 4200;
+	state.source = web_source::meas;
+	state.brightPercent = 50;
+	state.layout = web_meas_layout::night;
+	state.keys[0] = web_meas_key::pm25;
+	state.measDrawn = true;
+	state.measColors[0] = 0x000000;
+	state.nightHour = 0;
+	state.measWhiteColor = 0x0A0B0C;
 	char buf[buf_size];
 
 	size_t res;
@@ -1817,6 +2142,7 @@ TEST(WebPageDisplayTranslatorTest, MeasLayoutNoneIsHold) {
 	state.source = web_source::meas;
 	state.brightPercent = 50;
 	state.layout = web_meas_layout::none;
+	state.measDrawn = true;
 	char buf[buf_size];
 
 	size_t res;
@@ -1839,6 +2165,7 @@ TEST(WebPageDisplayTranslatorTest, MeasLayoutUnknownValueIsHold) {
 	state.source = web_source::meas;
 	state.brightPercent = 50;
 	state.layout = static_cast<web_meas_layout>(99);
+	state.measDrawn = true;
 	char buf[buf_size];
 
 	size_t res;
@@ -1852,7 +2179,8 @@ TEST(WebPageDisplayTranslatorTest, MeasLayoutUnknownValueIsHold) {
 TEST(WebPageDisplayTranslatorTest, MeasUnknownKeyFallsBackToTotal) {
 	const size_t buf_size = 256;
 
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"standard\",\"keys\":[\"total\"]}";
+	const char *exp_json
+		= "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"standard\",\"keys\":[\"total\"],\"colors\":[\"#112233\"]}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1862,6 +2190,8 @@ TEST(WebPageDisplayTranslatorTest, MeasUnknownKeyFallsBackToTotal) {
 	state.brightPercent = 50;
 	state.layout = web_meas_layout::standard;
 	state.keys[0] = static_cast<web_meas_key>(99);
+	state.measDrawn = true;
+	state.measColors[0] = 0x112233;
 	char buf[buf_size];
 
 	size_t res;
@@ -2058,6 +2388,60 @@ TEST(WebPageDisplayTranslatorTest, WorstCaseErrorFadingFitsJsonBufLen) {
 	state.error = web_error::sensors;
 	state.effect = web_effect::fading;
 	state.fading = {0xFFFFFF, 65535, 100, 0, 1};
+	char buf[WEB_DISPLAY_JSON_BUF_LEN];
+
+	size_t res;
+
+	res = HAQuDA_TranslateDisplayToJson(state, buf, WEB_DISPLAY_JSON_BUF_LEN);
+
+	EXPECT_EQ(exp_len, res);
+	EXPECT_STREQ(exp_json, buf);
+}
+
+TEST(WebPageDisplayTranslatorTest, WorstCaseMultiMeasFitsJsonBufLen) {
+	const char *exp_json = "{\"seq\":4294967295,\"age\":4294967295,\"src\":\"meas\",\"bright\":100,\"fx\":\"meas\",\"layout\":\"multi\",\"keys\":[\"total\","
+						   "\"humid\",\"total\"],\"colors\":[\"#ffffff\",\"#ffffff\",\"#ffffff\"]}";
+	const size_t exp_len = std::strlen(exp_json);
+
+	web_display_state state{};
+	state.seq = 4294967295u;
+	state.ageMs = 4294967295u;
+	state.source = web_source::meas;
+	state.brightPercent = 100;
+	state.layout = web_meas_layout::multi;
+	state.keys[0] = web_meas_key::total;
+	state.keys[1] = web_meas_key::humid;
+	state.keys[2] = web_meas_key::total;
+	state.measDrawn = true;
+	state.measColors[0] = 0xFFFFFF;
+	state.measColors[1] = 0xFFFFFF;
+	state.measColors[2] = 0xFFFFFF;
+	char buf[WEB_DISPLAY_JSON_BUF_LEN];
+
+	size_t res;
+
+	res = HAQuDA_TranslateDisplayToJson(state, buf, WEB_DISPLAY_JSON_BUF_LEN);
+
+	EXPECT_EQ(exp_len, res);
+	EXPECT_STREQ(exp_json, buf);
+}
+
+TEST(WebPageDisplayTranslatorTest, WorstCaseNightMeasFitsJsonBufLen) {
+	const char *exp_json = "{\"seq\":4294967295,\"age\":4294967295,\"src\":\"meas\",\"bright\":100,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"humid\"],"
+						   "\"colors\":[\"#ffffff\"],\"white\":6,\"whiteColor\":\"#ffffff\"}";
+	const size_t exp_len = std::strlen(exp_json);
+
+	web_display_state state{};
+	state.seq = 4294967295u;
+	state.ageMs = 4294967295u;
+	state.source = web_source::meas;
+	state.brightPercent = 100;
+	state.layout = web_meas_layout::night;
+	state.keys[0] = web_meas_key::humid;
+	state.nightHour = 12;
+	state.measDrawn = true;
+	state.measColors[0] = 0xFFFFFF;
+	state.measWhiteColor = 0xFFFFFF;
 	char buf[WEB_DISPLAY_JSON_BUF_LEN];
 
 	size_t res;

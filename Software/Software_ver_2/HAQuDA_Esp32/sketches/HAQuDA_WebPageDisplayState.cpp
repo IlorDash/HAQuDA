@@ -72,6 +72,7 @@ bool HAQuDA_WebPictureSetSource(web_picture_state &state, web_source source, web
 		return false;
 	}
 	state.source = source;
+	state.measDrawn = false;
 	if (source == web_source::error) {
 		state.seenError = currentError;
 	}
@@ -130,6 +131,7 @@ bool HAQuDA_WebPictureSetLayout(web_picture_state &state, web_meas_layout layout
 		return false;
 	}
 	state.layout = layout;
+	state.measDrawn = false;
 	if (isMeas(state)) {
 		markChanged(state, nowMs);
 		return true;
@@ -141,6 +143,7 @@ bool HAQuDA_WebPictureSetStandardKey(web_picture_state &state, web_key key, uint
 	const bool changed = !same(state.standardKey, key);
 	state.standardKey = key;
 	if (changed && isMeas(state) && ((state.layout == web_meas_layout::standard) || (state.layout == web_meas_layout::night))) {
+		state.measDrawn = false;
 		markChanged(state, nowMs);
 		return true;
 	}
@@ -154,6 +157,7 @@ bool HAQuDA_WebPictureSetMultiKeys(web_picture_state &state, const web_key keys[
 		state.multiKeys[i] = keys[i];
 	}
 	if (changed && isMeas(state) && (state.layout == web_meas_layout::multi)) {
+		state.measDrawn = false;
 		markChanged(state, nowMs);
 		return true;
 	}
@@ -169,6 +173,23 @@ bool HAQuDA_WebPictureSetNightWindow(web_picture_state &state, uint8_t start, ui
 		return true;
 	}
 	return false;
+}
+
+bool HAQuDA_WebPictureSetMeasDrawn(web_picture_state &state, web_meas_layout layout, const uint32_t colors[3], uint32_t whiteColor, uint32_t nowMs) {
+	if ((colors == nullptr) || !isMeas(state) || (state.layout != layout)) {
+		return false;
+	}
+	bool changed = !state.measDrawn || (state.measWhiteColor != whiteColor);
+	for (size_t i = 0; i < MULTI_KEYS_NUM; i++) {
+		changed = changed || (state.measColors[i] != colors[i]);
+		state.measColors[i] = colors[i];
+	}
+	state.measWhiteColor = whiteColor;
+	state.measDrawn = true;
+	if (changed) {
+		markChanged(state, nowMs);
+	}
+	return changed;
 }
 
 bool HAQuDA_WebPictureCheckError(web_picture_state &state, web_error currentError, uint32_t nowMs) {
@@ -214,5 +235,10 @@ void HAQuDA_WebPictureBuild(const web_picture_state &state, web_error currentErr
 			}
 		}
 		out.nightHour = hourKnown ? HAQuDA_NightHour(state.nightStart, state.nightFinish, hour) : 0;
+		out.measDrawn = state.measDrawn;
+		for (size_t i = 0; i < MULTI_KEYS_NUM; i++) {
+			out.measColors[i] = state.measColors[i];
+		}
+		out.measWhiteColor = state.measWhiteColor;
 	}
 }

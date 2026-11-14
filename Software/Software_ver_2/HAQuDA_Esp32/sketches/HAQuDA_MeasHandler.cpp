@@ -2,6 +2,7 @@
 #include "HAQuDA_TimeHelper.h"
 #include "HAQuDA_LEDsParams.h"
 #include "HAQuDA_LEDs.h"
+#include "HAQuDA_WebPageDisplayManip.h"
 #include "Sensors.h"
 
 #include <atomic>
@@ -21,8 +22,10 @@ night_time HAQuDA_MeasHandler::night_m_time;
 meas_div_dots HAQuDA_MeasHandler::dots;
 
 static HAQuDA_ErrorHandler *errHandler;
+static HAQuDA_WebPageDisplayManip *webDisp;
 
-HAQuDA_MeasHandler::HAQuDA_MeasHandler(HAQuDA_ErrorHandler *_err_handler, HAQuDA_MeasSnapshot &snapshot) : measSnapshot(snapshot) {
+HAQuDA_MeasHandler::HAQuDA_MeasHandler(HAQuDA_ErrorHandler *_err_handler, HAQuDA_MeasSnapshot &snapshot, HAQuDA_WebPageDisplayManip &webDispToFill)
+	: measSnapshot(snapshot) {
 
 	sens_start = false;
 
@@ -66,6 +69,7 @@ HAQuDA_MeasHandler::HAQuDA_MeasHandler(HAQuDA_ErrorHandler *_err_handler, HAQuDA
 	multi_m_p.divideDotsArr[2] = dots.PM2_5;
 
 	errHandler = _err_handler;
+	webDisp = &webDispToFill;
 }
 
 bool HAQuDA_MeasHandler::SensorsBegin() {
@@ -136,11 +140,17 @@ static uint32_t webChannel(uint8_t channel) {
 	return limited * 255 / COLOR_SCALE_MAX_CHANNEL;
 }
 
+// The colour as 0xRRGGBB in the web scale, the same conversion for /api/status and for the pictures the lamp draws.
+static uint32_t webColor(const rgb_color &color) {
+	return (webChannel(color.r) << 16) | (webChannel(color.g) << 8) | webChannel(color.b);
+}
+
 // loop task. A failed poll publishes NaN so the page shows a gap instead of a stale value.
 // ShowTask zeroes count and then sum in ClearMeasData() without a lock. Here the count is read before and after
 // the sum: an unchanged non-zero count means no clear started before the second read, so the sum is the old one
 // and matches the count. A changed count means a clear ran in between, and that poll keeps the previous snapshot.
-static void publishOne(HAQuDA_MeasSnapshot &snapshot, snapshot_param param, const meas_data &data, div_dots dotsOfParam) {
+// brightness is the lamp's raw LED brightness (HAQuDA_LEDs::GetBright()), the argument the lamp's own draw gives the colour scale.
+static void publishOne(HAQuDA_MeasSnapshot &snapshot, snapshot_param param, const meas_data &data, div_dots dotsOfParam, uint8_t brightness) {
 	if (!data.newMeasDone) {
 		snapshot.Publish(param, NAN, 0);
 		return;
@@ -159,16 +169,19 @@ static void publishOne(HAQuDA_MeasSnapshot &snapshot, snapshot_param param, cons
 
 	float average = sum / countBefore;
 	rgb_color color = {0, 0, 0};
-	HAQuDA_GetMeasRGB(average, dotsOfParam, COLOR_SCALE_MAX_CHANNEL, color);
-	snapshot.Publish(param, average, (webChannel(color.r) << 16) | (webChannel(color.g) << 8) | webChannel(color.b));
+	HAQuDA_GetMeasRGB(average, dotsOfParam, brightness, color);
+	snapshot.Publish(param, average, webColor(color));
 }
 
 void HAQuDA_MeasHandler::publishSnapshots() {
-	publishOne(measSnapshot, snapshot_param::temp, temp_meas, dots.temp);
-	publishOne(measSnapshot, snapshot_param::humid, humid_meas, dots.humid);
-	publishOne(measSnapshot, snapshot_param::eco2, eCO2_meas, dots.eCO2);
-	publishOne(measSnapshot, snapshot_param::tvoc, TVOC_meas, dots.TVOC);
-	publishOne(measSnapshot, snapshot_param::pm25, PM_2_5_meas, dots.PM2_5);
+	// One byte of the NeoPixel object that ShowTask writes in setBrightness(): a plain byte read, cheap, and a read during a
+	// brightness change gives the old or the new level, which the next poll corrects.
+	const uint8_t brightness = HAQuDA_LEDs::getInstance()->GetBright();
+	publishOne(measSnapshot, snapshot_param::temp, temp_meas, dots.temp, brightness);
+	publishOne(measSnapshot, snapshot_param::humid, humid_meas, dots.humid, brightness);
+	publishOne(measSnapshot, snapshot_param::eco2, eCO2_meas, dots.eCO2, brightness);
+	publishOne(measSnapshot, snapshot_param::tvoc, TVOC_meas, dots.TVOC, brightness);
+	publishOne(measSnapshot, snapshot_param::pm25, PM_2_5_meas, dots.PM2_5, brightness);
 }
 
 void HAQuDA_MeasHandler::Show(int *show_meas_time) {
@@ -438,6 +451,9 @@ void HAQuDA_MeasHandler::showMeas_standard(float data, div_dots divideDots) {
 	HAQuDA_GetMeasRGB(data, divideDots, brightness, color);
 	HAQuDA_LEDs::getInstance()->FillColor(color.r, color.g, color.b);
 	HAQuDA_LEDs::getInstance()->Show();
+
+	const uint32_t drawnColors[3] = {webColor(color), 0, 0};
+	webDisp->SetMeasDrawn(standard, drawnColors, 0);
 }
 
 void HAQuDA_MeasHandler::showMeas_night(float data, div_dots divideDots, uint8_t time) {
@@ -448,9 +464,8 @@ void HAQuDA_MeasHandler::showMeas_night(float data, div_dots divideDots, uint8_t
 	uint8_t brightness = HAQuDA_LEDs::getInstance()->GetBright();
 	HAQuDA_GetMeasRGB(data, divideDots, brightness, color);
 
+	uint8_t whiteBright = brightness * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
 	for (int i = 0; i < LED_COLUMN_NUM; i++) {
-		uint8_t whiteBright = brightness * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
-
 		uint32_t pixelColor = (!(i % 3)) ? HAQuDA_LEDs::getInstance()->GetColor(color.r, color.g, color.b)
 										 : HAQuDA_LEDs::getInstance()->GetColor(whiteBright, whiteBright, whiteBright);
 		uint8_t pixelNum = (!(i % 3)) ? LED_ROW_NUM : time;
@@ -458,6 +473,11 @@ void HAQuDA_MeasHandler::showMeas_night(float data, div_dots divideDots, uint8_t
 		HAQuDA_LEDs::getInstance()->FillColorFrom(pixelColor, startPixel, pixelNum);
 	}
 	HAQuDA_LEDs::getInstance()->Show();
+
+	// The bar's grey goes through the same 0..COLOR_SCALE_MAX_CHANNEL -> 0..255 conversion as the key colour
+	const rgb_color white = {whiteBright, whiteBright, whiteBright};
+	const uint32_t drawnColors[3] = {webColor(color), 0, 0};
+	webDisp->SetMeasDrawn(night, drawnColors, webColor(white));
 }
 
 void HAQuDA_MeasHandler::showMeas_multi(float *data, uint8_t dataSize, div_dots *divDots, uint8_t divDotsSize) {
@@ -489,6 +509,9 @@ void HAQuDA_MeasHandler::showMeas_multi(float *data, uint8_t dataSize, div_dots 
 		}
 	}
 	HAQuDA_LEDs::getInstance()->Show();
+
+	const uint32_t drawnColors[MULTI_MODE_PARAM_NUM] = {webColor(colors[0]), webColor(colors[1]), webColor(colors[2])};
+	webDisp->SetMeasDrawn(multi, drawnColors, 0);
 }
 
 void HAQuDA_MeasHandler::showMeas_total(float *data, uint8_t dataSize, div_dots *dataDivideDots, uint8_t divideDotsSize) {
