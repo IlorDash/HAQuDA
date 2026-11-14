@@ -162,9 +162,6 @@
     <KeepOpenAfterExit>true</KeepOpenAfterExit>
     <ShowAfterProgramming>true</ShowAfterProgramming>
   </DeviceTerminalSettings>
-  <SmartTerminalSettings>
-    <Environments />
-  </SmartTerminalSettings>
   <CustomShortcuts>
     <Shortcuts />
     <ShowMessageAfterExecuting>true</ShowMessageAfterExecuting>

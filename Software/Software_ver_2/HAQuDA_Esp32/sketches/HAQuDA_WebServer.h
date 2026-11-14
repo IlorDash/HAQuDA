@@ -17,8 +17,6 @@
 #define PASS_PARAM_NAME "pass"
 #define WEB_SERIAL_MAX_STR_LEN 64
 
-// Delay between the "saved" reply and the restart, so the browser receives the reply first
-constexpr uint32_t RESTART_DELAY_MS = 3000;
 // TCP port of the web server; the mDNS http service advertises the same port
 constexpr uint16_t WEB_SERVER_PORT = 80;
 
@@ -39,10 +37,11 @@ class HAQuDA_WebServer {
 	const HAQuDA_MeasSnapshot &measSnapshot;
 	// The picture the lamp shows, for /api/disp
 	HAQuDA_WebPageDisplayManip &webDisp;
-	// Written by the async_tcp task (handle_NewWiFiCreds), read by loop(). The time is stored before the flag.
+	// Written by loop() only (scheduleRestart(), from finishJoinOk / finishSwitchOk / finishSwitchFail), read by loop() and
+	// the async_tcp task. The time and the delay are stored before the flag, so they are read only while the flag is set.
 	std::atomic<bool> restartPending{false};
 	std::atomic<uint32_t> restartRequestMs{0};
-	std::atomic<uint32_t> restartDelayMs{RESTART_DELAY_MS};
+	std::atomic<uint32_t> restartDelayMs{0};
 	// A log call writes to SPIFFS and WebSerial and the logger has no lock, so the async_tcp task does not call it:
 	// it posts a string literal here and loop() logs it in HandleDeferredWork().
 	std::atomic<const char *> deferredLogError{nullptr};
@@ -67,9 +66,11 @@ class HAQuDA_WebServer {
 	// nullptr when the heap could not provide it; the users then refuse the operation and log that the lock is missing.
 	SemaphoreHandle_t credsMutex = xSemaphoreCreateMutex();
 
-	// async_tcp task only; msg must be a string literal
+	// Any task (one atomic pointer store, no logging, no allocation); loop() logs it in HandleDeferredWork(). msg must be a
+	// string literal.
 	void postLogError(const char *msg);
-	// Restarts the lamp delayMs after the call; the first call wins. Any task, the restart itself happens in loop().
+	// Restarts the lamp delayMs after the call; the first call wins. loop() only: the check-then-store has a single caller, so it needs no lock. The restart
+	// itself happens in HandleDeferredWork().
 	void scheduleRestart(uint32_t delayMs);
 
 	// Queues a check of the network for loop(). Refuses with checking when a check is running or queued, and with
@@ -119,8 +120,8 @@ class HAQuDA_WebServer {
 	void handleBoot(AsyncWebServerRequest *request);
 	void WebSerialPrintStoredLogs();
 
-	// Writes the log record a web handler posted and restarts the lamp once the delay after saving new WiFi
-	// credentials has passed. loop only.
+	// Writes the log record a web handler posted and restarts the lamp once the delay set by scheduleRestart() (after a
+	// passed check or a station mode switch, passed or failed) has elapsed. loop only.
 	void HandleDeferredWork();
 
   public:

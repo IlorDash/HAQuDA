@@ -17,7 +17,6 @@
 #define FILE_WRITE "w"
 #define FILE_APPEND "a"
 #define FILE_READ "r"
-#define FILE_READ_WRITE "r+"
 
 #define FILE_NAME_MEAS_LOG "/measLog.data"
 #define FILE_CHECK_COUNT "/checkCount"
@@ -60,7 +59,6 @@ class HAQuDA_FileStorage {
 	// Renames a file in place, the target must not exist. loop task.
 	static bool RenameFile(const char *from, const char *to);
 	static bool WriteFile(const char *path, const uint8_t *data, const size_t len);
-	static bool WriteFile(const char *path, const uint16_t fromPos, const uint8_t *data, const size_t len);
 	static bool AppendFile(const char *path, const uint8_t *data, const size_t len);
 	static bool Exists(const String &path);
 	static bool Exists(const char *path);

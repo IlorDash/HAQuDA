@@ -151,8 +151,8 @@ bool HAQuDA_WebServer::GetWebServerStarted() {
 	return WebServerStarted;
 }
 
-// msg must be a string literal: only the pointer crosses the tasks. If two failures arrive within one loop() pass,
-// the later one replaces the earlier one.
+// Any task: the async_tcp handlers and loop() (SaveCredsFirst) both call it. msg must be a string literal: only the pointer
+// crosses the tasks. If two failures arrive within one loop() pass, the later one replaces the earlier one.
 void HAQuDA_WebServer::postLogError(const char *msg) {
 	deferredLogError.store(msg);
 }
@@ -167,7 +167,7 @@ void HAQuDA_WebServer::HandleDeferredWork() {
 		return;
 	}
 	if ((uint32_t)(millis() - restartRequestMs.load()) >= restartDelayMs.load()) {
-		HAQuDA_Logger::LogInfo("Restart to apply new WiFi credentials");
+		HAQuDA_Logger::LogInfo("Restarting after a WiFi network change");
 		ESP.restart();
 	}
 }
@@ -217,7 +217,9 @@ void HAQuDA_WebServer::handle_NewWiFiCreds(AsyncWebServerRequest *request) {
 			 "Open this page again then to see the result.");
 }
 
-// loop() restarts the lamp: waiting in the async_tcp task would block it. The time and the delay are stored before the flag.
+// loop task only (the join and switch finishers): the check-then-store below is not atomic and relies on a single caller.
+// The restart is deferred, not done here, so the async_tcp task can still send its last replies during the delay.
+// The time and the delay are stored before the flag.
 void HAQuDA_WebServer::scheduleRestart(uint32_t delayMs) {
 	if (!restartPending.load()) {
 		restartRequestMs.store(millis());
@@ -347,7 +349,7 @@ void HAQuDA_WebServer::delete_WiFiCreds(AsyncWebServerRequest *request) {
 
 void HAQuDA_WebServer::handleStatus(AsyncWebServerRequest *request) {
 	static const char *const PARAM_KEYS[SNAPSHOT_PARAM_NUM] = {"temp", "humid", "eco2", "tvoc", "pm25"};
-	// Decimals shown per parameter: the DHT11 reports tenths, the others whole numbers
+	// Decimals shown per parameter: the DHT22 reports tenths of a degree and of a percent, the others whole numbers
 	static const uint8_t PARAM_DECIMALS[SNAPSHOT_PARAM_NUM] = {1, 1, 0, 0, 0};
 
 	char buf[STATUS_JSON_LEN];

@@ -106,34 +106,6 @@ bool HAQuDA_FileStorage::WriteFile(const char *path, const uint8_t *data, const 
 	return true;
 }
 
-bool HAQuDA_FileStorage::WriteFile(const char *path, const uint16_t fromPos, const uint8_t *data, size_t len) {
-	if (data == nullptr) {
-		return false;
-	}
-
-	if (len <= 0) {
-		return false;
-	}
-
-	HAQuDA_FlashLockGuard guard(FLASH_LOCK_TIMEOUT_MS);
-	// "r+" keeps the other bytes of the file: "w" would truncate it before the seek
-	File file = SPIFFS.open(path, FILE_READ_WRITE);
-	if (!file) {
-		return false;
-	}
-	if (!file.seek(fromPos)) {
-		file.close();
-		return false;
-	}
-
-	if (file.write(data, len) != len) {
-		file.close();
-		return false;
-	}
-	file.close();
-	return true;
-}
-
 bool HAQuDA_FileStorage::AppendFile(const char *path, const uint8_t *data, size_t len) {
 	if (data == nullptr) {
 		return false;
