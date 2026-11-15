@@ -51,8 +51,16 @@ class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
 	// joinActive is set, loop() clears it before setting joinActive.
 	std::atomic<uint32_t> joinDisconnectStreak{0};
 
+	// True while the disconnect handler draws its red "connection lost" picture. Written by the WiFi event task, read by
+	// loop(): HandleConnection() waits for it to end (at most 5 s) before it starts the snake, so the handler's writes
+	// never land on the snake.
+	std::atomic<bool> dropPictureActive{false};
+
 	static void WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info);
-	static void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info);
+	// Disconnect handler, registered once in Connect() and never removed (see joinActive). Draws the red picture (3 s) only
+	// when the lamp goes from connected to disconnected; later disconnect events of the same outage draw nothing.
+	// Called from the WiFi event task; blocks it for about 3.2 s.
+	void showConnectionLost();
 
 	IPAddress AP_ip = IPAddress(192, 168, 4, 22);
 	IPAddress AP_subnet = IPAddress(255, 255, 255, 0);
@@ -103,8 +111,8 @@ class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
 	HAQuDA_WiFi_handler(HAQuDA_FileStorage *currFS, HAQuDA_DisplayManip *_dispManip, const HAQuDA_MeasSnapshot &snapshot,
 						HAQuDA_WebPageDisplayManip &webDispIn);
 	~HAQuDA_WiFi_handler();
-	// True from GOT_IP until DISCONNECTED (LOST_IP does not clear it). Written by the WiFi event task and by
-	// waitUntilWiFiConnected() in the loop task, read in the loop task.
+	// True from GOT_IP until DISCONNECTED (LOST_IP does not clear it). Written only by the WiFi event task (GOT_IP and
+	// disconnect handlers); the loop task reads it.
 	static std::atomic<bool> WiFiConnected;
 	// Joins a stored network, registers the disconnect-reason recorder and starts the web server. setup() (loop task) only.
 	bool Connect();

@@ -9,6 +9,10 @@ constexpr uint32_t DNS_POLL_PERIOD_MS = 10;
 
 constexpr uint32_t JOINED_WIFI_DISPLAY_MS = 3000;
 
+// The "connection lost" picture of the disconnect handler lasts 3.2 s; loop() waits that long for it before it starts the snake
+constexpr uint32_t DROP_PICTURE_WAIT_MS = 5000;
+constexpr uint32_t DROP_PICTURE_POLL_MS = 50;
+
 // A wait ends on an IP address, not on association. The router took 4.5 s from association to DHCP
 // lease in the lamp log (2026-11-11), and WiFi.reconnect() after a timeout aborts the attempt in progress
 // (it drops DHCP too), so the wait must outlast association + DHCP on a slow router.
@@ -39,7 +43,7 @@ bool HAQuDA_WiFi_handler::Connect() {
 		if (connectToStoredWiFi()) {
 			// Before the display handler: that one blocks the event task for 3 s, and the reason must be recorded first
 			registerDisconnectRecorder();
-			WiFi.onEvent(WiFiStationDisconnected, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
+			WiFi.onEvent([this](WiFiEvent_t, WiFiEventInfo_t) { showConnectionLost(); }, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 			vTaskDelay(200 / portTICK_PERIOD_MS);
 			HAQuDA_WebServer::beginWebServer();
 			startMdns();
@@ -124,7 +128,13 @@ void HAQuDA_WiFi_handler::HandleConnection() {
 	if (WiFiConnected || apMode.load() || stationSwitchActive || !(WiFi.getMode() & WIFI_MODE_STA)) {
 		return;
 	}
-	WiFi.removeEvent(SYSTEM_EVENT_STA_DISCONNECTED);
+	// The disconnect handler may still be showing its red picture (WiFi event task); the snake would replace it early and
+	// the handler's closing COLOR_OFF would then replace the snake. Bounded: the handler ends in 3.2 s, so the
+	// timeout is practically unreachable; if it expires, the snake starts anyway and the handler's last write may replace it.
+	const uint32_t waitStartMs = millis();
+	while (dropPictureActive.load() && (millis() - waitStartMs < DROP_PICTURE_WAIT_MS)) {
+		vTaskDelay(pdMS_TO_TICKS(DROP_PICTURE_POLL_MS));
+	}
 
 	dispManip->SetEffect(snake);
 	vTaskDelay(2000 / portTICK_PERIOD_MS);
@@ -132,7 +142,6 @@ void HAQuDA_WiFi_handler::HandleConnection() {
 	while (!WiFiConnected) {
 		connectToStoredWiFi();
 	}
-	WiFi.onEvent(WiFiStationDisconnected, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 
 	showJoinedWiFi();
 	// An effect call leaves the meas display mode stored in MeasHandler untouched, so it is still the mode that ran
@@ -386,7 +395,7 @@ void HAQuDA_WiFi_handler::finishSwitchFail() {
 	memset(&joinCreds, 0, sizeof(joinCreds));
 	join_reason reason = joinCheck.Reason();
 
-	// The core would keep joining the refused network until the restart, and each disconnect flashes the display
+	// The core would keep joining the refused network until the restart, and its first disconnect flashes the display
 	WiFi.setAutoReconnect(false);
 	publishLastJoin(join_last_result::fail, reason, ssid);
 	scheduleRestart(SWITCH_RESTART_DELAY_MS);
@@ -453,10 +462,8 @@ bool HAQuDA_WiFi_handler::createAP() {
 void HAQuDA_WiFi_handler::waitUntilWiFiConnected() {
 	uint32_t timer = millis();
 	while (!WiFiConnected && !PeriodInRange(timer, CONNECT_WIFI_TIMEOUT_MS)) {
-		// The core reports WL_CONNECTED only after GOT_IP, so this agrees with the event handler
-		if (WiFi.status() == WL_CONNECTED) {
-			WiFiConnected = true;
-		}
+		// Only the GOT_IP handler sets WiFiConnected. Setting it here too let a disconnect event still queued in the WiFi event
+		// task see "connected", draw a second red picture and clear the flag on a live connection.
 		vTaskDelay(pdMS_TO_TICKS(100));
 	}
 }
@@ -518,7 +525,14 @@ void HAQuDA_WiFi_handler::WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_
 	WiFiConnected = true;
 }
 
-void HAQuDA_WiFi_handler::WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info) {
+// WiFi event task. Draws only for the drop from connected: while the lamp is already disconnected, the events of the failed
+// attempts of the reconnect loop and of the core's own retries would cover the snake with red and a dark matrix.
+void HAQuDA_WiFi_handler::showConnectionLost() {
+	if (!WiFiConnected.load()) {
+		return;
+	}
+	// Before WiFiConnected clears: loop() reacts to that flag and must find the picture already marked as running
+	dropPictureActive.store(true);
 	WiFiConnected = false;
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 
@@ -528,6 +542,8 @@ void HAQuDA_WiFi_handler::WiFiStationDisconnected(WiFiEvent_t event, WiFiEventIn
 
 	dispManip->SetEffectParam(COLOR_OFF);
 	dispManip->SetEffect(staticColor);
+	// Last display write done: loop() may start the snake now
+	dropPictureActive.store(false);
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 }
 
