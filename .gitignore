@@ -4,3 +4,6 @@
 /public/
 /.venv/
 __pycache__/
+
+# Per-developer build folder: holds a link to the secret build flags and logs that contain them
+/.bench/
