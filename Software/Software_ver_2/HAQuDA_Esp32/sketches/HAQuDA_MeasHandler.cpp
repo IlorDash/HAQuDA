@@ -175,8 +175,9 @@ static void publishOne(HAQuDA_MeasSnapshot &snapshot, snapshot_param param, cons
 }
 
 void HAQuDA_MeasHandler::publishSnapshots() {
-	// One byte (HAQuDA_LEDs::brightness) that ShowTask writes in SetBright(): a plain byte read, cheap, and a read during a
-	// brightness change gives the old or the new level, which the next poll corrects.
+	// One byte (HAQuDA_LEDs::brightness, a std::atomic<uint8_t>) that ShowTask writes in SetBright():
+	// an atomic one-byte read, cheap, and a read during a brightness change gives the old or the new level,
+	// which the next poll corrects.
 	const uint8_t brightness = HAQuDA_LEDs::getInstance()->GetBright();
 	publishOne(measSnapshot, snapshot_param::temp, temp_meas, dots.temp, brightness);
 	publishOne(measSnapshot, snapshot_param::humid, humid_meas, dots.humid, brightness);

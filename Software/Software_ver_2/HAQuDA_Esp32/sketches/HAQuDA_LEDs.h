@@ -1,8 +1,9 @@
 #pragma once
 
 #include <NeoPixelBus.h>
+#include <atomic>
 #include <freertos/FreeRTOS.h>
-#include <freertos/semphr.h>
+#include <freertos/task.h>
 #include "HAQuDA_LEDsParams.h"
 #include "HAQuDA_ILEDs.h"
 
@@ -11,10 +12,10 @@
 // calibration) switches the flash cache off on both cores, but that does not disturb the bits on the wire: the I2S interrupt
 // that ends the frame runs from IRAM, and if it is late the DMA only repeats the same frame.
 //
-// Frame sends are serialised by a mutex, so ShowTask and the loop task (SetBright) never start a frame at the same time.
-// A frame send can wait up to about 100 ms (50 ms for the output mutex plus 50 ms for the previous DMA frame) and is dropped
-// after that; the next Show() repaints the picture.
-// The picture buffer itself is not locked: a task that edits it while the other sends may show a mix of two pictures once.
+// Frames are sent by ShowTask (and by setup() before ShowTask exists). The class does not serialise sends: a send from another
+// task while ShowTask runs is not supported, because NeoPixelBus can tear a frame if two tasks pass CanShow() together.
+// A frame send waits up to about 50 ms for the previous DMA frame and is dropped after that; the next Show() repaints the
+// picture. The picture buffer is not locked either; only GetBright() may be called from the loop task.
 //
 // Brightness uses the same scheme as Adafruit_NeoPixel (stored value = raw + 1, colours scaled when they are written, the
 // stored picture rescaled when the brightness changes).
@@ -24,16 +25,16 @@ class HAQuDA_LEDs : public HAQuDA_ILEDs {
 
 	static HAQuDA_LEDs *p_instance;
 
-	LedBus *bus = nullptr;
+	// The constructor allocates the pixel buffer and the DMA buffer; it runs on the first getInstance(), in setup(). The DMA
+	// descriptors and the I2S interrupt are allocated later, in Begin().
+	LedBus bus{LED_NUM_PIXELS, LED_PIN};
 
-	// Serialises showFrame(). Stays nullptr when creation failed; frames are then sent without locking.
-	SemaphoreHandle_t outputMutex = nullptr;
+	// Raw brightness + 1: 0 (before the first SetBright) means "no scaling", 1 means off. Written by ShowTask (SetBright),
+	// read by the loop task through GetBright().
+	std::atomic<uint8_t> brightness{0};
 
-	// Raw brightness + 1: 0 (before the first SetBright) means "no scaling", 1 means off.
-	uint8_t brightness = 0;
-
-	// Sends the buffer under outputMutex after the previous frame has left the DMA. Returns false when the mutex or the DMA
-	// did not become free in time and the frame was lost. ShowTask or loop.
+	// Sends the buffer after the previous frame has left the DMA. Returns false when the DMA did not become free in time and
+	// the frame was lost. ShowTask.
 	bool showFrame();
 	uint8_t scale(uint8_t channel) const;
 
@@ -45,19 +46,19 @@ class HAQuDA_LEDs : public HAQuDA_ILEDs {
   public:
 	static HAQuDA_LEDs *getInstance();
 
-	// Creates the output mutex, allocates the DMA buffer, starts I2S1 on LED_PIN, shows an empty picture and sets
-	// DEFAULT_BRIGHTNESS. Call once from setup() (loop task) before ShowTask exists. The DMA buffer (heap) and the
-	// mutex (FreeRTOS heap) are the only allocations of this class, both made once here during setup().
+	// Starts I2S1 on LED_PIN, shows an empty picture and sets DEFAULT_BRIGHTNESS. Call once from setup() (loop task) before
+	// ShowTask exists. Allocates the DMA descriptors and the I2S interrupt; the pixel and DMA buffers come from the
+	// constructor. All of it runs once in setup(), none at runtime.
 	void Begin();
 
-	// Sets brightness in percent (0..100) of MAX_BRIGHTNESS, rescales the picture and shows it. Blocks 200 ms. ShowTask or loop.
+	// Sets brightness in percent (0..100) of MAX_BRIGHTNESS, rescales the picture and shows it. Blocks 200 ms. ShowTask.
 	void SetBright(uint8_t bright_per_cent) override;
 	// Returns the raw brightness 0..150 (not percent). ShowTask or loop.
 	uint8_t GetBright() override;
 
-	// Clears the picture and shows it. Blocks 200 ms. ShowTask or loop.
+	// Clears the picture and shows it. Blocks 200 ms. ShowTask.
 	void Clear() override;
-	// Sends the picture and then blocks 200 ms (the caller's pacing). A frame that cannot be sent in time is lost. ShowTask or loop.
+	// Sends the picture and then blocks 200 ms (the caller's pacing). A frame that cannot be sent in time is lost. ShowTask.
 	void Show() override;
 	void Show(uint16_t delay) override;
 

@@ -6,8 +6,8 @@ HAQuDA_LEDs *HAQuDA_LEDs::p_instance = 0;
 // frame has long left the DMA. The wait only guards against a stuck I2S interrupt.
 constexpr uint32_t LED_FRAME_WAIT_MS = 50;
 
-// Another task is sending a frame for ~4 ms at most, so this wait is normally far shorter.
-constexpr uint32_t LED_OUTPUT_LOCK_WAIT_MS = 50;
+// The wait loop in showFrame() must sleep at least one tick (the tick rate is 1000 Hz on this core).
+static_assert(pdMS_TO_TICKS(1) >= 1, "FreeRTOS tick is slower than 1 ms, the frame wait would spin");
 
 HAQuDA_LEDs *HAQuDA_LEDs::getInstance() {
 	if (!p_instance) {
@@ -17,11 +17,9 @@ HAQuDA_LEDs *HAQuDA_LEDs::getInstance() {
 }
 
 void HAQuDA_LEDs::Begin() {
-	outputMutex = xSemaphoreCreateMutex();
-	bus = new LedBus(LED_NUM_PIXELS, LED_PIN);
-	bus->Begin();
+	bus.Begin();
 	HAQuDA_LEDs::Show();
-	brightness = DEFAULT_BRIGHTNESS + 1;
+	brightness.store(DEFAULT_BRIGHTNESS + 1);
 }
 
 void HAQuDA_LEDs::SetBright(uint8_t bright_per_cent) {
@@ -30,9 +28,10 @@ void HAQuDA_LEDs::SetBright(uint8_t bright_per_cent) {
 	}
 	uint16_t raw = bright_per_cent * MAX_BRIGHTNESS / 100;
 	uint8_t newBrightness = raw + 1;
-	if (newBrightness != brightness) {
+	uint8_t currentBrightness = brightness.load();
+	if (newBrightness != currentBrightness) {
 		// Same lossy rescale of the stored picture as Adafruit_NeoPixel::setBrightness().
-		uint8_t oldBrightness = brightness - 1;
+		uint8_t oldBrightness = currentBrightness - 1;
 		uint16_t factor = 0;
 		if (oldBrightness == 0) {
 			factor = 0;
@@ -41,47 +40,39 @@ void HAQuDA_LEDs::SetBright(uint8_t bright_per_cent) {
 		} else {
 			factor = (((uint16_t)newBrightness << 8) - 1) / oldBrightness;
 		}
-		uint8_t *data = bus->Pixels();
-		size_t dataSize = bus->PixelsSize();
+		uint8_t *data = bus.Pixels();
+		size_t dataSize = bus.PixelsSize();
 		for (size_t i = 0; i < dataSize; i++) {
 			data[i] = (data[i] * factor) >> 8;
 		}
-		bus->Dirty();
-		brightness = newBrightness;
+		bus.Dirty();
+		brightness.store(newBrightness);
 	}
 	HAQuDA_LEDs::Show();
 }
 
 uint8_t HAQuDA_LEDs::GetBright() {
-	return brightness - 1;
+	return brightness.load() - 1;
 }
 
 void HAQuDA_LEDs::Clear() {
-	memset(bus->Pixels(), 0, bus->PixelsSize());
-	bus->Dirty();
+	memset(bus.Pixels(), 0, bus.PixelsSize());
+	bus.Dirty();
 	HAQuDA_LEDs::Show();
 }
 
-// A frame that cannot be sent within its waits is lost, without a log (ShowTask must not log); the next Show() sends the
-// picture again. The mutex is released before the caller's delay, so it is held for one frame at most.
+// A frame that cannot be sent within its wait is lost, without a log (ShowTask must not log); the next Show() sends the
+// picture again.
 bool HAQuDA_LEDs::showFrame() {
-	if ((outputMutex != nullptr) && (xSemaphoreTake(outputMutex, pdMS_TO_TICKS(LED_OUTPUT_LOCK_WAIT_MS)) != pdTRUE)) {
-		return false;
-	}
-
 	uint32_t startMs = millis();
-	while (!bus->CanShow() && (millis() - startMs <= LED_FRAME_WAIT_MS)) {
-		vTaskDelay(1);
+	while (!bus.CanShow() && (millis() - startMs <= LED_FRAME_WAIT_MS)) {
+		vTaskDelay(pdMS_TO_TICKS(1));
 	}
-	bool sent = bus->CanShow();
+	bool sent = bus.CanShow();
 	if (sent) {
 		// Dirty first: NeoPixelBus skips the send of an unchanged picture, but every Show() must refresh the strip.
-		bus->Dirty();
-		bus->Show();
-	}
-
-	if (outputMutex != nullptr) {
-		xSemaphoreGive(outputMutex);
+		bus.Dirty();
+		bus.Show();
 	}
 	return sent;
 }
@@ -98,14 +89,15 @@ void HAQuDA_LEDs::Show(uint16_t delay) {
 
 // Brightness 0 (stored value before the first SetBright) leaves the channel unscaled.
 uint8_t HAQuDA_LEDs::scale(uint8_t channel) const {
-	if (brightness == 0) {
+	uint8_t currentBrightness = brightness.load();
+	if (currentBrightness == 0) {
 		return channel;
 	}
-	return (channel * brightness) >> 8;
+	return (channel * currentBrightness) >> 8;
 }
 
 void HAQuDA_LEDs::SetPixelColor(uint16_t pixelNum, uint32_t color) {
-	bus->SetPixelColor(pixelNum, RgbColor(scale(color >> 16), scale(color >> 8), scale(color)));
+	bus.SetPixelColor(pixelNum, RgbColor(scale(color >> 16), scale(color >> 8), scale(color)));
 }
 
 void HAQuDA_LEDs::FillColor(uint32_t color) {
