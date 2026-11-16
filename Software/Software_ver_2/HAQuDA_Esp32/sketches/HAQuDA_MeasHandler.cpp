@@ -175,7 +175,7 @@ static void publishOne(HAQuDA_MeasSnapshot &snapshot, snapshot_param param, cons
 }
 
 void HAQuDA_MeasHandler::publishSnapshots() {
-	// One byte of the NeoPixel object that ShowTask writes in setBrightness(): a plain byte read, cheap, and a read during a
+	// One byte (HAQuDA_LEDs::brightness) that ShowTask writes in SetBright(): a plain byte read, cheap, and a read during a
 	// brightness change gives the old or the new level, which the next poll corrects.
 	const uint8_t brightness = HAQuDA_LEDs::getInstance()->GetBright();
 	publishOne(measSnapshot, snapshot_param::temp, temp_meas, dots.temp, brightness);

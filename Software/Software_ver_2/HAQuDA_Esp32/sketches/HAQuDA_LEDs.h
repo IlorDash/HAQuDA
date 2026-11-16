@@ -1,17 +1,23 @@
 #pragma once
 
 #include <NeoPixelBus.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 #include "HAQuDA_LEDsParams.h"
 #include "HAQuDA_ILEDs.h"
 
 // The LED chain is driven by the I2S1 peripheral through DMA (NeoPixelBus): a frame is copied into a DMA buffer in internal RAM
 // and then clocked out by the hardware alone, from descriptors that stay in RAM. An SPI flash access (SPIFFS, WiFi NVS / PHY
-// calibration) switches the flash cache off on both cores, but that no longer disturbs the bits on the wire: the I2S interrupt
-// that ends the frame runs from IRAM, and if it is late the DMA only repeats the same frame. The earlier RMT driver refilled
-// its 64-item buffer from an interrupt that is not in IRAM, so a cache-off period corrupted the frame.
+// calibration) switches the flash cache off on both cores, but that does not disturb the bits on the wire: the I2S interrupt
+// that ends the frame runs from IRAM, and if it is late the DMA only repeats the same frame.
 //
-// Brightness keeps the Adafruit scheme (stored value = raw + 1, colours scaled when they are written, the stored picture
-// rescaled when the brightness changes), so pictures look exactly as before.
+// Frame sends are serialised by a mutex, so ShowTask and the loop task (SetBright) never start a frame at the same time.
+// A frame send can wait up to about 100 ms (50 ms for the output mutex plus 50 ms for the previous DMA frame) and is dropped
+// after that; the next Show() repaints the picture.
+// The picture buffer itself is not locked: a task that edits it while the other sends may show a mix of two pictures once.
+//
+// Brightness uses the same scheme as Adafruit_NeoPixel (stored value = raw + 1, colours scaled when they are written, the
+// stored picture rescaled when the brightness changes).
 class HAQuDA_LEDs : public HAQuDA_ILEDs {
 
 	using LedBus = NeoPixelBus<NeoGrbFeature, NeoEsp32I2s1Ws2812xMethod>;
@@ -20,11 +26,14 @@ class HAQuDA_LEDs : public HAQuDA_ILEDs {
 
 	LedBus *bus = nullptr;
 
-	// Raw brightness + 1, as Adafruit stores it: 0 (before the first SetBright) means "no scaling", 1 means off.
+	// Serialises showFrame(). Stays nullptr when creation failed; frames are then sent without locking.
+	SemaphoreHandle_t outputMutex = nullptr;
+
+	// Raw brightness + 1: 0 (before the first SetBright) means "no scaling", 1 means off.
 	uint8_t brightness = 0;
 
-	// Waits (yielding, bounded) for the previous frame to leave the DMA, then sends the buffer. Returns false when the wait
-	// timed out and the frame was dropped.
+	// Sends the buffer under outputMutex after the previous frame has left the DMA. Returns false when the mutex or the DMA
+	// did not become free in time and the frame was lost. ShowTask or loop.
 	bool showFrame();
 	uint8_t scale(uint8_t channel) const;
 
@@ -36,8 +45,9 @@ class HAQuDA_LEDs : public HAQuDA_ILEDs {
   public:
 	static HAQuDA_LEDs *getInstance();
 
-	// Allocates the DMA buffer, starts I2S1 on LED_PIN, shows an empty picture and sets DEFAULT_BRIGHTNESS. Call once from
-	// setup() (loop task) before ShowTask exists; the only heap allocation of this class.
+	// Creates the output mutex, allocates the DMA buffer, starts I2S1 on LED_PIN, shows an empty picture and sets
+	// DEFAULT_BRIGHTNESS. Call once from setup() (loop task) before ShowTask exists. The DMA buffer (heap) and the
+	// mutex (FreeRTOS heap) are the only allocations of this class, both made once here during setup().
 	void Begin();
 
 	// Sets brightness in percent (0..100) of MAX_BRIGHTNESS, rescales the picture and shows it. Blocks 200 ms. ShowTask or loop.
@@ -47,7 +57,7 @@ class HAQuDA_LEDs : public HAQuDA_ILEDs {
 
 	// Clears the picture and shows it. Blocks 200 ms. ShowTask or loop.
 	void Clear() override;
-	// Sends the picture and then blocks 200 ms (delay) so the caller's pacing stays the same as before. ShowTask or loop.
+	// Sends the picture and then blocks 200 ms (the caller's pacing). A frame that cannot be sent in time is lost. ShowTask or loop.
 	void Show() override;
 	void Show(uint16_t delay) override;
 

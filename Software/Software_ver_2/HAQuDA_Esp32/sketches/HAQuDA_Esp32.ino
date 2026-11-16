@@ -12,7 +12,6 @@
 #include "HAQuDA_Logger.h"
 #include "HAQuDA_TimeHelper.h"
 #include "HAQuDA_LEDs.h"
-#include "HAQuDA_FlashLock.h"
 
 #include "Tasks.h"
 #include "HAQuDA_Version.h"
@@ -58,8 +57,6 @@ void setup() {
 	HAQuDA_Logger::SetErrHandler(&ErrHandler);
 	HAQuDA_Logger::SetDedup(&LogDedup);
 	HAQuDA_TimeService::getInstance();
-	// Before the file storage starts: it serialises the flash operations of the tasks.
-	HAQuDA_FlashLock::Create();
 	HAQuDA_LEDs::getInstance()->Begin();
 	createTasks(&DispManip);
 
