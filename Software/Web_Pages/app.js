@@ -12,6 +12,13 @@
 	var LEGEND_KEYS = ['pm25', 'eco2', 'temp'];
 	var GRID_COLS = 4;
 	var GRID_ROWS = 6;
+	// the lamp card: what the lamp can show and which keys it takes (the readings of /api/status, "total" for standard only)
+	var LAMP_MODES = ['standard', 'multi', 'night', 'light'];
+	var STD_KEYS = ['total', 'temp', 'humid', 'eco2', 'tvoc', 'pm25'];
+	var SEL_KEYS = STD_KEYS.slice(1);
+	// the lamp light colours, the index is what POST /api/lamp takes
+	var LAMP_COLORS = ['#ffcf8f', '#fff1dc', '#dce9ff', '#ff9f43', '#8f8cff', '#36c9b8'];
+	var NIGHT_CELLS = 18;
 	// the picture the lamp draws (/api/disp), asked once a second. Three failed answers in a row switch back to the measurements
 	var DISP_POLL_MS = 1000;
 	var DISP_FAIL_LIMIT = 3;
@@ -66,6 +73,14 @@
 			},
 			labels: { temp: 'Temperature', humid: 'Humidity', eco2: 'eCO₂', tvoc: 'TVOC', pm1: 'PM1.0', pm25: 'PM2.5', pm10: 'PM10' },
 			lDust: 'Dust PM2.5', lTemp: 'Temperature',
+			lcTitle: 'Lamp', lcOff: 'Off', lcPower: 'Power', lcBright: 'Brightness', lcRead: 'Reading', lcRows: ['Top', 'Middle', 'Bottom'],
+			lcTotal: 'Overall', lcFrom: 'Night light from', lcTo: 'to', lcColor: 'Color', lcNight: 'Night light', lcLamp: 'Lamp light',
+			lcOffLegend: 'Lamp is off', lcNeeds: 'needs internet',
+			lcHint: 'The night light fills up from the bottom during the night: the fill shows how much sleep is left.',
+			lcLive: 'Changes apply instantly', lcLock: 'Controls are unavailable while the lamp isn’t responding',
+			lcFail: 'The lamp did not accept the change.', lcNoAnswer: 'No answer from the lamp.',
+			modes: { standard: ['Standard', 'One reading'], multi: ['Multi', 'Three readings'], night: ['Night', 'Reading + night light'], light: ['Lamp light', 'Solid color'] },
+			colors: ['Warm white', 'Neutral', 'Cool white', 'Amber', 'Lavender', 'Teal'],
 			wifi: 'WiFi networks', log: 'Live log', guide: 'User guide ↗', offNote: 'needs internet',
 			fw: 'Firmware', up: 'Uptime', d: 'd', h: 'h', m: 'm'
 		},
@@ -100,6 +115,14 @@
 			},
 			labels: { temp: 'Температура', humid: 'Влажность', eco2: 'eCO₂', tvoc: 'Летучие вещества', pm1: 'PM1.0', pm25: 'Частицы PM2.5', pm10: 'PM10' },
 			lDust: 'Пыль PM2.5', lTemp: 'Температура',
+			lcTitle: 'Лампа', lcOff: 'Выключена', lcPower: 'Питание', lcBright: 'Яркость', lcRead: 'Показатель', lcRows: ['Верх', 'Середина', 'Низ'],
+			lcTotal: 'Общий', lcFrom: 'Ночник с', lcTo: 'до', lcColor: 'Цвет', lcNight: 'Ночник', lcLamp: 'Светильник',
+			lcOffLegend: 'Лампа выключена', lcNeeds: 'нужен интернет',
+			lcHint: 'Ночник заполняется снизу вверх в течение ночи: по заполнению видно, сколько осталось спать.',
+			lcLive: 'Изменения применяются сразу', lcLock: 'Управление недоступно, пока лампа не отвечает',
+			lcFail: 'Лампа не приняла изменение.', lcNoAnswer: 'Лампа не ответила.',
+			modes: { standard: ['Стандартный', 'Один показатель'], multi: ['Мульти', 'Три показателя'], night: ['Ночной', 'Показатель + ночник'], light: ['Светильник', 'Один цвет'] },
+			colors: ['Тёплый белый', 'Нейтральный', 'Холодный', 'Янтарный', 'Лавандовый', 'Бирюзовый'],
 			wifi: 'WiFi-сети', log: 'Живой лог', guide: 'Руководство ↗', offNote: 'нужен интернет',
 			fw: 'Прошивка', up: 'Работает', d: 'д', h: 'ч', m: 'мин'
 		}
@@ -119,6 +142,10 @@
 	// lastAsked: /api/join has answered since the lamp last came back, so the outcome is known
 	var lastJoin = null;
 	var lastAsked = false;
+	// the lamp card. conf: the lamp as the lamp last confirmed it (null: no card). want: conf plus the edits not yet confirmed, pend:
+	// those edits as a partial lamp still to send, busy: a POST is out, live: the brightness while the slider is dragged, err: the lamp's reply to a refused POST
+	// gen: counts the confirmed POSTs, so a status answer that was asked before the last confirmation can be told from a current one
+	var lc = { conf: null, want: null, pend: null, busy: false, live: null, err: '', timer: 0, gen: 0 };
 
 	function byId(id) {
 		return document.getElementById(id);
@@ -370,13 +397,13 @@
 				}
 				pic.colors.push(d.colors[i]);
 			}
-			pic.white = 0;
+			pic.lit = 0;
 			pic.whiteColor = '';
 			if (d.layout === 'night') {
-				if (!intIn(d.white, 0, GRID_ROWS) || !validColor(d.whiteColor)) {
+				if (!intIn(d.lit, 0, NIGHT_CELLS) || !validColor(d.whiteColor)) {
 					return null;
 				}
-				pic.white = d.white;
+				pic.lit = d.lit;
 				pic.whiteColor = d.whiteColor;
 			}
 		} else {
@@ -390,28 +417,24 @@
 		return (n < 16 ? '0' : '') + n.toString(16);
 	}
 
-	// the colour of one reading, or of the average of the readings the lamp averages for "total"; '' when there is none.
-	// The average is taken over the readings that have a colour, so one failed sensor does not blank the picture
-	function measColor(meas, key) {
-		var keys = key === 'total' ? TOTAL_KEYS : [key];
-		var sum = [0, 0, 0];
-		var n = 0;
-		var last = '';
-		keys.forEach(function (k) {
+	// the worst of the readings that have a colour (the first one of the worst rank), '' when none has; one failed sensor
+	// does not blank the "overall" reading
+	function worstKey(meas) {
+		var worst = '';
+		TOTAL_KEYS.forEach(function (k) {
 			var m = meas[k];
-			if (validMeas(m) && validColor(m.c)) {
-				var v = parseInt(m.c.slice(1), 16);
-				sum[0] += (v >> 16) & 255;
-				sum[1] += (v >> 8) & 255;
-				sum[2] += v & 255;
-				n++;
-				last = m.c;
+			if (validMeas(m) && validColor(m.c) && (!worst || rank(m.c) > rank(meas[worst].c))) {
+				worst = k;
 			}
 		});
-		if (n <= 1) {
-			return last;
-		}
-		return '#' + hex2(sum[0] / n) + hex2(sum[1] / n) + hex2(sum[2] / n);
+		return worst;
+	}
+
+	// the colour of one reading, or of the worst one for "total"; '' when there is none
+	function measColor(meas, key) {
+		var k = key === 'total' ? worstKey(meas) : key;
+		var m = meas[k];
+		return k && validMeas(m) && validColor(m.c) ? m.c : '';
 	}
 
 	function fillGrid(color) {
@@ -422,8 +445,8 @@
 		return a;
 	}
 
-	// Row 0 is the top. The lamp's strip starts at its bottom end: multi draws keys[0] nearest to it and the night bar grows from it,
-	// so keys[0] takes the two bottom rows and the white bar counts rows from the bottom.
+	// Row 0 is the top. The lamp's strip starts at its bottom end: multi draws keys[0] nearest to it, so keys[0] takes the two
+	// bottom rows. Night: the left column is the reading, the other 18 cells the night light, a stripe (row) of three at a time from the bottom
 	function measFrame(pic) {
 		var colors = fillGrid('');
 		for (var i = 0; i < colors.length; i++) {
@@ -433,9 +456,9 @@
 				colors[i] = pic.colors[0];
 			} else if (pic.layout === 'multi') {
 				colors[i] = pic.colors[Math.floor(fromBottom / 2)];
-			} else if (col % 2 === 0) {
+			} else if (col === 0) {
 				colors[i] = pic.colors[0];
-			} else if (fromBottom < pic.white) {
+			} else if (fromBottom * 3 + col - 1 < pic.lit) {
 				colors[i] = pic.whiteColor;
 			}
 		}
@@ -588,12 +611,15 @@
 	// fading at its first level, snake at its first step (the tail at the start of the path), growing and random as the full grid
 	function paintGrid(meas, down) {
 		var pic = down ? null : disp.pic;
+		var model = !down && lampModel();
 		var colors;
-		var animated = !!pic && (pic.kind === 'fading' || pic.kind === 'snake' || pic.kind === 'growing' || pic.kind === 'random');
+		var animated = !!pic && !model && (pic.kind === 'fading' || pic.kind === 'snake' || pic.kind === 'growing' || pic.kind === 'random');
 		var still = !!reduceMotion && reduceMotion.matches;
 		var t = disp.frozenAt === null ? now() : disp.frozenAt;
 		if (down) {
 			colors = fillGrid('');
+		} else if (model) {
+			colors = modelFrame(view(), meas);
 		} else if (pic && pic.kind === 'static') {
 			colors = fillGrid(pic.color);
 		} else if (pic && pic.kind === 'fading') {
@@ -661,14 +687,60 @@
 		return 'fxEffect';
 	}
 
+	// the value of one reading for the legend; "total" is the air index word of the worst reading
+	function readingText(meas, k) {
+		var m = meas[k];
+		if (k === 'total') {
+			var w = worstKey(meas);
+			return w ? [T.good, T.fair, T.poor][rank(meas[w].c)] : T.noData;
+		}
+		return validMeas(m) ? fmt(k, m.v) + ' ' + UNITS[k] : (state.data ? T.noData : '--');
+	}
+
+	function readingName(k) {
+		return k === 'total' ? T.lcTotal : T.labels[k];
+	}
+
+	// what the legend lists: the three readings of the default picture, or those of the lamp's mode while the card draws the matrix
+	function legendRows(meas, model) {
+		var v = model && view();
+		if (!v) {
+			return LEGEND_KEYS.map(function (k) {
+				return [k === 'pm25' ? T.lDust : readingName(k), readingText(meas, k)];
+			});
+		}
+		if (!v.on) {
+			return [[T.lcOffLegend, '—']];
+		}
+		if (v.mode === 'multi') {
+			return v.multi.map(function (k) {
+				return [readingName(k), readingText(meas, k)];
+			});
+		}
+		if (v.mode === 'standard') {
+			return [[readingName(v.std), readingText(meas, v.std)]];
+		}
+		if (v.mode === 'night') {
+			return [[readingName(v.night.param), readingText(meas, v.night.param)], [T.lcNight, v.night.from + '–' + v.night.to]];
+		}
+		return [[T.lcLamp, T.colors[v.color]]];
+	}
+
 	function renderMatrix(meas, down) {
 		paintGrid(meas, down);
-		var note = fxNoteKey();
+		var model = !down && lampModel();
+		var note = model ? '' : fxNoteKey();
+		var rows = legendRows(meas, model);
 		byId('legend').classList.toggle('fx', !!note);
+		// the three-row legend lines up with the pairs of grid rows, a shorter one hugs its text
+		byId('legend').classList.toggle('auto', rows.length < 3);
 		byId('legendNote').textContent = note ? T[note] : '';
-		LEGEND_KEYS.forEach(function (k) {
-			var m = meas[k];
-			byId('lv-' + k).textContent = validMeas(m) ? fmt(k, m.v) + ' ' + UNITS[k] : (state.data ? T.noData : '--');
+		Array.prototype.forEach.call(byId('legend').getElementsByTagName('div'), function (row, i) {
+			row.hidden = i >= rows.length;
+			if (rows[i]) {
+				row.children[0].textContent = rows[i][0];
+				row.children[1].textContent = rows[i][1];
+			}
 		});
 	}
 
@@ -736,9 +808,411 @@
 		byId('mup').textContent = d ? T.up + ' ' + uptimeText(d.uptime) : '';
 	}
 
+	// ---- lamp card: power, brightness, modes. The page edits a copy of the lamp's settings, and the matrix shows that copy at once
+
+	function hhmm(s) {
+		return typeof s === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(s);
+	}
+
+	function minutes(s) {
+		return parseInt(s.slice(0, 2), 10) * 60 + parseInt(s.slice(3), 10);
+	}
+
+	// night light cells on (0..18) at the lamp's clock, the firmware's rule: ceil(18 * elapsed / window) from the start, all outside it, none without a time
+	function nightLit(v) {
+		if (!v.now) {
+			return 0;
+		}
+		var from = minutes(v.night.from);
+		var span = (minutes(v.night.to) - from + 1440) % 1440;
+		var done = (minutes(v.now) - from + 1440) % 1440;
+		return !span || done >= span ? NIGHT_CELLS : Math.max(1, Math.ceil((NIGHT_CELLS * done) / span));
+	}
+
+	function nightColor() {
+		var t = root.getAttribute('data-theme');
+		var dark = t ? t === 'dark' : !!window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+		return dark ? '#fff1d6' : '#ffc46b';
+	}
+
+	// the "lamp" block of /api/status or of a POST reply, or null when it is not as expected
+	function parseLamp(l) {
+		var n = l && l.night;
+		var ok =
+			!!n &&
+			typeof l.on === 'boolean' &&
+			intIn(l.bright, 5, 100) &&
+			LAMP_MODES.indexOf(l.mode) >= 0 &&
+			STD_KEYS.indexOf(l.std) >= 0 &&
+			intIn(l.color, 0, LAMP_COLORS.length - 1) &&
+			SEL_KEYS.indexOf(n.param) >= 0 &&
+			hhmm(n.from) &&
+			hhmm(n.to) &&
+			Array.isArray(l.multi) &&
+			l.multi.length === 3 &&
+			l.multi.every(function (k) {
+				return SEL_KEYS.indexOf(k) >= 0;
+			});
+		return ok
+			? {
+					on: l.on,
+					bright: l.bright,
+					mode: l.mode,
+					std: l.std,
+					multi: l.multi.slice(),
+					night: { param: n.param, from: n.from, to: n.to },
+					color: l.color,
+					time: l.time === true,
+					now: l.time === true && hhmm(l.now) ? l.now : ''
+				}
+			: null;
+	}
+
+	// b over a; the night fields merge one by one
+	function merge(a, b) {
+		var r = {};
+		[a, b].forEach(function (o) {
+			Object.keys(o).forEach(function (k) {
+				r[k] = o[k];
+			});
+		});
+		if (a.night && b.night) {
+			r.night = { param: b.night.param || a.night.param, from: b.night.from || a.night.from, to: b.night.to || a.night.to };
+		}
+		return r;
+	}
+
+	// the lamp the card shows: the edited copy, with the brightness the slider is dragged to
+	function view() {
+		var v = lc.want || lc.conf;
+		return v && lc.live !== null ? merge(v, { bright: lc.live }) : v;
+	}
+
+	// The matrix is drawn from the settings while an edit is not confirmed yet and while the lamp shows the user's picture
+	// (measurements, the lamp light colour or dark). What the lamp plays on top (an event, an error, the start) is drawn as it sends it.
+	function lampModel() {
+		var v = view();
+		var p = disp.pic;
+		if (!v) {
+			return false;
+		}
+		if (lc.want || lc.live !== null || !p || p.src === 'meas') {
+			return true;
+		}
+		if (p.kind !== 'static' || p.src !== 'effect') {
+			return false;
+		}
+		var c = p.color.toLowerCase();
+		return v.on ? v.mode === 'light' && c === LAMP_COLORS[v.color] : c === '#000000';
+	}
+
+	// Row 0 is the top. Lit cells fade with the brightness (35 % at the lowest), unlit ones stay as they are
+	function modelFrame(v, meas) {
+		var colors = fillGrid('');
+		var fade = 0.35 + (0.65 * v.bright) / 100;
+		var lit = v.mode === 'night' ? nightLit(v) : 0;
+		if (!v.on) {
+			return colors;
+		}
+		for (var i = 0; i < colors.length; i++) {
+			var col = i % GRID_COLS;
+			var row = Math.floor(i / GRID_COLS);
+			var c = '';
+			if (v.mode === 'standard') {
+				c = measColor(meas, v.std);
+			} else if (v.mode === 'multi') {
+				c = measColor(meas, v.multi[Math.floor(row / 2)]);
+			} else if (v.mode === 'light') {
+				c = LAMP_COLORS[v.color];
+			} else if (col === 0) {
+				c = measColor(meas, v.night.param);
+			} else if ((GRID_ROWS - 1 - row) * 3 + col - 1 < lit) {
+				c = nightColor();
+			}
+			colors[i] = c ? fadeColor(c, fade) : '';
+		}
+		return colors;
+	}
+
+	function lampErr(text) {
+		clearTimeout(lc.timer);
+		lc.err = text;
+		if (text) {
+			lc.timer = setTimeout(function () {
+				lc.err = '';
+				render();
+			}, 10000);
+		}
+	}
+
+	function parseJson(text) {
+		try {
+			return JSON.parse(text);
+		} catch (e) {
+			return null;
+		}
+	}
+
+	// sends what is pending, one request at a time. The lamp's reply is the new lamp block; an error reply (its text is shown as it is)
+	// or no reply puts the card back to the last confirmed settings
+	function lampSend() {
+		if (lc.busy || !lc.pend) {
+			return;
+		}
+		var p = lc.pend;
+		var n = p.night || {};
+		var f = [];
+		function put(k, v) {
+			if (v !== undefined) {
+				f.push(k + '=' + encodeURIComponent(v));
+			}
+		}
+		put('on', p.on === undefined ? undefined : p.on ? 1 : 0);
+		put('bright', p.bright);
+		put('mode', p.mode);
+		put('std', p.std);
+		put('multi', p.multi && p.multi.join(','));
+		put('night_param', n.param);
+		put('night_from', n.from);
+		put('night_to', n.to);
+		put('color', p.color);
+		lc.pend = null;
+		lc.busy = true;
+		fetchTimed('/api/lamp', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: f.join('&') }, function (r) {
+			return r.text().then(function (t) {
+				return { ok: r.ok, text: t };
+			});
+		})
+			.then(
+				function (a) {
+					var l = a.ok ? parseLamp(parseJson(a.text)) : null;
+					if (l) {
+						lc.conf = l;
+						lc.gen++;
+					} else {
+						lc.pend = lc.want = null;
+						lampErr(!a.ok && a.text ? a.text : T.lcFail);
+					}
+				},
+				function () {
+					lc.pend = lc.want = null;
+					lampErr(T.lcNoAnswer);
+				}
+			)
+			.then(function () {
+				lc.busy = false;
+				if (lc.pend) {
+					lc.want = merge(lc.conf, lc.pend);
+					lampSend();
+				} else {
+					lc.want = null;
+				}
+				render();
+			});
+	}
+
+	// the user changed something: p is a partial lamp
+	function lampSet(p) {
+		if (!lc.conf || state.down) {
+			return;
+		}
+		lampErr('');
+		lc.want = merge(lc.want || lc.conf, p);
+		lc.pend = merge(lc.pend || {}, p);
+		render();
+		lampSend();
+	}
+
+	// an answer of /api/status: it must not overwrite edits the lamp has not confirmed
+	function syncLamp(raw) {
+		var l = parseLamp(raw);
+		if (!l) {
+			lc.conf = lc.want = lc.pend = null;
+		} else if (!lc.conf || (!lc.busy && !lc.pend && !lc.want && lc.live === null)) {
+			lc.conf = l;
+		}
+	}
+
+	var lcEl = { modes: [], chips: [], dots: [], rows: [], cols: [] };
+
+	function lcButton(cls, parent, kids, onClick) {
+		var b = el('button', cls);
+		b.type = 'button';
+		kids.forEach(function (k) {
+			b.appendChild(k);
+		});
+		b.addEventListener('click', onClick);
+		parent.appendChild(b);
+		return b;
+	}
+
+	function lcSelect(parent, onChange) {
+		var s = el('select', 'sel');
+		SEL_KEYS.forEach(function (k) {
+			var o = el('option');
+			o.value = k;
+			s.appendChild(o);
+		});
+		s.addEventListener('change', onChange);
+		parent.appendChild(s);
+		return s;
+	}
+
+	function buildLamp() {
+		var i;
+		byId('lcPower').addEventListener('click', function () {
+			lampSet({ on: !view().on });
+		});
+		var range = byId('lcRange');
+		lcEl.range = range;
+		// preview while dragging, send on release; the slider keeps its value until it is released or left
+		range.addEventListener('input', function () {
+			lc.live = +range.value;
+			render();
+		});
+		range.addEventListener('change', function () {
+			lc.live = null;
+			lampSet({ bright: +range.value });
+		});
+		range.addEventListener('blur', function () {
+			lc.live = null;
+			render();
+		});
+		LAMP_MODES.forEach(function (m) {
+			lcEl.modes.push(lcButton('md', byId('lcModes'), [el('b'), el('span')], function () {
+				lampSet({ mode: m });
+			}));
+		});
+		STD_KEYS.forEach(function (k) {
+			var dot = el('i');
+			lcEl.dots.push(dot);
+			lcEl.chips.push(lcButton('chip', byId('lcChips'), [dot, el('span')], function () {
+				lampSet({ std: k });
+			}));
+		});
+		for (i = 0; i < 3; i++) {
+			var row = el('div', 'mr3');
+			var name = el('div', 'mr-l');
+			var dot3 = el('i');
+			name.appendChild(dot3);
+			name.appendChild(el('span'));
+			row.appendChild(name);
+			var sel = lcSelect(row, function () {
+				lampSet({
+					multi: lcEl.rows.map(function (r) {
+						return r.sel.value;
+					})
+				});
+			});
+			lcEl.rows.push({ dot: dot3, name: name.lastChild, sel: sel });
+			byId('lcMulti').appendChild(row);
+		}
+		var nf = byId('lcNf');
+		var nt = byId('lcNt');
+		lcEl.np = byId('lcNp');
+		SEL_KEYS.forEach(function (k) {
+			var o = el('option');
+			o.value = k;
+			lcEl.np.appendChild(o);
+		});
+		lcEl.np.addEventListener('change', function () {
+			lampSet({ night: { param: lcEl.np.value } });
+		});
+		nf.addEventListener('change', function () {
+			if (nf.value) {
+				lampSet({ night: { from: nf.value } });
+			}
+		});
+		nt.addEventListener('change', function () {
+			if (nt.value) {
+				lampSet({ night: { to: nt.value } });
+			}
+		});
+		LAMP_COLORS.forEach(function (c, n) {
+			var sw = lcButton('cs', byId('lcCols'), [], function () {
+				lampSet({ color: n });
+			});
+			sw.style.background = c;
+			lcEl.cols.push(sw);
+		});
+	}
+
+	function renderLamp(meas) {
+		var v = view();
+		var box = byId('lc');
+		box.hidden = !v;
+		if (!v) {
+			return;
+		}
+		var down = state.down;
+		var lock = down || !v.on;
+		var modeName = T.modes[v.mode][0];
+		box.classList.toggle('down', down);
+		byId('lcDep').classList.toggle('off', !v.on);
+		byId('lcSum').textContent = v.on ? modeName + ' · ' + v.bright + '%' : T.lcOff;
+		var power = byId('lcPower');
+		power.setAttribute('aria-checked', v.on ? 'true' : 'false');
+		power.setAttribute('aria-label', T.lcPower);
+		power.disabled = down;
+		byId('lcBv').textContent = v.bright + '%';
+		lcEl.range.setAttribute('aria-label', T.lcBright);
+		if (lc.live === null) {
+			lcEl.range.value = v.bright;
+		}
+		Array.prototype.forEach.call(byId('lcDep').querySelectorAll('button,input,select'), function (c) {
+			c.disabled = lock;
+		});
+		LAMP_MODES.forEach(function (m, i) {
+			var b = lcEl.modes[i];
+			var noTime = m === 'night' && !v.time && v.mode !== 'night';
+			b.setAttribute('aria-pressed', v.mode === m ? 'true' : 'false');
+			b.disabled = lock || noTime;
+			b.children[0].textContent = T.modes[m][0];
+			b.children[1].textContent = noTime ? T.lcNeeds : T.modes[m][1];
+		});
+		byId('lcStd').hidden = v.mode !== 'standard';
+		byId('lcMulti').hidden = v.mode !== 'multi';
+		byId('lcNight').hidden = v.mode !== 'night';
+		byId('lcLight').hidden = v.mode !== 'light';
+		function setVal(c, value) {
+			if (document.activeElement !== c) {
+				c.value = value;
+			}
+		}
+		function fillOptions(sel) {
+			Array.prototype.forEach.call(sel.options, function (o) {
+				o.textContent = readingName(o.value);
+			});
+		}
+		STD_KEYS.forEach(function (k, i) {
+			lcEl.chips[i].setAttribute('aria-pressed', v.std === k ? 'true' : 'false');
+			lcEl.chips[i].children[1].textContent = readingName(k);
+			lcEl.dots[i].style.background = measColor(meas, k);
+		});
+		lcEl.rows.forEach(function (r, i) {
+			r.name.textContent = T.lcRows[i];
+			r.dot.style.background = measColor(meas, v.multi[i]);
+			fillOptions(r.sel);
+			setVal(r.sel, v.multi[i]);
+		});
+		fillOptions(lcEl.np);
+		setVal(lcEl.np, v.night.param);
+		setVal(byId('lcNf'), v.night.from);
+		setVal(byId('lcNt'), v.night.to);
+		byId('lcCn').textContent = T.colors[v.color];
+		lcEl.cols.forEach(function (b, i) {
+			b.setAttribute('aria-label', T.colors[i]);
+			b.setAttribute('aria-pressed', v.color === i ? 'true' : 'false');
+		});
+		byId('lcNote').textContent = down ? T.lcLock : T.lcLive;
+		byId('lcReply').hidden = !lc.err;
+		byId('lcReplyText').textContent = lc.err;
+	}
+
 	function render() {
 		var d = state.data;
 		var meas = (d && d.meas) || {};
+		renderLamp(meas);
 		renderHeader(d, state.down);
 		renderBanner(d, state.down);
 		renderLast(d);
@@ -896,6 +1370,7 @@
 
 	// one request at a time: the next poll is scheduled before the page is redrawn, so a drawing error cannot stop polling
 	function poll() {
+		var gen = lc.gen;
 		fetchTimed('/api/status', { cache: 'no-store' }, function (r) {
 			if (r.ok) {
 				return r.json().then(function (d) {
@@ -903,6 +1378,10 @@
 						lastAsked = false;
 					}
 					state.data = d;
+					// an answer asked before the last confirmed change still carries the old settings
+					if (gen === lc.gen) {
+						syncLamp(d && d.lamp);
+					}
 					state.down = false;
 					state.err = '';
 					state.lastOk = clock();
@@ -933,6 +1412,7 @@
 
 	buildMatrix();
 	buildTiles();
+	buildLamp();
 	byId('theme').addEventListener('click', toggleTheme);
 	byId('lastClose').addEventListener('click', dismissLast);
 	Array.prototype.forEach.call(document.querySelectorAll('[data-lang]'), function (b) {

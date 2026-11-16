@@ -34,8 +34,8 @@ struct web_picture_state {
 	web_meas_layout layout;
 	web_key standardKey; // standard and night layouts
 	web_key multiKeys[3];
-	uint8_t nightStart;
-	uint8_t nightFinish;
+	uint16_t nightStart;  // minutes since midnight
+	uint16_t nightFinish; // minutes since midnight
 	uint8_t brightPercent;
 	// What the lamp last drew for the current measurement picture (see web_display_state); measDrawn is cleared whenever the layout,
 	// its keys or the source change, because the LEDs keep the previous frame until the lamp draws the new picture
@@ -45,7 +45,7 @@ struct web_picture_state {
 };
 
 // Sets the lamp's starting picture: source none, no effect, no layout, the default effect parameters of the effects handler,
-// multi keys temp / eco2 / pm25, night window 21..9, seq 0. Any task.
+// multi keys temp / eco2 / pm25, night window 21:00 to 09:00, seq 0. Any task.
 void HAQuDA_WebPictureInit(web_picture_state &state, uint8_t brightPercent);
 
 // Changes what the lamp draws. Entering any source but effect stops the effect (effect becomes none); entering error remembers
@@ -76,8 +76,8 @@ bool HAQuDA_WebPictureSetStandardKey(web_picture_state &state, web_key key, uint
 // The three parameters of the multi layout. A change counts only while the source is meas and the layout is multi. Any task.
 bool HAQuDA_WebPictureSetMultiKeys(web_picture_state &state, const web_key keys[3], uint32_t nowMs);
 
-// The night window (hours 0..23). A change counts only while the source is meas and the layout is night. Any task.
-bool HAQuDA_WebPictureSetNightWindow(web_picture_state &state, uint8_t start, uint8_t finish, uint32_t nowMs);
+// The night window (minutes since midnight). A change counts only while the source is meas and the layout is night. Any task.
+bool HAQuDA_WebPictureSetNightWindow(web_picture_state &state, uint16_t start, uint16_t finish, uint32_t nowMs);
 
 // The lamp drew a measurement picture of `layout` with these full-scale 0xRRGGBB colours (the caller zeroes the ones the layout
 // does not use). Ignored (false, nothing stored) unless the source is meas and `layout` is the current layout: the draw belongs
@@ -91,6 +91,7 @@ bool HAQuDA_WebPictureCheckError(web_picture_state &state, web_error currentErro
 
 // Fills `out` for the translator from `state`: seq, age (nowMs - startMs, unsigned, survives the millis() wrap), source, brightness,
 // the effect with its parameters (source effect) or the error kind (source error, the caller sets the error's effect from its own
-// parameters), the layout with its keys, the night hour and the drawn colours (source meas). A layout with a missing key becomes none. hourKnown false
-// gives night hour 0, as the lamp does without a time. Any task.
-void HAQuDA_WebPictureBuild(const web_picture_state &state, web_error currentError, bool hourKnown, uint8_t hour, uint32_t nowMs, web_display_state &out);
+// parameters), the layout with its keys, the lit night light cells (HAQuDA_NightLitCells() at minuteOfDay) and the drawn colours
+// (source meas). A layout with a missing key becomes none. timeKnown false gives no lit cells, as the lamp does without a time. Any task.
+void HAQuDA_WebPictureBuild(const web_picture_state &state, web_error currentError, bool timeKnown, uint16_t minuteOfDay, uint32_t nowMs,
+							web_display_state &out);

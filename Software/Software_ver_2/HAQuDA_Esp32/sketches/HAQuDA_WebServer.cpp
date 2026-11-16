@@ -11,8 +11,8 @@
 #include <cstdio>
 #include <cstring>
 
-// The escaped network name adds up to JSON_ESCAPED_SSID_LEN
-constexpr size_t STATUS_JSON_LEN = 768;
+// The escaped network name adds up to JSON_ESCAPED_SSID_LEN, the lamp block up to LAMP_JSON_BUF_LEN
+constexpr size_t STATUS_JSON_LEN = 1024;
 constexpr size_t WIFI_LIST_JSON_LEN = 2048;
 // A SSID byte is escaped to at most 6 characters (\u00XX)
 constexpr size_t JSON_ESCAPED_SSID_LEN = WIFI_SSID_LEN * 6 + 1;
@@ -401,7 +401,16 @@ void HAQuDA_WebServer::handleStatus(AsyncWebServerRequest *request) {
 			fits = fits && appendFormat(buf, sizeof(buf), pos, "%s\"%s\":null", separator, PARAM_KEYS[i]);
 		}
 	}
-	fits = fits && appendFormat(buf, sizeof(buf), pos, "}}");
+	fits = fits && appendFormat(buf, sizeof(buf), pos, "}");
+
+	// The page hides its lamp card when the block is missing, so a failure here costs the card, not the status
+	char lampJson[LAMP_JSON_BUF_LEN];
+	if (lampControl.BuildJson(lampJson, sizeof(lampJson)) != 0) {
+		fits = fits && appendFormat(buf, sizeof(buf), pos, ",\"lamp\":%s", lampJson);
+	} else {
+		postLogError("handleStatus: lamp buffer too small");
+	}
+	fits = fits && appendFormat(buf, sizeof(buf), pos, "}");
 
 	if (!fits) {
 		postLogError("handleStatus: status buffer too small");
@@ -417,6 +426,33 @@ void HAQuDA_WebServer::handleDisp(AsyncWebServerRequest *request) {
 	char buf[WEB_DISPLAY_JSON_BUF_LEN];
 	if (webDisp.BuildJson(buf, sizeof(buf)) == 0) {
 		postLogError("handleDisp: picture buffer too small");
+		sendText(request, 500, "Status unavailable.");
+		return;
+	}
+	AsyncWebServerResponse *response = request->beginResponse(200, "application/json", buf);
+	response->addHeader("Cache-Control", "no-store");
+	request->send(response);
+}
+
+void HAQuDA_WebServer::handleLampUpdate(AsyncWebServerRequest *request) {
+	// The form fields of HAQuDA_LampSettings.h, in the order of lamp_request
+	static const char *const FIELD_NAMES[] = {"on", "bright", "mode", "std", "multi", "night_param", "night_from", "night_to", "color"};
+	constexpr size_t FIELD_NUM = sizeof(FIELD_NAMES) / sizeof(FIELD_NAMES[0]);
+	const char *values[FIELD_NUM] = {nullptr};
+	for (size_t i = 0; i < FIELD_NUM; i++) {
+		AsyncWebParameter *param = request->getParam(FIELD_NAMES[i], true);
+		values[i] = (param != nullptr) ? param->value().c_str() : nullptr;
+	}
+	const lamp_request lampRequest = {values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8]};
+
+	const lamp_update_result result = lampControl.Submit(lampRequest);
+	if (result != lamp_update_result::ok) {
+		sendText(request, (result == lamp_update_result::night_needs_time) ? 409 : 400, HAQuDA_LampUpdateText(result));
+		return;
+	}
+	char buf[LAMP_JSON_BUF_LEN];
+	if (lampControl.BuildJson(buf, sizeof(buf)) == 0) {
+		postLogError("handleLampUpdate: lamp buffer too small");
 		sendText(request, 500, "Status unavailable.");
 		return;
 	}
@@ -508,6 +544,7 @@ void HAQuDA_WebServer::WebServerResponds_init() {
 
 	server.on("/api/status", HTTP_GET, [this](AsyncWebServerRequest *request) { handleStatus(request); });
 	server.on("/api/disp", HTTP_GET, [this](AsyncWebServerRequest *request) { handleDisp(request); });
+	server.on("/api/lamp", HTTP_POST, [this](AsyncWebServerRequest *request) { handleLampUpdate(request); });
 	server.on("/api/wifi", HTTP_GET, [this](AsyncWebServerRequest *request) { handleWiFiList(request); });
 	server.on("/api/boot", HTTP_GET, [this](AsyncWebServerRequest *request) { handleBoot(request); });
 	server.on("/api/join", HTTP_GET, [this](AsyncWebServerRequest *request) { handleJoin(request); });

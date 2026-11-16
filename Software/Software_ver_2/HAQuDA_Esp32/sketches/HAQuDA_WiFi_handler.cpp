@@ -26,8 +26,8 @@ const char *DDNS_domain = DDNS_DOMAIN;
 static HAQuDA_DisplayManip *dispManip;
 
 HAQuDA_WiFi_handler::HAQuDA_WiFi_handler(HAQuDA_FileStorage *currFS, HAQuDA_DisplayManip *_dispManip, const HAQuDA_MeasSnapshot &snapshot,
-										 HAQuDA_WebPageDisplayManip &webDispIn)
-	: HAQuDA_WebServer(currFS, snapshot, webDispIn) {
+										 HAQuDA_WebPageDisplayManip &webDispIn, HAQuDA_LampControl &lampControlIn)
+	: HAQuDA_WebServer(currFS, snapshot, webDispIn, lampControlIn) {
 	dispManip = _dispManip;
 };
 
@@ -144,14 +144,10 @@ void HAQuDA_WiFi_handler::HandleConnection() {
 	}
 
 	showJoinedWiFi();
-	// An effect call leaves the meas display mode stored in MeasHandler untouched, so it is still the mode that ran
-	// before the disconnect (none only if measurements never started: then SetMeasMode() is skipped). While an error is
-	// shown, SetMode() refuses to leave the error mode, so the error display stays.
-	// Without this the matrix stays dark after the green flash.
-	const meas_mode prevMeasMode = dispManip->GetMeasDispMode();
-	if (prevMeasMode != noneMeas) {
-		HAQuDA_DisplayManip::SetMeasMode(prevMeasMode);
-	}
+	// The red picture, the snake and the green flash replaced what the user chose (power, brightness, mode, lamp light colour):
+	// without this the matrix stays dark. While an error is shown, SetMode() refuses to leave the error mode, so the error
+	// display stays.
+	lampControl.Apply();
 }
 
 void HAQuDA_WiFi_handler::showJoinedWiFi() {

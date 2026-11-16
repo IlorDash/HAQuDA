@@ -7,6 +7,7 @@
 #include "HAQuDA_EffectsHandler.h"
 #include "HAQuDA_ErrorHandler.h"
 #include "HAQuDA_WebPageDisplayManip.h"
+#include "HAQuDA_LampControl.h"
 
 #include "HAQuDA_FileStorage.h"
 #include "HAQuDA_Logger.h"
@@ -29,7 +30,8 @@ HAQuDA_MeasSnapshot MeasSnapshot;
 HAQuDA_WebPageDisplayManip WebDisp;
 HAQuDA_MeasHandler MeasHandler(&ErrHandler, MeasSnapshot, WebDisp);
 HAQuDA_DisplayManip DispManip(&MeasHandler, &EffectsHandler, &ErrHandler, &WebDisp);
-HAQuDA_WiFi_handler WiFiHandler(&FileStorage, &DispManip, MeasSnapshot, WebDisp);
+HAQuDA_LampControl LampControl(DispManip);
+HAQuDA_WiFi_handler WiFiHandler(&FileStorage, &DispManip, MeasSnapshot, WebDisp, LampControl);
 
 int meas_start_time = 0;
 int builtin_blink_start_time = 0;
@@ -74,6 +76,8 @@ void setup() {
 	}
 	HAQuDA_Logger::PrepareLogsFile();
 	HAQuDA_Logger::LogInfo("Started File system");
+	// Before the web server starts: the page reads the settings from it
+	LampControl.Load();
 
 	if (!WiFiHandler.Connect()) {
 		DispManip.SetMode(error);
@@ -122,12 +126,11 @@ void leaveSensorsError() {
 
 void enableMeasurements() {
 	sensorsRunning = true;
-	// A mode picked on the web page while the error was shown is kept. The mode is none only if nothing set one before
-	// boot (the constructor default), so none falls back to multi.
-	const meas_mode selectedMode = DispManip.GetMeasDispMode();
-	// Before the first log line: while NTP has never synced every log line sets the NTP error, and SetMode() refuses to leave
-	// the error mode while an error is set. Once the mode is meas, later log lines only set a stale error that nothing draws.
-	HAQuDA_DisplayManip::SetMeasMode((selectedMode == noneMeas) ? multi : selectedMode);
+	// The user's picture: what was saved in /lamp, or changed on the web page while the error was shown (the defaults
+	// otherwise: multi mode). Before the first log line: while NTP has never synced every log line sets the NTP error, and
+	// SetMode() refuses to leave the error mode while an error is set. Once the mode is meas, later log lines only set a stale
+	// error that nothing draws.
+	LampControl.Apply();
 	meas_start_time = 0;
 	HAQuDA_Logger::LogInfo("Started sensors");
 }
@@ -151,7 +154,8 @@ void loop() {
 	WiFiHandler.HandleConnection();
 	retrySensorsStart();
 	MeasHandler.UpdateMeas(&meas_start_time);
-	WebDisp.RefreshHour();
+	WebDisp.RefreshTime();
+	LampControl.Handle();
 	HAQuDA_Logger::FlushExpiredRepeats();
 	if ((millis() - builtin_blink_start_time) > BUILTIN_LED_PERIOD) {
 		digitalWrite(BUILTIN_LED, !digitalRead(BUILTIN_LED));

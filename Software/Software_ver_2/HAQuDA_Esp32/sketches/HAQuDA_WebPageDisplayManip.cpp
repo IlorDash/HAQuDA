@@ -209,9 +209,9 @@ void HAQuDA_WebPageDisplayManip::SetEffectParam(const uint32_t p) {
 	HAQuDA_WebPictureSetStaticColor(picture, p, millis());
 }
 
-void HAQuDA_WebPageDisplayManip::RefreshHour() {
-	uint8_t hour = 0;
-	hourNow.store(HAQuDA_TimeService::GetCachedHour(&hour) ? hour : HOUR_UNKNOWN);
+void HAQuDA_WebPageDisplayManip::RefreshTime() {
+	uint16_t minuteOfDay = 0;
+	minuteNow.store(HAQuDA_TimeService::GetCachedMinuteOfDay(&minuteOfDay) ? minuteOfDay : MINUTE_UNKNOWN);
 }
 
 void HAQuDA_WebPageDisplayManip::fillErrorEffect(error_type kind, web_display_state &state) const {
@@ -256,9 +256,9 @@ size_t HAQuDA_WebPageDisplayManip::BuildJson(char *buf, size_t size) {
 		copy = picture;
 	}
 
-	const uint8_t hour = hourNow.load();
+	const uint16_t minuteOfDay = minuteNow.load();
 	web_display_state state;
-	HAQuDA_WebPictureBuild(copy, toError(currentError), hour != HOUR_UNKNOWN, hour, nowMs, state);
+	HAQuDA_WebPictureBuild(copy, toError(currentError), minuteOfDay != MINUTE_UNKNOWN, minuteOfDay, nowMs, state);
 	if (state.source == web_source::error) {
 		fillErrorEffect(currentError, state);
 	}

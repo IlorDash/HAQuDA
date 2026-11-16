@@ -22,9 +22,10 @@ typedef struct {
 	div_dots divideDotsArr[MULTI_MODE_PARAM_NUM];
 } multi_mode_params;
 
+// The night window, minutes since midnight (it may cross midnight)
 typedef struct {
-	uint8_t start;
-	uint8_t finish;
+	uint16_t start;
+	uint16_t finish;
 } night_time;
 
 typedef struct {
@@ -55,14 +56,19 @@ class HAQuDA_MeasHandler {
 
 	static void checkMeasCorrect(pm_meas_result pmResult);
 	static meas_type checkBadMeas();
-	static uint8_t get_nightMode_hour(night_time timeBorder);
-	static void standardMode();
-	static void multiMode(multi_mode_params multiModeParams);
-	static void nightMode();
+	// The mode functions return false when they could not draw because the shown reading has no sample yet (Show() then tries
+	// again on its next pass), true when they drew or never will
+	static bool standardMode();
+	// Standard mode with the overall reading: the first reading out of its range, else the average colour of all of them
+	static bool totalMode();
+	static bool multiMode(multi_mode_params multiModeParams);
+	static bool nightMode();
 	static void showMeas_multi(float *data, uint8_t dataSize, div_dots *divideDots, uint8_t divideDotsSize);
-	static void showMeas_total(float *data, uint8_t dataSize, div_dots *dataDivideDots, uint8_t divideDotsSize);
 	static void showMeas_standard(float data, div_dots divideDots);
-	static void showMeas_night(float data, div_dots divideDots, uint8_t time);
+	// Fills the whole matrix with one colour and reports it to the web mirror. ShowTask only.
+	static void drawSolid(const rgb_color &color);
+	// litCells: night light cells on (HAQuDA_NightLitCells()), 0 when the time is unknown
+	static void showMeas_night(float data, div_dots divideDots, uint8_t litCells);
 
   public:
 	// snapshot receives the latest averages for the web page and webDisp the colours the lamp draws; both must outlive the handler.

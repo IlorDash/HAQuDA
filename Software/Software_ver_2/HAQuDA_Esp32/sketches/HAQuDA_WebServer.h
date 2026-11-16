@@ -12,6 +12,7 @@
 #include "HAQuDA_WiFiJoin.h"
 #include "HAQuDA_JoinLast.h"
 #include "HAQuDA_WebPageDisplayManip.h"
+#include "HAQuDA_LampControl.h"
 
 #define SSID_PARAM_NAME "ssid"
 #define PASS_PARAM_NAME "pass"
@@ -37,6 +38,8 @@ class HAQuDA_WebServer {
 	const HAQuDA_MeasSnapshot &measSnapshot;
 	// The picture the lamp shows, for /api/disp
 	HAQuDA_WebPageDisplayManip &webDisp;
+	// What the user set for the lamp: POST /api/lamp submits to it, /api/status reports it, loop() applies it
+	HAQuDA_LampControl &lampControl;
 	// Written by loop() only (scheduleRestart(), from finishJoinOk / finishSwitchOk / finishSwitchFail), read by loop() and
 	// the async_tcp task. The time and the delay are stored before the flag, so they are read only while the flag is set.
 	std::atomic<bool> restartPending{false};
@@ -99,8 +102,8 @@ class HAQuDA_WebServer {
 
 	void beginWebServer();
 
-	HAQuDA_WebServer(HAQuDA_FileStorage *curr_FS, const HAQuDA_MeasSnapshot &snapshot, HAQuDA_WebPageDisplayManip &webDispIn)
-		: _myFS(curr_FS), measSnapshot(snapshot), webDisp(webDispIn) {};
+	HAQuDA_WebServer(HAQuDA_FileStorage *curr_FS, const HAQuDA_MeasSnapshot &snapshot, HAQuDA_WebPageDisplayManip &webDispIn, HAQuDA_LampControl &lampControlIn)
+		: _myFS(curr_FS), measSnapshot(snapshot), webDisp(webDispIn), lampControl(lampControlIn) {};
 	~HAQuDA_WebServer();
 
 	TWiFiCreds GetStored_WiFi(int num);
@@ -114,6 +117,10 @@ class HAQuDA_WebServer {
 	void handleStatus(AsyncWebServerRequest *request);
 	// JSON of the picture the lamp shows (effect, error or measurement layout), polled by the page
 	void handleDisp(AsyncWebServerRequest *request);
+	// Partial update of the lamp's power, brightness and modes (form fields, see HAQuDA_LampSettings.h). 200 with the new lamp
+	// block, 400 with the reason, 409 when the night mode needs a time the lamp does not have yet. Only sets the requested state:
+	// loop() puts it on the display and writes the flash.
+	void handleLampUpdate(AsyncWebServerRequest *request);
 	void handleWiFiList(AsyncWebServerRequest *request);
 	void handleJoin(AsyncWebServerRequest *request);
 	void handleJoinDismiss(AsyncWebServerRequest *request);

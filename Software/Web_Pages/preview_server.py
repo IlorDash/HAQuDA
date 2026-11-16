@@ -4,7 +4,7 @@
 Run from any directory:  py -3 Software/Web_Pages/preview_server.py
                          [--scenario normal|bad-air|sensor-fail|ap|sta-offline|errors|join-ok|join-wrong-pass|join-no-network|
                                      sta-switch-ok|sta-switch-wrong-pass|sta-switch-no-network|
-                                     disp-effects|disp-errors|disp-night]
+                                     disp-effects|disp-errors|disp-night|lamp-refuses|no-lamp]
                          [--host 127.0.0.1] [--port 8080] [--latency MS] [--no-browser]
 
 The page sources next to this script are read from disk on every request (Cache-Control: no-store), so saving a file
@@ -32,6 +32,15 @@ night layout with the white part of the bar growing every 4 s. The measurement p
 current mock values of their keys) and, for night, "whiteColor" (the grey the lamp draws at the mock brightness). In the cycling scenarios seq rises and age restarts at each
 change; elsewhere seq stays 1 and age counts from the start of the server. The disp-* scenarios otherwise answer like a
 station mode lamp.
+
+/api/status carries the "lamp" block (power, brightness, mode and its parameters, "time" and the clock "now") and POST /api/lamp
+changes it like the firmware does: form fields on, bright, mode, std, multi, night_param, night_from, night_to, color, all or
+nothing, the new block as the reply, a plain-text 400 (409 for the night mode without a time) otherwise. The settings live in the
+script's memory. The night mode needs the time from the internet, so the access point scenarios report "time":false and refuse it;
+the others report this PC's clock. Scenario lamp-refuses answers every POST /api/lamp with a 400 (the page then shows the lamp's
+text and returns to the confirmed settings), no-lamp leaves the block out like a lamp without the control (the card is hidden). The
+picture of /api/disp follows the settings: measurements for the standard, multi and night modes, a static colour for the lamp light
+and for power off. Scenario "errors" answers POST /api/lamp with the 500 reply.
 
 Not reproduced: gzip, the ?v= asset
 versions (the query is ignored), the restart after saving a network in the access point scenarios (the reply text is sent,
@@ -61,7 +70,8 @@ ASSETS = {
 }
 
 SCENARIOS = ["normal", "bad-air", "sensor-fail", "ap", "sta-offline", "errors", "join-ok", "join-wrong-pass", "join-no-network",
-             "sta-switch-ok", "sta-switch-wrong-pass", "sta-switch-no-network", "disp-effects", "disp-errors", "disp-night"]
+             "sta-switch-ok", "sta-switch-wrong-pass", "sta-switch-no-network", "disp-effects", "disp-errors", "disp-night",
+             "lamp-refuses", "no-lamp"]
 # Scenarios in which the lamp runs as an access point: a new network is checked before it is saved
 AP_SCENARIOS = {"ap", "join-ok", "join-wrong-pass", "join-no-network"}
 # How long the mock check runs before it reports its result (the lamp takes up to 20 s)
@@ -221,13 +231,112 @@ def night_white_color(bright_percent):
     return "#{0:02x}{0:02x}{0:02x}".format(channel * 255 // 150)
 
 
-def fx_meas(layout, keys, colors, white=None):
-    """colors: the colours the lamp drew, one per key (multi) or one (standard, night); white: page rows of the night bar."""
+def fx_meas(layout, keys, colors, lit=None, bright=DISP_BRIGHT):
+    """colors: the colours the lamp drew, one per key (multi) or one (standard, night); lit: cells of the night light on (0..18)."""
     picture = {"fx": "meas", "layout": layout, "keys": keys, "colors": colors}
-    if white is not None:
-        picture["white"] = white
-        picture["whiteColor"] = night_white_color(DISP_BRIGHT)
+    if lit is not None:
+        picture["lit"] = lit
+        picture["whiteColor"] = night_white_color(bright)
     return picture
+
+
+# The lamp card (HAQuDA_LampSettings.cpp): the keys, the modes and the replies of POST /api/lamp
+LAMP_PARAMS = ["total", "temp", "humid", "eco2", "tvoc", "pm25"]
+LAMP_MODES = ["standard", "multi", "night", "light"]
+LAMP_COLORS = ["#ffcf8f", "#fff1dc", "#dce9ff", "#ff9f43", "#8f8cff", "#36c9b8"]
+LAMP_MAX_FIELD_LEN = 32
+NIGHT_CELLS = 18
+MINUTES_PER_DAY = 24 * 60
+LAMP_DEFAULTS = {"on": True, "bright": 35, "mode": "multi", "multi": ["pm25", "eco2", "temp"], "std": "total",
+                 "night": {"param": "eco2", "from": "21:00", "to": "09:00"}, "color": 0}
+LAMP_TEXTS = {
+    "nothing": "Nothing to change.",
+    "on": "Power must be 1 or 0.",
+    "bright": "Brightness must be 5 to 100 in steps of 5.",
+    "mode": "Unknown mode.",
+    "std": "Unknown reading for the standard mode.",
+    "multi": "The multi mode needs three readings, top to bottom, separated by commas.",
+    "night_param": "Unknown reading for the night mode.",
+    "time": "The night time must look like 21:30.",
+    "color": "The colour must be 0 to 5.",
+    "window": "The night light must start and end at different times.",
+    "needs_time": "The night mode needs the time from the internet.",
+}
+
+
+def parse_clock(text):
+    """'HH:MM' to minutes since midnight, None when it is not one (the firmware takes exactly two digits and two digits)."""
+    if len(text) != 5 or text[2] != ":" or not (text[:2] + text[3:]).isdigit() or not (text[:2] + text[3:]).isascii():
+        return None
+    hours, minutes = int(text[:2]), int(text[3:])
+    return hours * 60 + minutes if hours < 24 and minutes < 60 else None
+
+
+def night_lit(night, now_min):
+    """Cells of the night light on at now_min, the rule of HAQuDA_NightLitCells: ceil(18 * elapsed / span), all outside the window."""
+    start, end = parse_clock(night["from"]), parse_clock(night["to"])
+    span = (end - start) % MINUTES_PER_DAY
+    elapsed = (now_min - start) % MINUTES_PER_DAY
+    if span == 0 or elapsed >= span:
+        return NIGHT_CELLS
+    return max(1, -(-NIGHT_CELLS * elapsed // span))
+
+
+def lamp_update(lamp, form, time_known):
+    """Applies the form fields to a copy of the lamp like HAQuDA_LampUpdate: all or nothing.
+
+    Returns (None, new lamp) or (error key of LAMP_TEXTS, None).
+    """
+    fields = ["on", "bright", "mode", "std", "multi", "night_param", "night_from", "night_to", "color"]
+    bad_key = {"on": "on", "bright": "bright", "mode": "mode", "std": "std", "multi": "multi", "night_param": "night_param",
+               "night_from": "time", "night_to": "time", "color": "color"}
+    for name in fields:
+        if name in form and len(form[name]) > LAMP_MAX_FIELD_LEN:
+            return bad_key[name], None
+    if not any(name in form for name in fields):
+        return "nothing", None
+    new = json.loads(json.dumps(lamp))
+    if "on" in form:
+        if form["on"] not in ("0", "1"):
+            return "on", None
+        new["on"] = form["on"] == "1"
+    if "bright" in form:
+        text = form["bright"]
+        if not (text.isascii() and text.isdigit() and len(text) <= 3 and 5 <= int(text) <= 100 and int(text) % 5 == 0):
+            return "bright", None
+        new["bright"] = int(text)
+    if "mode" in form:
+        if form["mode"] not in LAMP_MODES:
+            return "mode", None
+        if form["mode"] == "night" and not time_known:
+            return "needs_time", None
+        new["mode"] = form["mode"]
+    if "std" in form:
+        if form["std"] not in LAMP_PARAMS:
+            return "std", None
+        new["std"] = form["std"]
+    if "multi" in form:
+        keys = form["multi"].split(",")
+        if len(keys) != 3 or any(key not in LAMP_PARAMS[1:] for key in keys):
+            return "multi", None
+        new["multi"] = keys
+    if "night_param" in form:
+        if form["night_param"] not in LAMP_PARAMS[1:]:
+            return "night_param", None
+        new["night"]["param"] = form["night_param"]
+    for name, key in (("night_from", "from"), ("night_to", "to")):
+        if name in form:
+            if parse_clock(form[name]) is None:
+                return "time", None
+            new["night"][key] = form[name]
+    if new["night"]["from"] == new["night"]["to"]:
+        return "window", None
+    if "color" in form:
+        text = form["color"]
+        if not (text.isascii() and text.isdigit() and len(text) <= 3 and int(text) < len(LAMP_COLORS)):
+            return "color", None
+        new["color"] = int(text)
+    return None, new
 
 
 # The effect the lamp runs in access point mode (aqua fading) and while it reconnects (lime snake), the defaults of the lamp
@@ -273,6 +382,36 @@ class MockLamp:
         self.switch = None
         self.last = None
         self.restarted_at = None
+        # What the user set on the lamp card
+        self.lamp = json.loads(json.dumps(LAMP_DEFAULTS))
+
+    def lamp_time_known(self):
+        """The lamp knows the time only when it has the internet, that is outside the access point scenarios."""
+        return self.scenario not in AP_SCENARIOS
+
+    def lamp_block(self):
+        """The 'lamp' block of /api/status as the firmware writes it (HAQuDA_BuildLampJson). The caller holds the lock."""
+        lamp = self.lamp
+        known = self.lamp_time_known()
+        block = {"on": lamp["on"], "bright": lamp["bright"], "mode": lamp["mode"], "multi": lamp["multi"], "std": lamp["std"],
+                 "night": lamp["night"], "color": lamp["color"], "time": known}
+        if known:
+            now = time.localtime()
+            block["now"] = "{0:02d}:{1:02d}".format(now.tm_hour, now.tm_min)
+        return json.dumps(block, separators=(",", ":"))
+
+    def update_lamp(self, form):
+        """POST /api/lamp. Returns (status code, content type, body) like HAQuDA_WebServer::handleLampUpdate."""
+        with self.lock:
+            if self.scenario == "errors":
+                return 500, "text/plain", STATUS_FAIL_TEXT
+            if self.scenario == "lamp-refuses":
+                return 400, "text/plain", LAMP_TEXTS["bright"]
+            error, new = lamp_update(self.lamp, form, self.lamp_time_known())
+            if error is not None:
+                return (409 if error == "needs_time" else 400), "text/plain", LAMP_TEXTS[error]
+            self.lamp = new
+            return 200, "application/json", self.lamp_block()
 
     def place_first(self, ssid):
         """Saves a passed network like the firmware: first in the list, a stored one of the same name replaced, the last one
@@ -370,8 +509,9 @@ class MockLamp:
                 ip = "192.168.1.50" if connected else "0.0.0.0"
             # The lamp sends the joined network's name in station mode and null otherwise
             ssid = json.dumps(self.current_ssid, ensure_ascii=False) if station and connected else "null"
-            return 200, '{{"fw":"{0}","mode":"{1}","ssid":{2},"ip":"{3}","uptime":{4},"rssi":{5},"meas":{{{6}}}}}'.format(
-                FW_VERSION, "sta" if station else "ap", ssid, ip, uptime, rssi, ",".join(parts)
+            lamp = "" if self.scenario == "no-lamp" else ',"lamp":' + self.lamp_block()
+            return 200, '{{"fw":"{0}","mode":"{1}","ssid":{2},"ip":"{3}","uptime":{4},"rssi":{5},"meas":{{{6}}}{7}}}'.format(
+                FW_VERSION, "sta" if station else "ap", ssid, ip, uptime, rssi, ",".join(parts), lamp
             )
 
     def drawn_colors(self, keys):
@@ -379,6 +519,34 @@ class MockLamp:
         dots = {name: dot_set for name, _, dot_set, _, _, _ in PARAMS}
         with self.lock:
             return [scale_color(self.values[key], dots[key]) for key in keys]
+
+    def total_color(self):
+        """The colour of the reading farthest from the middle of its scale, the mock's stand-in for the lamp's overall reading."""
+        with self.lock:
+            worst = max(PARAMS, key=lambda p: abs(self.values[p[0]] - p[2][1]) / (p[2][2] - p[2][0]))
+            return scale_color(self.values[worst[0]], worst[2])
+
+    def lamp_picture(self):
+        """The picture of the lamp card's settings and its source: (picture, source), like what the lamp draws for them."""
+        with self.lock:
+            lamp = json.loads(json.dumps(self.lamp))
+        if not lamp["on"]:
+            return fx_static("#000000"), "effect"
+        if lamp["mode"] == "light":
+            return fx_static(LAMP_COLORS[lamp["color"]]), "effect"
+
+        def colors(keys):
+            return [self.total_color() if key == "total" else self.drawn_colors([key])[0] for key in keys]
+
+        if lamp["mode"] == "standard":
+            return fx_meas("standard", [lamp["std"]], colors([lamp["std"]])), "meas"
+        if lamp["mode"] == "multi":
+            # The lamp counts the bands from its bottom end, the page lists them from the top
+            keys = list(reversed(lamp["multi"]))
+            return fx_meas("multi", keys, colors(keys)), "meas"
+        now = time.localtime()
+        lit = night_lit(lamp["night"], now.tm_hour * 60 + now.tm_min) if self.lamp_time_known() else 0
+        return fx_meas("night", [lamp["night"]["param"]], colors([lamp["night"]["param"]]), lit, lamp["bright"]), "meas"
 
     def disp_json(self):
         """Returns (status code, body): the picture the lamp shows, like /api/disp of the firmware."""
@@ -395,10 +563,9 @@ class MockLamp:
             error, picture = DISP_ERRORS[int(seq) % len(DISP_ERRORS)]
             source = "error"
         elif self.scenario == "disp-night":
-            # The hour into the night window runs 0..12, 12 fills the bar
+            # The night light fills up cell by cell, 0..18
             seq, age_s = divmod(elapsed_s, DISP_NIGHT_SLOT_S)
-            hour = int(seq) % 13
-            picture = fx_meas("night", ["temp"], self.drawn_colors(["temp"]), (hour * PAGE_ROWS + 11) // 12)
+            picture = fx_meas("night", ["temp"], self.drawn_colors(["temp"]), int(seq) % (NIGHT_CELLS + 1))
             source = "meas"
         else:
             seq, age_s = 0, elapsed_s
@@ -409,12 +576,15 @@ class MockLamp:
             elif self.scenario == "sensor-fail":
                 error, picture = DISP_ERRORS[3]
                 source = "error"
-            else:
+            elif self.scenario == "no-lamp":
                 picture, source = fx_meas("multi", DISP_MULTI_KEYS, self.drawn_colors(DISP_MULTI_KEYS)), "meas"
+            else:
+                picture, source = self.lamp_picture()
         body = {"seq": int(seq) + 1, "age": int(age_s * 1000), "src": source}
         if error is not None:
             body["err"] = error
-        body["bright"] = DISP_BRIGHT
+        with self.lock:
+            body["bright"] = self.lamp["bright"]
         body.update(picture)
         return 200, json.dumps(body, separators=(",", ":"))
 
@@ -609,6 +779,13 @@ class PreviewHandler(BaseHTTPRequestHandler):
         elif path == "/delete_wifi_creds":
             code, text = self.lamp.delete_networks()
             self.send_body(code, "text/plain", text)
+        elif path == "/api/lamp":
+            form = self.read_form()
+            if form is None:
+                self.send_body(413, "text/plain", "The request is too large.")
+                return
+            code, content_type, body = self.lamp.update_lamp(form)
+            self.send_body(code, content_type, body)
         else:
             self.send_not_found()
 
@@ -629,7 +806,8 @@ def main():
                              "sta-switch-ok, sta-switch-wrong-pass, sta-switch-no-network (station mode: the lamp scans, "
                              "leaves its network for about 10 s and comes back with the outcome; no-network fails at the scan); "
                              "disp-effects, disp-errors, disp-night (the picture of /api/disp cycles through the effects, "
-                             "the error effects, the night bar)")
+                             "the error effects, the night light); "
+                             "lamp-refuses (POST /api/lamp answers 400), no-lamp (no lamp block: the card is hidden)")
     parser.add_argument("--host", default="127.0.0.1", help="address to bind (default 127.0.0.1)")
     parser.add_argument("--port", type=int, default=8080, help="port to listen on (default 8080)")
     parser.add_argument("--latency", type=int, default=0, metavar="MS", help="delay every answer by MS milliseconds")
