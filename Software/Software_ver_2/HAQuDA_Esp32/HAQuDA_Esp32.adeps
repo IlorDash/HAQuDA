@@ -36,6 +36,14 @@
     <Dependency>
       <Type>Library</Type>
       <Key>
+        <Packager>Michael C. Miller (makuna@live.com)</Packager>
+        <Name>NeoPixelBus by Makuna</Name>
+        <Version>2.7.9</Version>
+      </Key>
+    </Dependency>
+    <Dependency>
+      <Type>Library</Type>
+      <Key>
         <Packager>Dirk Kaar, Peter Lerup</Packager>
         <Name>EspSoftwareSerial</Name>
         <Version>8.1.0</Version>

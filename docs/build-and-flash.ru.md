@@ -29,9 +29,9 @@
 
 ## Получите исходники
 
-1. Клонируйте репозиторий вместе с подмодулями `Libs/NTPClient` и `Libs/WebSerial`. В Visual Studio
+1. Клонируйте репозиторий вместе с подмодулями `Libs/NTPClient`, `Libs/WebSerial` и `Libs/NeoPixelBus`. В Visual Studio
    нет команды для подмодулей; в терминале выполните `git clone --recurse-submodules` с адресом
-   репозитория или `git submodule update --init` в уже клонированной копии.
+   репозитория или `git submodule update --init --recursive` в уже клонированной копии.
 2. Откройте `Software/Software_ver_2/HAQuDA_Esp32/HAQuDA_Esp32.sln` в Visual Studio.
 
 ---

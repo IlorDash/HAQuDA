@@ -29,9 +29,9 @@ the USB cable. This page describes the steps for firmware {{ app_version }}.
 
 ## Get the sources
 
-1. Clone the repository with its submodules `Libs/NTPClient` and `Libs/WebSerial`. Visual Studio
+1. Clone the repository with its submodules `Libs/NTPClient`, `Libs/WebSerial` and `Libs/NeoPixelBus`. Visual Studio
    has no command for submodules; in a terminal, run `git clone --recurse-submodules` with the
-   repository address, or `git submodule update --init` in an existing clone.
+   repository address, or `git submodule update --init --recursive` in an existing clone.
 2. Open `Software/Software_ver_2/HAQuDA_Esp32/HAQuDA_Esp32.sln` in Visual Studio.
 
 ---
