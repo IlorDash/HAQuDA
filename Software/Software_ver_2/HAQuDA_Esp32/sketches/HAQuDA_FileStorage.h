@@ -43,9 +43,9 @@ typedef struct {
 	float O3_log;
 } TMeasLog;
 
-// Every function that touches SPIFFS holds the flash lock (HAQuDA_FlashLock.h) for its duration: a flash access stops the
-// cache on both cores, which would corrupt an LED frame being sent. Callers: loop (logger, WiFi credentials), async_tcp
-// (web handlers), setup. Not for ShowTask or ISRs; the functions may wait up to 100 ms for a running LED frame.
+// Every function that touches SPIFFS holds the flash lock (HAQuDA_FlashLock.h) for its duration, so file operations of
+// different tasks never overlap. The LED frame no longer needs it (it is sent by DMA). Callers: loop (logger, WiFi
+// credentials), async_tcp (web handlers), setup. Not for ShowTask or ISRs.
 class HAQuDA_FileStorage {
   public:
 	HAQuDA_FileStorage();

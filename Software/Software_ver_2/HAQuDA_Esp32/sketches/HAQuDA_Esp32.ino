@@ -58,7 +58,7 @@ void setup() {
 	HAQuDA_Logger::SetErrHandler(&ErrHandler);
 	HAQuDA_Logger::SetDedup(&LogDedup);
 	HAQuDA_TimeService::getInstance();
-	// Before the LEDs and the file storage start: they share it so a flash access never overlaps an LED frame.
+	// Before the file storage starts: it serialises the flash operations of the tasks.
 	HAQuDA_FlashLock::Create();
 	HAQuDA_LEDs::getInstance()->Begin();
 	createTasks(&DispManip);
