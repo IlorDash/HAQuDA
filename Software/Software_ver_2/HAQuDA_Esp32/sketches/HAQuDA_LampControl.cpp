@@ -3,7 +3,6 @@
 #include "HAQuDA_FileStorage.h"
 #include "HAQuDA_LEDsParams.h"
 #include "HAQuDA_Logger.h"
-#include "HAQuDA_TimeHelper.h"
 
 // The lamp starts at the brightness LEDs::Begin() sets (raw DEFAULT_BRIGHTNESS). The percent scale has steps of 5, so the nearest
 // value gives raw 52 instead of 50
@@ -52,7 +51,8 @@ namespace {
 	}
 } // namespace
 
-HAQuDA_LampControl::HAQuDA_LampControl(HAQuDA_DisplayManip &displayManip) : display(displayManip), settings(HAQuDA_LampDefaults()) {
+HAQuDA_LampControl::HAQuDA_LampControl(HAQuDA_DisplayManip &displayManip, HAQuDA_ErrorHandler &errorHandler)
+	: display(displayManip), errHandler(errorHandler), settings(HAQuDA_LampDefaults()) {
 }
 
 lamp_settings HAQuDA_LampControl::copySettings() const {
@@ -81,18 +81,43 @@ bool HAQuDA_LampControl::errorShown() {
 	return (HAQuDA_DisplayManip::GetMode() == error) && (HAQuDA_ErrorHandler::GetCurrentError() != noneError);
 }
 
-void HAQuDA_LampControl::Apply() {
+bool HAQuDA_LampControl::needsSensors(const lamp_settings &s) {
+	return s.on && (s.mode != lamp_mode::light);
+}
+
+void HAQuDA_LampControl::SensorsStarted() {
+	sensorsRunning = true;
+}
+
+void HAQuDA_LampControl::showSensorsError() {
 	if (errorShown()) {
-		applyPending.store(true);
 		return;
 	}
-	show();
+	// The same pair setup() uses; the error is the one an unstarted sensor set leaves on the matrix
+	display.SetMode(error);
+	errHandler.FailedToStartSensors();
+}
+
+void HAQuDA_LampControl::Apply() {
+	// One copy for the decision and the picture: Submit() may change the settings in between
+	const lamp_settings s = copySettings();
+	if (!sensorsRunning && needsSensors(s)) {
+		// No readings to draw. Nothing else is queued: SensorsStarted() is followed by an Apply()
+		showSensorsError();
+		return;
+	}
+	// In the loop task an error on the display is the sensors one (the other errors of setup() end in a stop or are cleared), and the
+	// display refuses to leave it. The user chose a picture that needs no sensors, so the error ends; the page, the log and the next
+	// measurement mode still report the failure
+	if (errorShown()) {
+		errHandler.ClearError();
+	}
+	show(s);
 	reapplyDue = true;
 	reapplyMs = millis();
 }
 
-void HAQuDA_LampControl::show() {
-	const lamp_settings s = copySettings();
+void HAQuDA_LampControl::show(const lamp_settings &s) {
 	display.SetBrightness(s.bright);
 
 	if (!s.on) {
@@ -130,19 +155,21 @@ void HAQuDA_LampControl::show() {
 	}
 }
 
-void HAQuDA_LampControl::Handle() {
-	uint16_t minuteOfDay = 0;
-	minuteNow.store(HAQuDA_TimeService::GetCachedMinuteOfDay(&minuteOfDay) ? minuteOfDay : MINUTE_UNKNOWN);
+void HAQuDA_LampControl::Handle(bool timeKnown, uint16_t minuteOfDay) {
+	minuteNow.store(timeKnown ? minuteOfDay : MINUTE_UNKNOWN);
 
-	// While an error is shown the display refuses to change; the settings stay pending until the error ends
-	if (!errorShown() && applyPending.exchange(false)) {
+	if (applyPending.exchange(false)) {
 		Apply();
 	}
 	// The second pass: the effect Apply() stopped (the access point fading) has restored its own brightness by now, and a
 	// meas picture drawn at that brightness is drawn again
 	if (reapplyDue && ((uint32_t)(millis() - reapplyMs) >= REAPPLY_DELAY_MS) && !errorShown()) {
 		reapplyDue = false;
-		show();
+		const lamp_settings s = copySettings();
+		// A change accepted since the first pass is applied by the Apply() it queued
+		if (sensorsRunning || !needsSensors(s)) {
+			show(s);
+		}
 	}
 	if (saveDirty.load() && ((uint32_t)(millis() - changedMs.load()) >= SAVE_DELAY_MS)) {
 		saveDirty.store(false);

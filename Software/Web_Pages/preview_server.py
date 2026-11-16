@@ -25,7 +25,7 @@ fails at the scan at once and the lamp stays reachable. While offline the server
 GET /api/disp answers with the picture the lamp shows, in the format of HAQuDA_TranslateDisplayToJson (the page grid is
 4 columns x 6 rows). Scenario by scenario: the access point scenarios ("ap" and join-*) show the aqua fading effect the lamp
 runs in access point mode, sta-offline the lime snake it runs while it reconnects, sensor-fail the random pixels of the sensors
-error, "errors" the 500 reply of /api/status, every other scenario the multi layout (temperature, eCO2, PM2.5). Three scenarios
+error (the lamp light and power off replace them, as they need no sensors), "errors" the 500 reply of /api/status, every other scenario the multi layout (temperature, eCO2, PM2.5). Three scenarios
 exist only to look at the pictures: disp-effects plays snake, growing, random, fading and static colour for 25 s each,
 disp-errors plays the five error effects (WiFi, access point, file system, sensors, NTP) for 15 s each, disp-night shows the
 night layout with the white part of the bar growing every 4 s. The measurement pictures carry "colors" (the scale colour of the
@@ -134,6 +134,10 @@ PARAMS = [
 ]
 # Parameters the failed sensors would leave empty in the sensor-fail scenario (CCS811 and ZH03B)
 FAILED_KEYS = {"eco2", "tvoc", "pm25"}
+# The lamp's fixed thresholds for the overall reading (HAQuDA_MeasHandler::checkBadMeas()): out of range is at or below the first
+# number or at or above the second. Not the stand-in dots above: the overall reading is judged against the lamp's own
+TOTAL_LIMITS = {"temp": (20.0, 30.0), "humid": (40.0, 80.0), "eco2": (float("-inf"), 5000.0), "tvoc": (float("-inf"), 1000.0),
+                "pm25": (float("-inf"), 45.0)}
 
 
 def scale_color(value, dots):
@@ -521,10 +525,20 @@ class MockLamp:
             return [scale_color(self.values[key], dots[key]) for key in keys]
 
     def total_color(self):
-        """The colour of the reading farthest from the middle of its scale, the mock's stand-in for the lamp's overall reading."""
+        """The colour of the lamp's overall reading, picked like HAQuDA_MeasHandler::totalMode(): the first reading out of its
+        range shows its own colour, otherwise the colours of the readings that have a value are averaged channel by channel.
+        Readings of failed sensors are left out."""
         with self.lock:
-            worst = max(PARAMS, key=lambda p: abs(self.values[p[0]] - p[2][1]) / (p[2][2] - p[2][0]))
-            return scale_color(self.values[worst[0]], worst[2])
+            sampled = [p for p in PARAMS if not (self.scenario == "sensor-fail" and p[0] in FAILED_KEYS)]
+            for key, _, dots, _, _, _ in sampled:
+                low, high = TOTAL_LIMITS[key]
+                if self.values[key] <= low or self.values[key] >= high:
+                    return scale_color(self.values[key], dots)
+            if not sampled:
+                return "#000000"
+            colors = [int(scale_color(self.values[p[0]], p[2])[1:], 16) for p in sampled]
+            channels = [sum((color >> shift) & 0xFF for color in colors) // len(colors) for shift in (16, 8, 0)]
+            return "#{0:02x}{1:02x}{2:02x}".format(*channels)
 
     def lamp_picture(self):
         """The picture of the lamp card's settings and its source: (picture, source), like what the lamp draws for them."""
@@ -574,8 +588,11 @@ class MockLamp:
             elif self.scenario == "sta-offline":
                 picture, source = DISP_RECONNECT_PICTURE, "effect"
             elif self.scenario == "sensor-fail":
-                error, picture = DISP_ERRORS[3]
-                source = "error"
+                # Power off and the lamp light need no sensors and replace the error; a measurement mode shows it
+                picture, source = self.lamp_picture()
+                if source == "meas":
+                    error, picture = DISP_ERRORS[3]
+                    source = "error"
             elif self.scenario == "no-lamp":
                 picture, source = fx_meas("multi", DISP_MULTI_KEYS, self.drawn_colors(DISP_MULTI_KEYS)), "meas"
             else:

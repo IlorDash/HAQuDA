@@ -1,6 +1,5 @@
 #include "HAQuDA_WebPageDisplayManip.h"
 #include "HAQuDA_LEDsParams.h"
-#include "HAQuDA_TimeHelper.h"
 
 // The mapping below lists every enumerator of these firmware enums, the last one being the "none" sentinel. A new enumerator
 // shifts the sentinel and stops the build here, so the switches are revisited; a value outside the list maps to what draws nothing.
@@ -209,9 +208,8 @@ void HAQuDA_WebPageDisplayManip::SetEffectParam(const uint32_t p) {
 	HAQuDA_WebPictureSetStaticColor(picture, p, millis());
 }
 
-void HAQuDA_WebPageDisplayManip::RefreshTime() {
-	uint16_t minuteOfDay = 0;
-	minuteNow.store(HAQuDA_TimeService::GetCachedMinuteOfDay(&minuteOfDay) ? minuteOfDay : MINUTE_UNKNOWN);
+void HAQuDA_WebPageDisplayManip::SetMinuteOfDay(bool timeKnown, uint16_t minuteOfDay) {
+	minuteNow.store(timeKnown ? minuteOfDay : MINUTE_UNKNOWN);
 }
 
 void HAQuDA_WebPageDisplayManip::fillErrorEffect(error_type kind, web_display_state &state) const {

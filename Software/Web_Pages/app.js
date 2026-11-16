@@ -34,8 +34,11 @@
 	var DISP_ERRORS = ['none', 'wifi', 'ap', 'fs', 'sensors', 'ntp'];
 	var DISP_LAYOUTS = ['standard', 'multi', 'night'];
 	var DISP_KEYS = ['total', 'temp', 'humid', 'eco2', 'tvoc', 'pm25'];
-	// the readings the lamp averages for the "total" picture
+	// the readings of the "total" picture, in the order the lamp checks them, with the range each one must stay in: out of range is
+	// at or below the first number or at or above the second. The numbers are the lamp's fixed thresholds, the ends of its colour
+	// scale (/api/status does not send them), so they must follow the firmware if it ever changes them
 	var TOTAL_KEYS = ['temp', 'humid', 'eco2', 'tvoc', 'pm25'];
+	var TOTAL_LIMITS = { temp: [20, 30], humid: [40, 80], eco2: [-Infinity, 5000], tvoc: [-Infinity, 1000], pm25: [-Infinity, 45] };
 	// colour of an unlit cell, read from --led-off of the current theme when first needed (null: read again)
 	var offRgb = null;
 	// the mediaquery is live: matches always tells the current setting
@@ -417,24 +420,39 @@
 		return (n < 16 ? '0' : '') + n.toString(16);
 	}
 
-	// the worst of the readings that have a colour (the first one of the worst rank), '' when none has; one failed sensor
-	// does not blank the "overall" reading
-	function worstKey(meas) {
-		var worst = '';
+	// the colour the lamp shows for "total", as the firmware picks it: the first reading (temp, humid, eco2, tvoc, pm25) out of its
+	// range shows its own colour, otherwise the colours of the readings that have a value are averaged channel by channel
+	// (integer division). '' when no reading has one. A failed sensor does not blank it
+	function totalColor(meas) {
+		for (var i = 0; i < TOTAL_KEYS.length; i++) {
+			var m = meas[TOTAL_KEYS[i]];
+			var lim = TOTAL_LIMITS[TOTAL_KEYS[i]];
+			if (validMeas(m) && (m.v <= lim[0] || m.v >= lim[1])) {
+				return validColor(m.c) ? m.c : '';
+			}
+		}
+		var sum = [0, 0, 0];
+		var n = 0;
 		TOTAL_KEYS.forEach(function (k) {
 			var m = meas[k];
-			if (validMeas(m) && validColor(m.c) && (!worst || rank(m.c) > rank(meas[worst].c))) {
-				worst = k;
+			if (validMeas(m) && validColor(m.c)) {
+				var rgb = parseInt(m.c.slice(1), 16);
+				sum[0] += (rgb >> 16) & 255;
+				sum[1] += (rgb >> 8) & 255;
+				sum[2] += rgb & 255;
+				n++;
 			}
 		});
-		return worst;
+		return n ? '#' + hex2(Math.floor(sum[0] / n)) + hex2(Math.floor(sum[1] / n)) + hex2(Math.floor(sum[2] / n)) : '';
 	}
 
-	// the colour of one reading, or of the worst one for "total"; '' when there is none
+	// the colour of one reading, or the one the lamp shows for "total"; '' when there is none
 	function measColor(meas, key) {
-		var k = key === 'total' ? worstKey(meas) : key;
-		var m = meas[k];
-		return k && validMeas(m) && validColor(m.c) ? m.c : '';
+		if (key === 'total') {
+			return totalColor(meas);
+		}
+		var m = meas[key];
+		return validMeas(m) && validColor(m.c) ? m.c : '';
 	}
 
 	function fillGrid(color) {
@@ -687,12 +705,12 @@
 		return 'fxEffect';
 	}
 
-	// the value of one reading for the legend; "total" is the air index word of the worst reading
+	// the value of one reading for the legend; "total" is the air index word of the colour the lamp shows for it
 	function readingText(meas, k) {
 		var m = meas[k];
 		if (k === 'total') {
-			var w = worstKey(meas);
-			return w ? [T.good, T.fair, T.poor][rank(meas[w].c)] : T.noData;
+			var c = totalColor(meas);
+			return c ? [T.good, T.fair, T.poor][rank(c)] : T.noData;
 		}
 		return validMeas(m) ? fmt(k, m.v) + ' ' + UNITS[k] : (state.data ? T.noData : '--');
 	}

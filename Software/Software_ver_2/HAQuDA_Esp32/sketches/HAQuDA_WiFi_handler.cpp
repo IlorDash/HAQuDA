@@ -145,8 +145,8 @@ void HAQuDA_WiFi_handler::HandleConnection() {
 
 	showJoinedWiFi();
 	// The red picture, the snake and the green flash replaced what the user chose (power, brightness, mode, lamp light colour):
-	// without this the matrix stays dark. While an error is shown, SetMode() refuses to leave the error mode, so the error
-	// display stays.
+	// without this the matrix stays dark. While the sensors are off, a measurement mode keeps the sensors error on the matrix and
+	// the lamp light or power off replaces it.
 	lampControl.Apply();
 }
 

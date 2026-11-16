@@ -30,7 +30,7 @@ HAQuDA_MeasSnapshot MeasSnapshot;
 HAQuDA_WebPageDisplayManip WebDisp;
 HAQuDA_MeasHandler MeasHandler(&ErrHandler, MeasSnapshot, WebDisp);
 HAQuDA_DisplayManip DispManip(&MeasHandler, &EffectsHandler, &ErrHandler, &WebDisp);
-HAQuDA_LampControl LampControl(DispManip);
+HAQuDA_LampControl LampControl(DispManip, ErrHandler);
 HAQuDA_WiFi_handler WiFiHandler(&FileStorage, &DispManip, MeasSnapshot, WebDisp, LampControl);
 
 int meas_start_time = 0;
@@ -44,6 +44,8 @@ constexpr uint32_t SENSORS_START_RETRY_PERIOD_MS = 5 * 60 * 1000;
 constexpr uint32_t WIFI_ERROR_DISPLAY_MS = 10 * 1000;
 
 // Both written and read in the loop task only (setup runs in it too).
+// LampControl keeps its own copy of sensorsRunning, set by LampControl.SensorsStarted(): any new path that starts the sensors must
+// call it, or the lamp keeps showing the sensors error for the measurement modes.
 bool sensorsRunning = false;
 uint32_t sensorsStartRetryMs = 0;
 
@@ -109,6 +111,9 @@ void setup() {
 			// The lamp keeps the sensors error on the matrix and loop() retries.
 			HAQuDA_Logger::LogError("Sensors off, retry in 5 min");
 			sensorsStartRetryMs = millis();
+			// The error has been on the matrix for the whole start attempt. A saved lamp light or power off needs no sensors and
+			// replaces it; a measurement mode keeps it.
+			LampControl.Apply();
 			return;
 		}
 		leaveSensorsError();
@@ -126,6 +131,7 @@ void leaveSensorsError() {
 
 void enableMeasurements() {
 	sensorsRunning = true;
+	LampControl.SensorsStarted();
 	// The user's picture: what was saved in /lamp, or changed on the web page while the error was shown (the defaults
 	// otherwise: multi mode). Before the first log line: while NTP has never synced every log line sets the NTP error, and
 	// SetMode() refuses to leave the error mode while an error is set. Once the mode is meas, later log lines only set a stale
@@ -154,8 +160,13 @@ void loop() {
 	WiFiHandler.HandleConnection();
 	retrySensorsStart();
 	MeasHandler.UpdateMeas(&meas_start_time);
-	WebDisp.RefreshTime();
-	LampControl.Handle();
+	// One read of the time service feeds both consumers. loop task only: the time client is written without a lock by the logger
+	// (loop task) and by the night mode redraw (ShowTask) and is created lazily, so the async_tcp task must not read it; the
+	// consumers hand the minute to that task through an atomic
+	uint16_t minuteOfDay = 0;
+	const bool timeKnown = HAQuDA_TimeService::GetCachedMinuteOfDay(&minuteOfDay);
+	WebDisp.SetMinuteOfDay(timeKnown, minuteOfDay);
+	LampControl.Handle(timeKnown, minuteOfDay);
 	HAQuDA_Logger::FlushExpiredRepeats();
 	if ((millis() - builtin_blink_start_time) > BUILTIN_LED_PERIOD) {
 		digitalWrite(BUILTIN_LED, !digitalRead(BUILTIN_LED));
