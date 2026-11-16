@@ -61,8 +61,10 @@
   retry block the lamp (the web pages, the blinking LED) for up to about 27 seconds instead of
   about 6 seconds.
 - **No random colour flashes.** Parts of the matrix no longer flash random colours when the lamp
-  writes to its file system. While the lamp reads or writes it, an animation can pause for a
-  moment; see [The matrix looks wrong](troubleshooting.md#the-matrix-looks-wrong).
+  writes to its file system or connects to WiFi. The matrix is now driven by the I2S hardware
+  through DMA, which flash access does not disturb; colours and brightness are unchanged. An
+  animation may still freeze for a fraction of a second when WiFi connects; see
+  [The matrix looks wrong](troubleshooting.md#the-matrix-looks-wrong).
 - **File system error.** The matrix shows the red fading.
 - **Correct PM values.** The lamp reads PM1.0, PM2.5 and PM10 from the right fields of the ZH03B
   frame. The PM2.5 colour in the multi, standard and night modes can differ from earlier builds.
