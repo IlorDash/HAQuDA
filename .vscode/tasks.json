@@ -1,0 +1,116 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "HAQuDA: Build + Flash + Monitor",
+			"detail": "Flashes the lamp right after a successful build, then opens the serial monitor.",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"${workspaceFolder}\\Software\\Software_ver_2\\HAQuDA_Esp32\\scripts\\haquda-bench.ps1",
+				"-Action",
+				"BuildFlashMonitor"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "HAQuDA: Build",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"${workspaceFolder}\\Software\\Software_ver_2\\HAQuDA_Esp32\\scripts\\haquda-bench.ps1",
+				"-Action",
+				"Build"
+			],
+			"group": "build",
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "HAQuDA: Flash + Monitor",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"${workspaceFolder}\\Software\\Software_ver_2\\HAQuDA_Esp32\\scripts\\haquda-bench.ps1",
+				"-Action",
+				"FlashMonitor"
+			],
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "HAQuDA: Monitor",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"${workspaceFolder}\\Software\\Software_ver_2\\HAQuDA_Esp32\\scripts\\haquda-bench.ps1",
+				"-Action",
+				"Monitor"
+			],
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "HAQuDA: Change COM port",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"${workspaceFolder}\\Software\\Software_ver_2\\HAQuDA_Esp32\\scripts\\haquda-bench.ps1",
+				"-Action",
+				"Port"
+			],
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"clear": true
+			},
+			"problemMatcher": []
+		}
+	]
+}
