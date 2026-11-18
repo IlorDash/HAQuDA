@@ -7,3 +7,6 @@
 [submodule "Software/Software_ver_2/HAQuDA_Esp32/Libs/WebSerial"]
 	path = Software/Software_ver_2/HAQuDA_Esp32/Libs/WebSerial
 	url = https://github.com/IlorDash/WebSerial.git
+[submodule "Software/Software_ver_2/HAQuDA_Esp32/Libs/NeoPixelBus"]
+	path = Software/Software_ver_2/HAQuDA_Esp32/Libs/NeoPixelBus
+	url = https://github.com/Makuna/NeoPixelBus.git
