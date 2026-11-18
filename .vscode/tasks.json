@@ -3,41 +3,81 @@
 	"tasks": [
 		{
 			"label": "HAQuDA: Build + Flash + Monitor",
-			"detail": "Flashes the lamp right after a successful build, then opens the serial monitor.",
-			"type": "shell",
-			"command": "powershell.exe",
-			"args": [
-				"-NoProfile",
-				"-ExecutionPolicy",
-				"Bypass",
-				"-File",
-				"${workspaceFolder}\\Software\\Software_ver_2\\HAQuDA_Esp32\\scripts\\haquda-bench.ps1",
-				"-Action",
-				"BuildFlashMonitor"
+			"detail": "Opens the build output and the serial monitor side by side, builds, then flashes the lamp.",
+			"dependsOn": [
+				"HAQuDA: Build + Flash",
+				"HAQuDA: Monitor"
 			],
+			"dependsOrder": "parallel",
 			"group": {
 				"kind": "build",
 				"isDefault": true
 			},
+			"problemMatcher": []
+		},
+		{
+			"label": "HAQuDA: Build + Flash",
+			"detail": "Builds the chosen folder and flashes the lamp. The monitor, if running, steps aside for the flash.",
+			"type": "shell",
+			"command": "py",
+			"args": [
+				"-3",
+				"${workspaceFolder}\\Software\\Software_ver_2\\HAQuDA_Esp32\\scripts\\haquda-bench.py",
+				"--action",
+				"BuildFlash"
+			],
 			"presentation": {
 				"reveal": "always",
 				"focus": true,
 				"panel": "dedicated",
+				"group": "haquda",
 				"clear": true
 			},
 			"problemMatcher": []
 		},
 		{
-			"label": "HAQuDA: Build",
+			"label": "HAQuDA: Monitor",
+			"detail": "Serial monitor (esp-idf-monitor, needs py -3 -m pip install esp-idf-monitor). Releases the port while a flash runs. Quit with Ctrl+] or Ctrl+C in its terminal.",
 			"type": "shell",
-			"command": "powershell.exe",
+			"command": "py",
 			"args": [
-				"-NoProfile",
-				"-ExecutionPolicy",
-				"Bypass",
-				"-File",
-				"${workspaceFolder}\\Software\\Software_ver_2\\HAQuDA_Esp32\\scripts\\haquda-bench.ps1",
-				"-Action",
+				"-3",
+				"${workspaceFolder}\\Software\\Software_ver_2\\HAQuDA_Esp32\\scripts\\haquda-bench.py",
+				"--action",
+				"Monitor"
+			],
+			"isBackground": true,
+			"presentation": {
+				"reveal": "always",
+				"focus": false,
+				"panel": "dedicated",
+				"group": "haquda",
+				"clear": false
+			},
+			"problemMatcher": {
+				"owner": "haquda-monitor",
+				"pattern": {
+					"regexp": "^haquda-monitor-never-matches (.*):(\\d+): (.*)$",
+					"file": 1,
+					"line": 2,
+					"message": 3
+				},
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": "^--- monitor starting",
+					"endsPattern": "^--- monitor ready"
+				}
+			}
+		},
+		{
+			"label": "HAQuDA: Build",
+			"detail": "Builds the chosen folder only.",
+			"type": "shell",
+			"command": "py",
+			"args": [
+				"-3",
+				"${workspaceFolder}\\Software\\Software_ver_2\\HAQuDA_Esp32\\scripts\\haquda-bench.py",
+				"--action",
 				"Build"
 			],
 			"group": "build",
@@ -50,38 +90,15 @@
 			"problemMatcher": []
 		},
 		{
-			"label": "HAQuDA: Flash + Monitor",
+			"label": "HAQuDA: Flash",
+			"detail": "Flashes the last bench build without building. The monitor, if running, steps aside.",
 			"type": "shell",
-			"command": "powershell.exe",
+			"command": "py",
 			"args": [
-				"-NoProfile",
-				"-ExecutionPolicy",
-				"Bypass",
-				"-File",
-				"${workspaceFolder}\\Software\\Software_ver_2\\HAQuDA_Esp32\\scripts\\haquda-bench.ps1",
-				"-Action",
-				"FlashMonitor"
-			],
-			"presentation": {
-				"reveal": "always",
-				"focus": true,
-				"panel": "dedicated",
-				"clear": true
-			},
-			"problemMatcher": []
-		},
-		{
-			"label": "HAQuDA: Monitor",
-			"type": "shell",
-			"command": "powershell.exe",
-			"args": [
-				"-NoProfile",
-				"-ExecutionPolicy",
-				"Bypass",
-				"-File",
-				"${workspaceFolder}\\Software\\Software_ver_2\\HAQuDA_Esp32\\scripts\\haquda-bench.ps1",
-				"-Action",
-				"Monitor"
+				"-3",
+				"${workspaceFolder}\\Software\\Software_ver_2\\HAQuDA_Esp32\\scripts\\haquda-bench.py",
+				"--action",
+				"Flash"
 			],
 			"presentation": {
 				"reveal": "always",
@@ -94,14 +111,11 @@
 		{
 			"label": "HAQuDA: Change COM port",
 			"type": "shell",
-			"command": "powershell.exe",
+			"command": "py",
 			"args": [
-				"-NoProfile",
-				"-ExecutionPolicy",
-				"Bypass",
-				"-File",
-				"${workspaceFolder}\\Software\\Software_ver_2\\HAQuDA_Esp32\\scripts\\haquda-bench.ps1",
-				"-Action",
+				"-3",
+				"${workspaceFolder}\\Software\\Software_ver_2\\HAQuDA_Esp32\\scripts\\haquda-bench.py",
+				"--action",
 				"Port"
 			],
 			"presentation": {
