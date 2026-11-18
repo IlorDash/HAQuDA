@@ -82,6 +82,63 @@ Open a serial terminal on the lamp's port at 115200 baud, 8N1, and restart the l
 bootloader prints its own lines first. The line `HAQuDA firmware v{{ app_version }}` follows
 them.
 
+The firmware colours the log levels with ANSI codes. A terminal that does not understand them
+shows the codes as stray characters such as `[0;32m` in front of the lines; use the Visual Studio
+terminal or the monitor from the next section, which show them as colours.
+
+---
+
+## Build and flash from VS Code
+
+As an alternative to Visual Studio, you can build the main clone or any of its worktrees from one
+VS Code window and flash the lamp over UART. All builds share one build cache in the folder
+`.bench` of the main clone. Only the `sketches` folder comes from the folder you pick; everything
+else comes from the main clone.
+
+### Set up once
+
+1. Set up the build in Visual Studio in the main clone as described above: VisualGDB, the core
+   and the build variables.
+2. Install Python 3, then run `py -3 -m pip install esp-idf-monitor`.
+3. In VS Code, run the task **HAQuDA: Install picker** (**Terminal → Run Task...**), then run
+   **Developer: Reload Window**. After the install, a dialog offers **Reload Window**.
+
+When the picker is outdated, the tasks with a popup do not start and a dialog asks you to install
+it again. Run **HAQuDA: Install picker** and reload the window.
+
+### Each time
+
+1. Press **Ctrl+Shift+B** and pick the folder in the popup.
+2. While it builds, put the ESP32 into the bootloader mode yourself (hold BOOT, press reset) if
+   the lamp has no automatic reset.
+3. The lamp is flashed, and the serial monitor opens next to the build. The monitor shows
+   timestamps. Quit it with **Ctrl+]** or **Ctrl+C**. The **Ctrl+T** menu of the monitor does not
+   work in the VS Code terminal.
+
+### Tasks
+
+Run the other tasks with **Terminal → Run Task...**.
+
+| Task | What it does |
+|------|--------------|
+| HAQuDA: Build + Flash + Monitor | Asks for the folder, builds, flashes and starts the monitor. This is the **Ctrl+Shift+B** task. |
+| HAQuDA: Build + Flash | Asks for the folder, builds and flashes. A running monitor releases the port for the flash. |
+| HAQuDA: Build | Asks for the folder and builds only. |
+| HAQuDA: Flash | Flashes the last build without building. |
+| HAQuDA: Monitor | Starts the serial monitor only. |
+| HAQuDA: Change COM port | Asks for the COM port and remembers it for the flash and the monitor. |
+| HAQuDA: Install picker | Installs the extension behind the popups. |
+| HAQuDA: Remove bench | Asks for confirmation and deletes `.bench` safely. The next build is a full one. |
+
+Only one build runs at a time. While it runs, a second build, **HAQuDA: Flash**, **HAQuDA: Change
+COM port** and **HAQuDA: Remove bench** stop with an error; run them again when the build ends. A
+build also stops with an error while a flash runs.
+
+!!! warning "Never share or delete `.bench` by hand"
+    The build log in `.bench` and a link inside it hold your secret build variables, so do not
+    pass the folder to anyone. To delete it, run **HAQuDA: Remove bench**. It holds junctions to
+    real source folders, and deleting it by hand can remove them.
+
 ---
 
 ## Builds from GitHub Actions
