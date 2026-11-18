@@ -35,6 +35,34 @@ A lamp flashed this way opens its setup access point as `actions_ssid` with the 
 
 Build the firmware yourself in Visual Studio with Build -> Build Solution. Then flash over UART with Debug -> Program and Start Without Debugging. To flash over OpenOCD instead, run Debug -> Start Debugging with GDB.
 
+## Build and flash from VS Code
+Build any clone or worktree from one VS Code window and flash the lamp over UART. All builds share one build cache in `.bench` of the main clone; only `sketches/` comes from the picked folder, everything else from the main clone.
+
+Once:
+1. Set up the build in Visual Studio in the main clone as usual (VisualGDB, ESP32 core, secret build flags).
+2. Install Python 3 and run `py -3 -m pip install esp-idf-monitor`.
+3. In VS Code, run the task "HAQuDA: Install picker" (Terminal -> Run Task..., or Ctrl+Shift+P -> Tasks: Run Task), then run "Developer: Reload Window". Repeat when the picker warns that its version differs.
+
+Each time:
+1. Press Ctrl+Shift+B and pick the folder in the popup.
+2. While it builds, put the ESP32 into the bootloader mode (hold BOOT, press reset), if the lamp has no automatic reset.
+3. The lamp is flashed and the serial monitor opens next to the build. Quit the monitor with Ctrl+] or Ctrl+C.
+
+In VS Code, run the other tasks (Terminal -> Run Task..., or Ctrl+Shift+P -> Tasks: Run Task):
+
+| Task | What it does |
+|------|--------------|
+| HAQuDA: Build + Flash + Monitor | Asks for the folder, builds, flashes, and starts the monitor. This is the Ctrl+Shift+B task. |
+| HAQuDA: Build + Flash | Asks for the folder, builds and flashes. The monitor, if it runs, releases the port for the flash. |
+| HAQuDA: Build | Asks for the folder and builds only. |
+| HAQuDA: Flash | Flashes the last bench build without building. |
+| HAQuDA: Monitor | Starts the serial monitor only. |
+| HAQuDA: Change COM port | Asks for the COM port and remembers it for the flash and the monitor. |
+| HAQuDA: Install picker | Installs the extension behind the popups. |
+| HAQuDA: Remove bench | Asks for confirmation and deletes `.bench` safely. The next build is a full one. |
+
+Never share `.bench`: its build log and a link in it hold the secret build flags. To delete `.bench`, run the task HAQuDA: Remove bench. Never delete it by hand: it holds junctions to real source folders.
+
 ## Open the lamp's web page
 Open `http://haquda.local/` in a browser on the same network as the lamp. The hostname `haquda` is fixed and the lamp answers to it over mDNS, also on its own access point. If your device does not resolve `.local` names, use the lamp's IP address from your router. On the access point the address is `http://192.168.4.22/`.
 

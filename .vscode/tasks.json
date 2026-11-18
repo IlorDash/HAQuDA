@@ -4,21 +4,33 @@
 		{
 			"label": "HAQuDA: Build + Flash + Monitor",
 			"detail": "Asks for the folder, then builds and flashes the lamp, with the serial monitor next to it. Run HAQuDA: Install picker once first.",
-			"dependsOn": [
-				"HAQuDA: Build + Flash",
-				"HAQuDA: Monitor"
+			"type": "process",
+			"command": "py",
+			"args": [
+				"-3",
+				"${workspaceFolder}\\Software\\Software_ver_2\\HAQuDA_Esp32\\scripts\\haquda-bench.py",
+				"--action",
+				"BuildFlash",
+				"--source",
+				"${input:sourceThenMonitor}"
 			],
-			"dependsOrder": "parallel",
 			"group": {
 				"kind": "build",
 				"isDefault": true
+			},
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"group": "haquda",
+				"clear": true
 			},
 			"problemMatcher": []
 		},
 		{
 			"label": "HAQuDA: Build + Flash",
 			"detail": "Builds the chosen folder and flashes the lamp. The monitor, if running, steps aside for the flash.",
-			"type": "shell",
+			"type": "process",
 			"command": "py",
 			"args": [
 				"-3",
@@ -40,7 +52,7 @@
 		{
 			"label": "HAQuDA: Monitor",
 			"detail": "Serial monitor (esp-idf-monitor, needs py -3 -m pip install esp-idf-monitor). Releases the port while a flash runs. Quit with Ctrl+] or Ctrl+C in its terminal.",
-			"type": "shell",
+			"type": "process",
 			"command": "py",
 			"args": [
 				"-3",
@@ -74,7 +86,7 @@
 		{
 			"label": "HAQuDA: Build",
 			"detail": "Asks for the folder and builds it only. Run HAQuDA: Install picker once first.",
-			"type": "shell",
+			"type": "process",
 			"command": "py",
 			"args": [
 				"-3",
@@ -96,7 +108,7 @@
 		{
 			"label": "HAQuDA: Flash",
 			"detail": "Flashes the last bench build without building. The monitor, if running, steps aside.",
-			"type": "shell",
+			"type": "process",
 			"command": "py",
 			"args": [
 				"-3",
@@ -115,7 +127,7 @@
 		{
 			"label": "HAQuDA: Change COM port",
 			"detail": "Asks for the COM port and remembers it for Flash and Monitor. Run HAQuDA: Install picker once first.",
-			"type": "shell",
+			"type": "process",
 			"command": "py",
 			"args": [
 				"-3",
@@ -134,9 +146,30 @@
 			"problemMatcher": []
 		},
 		{
+			"label": "HAQuDA: Remove bench",
+			"detail": "Asks for confirmation and deletes .bench safely (junctions first). The next build is a full one.",
+			"type": "process",
+			"command": "py",
+			"args": [
+				"-3",
+				"${workspaceFolder}\\Software\\Software_ver_2\\HAQuDA_Esp32\\scripts\\haquda-bench.py",
+				"--action",
+				"Clean",
+				"--confirm",
+				"${input:confirmRemove}"
+			],
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
 			"label": "HAQuDA: Install picker",
 			"detail": "Installs the VS Code extension behind the folder and COM port popups. Run once, then reload the window.",
-			"type": "shell",
+			"type": "process",
 			"command": "py",
 			"args": [
 				"-3",
@@ -160,9 +193,27 @@
 			"command": "haquda.pickSource"
 		},
 		{
+			"id": "sourceThenMonitor",
+			"type": "command",
+			"command": "haquda.pickSource",
+			"args": {
+				"startMonitor": true
+			}
+		},
+		{
 			"id": "port",
 			"type": "command",
 			"command": "haquda.pickPort"
+		},
+		{
+			"id": "confirmRemove",
+			"type": "pickString",
+			"description": "Remove .bench? The next build is a full one.",
+			"options": [
+				"No",
+				"Yes"
+			],
+			"default": "No"
 		}
 	]
 }

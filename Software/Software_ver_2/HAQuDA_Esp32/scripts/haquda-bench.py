@@ -14,6 +14,7 @@ Actions:
   Sources      JSON list of the source folders for the VS Code picker, last used first
   Ports        JSON list of the COM ports for the VS Code picker, stored port first
   InstallPicker  pack scripts/vscode-picker into a .vsix and install it with "code"
+  Clean        remove the bench safely (--confirm Yes, or a y/N question); the next build is a full one
 
 Without --source a numbered menu lists the main clone and every worktree. The COM port lives in
 <bench>\\port and is patched into the bench copy of the project only; no tracked file is changed.
@@ -37,10 +38,11 @@ import os
 import re
 import time
 
-from bench import build, flash, libs, monitor, output, picker, port, project
+from bench import build, clean, flash, libs, monitor, output, picker, port, project
 
-ACTIONS = ("Build", "Flash", "BuildFlash", "Monitor", "Port", "Sources", "Ports", "InstallPicker")
+ACTIONS = ("Build", "Flash", "BuildFlash", "Monitor", "Port", "Sources", "Ports", "InstallPicker", "Clean")
 CONFIGS = ("Debug", "Release")
+PICK_OPTIONS = ("--source", "--port", "--confirm")  # filled by VS Code popups
 
 
 def one_of(options):
@@ -53,6 +55,23 @@ def one_of(options):
     return parse
 
 
+def cancelled_pick(argv):
+    """True when a value that a VS Code popup should have supplied is empty or still the literal
+    ${input:...} text: the user pressed Esc. Looks at the raw arguments, because argparse would
+    reject such a value (or the missing one) before any code could run."""
+    for i, arg in enumerate(argv):
+        for option in PICK_OPTIONS:
+            if arg == option and i + 1 < len(argv):
+                value = argv[i + 1]
+            elif arg.startswith(option + "="):
+                value = arg[len(option) + 1:]
+            else:
+                continue
+            if value == "" or value.startswith("${input:"):
+                return True
+    return False
+
+
 def parse_args():
     p = argparse.ArgumentParser(description="Builds, flashes and monitors the firmware through a shared bench folder.")
     p.add_argument("--source", help="root of the clone or worktree whose sketches folder is built; optional, a menu asks. "
@@ -62,6 +81,7 @@ def parse_args():
     p.add_argument("--action", type=one_of(ACTIONS), default="Build", metavar="{%s}" % ",".join(ACTIONS))
     p.add_argument("--port", type=lambda t: t.upper() if re.fullmatch(r"COM\d+", t, re.I) else p.error("--port must look like COM3"),
                    help="COM port to use and remember; without it the stored port is used")
+    p.add_argument("--confirm", help="Clean only: 'Yes' removes the bench, any other value does nothing; without it the script asks y/N")
     p.add_argument("--dry-run", action="store_true", help="print the esptool and esp-idf-monitor command lines instead of running them")
     p.add_argument("--no-timestamps", action="store_true", help="no host time at the start of each output line")
     p.add_argument("--no-color", action="store_true", help="no colours and no dim time (also when the output is redirected)")
@@ -88,7 +108,14 @@ def main(args):
         sys.stdout.write(json.dumps(items) + "\n")  # ASCII-only JSON: safe on any console code page
         return 0
 
+    if args.action == "Clean":
+        # Before makedirs: removing a bench must not create one first.
+        output.init(args.no_timestamps, args.no_color, args.trace)
+        # The bench path here keeps a trailing backslash of a drive root, so the drive-root guard sees it.
+        return clean.run_clean(args.bench_root or os.path.join(main_root, ".bench"), args.confirm, main_root)
+
     os.makedirs(os.path.join(bench, "build"), exist_ok=True)
+    clean.write_marker(bench)  # what Clean checks before it deletes anything
     output.init(args.no_timestamps, args.no_color, args.trace)
     output.trace("start, output style")
 
@@ -140,6 +167,10 @@ def main(args):
 
 
 if __name__ == "__main__":
+    # Esc in a popup is a clean cancel, whatever VS Code passes on; nothing is touched.
+    if cancelled_pick(sys.argv[1:]):
+        sys.stdout.write("Cancelled: nothing picked.\n")
+        sys.exit(0)
     arguments = parse_args()
     try:
         sys.exit(main(arguments))
