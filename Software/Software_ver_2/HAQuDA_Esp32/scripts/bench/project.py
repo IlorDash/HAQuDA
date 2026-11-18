@@ -10,6 +10,23 @@ PROJ = "HAQuDA_Esp32.vgdbproj"
 PLATFORM = "ESP32_Dev_Module"
 REPARSE_POINT = 0x400
 COLORS_MACRO = "CONFIG_ARDUHAL_LOG_COLORS=1"
+CONFIG = "Debug"  # the one VisualGDB configuration of the project
+BUILD_LOCK = "building.lock"  # held by a build (and by Clean) while it uses or removes the shared bench
+
+
+# Written by every action that creates or uses the bench; Clean deletes only a folder that has it.
+# Files such as port or the project file also exist in other folders, so they prove nothing.
+BENCH_MARKER = "haquda-bench.marker"
+MARKER_TEXT = "This folder is the HAQuDA build bench. The HAQuDA: Remove bench task deletes it.\n"
+
+
+def ensure_bench(bench):
+    """Creates the bench folders and the marker when missing. Not called by the read-only JSON actions."""
+    os.makedirs(os.path.join(bench, "build"), exist_ok=True)
+    path = os.path.join(bench, BENCH_MARKER)
+    if not os.path.exists(path):
+        with open(path, "w", encoding="ascii") as f:
+            f.write(MARKER_TEXT)
 
 
 def read_latin1(path):
@@ -200,8 +217,8 @@ def link_user_file(main_fw, bench):
     try:
         os.link(src, dst)
     except OSError as e:
-        raise RuntimeError("Cannot hard-link the per-user settings file into the bench. A hard link needs the bench and the "
-                           "main clone on the same volume; choose --bench-root on the same drive as %s. (%s)" % (main_fw, e))
+        raise RuntimeError("Cannot hard-link the per-user settings file of %s into the bench; the file system of the main "
+                           "clone must support hard links. (%s)" % (main_fw, e))
 
 
 def init_bench_source(source_root, main_root, bench):
@@ -212,4 +229,9 @@ def init_bench_source(source_root, main_root, bench):
     link_user_file(main_fw, bench)
     set_junction(os.path.join(bench, "Libs"), os.path.join(main_fw, "Libs"))
     set_junction(os.path.join(bench, "sketches"), sketches)
+
+
+def remember_source(bench, source_root):
+    """Records which source folder the image in the bench was built from. Called only after a
+    successful build: Flash names it and the picker offers it first."""
     write_text(os.path.join(bench, "last-source.txt"), source_root)

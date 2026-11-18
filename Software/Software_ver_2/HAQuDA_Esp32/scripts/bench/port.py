@@ -3,9 +3,10 @@ import contextlib
 import os
 import re
 import winreg
+from collections import namedtuple
 
-from . import output
-from .project import PROJ, ask, first_line, read_latin1, write_text
+from . import output, winapi
+from .project import BUILD_LOCK, PROJ, ask, first_line, read_latin1, write_text
 
 
 def project_port(proj_path):
@@ -79,7 +80,6 @@ def present_ports(show_progress=True):
     """(name, label) of the ports that exist now, label as Windows shows it. show_progress=False
     prints nothing at all (the JSON action)."""
     names = present_port_names()
-    output.trace("port names (SERIALCOMM)")
     friendly = {}
     with output.spinner("Looking up COM ports") if show_progress else contextlib.nullcontext():
         found = friendly_names()
@@ -87,7 +87,6 @@ def present_ports(show_progress=True):
         m = re.search(r"\((COM\d+)\)", text, re.I)
         if m:
             friendly.setdefault(m.group(1).upper(), text)
-    output.trace("port names (registry)")
     return [(n, friendly.get(n, n)) for n in names]
 
 
@@ -130,39 +129,51 @@ def save_port(bench, port, main_port):
         write_text(os.path.join(bench, "port-origin"), main_port)
 
 
+PortChoice = namedtuple("PortChoice", "port main_port save")
+
+
 def resolve_port(main_fw, bench, explicit, interactive, force_menu):
-    """The port to use; None for a Build with nothing stored and no port in the main project.
-    interactive: ask questions (Build never asks, it only patches what is stored)."""
+    """Decides the port to use and asks the questions, but writes nothing: the bench may not exist
+    yet, and the caller writes under the bench lock with store_port. choice.port is None for a Build
+    with nothing stored and no port in the main project; choice.save tells whether the choice is to be
+    stored. interactive: ask questions (Build never asks, it only patches what is stored)."""
     main_port = project_port(os.path.join(main_fw, PROJ))
     stored = first_line(os.path.join(bench, "port"))
     origin = first_line(os.path.join(bench, "port-origin"))
+    save = False  # every earlier save_port call stored the port that is finally returned
 
     if explicit:
         explicit = explicit.upper()
-        save_port(bench, explicit, main_port)
         if explicit not in present_port_names():
             output.warn("%s is not present now." % explicit)
-        return explicit
+        return PortChoice(explicit, main_port, True)
 
     if not stored:
         stored = main_port
-        if stored:
-            save_port(bench, stored, main_port)
+        save = bool(stored)
     elif main_port and main_port.upper() != (origin or "").upper():
         # The VisualGDB project names another port than when the bench port was set.
         if main_port.upper() != stored.upper() and interactive:
             if re.match(r"y(es)?$", ask("VisualGDB project now uses %s, switch to it? [y/N]" % main_port), re.I):
                 stored = main_port
-            save_port(bench, stored, main_port)
+            save = True
         elif main_port.upper() == stored.upper():
-            save_port(bench, stored, main_port)
+            save = True
 
     if not interactive:
-        return stored
+        return PortChoice(stored, main_port, save)
     present = bool(stored) and stored.upper() in present_port_names()
     if force_menu or not present:
         if stored and not present:
             output.line("Stored port %s is not present." % stored)
         stored = select_port_menu(stored)
-        save_port(bench, stored, main_port)
-    return stored
+        save = True
+    return PortChoice(stored, main_port, save)
+
+
+def store_port(bench, choice):
+    """Writes the port files when the choice asks for it. The bench must exist. Takes the bench guard
+    mutex, so two writers (Port, Monitor) never interleave; the Monitor holds no bench lock."""
+    if choice.save:
+        with winapi.exclusive(os.path.join(bench, BUILD_LOCK)):
+            save_port(bench, choice.port, choice.main_port)

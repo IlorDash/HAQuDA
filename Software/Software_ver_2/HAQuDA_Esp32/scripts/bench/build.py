@@ -9,7 +9,7 @@ import time
 import winreg
 
 from . import output, winapi
-from .project import PLATFORM, PROJ, first_line, write_text
+from .project import BUILD_LOCK, PLATFORM, PROJ, ensure_bench, first_line, write_text
 
 # Builder stage messages that may be shown while the build runs. The builder logs them as
 # "===info ||| <template> ||| [<arguments>]". A strict allow-list on the whole template: any line
@@ -23,6 +23,40 @@ SIZE_TEMPLATES = ("Sketch uses {0} bytes ({2}%%) of program storage space. Maxim
 # An error line is shown only when it looks like a compiler diagnostic: "<file>:<line>:<col>: error:"
 # or "fatal error:". Anything else with "error:" in it (a command line, an argument dump) is hidden.
 DIAGNOSTIC = re.compile(r"(?:(?:[A-Za-z]:)?[^:\r\n]+:\d+:\d+: (?:fatal )?error: |fatal error: )")
+
+
+def refuse_while_building(bench):
+    """Raises when a build of another process holds the bench; Flash and Clean must wait for it."""
+    if winapi.held_by_other(os.path.join(bench, BUILD_LOCK)):
+        raise RuntimeError("A build is running on this bench. Wait for it to end, then run again.")
+
+
+def take_bench_lock(bench):
+    """Takes building.lock in an existing bench. Raises when another live process holds it."""
+    if not winapi.acquire_lock(os.path.join(bench, BUILD_LOCK)):
+        raise RuntimeError("The bench is busy: a build or a Remove bench is running. Wait for it to end, then run again.")
+
+
+def acquire_build_lock(bench):
+    """Takes the bench for a build, a project or port change. The folders and the marker are created
+    only under the same guard that Clean holds while it deletes the bench, so a bench that Clean is
+    removing is never recreated underneath it. Raises when another live process holds the bench, before
+    anything else in it is touched."""
+    with winapi.exclusive(os.path.join(bench, BUILD_LOCK)):
+        ensure_bench(bench)
+        take_bench_lock(bench)
+
+
+def release_build_lock(bench):
+    winapi.release_lock(os.path.join(bench, BUILD_LOCK))
+
+
+def refuse_while_flashing(bench):
+    """Raises when a flash of another process runs: a build would overwrite the images esptool reads.
+    Called with the build lock held; Flash takes its lock first and checks the build lock after, so
+    of a build and a flash that start together at least one sees the other and refuses."""
+    if winapi.held_by_other(os.path.join(bench, "flashing.lock")):
+        raise RuntimeError("A flash is running on this bench. Wait for it to end, then run the build again.")
 
 
 def find_visualgdb():

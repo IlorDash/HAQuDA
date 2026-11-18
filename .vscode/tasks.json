@@ -168,7 +168,7 @@
 		},
 		{
 			"label": "HAQuDA: Install picker",
-			"detail": "Installs the VS Code extension behind the folder and COM port popups. Run once, then reload the window.",
+			"detail": "Installs the VS Code extension behind the folder and COM port popups. Run once, and again when the picker says it is outdated; then reload the window.",
 			"type": "process",
 			"command": "py",
 			"args": [

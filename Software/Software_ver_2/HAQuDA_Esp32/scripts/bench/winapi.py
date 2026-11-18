@@ -1,6 +1,8 @@
 """Windows calls through ctypes: console modes, the process records that hand the COM port over
 between the flash step and the monitor, and a kill-on-close job object."""
+import contextlib
 import ctypes
+import hashlib
 import os
 import time
 from ctypes import byref, c_int, c_uint32, c_ulonglong, c_void_p
@@ -19,6 +21,11 @@ k32.CreateJobObjectW.restype = c_void_p
 k32.CreateJobObjectW.argtypes = [c_void_p, ctypes.c_wchar_p]
 k32.SetInformationJobObject.argtypes = [c_void_p, c_int, c_void_p, c_uint32]
 k32.AssignProcessToJobObject.argtypes = [c_void_p, c_void_p]
+k32.CreateMutexW.restype = c_void_p
+k32.CreateMutexW.argtypes = [c_void_p, c_int, ctypes.c_wchar_p]
+k32.WaitForSingleObject.restype = c_uint32
+k32.WaitForSingleObject.argtypes = [c_void_p, c_uint32]
+k32.ReleaseMutex.argtypes = [c_void_p]
 
 STD_INPUT, STD_OUTPUT = 0xFFFFFFF6, 0xFFFFFFF5
 ENABLE_VT = 4
@@ -156,8 +163,88 @@ def lock_held(path):
     return state == "alive"
 
 
-def remove(path):
+def held_by_other(path):
+    """True when a live process other than this one holds the lock."""
+    return lock_held(path) and record_pid(path) != str(os.getpid())
+
+
+@contextlib.contextmanager
+def exclusive(path):
+    """A named kernel mutex for the lock file `path`: what runs inside is alone with respect to every
+    other holder of the same name. acquire_lock uses it for check, removal and creation of the record;
+    Clean holds it while it deletes the bench, so no starter can create files in a folder that is going
+    away. The system frees it when its owner dies, so it never goes stale. Raises RuntimeError when the
+    mutex cannot be created, or is not free within 5 s."""
+    name = "Local\\HAQuDA-bench-" + hashlib.sha1(os.path.normcase(os.path.abspath(path)).encode("utf-8")).hexdigest()
+    handle = k32.CreateMutexW(None, False, name)
+    if not handle:
+        raise RuntimeError("Cannot create the Windows mutex that guards the bench (error %d)." % ctypes.get_last_error())
+    if k32.WaitForSingleObject(handle, 5000) not in (0, 0x80):  # WAIT_OBJECT_0, or WAIT_ABANDONED: the owner died
+        k32.CloseHandle(handle)
+        raise RuntimeError("The bench is busy: another HAQuDA task is starting or a Remove bench is deleting it. "
+                           "Wait for it to end, then run again.")
     try:
-        os.unlink(path)
-    except FileNotFoundError:
+        yield
+    finally:
+        k32.ReleaseMutex(handle)
+        k32.CloseHandle(handle)
+
+
+def acquire_lock(path):
+    """Takes the lock; False when a live process holds it. A record of a dead process is replaced.
+    Check, removal and creation run under exclusive(), so two starters that see the same stale record
+    cannot both end up holding the lock. The folder of `path` must exist."""
+    with exclusive(path):
+        for _ in range(10):
+            if lock_held(path):
+                return False
+            remove_quiet(path)
+            try:
+                with open(path, "x", encoding="ascii") as f:
+                    f.write("%d\n%d\n" % (os.getpid(), process_start(os.getpid()) or 0))
+                return True
+            except FileExistsError:  # the removal did not go through (a reader had the file open)
+                time.sleep(0.05)
+        return False
+
+
+def release_lock(path):
+    """Removes the lock when this process owns it. Gives up quietly: a record left behind names a
+    process that is gone by then and reads as stale."""
+    for _ in range(5):
+        pid = record_pid(path)
+        if pid == str(os.getpid()):
+            remove_quiet(path)
+            return
+        if pid is not None or not os.path.exists(path):
+            return  # not ours, or already gone
+        time.sleep(0.05)  # unreadable for a moment
+
+
+def _unlink_retry(path):
+    """Deletes a file; Windows refuses while another process has it open (Python opens without delete
+    sharing), so a few retries. A missing file is fine; the last other error is raised."""
+    for attempt in range(5):
+        try:
+            os.unlink(path)
+            return
+        except FileNotFoundError:
+            return
+        except OSError:
+            if attempt == 4:
+                raise
+            time.sleep(0.05)
+
+
+def remove(path):
+    """Deletes a file after a few retries; raises OSError when it cannot. For files whose absence the
+    caller relies on (the monitor hand-over acknowledgement, the monitor's own records)."""
+    _unlink_retry(path)
+
+
+def remove_quiet(path):
+    """Like remove, but gives up without an error: for lock records, where a leftover reads as stale."""
+    try:
+        _unlink_retry(path)
+    except OSError:
         pass

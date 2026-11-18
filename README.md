@@ -36,12 +36,12 @@ A lamp flashed this way opens its setup access point as `actions_ssid` with the 
 Build the firmware yourself in Visual Studio with Build -> Build Solution. Then flash over UART with Debug -> Program and Start Without Debugging. To flash over OpenOCD instead, run Debug -> Start Debugging with GDB.
 
 ## Build and flash from VS Code
-Build any clone or worktree from one VS Code window and flash the lamp over UART. All builds share one build cache in `.bench` of the main clone; only `sketches/` comes from the picked folder, everything else from the main clone.
+Build the main clone or any of its worktrees from one VS Code window and flash the lamp over UART. All builds share one build cache in `.bench` of the main clone; only `sketches/` comes from the picked folder, everything else from the main clone.
 
 Once:
 1. Set up the build in Visual Studio in the main clone as usual (VisualGDB, ESP32 core, secret build flags).
 2. Install Python 3 and run `py -3 -m pip install esp-idf-monitor`.
-3. In VS Code, run the task "HAQuDA: Install picker" (Terminal -> Run Task..., or Ctrl+Shift+P -> Tasks: Run Task), then run "Developer: Reload Window". Repeat when the picker warns that its version differs.
+3. In VS Code, run the task "HAQuDA: Install picker" (Terminal -> Run Task..., or Ctrl+Shift+P -> Tasks: Run Task), then run "Developer: Reload Window". Repeat when the picker says it is outdated: the task does not start until you do.
 
 Each time:
 1. Press Ctrl+Shift+B and pick the folder in the popup.
@@ -60,6 +60,8 @@ In VS Code, run the other tasks (Terminal -> Run Task..., or Ctrl+Shift+P -> Tas
 | HAQuDA: Change COM port | Asks for the COM port and remembers it for the flash and the monitor. |
 | HAQuDA: Install picker | Installs the extension behind the popups. |
 | HAQuDA: Remove bench | Asks for confirmation and deletes `.bench` safely. The next build is a full one. |
+
+Only one build runs at a time. While it runs, a second build, Flash, Change COM port and Remove bench stop with an error; run them again when the build ends. A build also stops with an error while a flash runs.
 
 Never share `.bench`: its build log and a link in it hold the secret build flags. To delete `.bench`, run the task HAQuDA: Remove bench. Never delete it by hand: it holds junctions to real source folders.
 

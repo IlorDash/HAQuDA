@@ -84,7 +84,7 @@ def run(bench, port, baud, elf, prefix):
                     with open(ack, "w", encoding="ascii") as f:
                         f.write("released")
             else:
-                winapi.remove(ack)
+                winapi.remove_quiet(ack)
                 if child is None:
                     winapi.flush_console_input()
                     child = subprocess.Popen(monitor_command(port, baud, elf, prefix))
@@ -152,7 +152,7 @@ def run_monitor(main_fw, bench, port, cfg, dry_run):
         pass
     finally:
         if winapi.record_pid(pid_file) == str(os.getpid()):
-            winapi.remove(pid_file)
-        winapi.remove(os.path.join(bench, "monitor.released"))
+            winapi.remove_quiet(pid_file)
+        winapi.remove_quiet(os.path.join(bench, "monitor.released"))
         say("--- monitor stopped ---")
     return code

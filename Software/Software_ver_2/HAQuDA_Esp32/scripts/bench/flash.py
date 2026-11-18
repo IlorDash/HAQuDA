@@ -10,6 +10,7 @@ from collections import namedtuple
 from datetime import datetime
 
 from . import output, winapi
+from .build import refuse_while_building
 from .project import PLATFORM, PROJ, first_line, read_latin1, same_path
 
 EspTools = namedtuple("EspTools", "core_path core_version esptool toolchain_prefix")
@@ -219,6 +220,7 @@ def run_flash(bench, cfg, port, not_older_than, dry_run):
     otherwise the build did not produce a new image and an old one would be flashed."""
     if not port:
         raise RuntimeError("No COM port is set. Run the Change COM port task.")
+    refuse_while_building(bench)
     proj_file = os.path.join(bench, PROJ)
     if not os.path.isfile(proj_file):
         raise RuntimeError("The bench has no project yet. Build first.")
@@ -234,10 +236,8 @@ def run_flash(bench, cfg, port, not_older_than, dry_run):
     built = os.stat(app).st_mtime
     if not_older_than is not None and built < not_older_than:
         raise RuntimeError("The build did not produce a new image, not flashing.")
-    output.trace("flash: check images")
 
     tools = find_esp_tools(out_dir)
-    output.trace("flash: find_esp_tools")
     boot_app, boards = (os.path.join(tools.core_path, p) for p in ("tools\\partitions\\boot_app0.bin", "boards.txt"))
     for f in (boot_app, boards):
         if not os.path.isfile(f):
@@ -248,25 +248,31 @@ def run_flash(bench, cfg, port, not_older_than, dry_run):
     args = ["--chip", "esp32", "--port", port, "--baud", speed, "--before", "default_reset", "--after", "hard_reset",
             "write_flash", "-z", "--flash_mode", mode, "--flash_freq", freq, "--flash_size", size,
             "0x1000", bootloader, "0x8000", partitions, "0xe000", boot_app, "0x10000", app]
-    output.trace("flash: board settings")
     output.line("Flashing the build of %s (%s) to %s at %s baud, esp32 core %s." % (
-        first_line(os.path.join(bench, "last-source.txt")), datetime.fromtimestamp(built).strftime("%Y-%m-%d %H:%M:%S"),
+        first_line(os.path.join(bench, "last-source.txt")) or "an unknown folder", datetime.fromtimestamp(built).strftime("%Y-%m-%d %H:%M:%S"),
         port, speed, tools.core_version))
     if dry_run:
         output.line(command_text(tools.esptool, args))
         return 0
 
     lock, ack = os.path.join(bench, "flashing.lock"), os.path.join(bench, "monitor.released")
-    if winapi.lock_held(lock):
+    # Exclusive, with a stale record of a dead flash taken over: a second flash refuses instead of
+    # overwriting the first one's lock. The monitor only observes this file.
+    if not winapi.acquire_lock(lock):
         raise RuntimeError("Another flash is running on this bench.")
-    winapi.remove(ack)  # an ack left by an earlier flash would let esptool start before the monitor released the port
-    winapi.write_record(lock)
     try:
+        # An ack left by an earlier flash would let esptool start before the monitor released the port, so a
+        # file that cannot be deleted stops the flash. Taken after the lock: a monitor that already answered
+        # this lock writes its ack again on its next poll.
+        try:
+            winapi.remove(ack)
+        except OSError as e:
+            raise RuntimeError("Cannot delete the old monitor acknowledgement %s (%s). Quit the serial monitor, then run again." % (ack, e))
+        refuse_while_building(bench)  # after the lock is written: a build that starts now sees it and refuses
         wait_monitor_release(bench)  # the monitor closes the port when it sees the lock; esptool must not start before
         code = run_esptool(tools.esptool, args)
     finally:
-        if winapi.record_pid(lock) == str(os.getpid()):
-            winapi.remove(lock)
+        winapi.release_lock(lock)
     if code != 0:
         output.line("esptool failed (exit code %d). If it could not open %s: the port is busy (is another program using it, "
                     "for example a terminal in Visual Studio?) or it is the wrong port. Pick another with the Change COM port "

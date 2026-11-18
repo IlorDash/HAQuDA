@@ -10,48 +10,88 @@ const { execFile } = require("child_process");
 const SCRIPT_REL = path.join("Software", "Software_ver_2", "HAQuDA_Esp32", "scripts", "haquda-bench.py");
 const SCRIPT_TIMEOUT_MS = 60 * 1000; // the registry lookup takes well under a second
 
-// Bump "version" in package.json on every change of this folder: the warning below compares only
+// Bump "version" in package.json on every change of this folder: the block below compares only
 // the version numbers, so an unbumped change never tells installed copies to update.
 const INSTALL_TASK = "HAQuDA: Install picker";
 const MONITOR_TASK = "HAQuDA: Monitor";
 const DEFAULT_TASK = "HAQuDA: Build + Flash + Monitor";
 const START_WAIT_MS = 10 * 1000;
+const INSTALL_WAIT_MS = 10 * 60 * 1000; // the install is short; a task that never ends stops being watched
+const STOP_WAIT_MS = 5 * 1000; // a monitor that does not end by then no longer holds up the next start
 let installedVersion;
-let versionWarned = false; // at most one warning per window session
 
-// Warns, without blocking the pick, when the installed extension differs from the repo's copy.
-// A repo file that cannot be read or parsed gives no warning.
-function warnIfOutdated(script) {
-	if (versionWarned || !installedVersion) {
-		return;
+// The repo's picker version when it differs from the installed one; undefined when they match or when
+// the repo file cannot be read or parsed (no block then).
+function outdatedAgainst(script) {
+	if (!installedVersion) {
+		return undefined;
 	}
 	let repoVersion;
 	try {
 		const file = path.join(path.dirname(script), "vscode-picker", "package.json");
 		repoVersion = JSON.parse(fs.readFileSync(file, "utf8")).version;
 	} catch (e) {
-		return;
+		return undefined;
 	}
-	if (typeof repoVersion !== "string" || repoVersion === installedVersion) {
-		return;
+	return typeof repoVersion === "string" && repoVersion !== installedVersion ? repoVersion : undefined;
+}
+
+// The one live watch for the end of the Install picker task: its listener and the timeout that drops it.
+let installWatch;
+
+function disposeInstallWatch() {
+	if (installWatch) {
+		clearTimeout(installWatch.timer);
+		installWatch.listener.dispose();
+		installWatch = undefined;
 	}
-	versionWarned = true;
-	// Not awaited: the picker must open at once.
-	vscode.window
-		.showWarningMessage(
-			"HAQuDA picker " + installedVersion + " differs from the repo's " + repoVersion +
-				". Run the Install picker task, then Reload Window.",
-			"Install picker"
-		)
-		.then((choice) => {
-			if (choice === "Install picker") {
-				return vscode.commands.executeCommand("workbench.action.tasks.runTask", INSTALL_TASK);
-			}
-			return undefined;
-		})
-		.then(undefined, (e) => {
-			vscode.window.showErrorMessage("HAQuDA picker: cannot run the " + INSTALL_TASK + " task: " + e.message);
-		});
+}
+
+// Runs the Install picker task and offers the window reload when it succeeds. Not awaited by the caller.
+async function installPicker() {
+	const folder = findWorkspaceFolder();
+	disposeInstallWatch(); // a listener of an earlier install must not report a second time
+	// Registered before the task starts, so its end cannot be missed.
+	const listener = vscode.tasks.onDidEndTaskProcess((event) => {
+		if (folder === undefined || !isOurTask(event.execution.task, INSTALL_TASK, folder)) {
+			return;
+		}
+		disposeInstallWatch();
+		if (event.exitCode === 0) {
+			vscode.window.showInformationMessage("HAQuDA picker installed.", { modal: true }, "Reload Window").then((choice) => {
+				if (choice === "Reload Window") {
+					vscode.commands.executeCommand("workbench.action.reloadWindow");
+				}
+			});
+		} else if (event.exitCode !== undefined) {
+			vscode.window.showErrorMessage("HAQuDA picker: the " + INSTALL_TASK + " task failed (exit code " + event.exitCode + ").");
+		}
+	});
+	installWatch = { listener, timer: setTimeout(disposeInstallWatch, INSTALL_WAIT_MS) };
+	try {
+		await vscode.commands.executeCommand("workbench.action.tasks.runTask", INSTALL_TASK);
+	} catch (e) {
+		disposeInstallWatch();
+		vscode.window.showErrorMessage("HAQuDA picker: cannot run the " + INSTALL_TASK + " task: " + e.message);
+	}
+}
+
+// True when the pick must not go on: the installed picker is outdated. A modal message says so; the
+// caller returns undefined, which makes VS Code cancel the task.
+async function blockedAsOutdated(script) {
+	const repoVersion = outdatedAgainst(script);
+	if (repoVersion === undefined) {
+		return false;
+	}
+	const choice = await vscode.window.showWarningMessage(
+		"HAQuDA picker " + installedVersion + " is outdated, the repo has " + repoVersion + ". The task was not started.",
+		{ modal: true },
+		"Install picker"
+	);
+	if (choice === "Install picker") {
+		installPicker();
+	}
+	return true;
 }
 
 // With several workspace folders only the one that holds the script is meaningful.
@@ -142,7 +182,9 @@ async function pick(action, title, placeholder, toItem) {
 		vscode.window.showErrorMessage("HAQuDA picker: " + SCRIPT_REL + " is not in any workspace folder.");
 		return undefined;
 	}
-	warnIfOutdated(script);
+	if (await blockedAsOutdated(script)) {
+		return undefined;
+	}
 	let items;
 	try {
 		// Mapping stays inside the try: an entry of an unexpected shape ends in the error popup too.
@@ -158,9 +200,58 @@ async function pick(action, title, placeholder, toItem) {
 	return showPicker(title, placeholder, items);
 }
 
+// Resolves when the stop of the monitor ends (its task end event) or after STOP_WAIT_MS; undefined
+// while no stop is under way.
+let pendingStop;
+let liveBuilds = 0; // build processes of the default task that started and have not ended yet
+
+// Terminates the running monitor task(s) of the folder. Called when the build is terminated (a restart
+// closes only the build's terminal): a monitor left alone in the group would make the next build open
+// its terminal to the right of the monitor.
+function stopMonitors(folder) {
+	const running = vscode.tasks.taskExecutions.filter((execution) => isOurTask(execution.task, MONITOR_TASK, folder));
+	if (running.length === 0) {
+		return;
+	}
+	const waits = running.map(
+		(execution) =>
+			new Promise((resolve) => {
+				// Registered before terminate(), so the end event cannot be missed.
+				const listener = vscode.tasks.onDidEndTask((event) => {
+					if (isOurTask(event.execution.task, MONITOR_TASK, folder)) {
+						done();
+					}
+				});
+				const timer = setTimeout(done, STOP_WAIT_MS);
+				function done() {
+					clearTimeout(timer);
+					listener.dispose();
+					resolve();
+				}
+				try {
+					execution.terminate();
+				} catch (e) {
+					done(); // nothing to wait for: a failed stop must not leave a rejected pendingStop
+				}
+			})
+	);
+	const finish = () => {
+		if (pendingStop === stop) {
+			pendingStop = undefined;
+		}
+	};
+	const stop = Promise.all([pendingStop, ...waits]).then(finish, finish);
+	pendingStop = stop;
+}
+
 // The monitor starts from here, not as a dependsOn of the default task: that task would open the
 // monitor's terminal at once, before the build's, and the shared panel would show them swapped.
 async function startMonitor(folder) {
+	// A restart starts the new build while the old monitor is still ending: wait for it, otherwise it
+	// would still be listed below and no new monitor would start.
+	if (pendingStop) {
+		await pendingStop;
+	}
 	if (vscode.tasks.taskExecutions.some((execution) => isOurTask(execution.task, MONITOR_TASK, folder))) {
 		return; // a running monitor is kept, it steps aside for the flash by itself
 	}
@@ -209,6 +300,26 @@ async function pickSource(args) {
 function activate(context) {
 	installedVersion = context.extension.packageJSON.version;
 	context.subscriptions.push(
+		// exitCode is undefined only when the task was terminated (stop or restart of the build); any
+		// number, also a failure or Ctrl+C in the terminal, is a normal end and keeps the monitor running.
+		// Counts the live build processes of the default task. A late end event of an old build, after the
+		// new one has started, leaves the counter above 0: the monitor in the group belongs to the new build.
+		vscode.tasks.onDidStartTaskProcess((event) => {
+			const folder = findWorkspaceFolder();
+			if (folder !== undefined && isOurTask(event.execution.task, DEFAULT_TASK, folder)) {
+				liveBuilds++;
+			}
+		}),
+		vscode.tasks.onDidEndTaskProcess((event) => {
+			const folder = findWorkspaceFolder();
+			if (folder === undefined || !isOurTask(event.execution.task, DEFAULT_TASK, folder)) {
+				return;
+			}
+			liveBuilds = Math.max(0, liveBuilds - 1);
+			if (event.exitCode === undefined && liveBuilds === 0) {
+				stopMonitors(folder);
+			}
+		}),
 		vscode.commands.registerCommand("haquda.pickSource", pickSource),
 		vscode.commands.registerCommand("haquda.pickPort", () =>
 			pick("Ports", "HAQuDA: COM port", "Port of the lamp", (p) => ({
@@ -222,6 +333,8 @@ function activate(context) {
 	);
 }
 
-function deactivate() {}
+function deactivate() {
+	disposeInstallWatch();
+}
 
 module.exports = { activate, deactivate };

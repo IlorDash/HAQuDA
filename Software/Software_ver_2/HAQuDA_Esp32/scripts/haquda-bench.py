@@ -25,6 +25,10 @@ starts it again when the lock is gone. A lock whose process is gone is ignored. 
 runs per bench (<bench>\\monitor.pid). The monitor needs esp-idf-monitor:
 py -3 -m pip install esp-idf-monitor
 
+Builds never run at the same time: Build, Flash, Port and Clean hold <bench>\\building.lock while they
+write in the bench (a build for its whole run). Another one of them refuses while it is held, and a
+Build also refuses while a flash runs. A lock whose process is gone is ignored.
+
 Python 3.8+, standard library only: py -3 haquda-bench.py --action Build. Never deletes anything
 recursively: the junctions point at real source folders.
 """
@@ -38,10 +42,9 @@ import os
 import re
 import time
 
-from bench import build, clean, flash, libs, monitor, output, picker, port, project
+from bench import build, clean, flash, libs, monitor, output, picker, port, project, winapi
 
 ACTIONS = ("Build", "Flash", "BuildFlash", "Monitor", "Port", "Sources", "Ports", "InstallPicker", "Clean")
-CONFIGS = ("Debug", "Release")
 PICK_OPTIONS = ("--source", "--port", "--confirm")  # filled by VS Code popups
 
 
@@ -76,16 +79,11 @@ def parse_args():
     p = argparse.ArgumentParser(description="Builds, flashes and monitors the firmware through a shared bench folder.")
     p.add_argument("--source", help="root of the clone or worktree whose sketches folder is built; optional, a menu asks. "
                                     "Flash, Monitor and Port ignore it: they work on the last bench build")
-    p.add_argument("--bench-root", help="default: <main clone root>\\.bench")
-    p.add_argument("--config", type=one_of(CONFIGS), default="Debug", metavar="{Debug,Release}")
     p.add_argument("--action", type=one_of(ACTIONS), default="Build", metavar="{%s}" % ",".join(ACTIONS))
     p.add_argument("--port", type=lambda t: t.upper() if re.fullmatch(r"COM\d+", t, re.I) else p.error("--port must look like COM3"),
                    help="COM port to use and remember; without it the stored port is used")
     p.add_argument("--confirm", help="Clean only: 'Yes' removes the bench, any other value does nothing; without it the script asks y/N")
     p.add_argument("--dry-run", action="store_true", help="print the esptool and esp-idf-monitor command lines instead of running them")
-    p.add_argument("--no-timestamps", action="store_true", help="no host time at the start of each output line")
-    p.add_argument("--no-color", action="store_true", help="no colours and no dim time (also when the output is redirected)")
-    p.add_argument("--trace", action="store_true", help="print how long each preparation step took")
     return p.parse_args()
 
 
@@ -94,7 +92,7 @@ def main(args):
     main_root = project.main_clone_root(script_dir)
     main_fw = os.path.join(main_root, project.FW_REL)
     # Full path before any use: child processes resolve a relative path against their own directory.
-    bench = os.path.abspath(args.bench_root or os.path.join(main_root, ".bench")).rstrip("\\")
+    bench = os.path.abspath(os.path.join(main_root, ".bench"))
     need_build, need_flash = args.action in ("Build", "BuildFlash"), args.action in ("Flash", "BuildFlash")
 
     if args.action in ("Sources", "Ports"):
@@ -109,22 +107,26 @@ def main(args):
         return 0
 
     if args.action == "Clean":
-        # Before makedirs: removing a bench must not create one first.
-        output.init(args.no_timestamps, args.no_color, args.trace)
-        # The bench path here keeps a trailing backslash of a drive root, so the drive-root guard sees it.
-        return clean.run_clean(args.bench_root or os.path.join(main_root, ".bench"), args.confirm, main_root)
+        # Removing a bench must not create one first.
+        output.init()
+        return clean.run_clean(bench, args.confirm, main_root)
 
-    os.makedirs(os.path.join(bench, "build"), exist_ok=True)
-    clean.write_marker(bench)  # what Clean checks before it deletes anything
-    output.init(args.no_timestamps, args.no_color, args.trace)
-    output.trace("start, output style")
+    output.init()
 
+    # Monitor and InstallPicker run next to a build and take no bench lock; they only need the folder.
+    # The folder is created under the guard mutex that Clean holds while it deletes the bench (a short hold).
     if args.action == "InstallPicker":
+        with winapi.exclusive(os.path.join(bench, project.BUILD_LOCK)):
+            project.ensure_bench(bench)
         return picker.install(bench)
 
     if args.action == "Monitor":
         # Starts together with the build in the next terminal: never asks, never touches the project.
-        return monitor.run_monitor(main_fw, bench, port.resolve_port(main_fw, bench, args.port, False, False), args.config, args.dry_run)
+        choice = port.resolve_port(main_fw, bench, args.port, False, False)
+        with winapi.exclusive(os.path.join(bench, project.BUILD_LOCK)):
+            project.ensure_bench(bench)
+            port.store_port(bench, choice)
+        return monitor.run_monitor(main_fw, bench, choice.port, project.CONFIG, args.dry_run)
 
     source_root = None
     if need_build:
@@ -134,35 +136,45 @@ def main(args):
                 raise RuntimeError("Cannot find path '%s' because it does not exist." % source_root)
         else:
             source_root = project.select_source(main_root, bench)
-    output.trace("source menu")
 
-    # Build only patches the stored port; every other action may ask about it.
-    com_port = port.resolve_port(main_fw, bench, args.port, args.action != "Build", args.action == "Port")
-    output.trace("resolve_port")
-    with output.spinner("Preparing the bench project", plain_line=False):  # local files only, normally instant
-        project.update_bench_project(main_fw, bench, com_port)
-    output.trace("update_bench_project")
+    # Build only patches the stored port; every other action may ask about it. The questions are asked
+    # before the bench lock, and nothing is written yet (the bench may not exist).
+    choice = port.resolve_port(main_fw, bench, args.port, args.action != "Build", args.action == "Port")
+    com_port = choice.port
 
-    if args.action == "Port":
-        output.line("COM port: %s (stored in %s)" % (com_port, os.path.join(bench, "port")))
-        return 0
-
+    # The bench lock is taken before the first shared file is written (the port file, the bench project, the
+    # sketches junction, the builder output) by every action that writes there, and released right after the
+    # build or the project refresh, before the flash. So builds never overlap, and a Flash or Port cannot
+    # rewrite the project under a running build. The bench folder itself is created under the lock.
+    build.acquire_build_lock(bench)
     build_start = None
-    if need_build:
-        libs.check_source_matches_main(source_root, main_root)
-        output.trace("check_source_matches_main")
-        with output.spinner("Preparing the bench folders", plain_line=False):
-            project.init_bench_source(source_root, main_root, bench)
-        output.trace("init_bench_source")
-        build_start = time.time()
-        if need_flash:
-            output.line("If your lamp has no automatic reset, put it into the bootloader mode while it builds; "
-                        "the flash starts right after the build.")
-        code = build.run_build(bench, args.config)
-        if code != 0:
-            return code
+    try:
+        if need_build:
+            build.refuse_while_flashing(bench)  # a build must not overwrite the images esptool reads
+        port.store_port(bench, choice)
+        with output.spinner("Preparing the bench project", plain_line=False):  # local files only, normally instant
+            project.update_bench_project(main_fw, bench, com_port)
+
+        if args.action == "Port":
+            output.line("COM port: %s (stored in %s)" % (com_port, os.path.join(bench, "port")))
+            return 0
+
+        if need_build:
+            libs.check_source_matches_main(source_root, main_root)
+            with output.spinner("Preparing the bench folders", plain_line=False):
+                project.init_bench_source(source_root, main_root, bench)
+            build_start = time.time()
+            if need_flash:
+                output.line("If your lamp has no automatic reset, put it into the bootloader mode while it builds; "
+                            "the flash starts right after the build.")
+            code = build.run_build(bench, project.CONFIG)
+            if code != 0:
+                return code
+            project.remember_source(bench, source_root)
+    finally:
+        build.release_build_lock(bench)
     if need_flash:
-        return flash.run_flash(bench, args.config, com_port, build_start, args.dry_run)
+        return flash.run_flash(bench, project.CONFIG, com_port, build_start, args.dry_run)
     return 0
 
 

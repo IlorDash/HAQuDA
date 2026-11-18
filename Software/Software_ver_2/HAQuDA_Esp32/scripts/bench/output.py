@@ -1,9 +1,8 @@
-"""Console output of haquda-bench.py: time-prefixed lines, colours, progress line, spinner, trace."""
+"""Console output of haquda-bench.py: time-prefixed lines, colours, progress line, spinner."""
 import contextlib
 import shutil
 import sys
 import threading
-import time
 from datetime import datetime
 
 from . import winapi
@@ -11,22 +10,18 @@ from . import winapi
 ESC = "\x1b"
 SPIN = "|/-\\"
 PREFIX_WIDTH = 15  # "HH:MM:SS.fff | "
-_stamps = True
 _ansi = False
-_trace = False
 _inline = False  # a progress line is on screen
-_t0 = _tlast = time.monotonic()
 
 
-def init(no_timestamps, no_color, trace):
+def init():
     """Escape sequences are used only on an interactive console that can process them."""
-    global _stamps, _ansi, _trace
+    global _ansi
     try:
         sys.stdout.reconfigure(errors="replace")  # a legacy code page must not fail on a path
     except (AttributeError, ValueError):
         pass
-    _stamps, _trace = not no_timestamps, trace
-    _ansi = not no_color and sys.stdout.isatty() and winapi.enable_vt()
+    _ansi = sys.stdout.isatty() and winapi.enable_vt()
 
 
 def write(text):
@@ -35,9 +30,7 @@ def write(text):
 
 
 def time_prefix(now=None):
-    """'HH:MM:SS.fff | ' with the time dim, '' when timestamps are off."""
-    if not _stamps:
-        return ""
+    """'HH:MM:SS.fff | ' with the time dim."""
     ts = (now or datetime.now()).strftime("%H:%M:%S.%f")[:-3]
     return "%s[2m%s |%s[0m " % (ESC, ts, ESC) if _ansi else ts + " | "
 
@@ -59,23 +52,13 @@ def warn(text):
     line("WARNING: " + text, "33")
 
 
-def trace(step):
-    """With --trace: how long the step that just ended took, and the time since the start."""
-    global _tlast
-    if not _trace:
-        return
-    now = time.monotonic()
-    line("trace: %-28s %6.0f ms (total %.0f ms)" % (step, (now - _tlast) * 1000, (now - _t0) * 1000))
-    _tlast = now
-
-
 def width():
     """Columns of a console line that never wrap: one less than the window."""
     return max(shutil.get_terminal_size((80, 24)).columns - 1, 1)
 
 
 def progress_width():
-    return max(10, width() - (PREFIX_WIDTH if _stamps else 0))
+    return max(10, width() - PREFIX_WIDTH)
 
 
 def progress(text):

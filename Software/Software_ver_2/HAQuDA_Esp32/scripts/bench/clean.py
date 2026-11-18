@@ -12,21 +12,10 @@ import subprocess
 import sys
 
 from . import output, winapi
-from .project import FW_REL, PROJ, ask, source_candidates
+from .build import release_build_lock, take_bench_lock
+from .project import BENCH_MARKER, BUILD_LOCK, FW_REL, PROJ, ask, source_candidates
 
 JUNCTIONS = ("sketches", "Libs")
-# Written by every action that creates or uses the bench; Clean deletes only a folder that has it.
-# Files such as port or the project file also exist in other folders, so they prove nothing.
-BENCH_MARKER = "haquda-bench.marker"
-MARKER_TEXT = "This folder is the HAQuDA build bench. The HAQuDA: Remove bench task deletes it.\n"
-
-
-def write_marker(bench):
-    """Creates the marker when missing. Not called by the read-only JSON actions."""
-    path = os.path.join(bench, BENCH_MARKER)
-    if not os.path.exists(path):
-        with open(path, "w", encoding="ascii") as f:
-            f.write(MARKER_TEXT)
 
 
 def _norm(path):
@@ -167,11 +156,14 @@ def run_clean(bench, confirm, main_root):
                            "a bench. Nothing was deleted." % (bench, BENCH_MARKER))
     _check_idle(bench)
 
-    # The flash lock keeps a flash and a monitor from starting while the bench goes away. A build writes
-    # no lock or process record, so a running build cannot be detected: do not start Clean during one.
+    # The flash lock keeps a flash and a monitor from starting while the bench goes away; the build lock
+    # does the same for a build and fails when a build already runs. Both are taken the same exclusive way
+    # as by their other users, so a flash or build that starts together with Clean refuses.
+    take_bench_lock(bench)
     lock = os.path.join(bench, "flashing.lock")
-    winapi.write_record(lock)
     try:
+        if not winapi.acquire_lock(lock):
+            raise RuntimeError("A flash is running. Wait for it to end, then run again.")
         if winapi.record_state(os.path.join(bench, "monitor.pid")) in ("alive", "unreadable"):
             raise RuntimeError("A serial monitor of this bench started meanwhile. Quit it, then run again.")
         if confirm is None:
@@ -180,10 +172,13 @@ def run_clean(bench, confirm, main_root):
         if confirm != "Yes":
             output.line("Cancelled, nothing was removed.")
             return 0
-        output.line("Do not run Clean during a build: a running build cannot be detected.")
-        for item in remove_bench(bench):
-            output.line("Removed " + item)
+        # The guard is held while the folder is deleted: a Build, Flash or Port that starts now waits for it
+        # (up to 5 s, then refuses) instead of creating files in a folder that is going away. It then
+        # finds no bench and creates a fresh one.
+        with winapi.exclusive(os.path.join(bench, BUILD_LOCK)):
+            for item in remove_bench(bench):
+                output.line("Removed " + item)
         return 0
     finally:
-        if winapi.record_pid(lock) == str(os.getpid()):
-            winapi.remove(lock)
+        winapi.release_lock(lock)
+        release_build_lock(bench)  # the folder may be gone already: nothing to do then
