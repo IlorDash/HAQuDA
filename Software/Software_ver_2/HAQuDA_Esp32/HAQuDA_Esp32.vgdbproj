@@ -71,6 +71,7 @@
         <string> AP_PASS="$(AP_pass_uv)"</string>
         <string>DDNS_DOMAIN="$(DDNS_Domain_uv)"</string>
         <string>DDNS_TOKEN="$(DDNS_Token_uv)"</string>
+        <string>CONFIG_ARDUHAL_LOG_COLORS=1</string>
       </Common>
     </PreprocessorMacros>
     <ExtraCompilerFlags>
