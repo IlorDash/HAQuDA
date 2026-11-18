@@ -1,4 +1,5 @@
 """COM port: which ports exist, the menu, and the stored choice in <bench>\\port."""
+import contextlib
 import os
 import re
 import winreg
@@ -74,12 +75,13 @@ def friendly_names():
     return present + remembered
 
 
-def present_ports():
-    """(name, label) of the ports that exist now, label as Windows shows it; for the menu only."""
+def present_ports(show_progress=True):
+    """(name, label) of the ports that exist now, label as Windows shows it. show_progress=False
+    prints nothing at all (the JSON action)."""
     names = present_port_names()
     output.trace("port names (SERIALCOMM)")
     friendly = {}
-    with output.spinner("Looking up COM ports"):
+    with output.spinner("Looking up COM ports") if show_progress else contextlib.nullcontext():
         found = friendly_names()
     for text in found:  # the first name per port wins
         m = re.search(r"\((COM\d+)\)", text, re.I)
@@ -87,6 +89,17 @@ def present_ports():
             friendly.setdefault(m.group(1).upper(), text)
     output.trace("port names (registry)")
     return [(n, friendly.get(n, n)) for n in names]
+
+
+def port_list(main_fw, bench):
+    """Ports for the VS Code picker: the stored one first, also when it is absent. Read-only: the
+    initial port comes from the main project like in resolve_port, but nothing is saved."""
+    stored = first_line(os.path.join(bench, "port")) or project_port(os.path.join(main_fw, PROJ))
+    stored = stored.upper() if stored else None
+    items = [{"name": name, "label": label, "last": name == stored, "present": True} for name, label in present_ports(False)]
+    if stored and not any(item["last"] for item in items):
+        items.append({"name": stored, "label": stored, "last": True, "present": False})
+    return sorted(items, key=lambda item: not item["last"])
 
 
 def select_port_menu(current):

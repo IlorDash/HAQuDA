@@ -3,7 +3,7 @@
 	"tasks": [
 		{
 			"label": "HAQuDA: Build + Flash + Monitor",
-			"detail": "Opens the build output and the serial monitor side by side, builds, then flashes the lamp.",
+			"detail": "Asks for the folder, then builds and flashes the lamp, with the serial monitor next to it. Run HAQuDA: Install picker once first.",
 			"dependsOn": [
 				"HAQuDA: Build + Flash",
 				"HAQuDA: Monitor"
@@ -24,7 +24,9 @@
 				"-3",
 				"${workspaceFolder}\\Software\\Software_ver_2\\HAQuDA_Esp32\\scripts\\haquda-bench.py",
 				"--action",
-				"BuildFlash"
+				"BuildFlash",
+				"--source",
+				"${input:source}"
 			],
 			"presentation": {
 				"reveal": "always",
@@ -71,14 +73,16 @@
 		},
 		{
 			"label": "HAQuDA: Build",
-			"detail": "Builds the chosen folder only.",
+			"detail": "Asks for the folder and builds it only. Run HAQuDA: Install picker once first.",
 			"type": "shell",
 			"command": "py",
 			"args": [
 				"-3",
 				"${workspaceFolder}\\Software\\Software_ver_2\\HAQuDA_Esp32\\scripts\\haquda-bench.py",
 				"--action",
-				"Build"
+				"Build",
+				"--source",
+				"${input:source}"
 			],
 			"group": "build",
 			"presentation": {
@@ -110,13 +114,16 @@
 		},
 		{
 			"label": "HAQuDA: Change COM port",
+			"detail": "Asks for the COM port and remembers it for Flash and Monitor. Run HAQuDA: Install picker once first.",
 			"type": "shell",
 			"command": "py",
 			"args": [
 				"-3",
 				"${workspaceFolder}\\Software\\Software_ver_2\\HAQuDA_Esp32\\scripts\\haquda-bench.py",
 				"--action",
-				"Port"
+				"Port",
+				"--port",
+				"${input:port}"
 			],
 			"presentation": {
 				"reveal": "always",
@@ -125,6 +132,37 @@
 				"clear": true
 			},
 			"problemMatcher": []
+		},
+		{
+			"label": "HAQuDA: Install picker",
+			"detail": "Installs the VS Code extension behind the folder and COM port popups. Run once, then reload the window.",
+			"type": "shell",
+			"command": "py",
+			"args": [
+				"-3",
+				"${workspaceFolder}\\Software\\Software_ver_2\\HAQuDA_Esp32\\scripts\\haquda-bench.py",
+				"--action",
+				"InstallPicker"
+			],
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"clear": true
+			},
+			"problemMatcher": []
+		}
+	],
+	"inputs": [
+		{
+			"id": "source",
+			"type": "command",
+			"command": "haquda.pickSource"
+		},
+		{
+			"id": "port",
+			"type": "command",
+			"command": "haquda.pickPort"
 		}
 	]
 }

@@ -11,6 +11,9 @@ Actions:
   BuildFlash   Build, then Flash
   Monitor      serial monitor (esp-idf-monitor), quit with Ctrl+]
   Port         choose the COM port again
+  Sources      JSON list of the source folders for the VS Code picker, last used first
+  Ports        JSON list of the COM ports for the VS Code picker, stored port first
+  InstallPicker  pack scripts/vscode-picker into a .vsix and install it with "code"
 
 Without --source a numbered menu lists the main clone and every worktree. The COM port lives in
 <bench>\\port and is patched into the bench copy of the project only; no tracked file is changed.
@@ -29,13 +32,14 @@ import sys
 sys.dont_write_bytecode = True  # no __pycache__ in the repository
 
 import argparse
+import json
 import os
 import re
 import time
 
-from bench import build, flash, libs, monitor, output, port, project
+from bench import build, flash, libs, monitor, output, picker, port, project
 
-ACTIONS = ("Build", "Flash", "BuildFlash", "Monitor", "Port")
+ACTIONS = ("Build", "Flash", "BuildFlash", "Monitor", "Port", "Sources", "Ports", "InstallPicker")
 CONFIGS = ("Debug", "Release")
 
 
@@ -55,7 +59,7 @@ def parse_args():
                                     "Flash, Monitor and Port ignore it: they work on the last bench build")
     p.add_argument("--bench-root", help="default: <main clone root>\\.bench")
     p.add_argument("--config", type=one_of(CONFIGS), default="Debug", metavar="{Debug,Release}")
-    p.add_argument("--action", type=one_of(ACTIONS), default="Build", metavar="{Build,Flash,BuildFlash,Monitor,Port}")
+    p.add_argument("--action", type=one_of(ACTIONS), default="Build", metavar="{%s}" % ",".join(ACTIONS))
     p.add_argument("--port", type=lambda t: t.upper() if re.fullmatch(r"COM\d+", t, re.I) else p.error("--port must look like COM3"),
                    help="COM port to use and remember; without it the stored port is used")
     p.add_argument("--dry-run", action="store_true", help="print the esptool and esp-idf-monitor command lines instead of running them")
@@ -73,9 +77,23 @@ def main(args):
     bench = os.path.abspath(args.bench_root or os.path.join(main_root, ".bench")).rstrip("\\")
     need_build, need_flash = args.action in ("Build", "BuildFlash"), args.action in ("Flash", "BuildFlash")
 
+    if args.action in ("Sources", "Ports"):
+        # Machine output for the VS Code picker: no timestamps, no prompts, nothing created in the bench.
+        # Errors go to stderr, which the picker shows to the user.
+        try:
+            items = project.source_list(main_root, bench) if args.action == "Sources" else port.port_list(main_fw, bench)
+        except Exception as e:
+            sys.stderr.write("%s\n" % e)
+            return 1
+        sys.stdout.write(json.dumps(items) + "\n")  # ASCII-only JSON: safe on any console code page
+        return 0
+
     os.makedirs(os.path.join(bench, "build"), exist_ok=True)
     output.init(args.no_timestamps, args.no_color, args.trace)
     output.trace("start, output style")
+
+    if args.action == "InstallPicker":
+        return picker.install(bench)
 
     if args.action == "Monitor":
         # Starts together with the build in the next terminal: never asks, never touches the project.

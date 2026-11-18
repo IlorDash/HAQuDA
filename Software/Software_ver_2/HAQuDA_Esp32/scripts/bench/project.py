@@ -119,13 +119,27 @@ def source_candidates(main_root):
     return found
 
 
-def select_source(main_root, bench):
+def source_choices(main_root, bench):
+    """(candidates, 1-based index of the last used source or 0 when it is not among them)."""
     cands = source_candidates(main_root)
     last = first_line(os.path.join(bench, "last-source.txt"))
-    default = 1
+    index = 0
     for i, (root, _) in enumerate(cands, 1):
         if same_path(root, last):
-            default = i
+            index = i
+    return cands, index
+
+
+def source_list(main_root, bench):
+    """Sources for the VS Code picker, last used first. Read-only: creates nothing in the bench."""
+    cands, last = source_choices(main_root, bench)
+    items = [{"label": branch, "path": root, "last": i == last} for i, (root, branch) in enumerate(cands, 1)]
+    return sorted(items, key=lambda item: not item["last"])  # stable: the rest keeps the menu order
+
+
+def select_source(main_root, bench):
+    cands, last = source_choices(main_root, bench)
+    default = last or 1
     output.line("Folders with firmware sources (* = last used):")
     for i, (root, branch) in enumerate(cands, 1):
         output.line("%s [%d] %-26s %s" % ("*" if i == default else " ", i, branch, root))
