@@ -13,8 +13,6 @@
 
 namespace {
 
-	// A MockLEDs that behaves like the strip: it keeps a pixel buffer, records the buffer at every frame the driver would send
-	// (Show, Clear, SetBright) and counts what blocks in the real driver or must not be used by an animation.
 	class LedRecorder {
 	  public:
 		LedRecorder() : pixels(ANIM_PIXELS, 0) {
@@ -59,9 +57,7 @@ namespace {
 		}
 
 		testing::NiceMock<MockLEDs> mock;
-		// buffer at each sent frame
 		std::vector<std::vector<uint32_t>> frames;
-		// every SetBright() argument
 		std::vector<uint8_t> brightCalls;
 		int blockingCalls = 0;
 		int getBrightCalls = 0;
@@ -106,8 +102,6 @@ namespace {
 		return context;
 	}
 
-	// Calls Step() stepsNum times and returns the waits in order. A pass is the dark frame plus its steps, so the sum of the
-	// waits of one pass is the time the pass takes.
 	std::vector<uint32_t> stepsUntilTotal(HAQuDA_Animation &animation, size_t stepsNum) {
 		std::vector<uint32_t> waits;
 		for (size_t i = 0; i < stepsNum; i++) {
@@ -125,8 +119,6 @@ namespace {
 	}
 
 } // namespace
-
-// ---------------------------------------------------------------- helpers
 
 TEST(AnimationHelpersTest, PixelOfFollowsTheSerpentineChain) {
 	EXPECT_EQ(0, HAQuDA_PixelOf(0, 0));
@@ -166,8 +158,6 @@ TEST(AnimationHelpersTest, MatrixHas108Pixels) {
 	EXPECT_EQ(108, ANIM_PIXELS);
 }
 
-// ---------------------------------------------------------------- snake
-
 TEST(SnakeAnimTest, FirstStepIsTheDarkFrameOf200Ms) {
 	LedRecorder leds;
 	HAQuDA_SnakeAnim snake(leds.mock);
@@ -194,7 +184,6 @@ TEST(SnakeAnimTest, HeadAndTailWalkTheChain) {
 	EXPECT_EQ(200u, wait1);
 	EXPECT_EQ(200u, wait2);
 	ASSERT_EQ(4u, leds.frames.size());
-	// frame 1: pixels 0..4; frame 3: pixels 2..6
 	for (uint16_t pixel = 0; pixel < ANIM_PIXELS; pixel++) {
 		EXPECT_EQ(pixel <= 4 ? ANIM_COLOR_LIME : 0u, leds.frames[1][pixel]) << "frame 1 pixel " << pixel;
 		EXPECT_EQ(((pixel >= 2) && (pixel <= 6)) ? ANIM_COLOR_LIME : 0u, leds.frames[3][pixel]) << "frame 3 pixel " << pixel;
@@ -206,7 +195,6 @@ TEST(SnakeAnimTest, PassIsDarkPlus108StepsPlusThe100MsPause) {
 	HAQuDA_SnakeAnim snake(leds.mock);
 	ASSERT_TRUE(snake.Begin(HAQuDA_SnakeParams(ANIM_COLOR_LIME, 200, 5), NO_CONTEXT));
 
-	// dark + 108 steps
 	const std::vector<uint32_t> waits = stepsUntilTotal(snake, 1 + ANIM_PIXELS);
 
 	EXPECT_EQ(200u + 108u * 200u + 100u, sum(waits));
@@ -305,8 +293,6 @@ TEST(SnakeAnimTest, StepBeforeBeginDrawsNothing) {
 	EXPECT_TRUE(leds.frames.empty());
 }
 
-// ---------------------------------------------------------------- growing
-
 TEST(GrowingAnimTest, RowsFillFromTheTopRowDown) {
 	LedRecorder leds;
 	HAQuDA_GrowingAnim growing(leds.mock);
@@ -357,10 +343,7 @@ TEST(GrowingAnimTest, NextPassStartsDarkAgain) {
 	EXPECT_EQ(0u, leds.litCount(leds.frames.back()));
 }
 
-// ---------------------------------------------------------------- random pixels
-
 namespace {
-	// The pixels set in a pass, in order, with their colours
 	struct RandomPass {
 		std::vector<uint16_t> pixels;
 		std::vector<uint32_t> colors;
@@ -419,7 +402,7 @@ TEST(RandomPixelsAnimTest, ChannelsStayBelow255) {
 }
 
 TEST(RandomPixelsAnimTest, SequenceFollowsTheDocumentedGenerator) {
-	// The page replays this; the sequence for seed 1 is derived here from HAQuDA_XorShift32 with the documented algorithm
+	// The web page replays this sequence, so it is derived here independently of the animation
 	uint32_t state = 1;
 	std::vector<uint8_t> order(ANIM_PIXELS);
 	for (uint16_t i = 0; i < ANIM_PIXELS; i++) {
@@ -498,8 +481,6 @@ TEST(RandomPixelsAnimTest, EachPassRepeatsTheSamePicture) {
 	EXPECT_EQ(firstPassEnd, leds.frames.back());
 }
 
-// ---------------------------------------------------------------- fading
-
 TEST(FadingAnimTest, CountingDownPassTimingMatchesTheOldEffect) {
 	LedRecorder leds;
 	HAQuDA_FadingAnim fading(leds.mock);
@@ -521,7 +502,6 @@ TEST(FadingAnimTest, CountingDownSetsEachLevelInPercentAndEndsAboveTheStopLevel)
 	ASSERT_TRUE(fading.Begin(HAQuDA_FadingParams(ANIM_COLOR_AQUA, 10, 100, 0, 5), contextWithBright(33)));
 	stepsUntilTotal(fading, 2 + 20);
 
-	// one SetBright(100) in the dark phase, then the levels 100 ... 5
 	std::vector<uint8_t> expected = {100};
 	for (int level = 100; level >= 5; level -= 5) {
 		expected.push_back(static_cast<uint8_t>(level));
@@ -534,7 +514,6 @@ TEST(FadingAnimTest, CountingUpReallyFades) {
 	HAQuDA_FadingAnim fading(leds.mock);
 	ASSERT_TRUE(fading.Begin(HAQuDA_FadingParams(ANIM_COLOR_YELLOW, 10, 0, 100, 10), contextWithBright(33)));
 
-	// dark, coloured frame, levels 0, 10 ... 90 (10)
 	const std::vector<uint32_t> waits = stepsUntilTotal(fading, 2 + 10);
 
 	std::vector<uint8_t> expected = {0};
@@ -693,8 +672,6 @@ TEST(FadingAnimTest, StepLargerThanTheRangeShowsTheStartLevelOnly) {
 	EXPECT_EQ(400u, fading.Step(0));
 }
 
-// ---------------------------------------------------------------- static colour
-
 TEST(StaticColorAnimTest, FillsAndResendsEvery300Ms) {
 	LedRecorder leds;
 	HAQuDA_StaticColorAnim staticColor(leds.mock);
@@ -724,10 +701,7 @@ TEST(StaticColorAnimTest, StopDrawsNothingMore) {
 	EXPECT_EQ(1u, leds.frames.size());
 }
 
-// ---------------------------------------------------------------- measurement animations
-
 namespace {
-	// temp, humid, eCO2, TVOC, PM2.5 thresholds of the lamp defaults
 	meas_anim_data lampData() {
 		meas_anim_data data = {};
 		data.dots[0] = {20, 26, 30};
@@ -891,7 +865,6 @@ TEST(MeasAnimTest, MultiPutsTheThreeZonesInEveryColumn) {
 	LedRecorder leds;
 	HAQuDA_MeasMultiAnim meas(leds.mock);
 	meas_anim_data data = lampData();
-	// three clearly different colours: blue, green-ish, red
 	data.values[0] = 10;
 	data.values[1] = 26;
 	data.values[2] = 100;
@@ -909,7 +882,6 @@ TEST(MeasAnimTest, MultiPutsTheThreeZonesInEveryColumn) {
 
 	const std::vector<uint32_t> &frame = leds.frames.back();
 
-	// column 0 (even): rows 1-3 first parameter, 5-7 second, 9-11 third; rows 0, 4, 8 dark
 	for (uint8_t row = 0; row < ANIM_ROWS; row++) {
 		uint32_t expected = 0;
 		if ((row >= 1) && (row <= 3)) {
@@ -920,7 +892,6 @@ TEST(MeasAnimTest, MultiPutsTheThreeZonesInEveryColumn) {
 			expected = c2;
 		}
 		EXPECT_EQ(expected, frame[HAQuDA_PixelOf(0, row)]) << "column 0 row " << static_cast<int>(row);
-		// the same physical rows in an odd column, whose chain runs the other way
 		EXPECT_EQ(expected, frame[HAQuDA_PixelOf(1, row)]) << "column 1 row " << static_cast<int>(row);
 		EXPECT_EQ(expected, frame[HAQuDA_PixelOf(8, row)]) << "column 8 row " << static_cast<int>(row);
 	}
@@ -942,13 +913,11 @@ TEST(MeasAnimTest, NightBarGrowsWithTheHourOnTheOtherColumns) {
 
 	const std::vector<uint32_t> &frame = leds.frames.back();
 
-	// columns 0, 3, 6 carry the colour on all 12 pixels
 	for (uint8_t column : {0, 3, 6}) {
 		for (uint8_t row = 0; row < ANIM_ROWS; row++) {
 			EXPECT_EQ(colour, frame[HAQuDA_PixelOf(column, row)]) << "column " << static_cast<int>(column);
 		}
 	}
-	// the other columns: white from row 0 up to row 5 (6 pixels), dark above, in the physical rows
 	for (uint8_t column : {1, 2, 4, 5, 7, 8}) {
 		for (uint8_t row = 0; row < ANIM_ROWS; row++) {
 			EXPECT_EQ(row < 6 ? white : 0u, frame[HAQuDA_PixelOf(column, row)]) << "column " << static_cast<int>(column) << " row " << static_cast<int>(row);
@@ -974,7 +943,6 @@ TEST(MeasAnimTest, NightHourTwelveFillsTheBarAndZeroEmptiesIt) {
 	meas.Step(0);
 	meas.Step(0);
 
-	// only the three colour columns
 	EXPECT_EQ(static_cast<size_t>(3 * ANIM_ROWS), leds.litCount(leds.frames.back()));
 }
 
@@ -1023,7 +991,6 @@ TEST(MeasAnimTest, TotalShowsTheFirstParameterOutsideItsRange) {
 	LedRecorder leds;
 	HAQuDA_MeasTotalAnim meas(leds.mock);
 	meas_anim_data data = lampData();
-	// eCO2 above its upper threshold; humid and TVOC are fine
 	data.values[2] = 5200;
 	ASSERT_TRUE(meas.Begin(HAQuDA_MeasParams(anim_id::measTotal), measContext(data, 100)));
 	meas.Step(0);
@@ -1054,8 +1021,6 @@ TEST(MeasAnimTest, TotalNeedsAllFiveThresholdSets) {
 
 	EXPECT_FALSE(meas.Begin(HAQuDA_MeasParams(anim_id::measTotal), measContext(data, 100)));
 }
-
-// ---------------------------------------------------------------- animation set
 
 TEST(AnimationSetTest, EveryAnimationIdHasAnObjectWithThatId) {
 	LedRecorder leds;

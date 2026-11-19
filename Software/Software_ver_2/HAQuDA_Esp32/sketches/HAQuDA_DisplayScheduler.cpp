@@ -1,7 +1,6 @@
 #include "HAQuDA_DisplayScheduler.h"
 
 namespace {
-	// Order the next item is chosen in, lowest first (see the class rules).
 	constexpr uint8_t TIER_NEW_FATAL = 0;
 	constexpr uint8_t TIER_NEW_ERROR = 1;
 	constexpr uint8_t TIER_RESUMED = 2;
@@ -44,7 +43,7 @@ bool HAQuDA_DisplayScheduler::post(display_item item) {
 	raise(entry->raises);
 
 	if (isUntilEvent(*entry)) {
-		// Its end already happened: the measurements are ready before the "access point running" picture was posted
+		// Its end already happened, e.g. the measurements were ready before "access point running" was posted
 		if (measReadyNow && ((entry->endsOn & HAQuDA_EndBit(display_end::measReady)) != 0)) {
 			return true;
 		}
@@ -99,7 +98,7 @@ void HAQuDA_DisplayScheduler::MeasReady(bool ready) {
 	}
 }
 
-// Waiting or playing and not over: an item whose end signal arrived while it plays is over, a new post of it is a new occurrence.
+// An item whose end signal arrived while it plays is over, so a new post of it is a new occurrence
 bool HAQuDA_DisplayScheduler::isActive(display_item item) const {
 	if (current.valid && !current.ended && (current.id == item)) {
 		return true;
@@ -131,9 +130,7 @@ bool HAQuDA_DisplayScheduler::shouldPreempt(const display_entry &incoming) const
 	return (incoming.cls == display_class::error) && (playing->cls == display_class::event);
 }
 
-// The interrupted item goes back to the head and starts over with its full minimum time. An item whose end signal already arrived
-// is over and is not kept. A queue full of items that cannot be dropped also loses the interrupted item (not reachable with the
-// shipped catalog, capacity 8).
+// A queue full of items that cannot be dropped also loses the interrupted item (not reachable with the shipped catalog, capacity 8)
 void HAQuDA_DisplayScheduler::preemptCurrent() {
 	if (!current.ended && (queueCount < DISPLAY_QUEUE_CAPACITY || makeRoom())) {
 		insertAt(0, current.id, entry_state::resumed);
@@ -141,7 +138,6 @@ void HAQuDA_DisplayScheduler::preemptCurrent() {
 	current.valid = false;
 }
 
-// Frees one slot by dropping the oldest timed event, if the queue is full. false: full and nothing may be dropped.
 bool HAQuDA_DisplayScheduler::makeRoom() {
 	if (queueCount < DISPLAY_QUEUE_CAPACITY) {
 		return true;
@@ -150,7 +146,7 @@ bool HAQuDA_DisplayScheduler::makeRoom() {
 	for (uint8_t i = 0; i < queueCount; i++) {
 		const display_entry *entry = HAQuDA_GetDisplayEntry(queue[i].id);
 		const bool droppable = (entry != nullptr) && (entry->cls == display_class::event) && !isUntilEvent(*entry);
-		// seq differences, not values: nextSeq may have wrapped
+		// Compare seq differences, not values: nextSeq may have wrapped
 		if (droppable && ((oldest < 0) || (static_cast<uint32_t>(queue[oldest].seq - queue[i].seq) < 0x80000000u))) {
 			oldest = static_cast<int8_t>(i);
 		}
@@ -222,7 +218,6 @@ void HAQuDA_DisplayScheduler::startCurrent(display_item item, uint32_t nowMs) {
 display_pick HAQuDA_DisplayScheduler::Next(uint32_t nowMs) {
 	if (current.valid) {
 		const display_entry *playing = HAQuDA_GetDisplayEntry(current.id);
-		// a fatal error never leaves
 		const bool slotOver
 			= (playing != nullptr) && (playing->cls != display_class::fatal) && (static_cast<uint32_t>(nowMs - current.startMs) >= playing->minMs);
 		if (slotOver) {
@@ -233,14 +228,14 @@ display_pick HAQuDA_DisplayScheduler::Next(uint32_t nowMs) {
 				const display_item playedItem = current.id;
 				removeAt(static_cast<uint8_t>(next));
 				if (keepPlaying) {
-					// the slot freed by removeAt() is the one the rotation needs
+					// The slot freed by removeAt() is the one the rotation needs
 					insertAt(queueCount, playedItem, entry_state::rotated);
 				}
 				startCurrent(nextItem, nowMs);
 			} else if (!persists(current)) {
 				current.valid = false;
 			}
-			// else: alone in the rotation, plays on; startMs stays, so an item posted later replaces it at the next call
+			// Alone in the rotation: plays on, startMs stays so an item posted later replaces it at the next call
 		}
 	}
 	if (!current.valid) {

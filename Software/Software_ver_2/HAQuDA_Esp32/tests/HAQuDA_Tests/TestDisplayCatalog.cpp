@@ -176,8 +176,6 @@ TEST(DisplayCatalogTest, EveryErrorEndsTheBoot) {
 	}
 }
 
-// The animation and parameters of every row (colours and timings the old effect and error code used)
-
 TEST(DisplayCatalogTest, BootIsALimeSnake) {
 	expectParams(HAQuDA_SnakeParams(ANIM_COLOR_LIME, 200, 5), row(display_event::bootSnake).anim);
 }
@@ -218,6 +216,5 @@ TEST(DisplayCatalogTest, NtpFailedIsYellowFadingUp) {
 	const anim_params &params = row(display_error::ntpFailed).anim;
 
 	expectParams(HAQuDA_FadingParams(ANIM_COLOR_YELLOW, 10, 0, 100, 10), params);
-	// counts up: the animation fades it in from dark
 	EXPECT_LT(params.fromPercent, params.toPercent);
 }

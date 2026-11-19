@@ -1,18 +1,15 @@
 #include "HAQuDA_EffectAnimations.h"
 
 namespace {
-	// Brightness steps use a signed type: counting down must not wrap below 0, counting up must not wrap above 255.
+	// Signed: counting down must not wrap below 0, counting up must not wrap above 255
 	constexpr int16_t MAX_PERCENT = 100;
 
-	// One dark frame: the old Clear(). The wait is the 200 ms the driver blocked.
 	uint32_t drawDark(HAQuDA_ILEDs &leds) {
 		leds.FillColor(ANIM_COLOR_OFF);
 		leds.Show(ANIM_NO_WAIT_MS);
 		return ANIM_LEDS_SHOW_MS;
 	}
 } // namespace
-
-// ---------------------------------------------------------------- Snake
 
 bool HAQuDA_SnakeAnim::Begin(const anim_params &params, const anim_context &context) {
 	running = false;
@@ -44,7 +41,7 @@ uint32_t HAQuDA_SnakeAnim::Step(uint32_t nowMs) {
 		}
 	}
 	leds.Show(ANIM_NO_WAIT_MS);
-	// The pixel the head leaves is cleared in the buffer only; the next frame sends it.
+	// Cleared in the buffer only; the next frame sends it
 	leds.SetPixelColor(head, ANIM_COLOR_OFF);
 	head++;
 
@@ -63,8 +60,6 @@ void HAQuDA_SnakeAnim::Stop() {
 anim_id HAQuDA_SnakeAnim::Id() const {
 	return anim_id::snake;
 }
-
-// ---------------------------------------------------------------- Growing
 
 bool HAQuDA_GrowingAnim::Begin(const anim_params &params, const anim_context &context) {
 	running = false;
@@ -110,8 +105,6 @@ anim_id HAQuDA_GrowingAnim::Id() const {
 	return anim_id::growing;
 }
 
-// ---------------------------------------------------------------- Random pixels
-
 bool HAQuDA_RandomPixelsAnim::Begin(const anim_params &params, const anim_context &context) {
 	running = false;
 	if (params.anim != anim_id::randomPixels) {
@@ -125,7 +118,6 @@ bool HAQuDA_RandomPixelsAnim::Begin(const anim_params &params, const anim_contex
 	return true;
 }
 
-// Rebuilds the order from the seed; the per-pixel colours then continue the same generator, see the class comment.
 void HAQuDA_RandomPixelsAnim::startPass() {
 	rngState = seed;
 	for (uint16_t i = 0; i < ANIM_PIXELS; i++) {
@@ -176,10 +168,8 @@ uint32_t HAQuDA_RandomPixelsAnim::Seed() const {
 	return seed;
 }
 
-// ---------------------------------------------------------------- Fading
-
 bool HAQuDA_FadingAnim::Begin(const anim_params &params, const anim_context &context) {
-	// A fade still running is stopped first so its brightness is put back before this one changes it again.
+	// Puts back the brightness of a fade still running before this one changes it
 	Stop();
 	if ((params.anim != anim_id::fading) || (params.fromPercent > MAX_PERCENT) || (params.toPercent > MAX_PERCENT)) {
 		return false;
@@ -204,7 +194,7 @@ uint32_t HAQuDA_FadingAnim::Step(uint32_t nowMs) {
 	}
 	switch (current) {
 		case phase::dark: {
-			// Cleared and brightness set to the start level: still dark, 200 ms for each of the two
+			// The driver's Show() and SetBright() each block 200 ms, the old timing counted both
 			leds.FillColor(ANIM_COLOR_OFF);
 			leds.Show(ANIM_NO_WAIT_MS);
 			leds.SetBright(fromPercent);
@@ -241,7 +231,7 @@ uint32_t HAQuDA_FadingAnim::Step(uint32_t nowMs) {
 
 void HAQuDA_FadingAnim::Stop() {
 	if (running && brightnessChanged) {
-		// Cleared first: SetBright() shows a frame, and the faded colour must not flash at the restored level
+		// SetBright() shows a frame; clear first so the faded colour does not flash at the restored level
 		leds.FillColor(ANIM_COLOR_OFF);
 		leds.SetBright(restorePercent);
 	}
@@ -252,8 +242,6 @@ void HAQuDA_FadingAnim::Stop() {
 anim_id HAQuDA_FadingAnim::Id() const {
 	return anim_id::fading;
 }
-
-// ---------------------------------------------------------------- Static colour
 
 bool HAQuDA_StaticColorAnim::Begin(const anim_params &params, const anim_context &context) {
 	running = false;

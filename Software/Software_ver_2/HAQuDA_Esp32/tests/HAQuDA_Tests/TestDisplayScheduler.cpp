@@ -5,11 +5,6 @@
 
 #include "HAQuDA_DisplayScheduler.h"
 
-// Fake clock: every test passes nowMs itself. Item names: Boot = bootSnake (event, until the boot result), Joined = wifiJoined (timed
-// event, 5 s), Reconnecting = wifiReconnecting (event, until WiFi joined), Ap = apRunning (event, until measurements ready),
-// ConnectFailed = wifiConnectFailed (timed error, 5 s), Lost = wifiLost (error until reconnect/joined), ApFailed / FsFailed = dead
-// stops, Sensors = sensorsFailed and Ntp = ntpFailed (errors until recovered / synced). Errors last 10 s, events 5 s.
-
 namespace {
 	const display_item BOOT = HAQuDA_ItemOf(display_event::bootSnake);
 	const display_item JOINED = HAQuDA_ItemOf(display_event::wifiJoined);
@@ -23,7 +18,6 @@ namespace {
 
 	constexpr uint32_t SECOND = 1000;
 
-	// Follows the schedule from nowMs by jumping from deadline to deadline; returns the item of every change, up to limit changes
 	std::vector<display_item> drain(HAQuDA_DisplayScheduler &scheduler, uint32_t nowMs, size_t limit = 30) {
 		std::vector<display_item> items;
 		for (size_t i = 0; i < limit; i++) {
@@ -39,8 +33,6 @@ namespace {
 		return items;
 	}
 } // namespace
-
-// ---------------------------------------------------------------- basics
 
 TEST(DisplaySchedulerTest, NothingPostedShowsNothing) {
 	HAQuDA_DisplayScheduler scheduler;
@@ -87,8 +79,6 @@ TEST(DisplaySchedulerTest, InvalidIdsAreRefused) {
 	EXPECT_FALSE(scheduler.Post(display_error::count));
 	EXPECT_FALSE(scheduler.Next(0).changed);
 }
-
-// ---------------------------------------------------------------- minimum times
 
 TEST(DisplaySchedulerTest, TimedEventPlaysItsMinimumTimeThenLeaves) {
 	HAQuDA_DisplayScheduler scheduler;
@@ -167,8 +157,6 @@ TEST(DisplaySchedulerTest, NextMsCountsDownToTheEndOfTheMinimumTime) {
 	EXPECT_EQ(5 * SECOND, scheduler.Next(1000).nextMs);
 	EXPECT_EQ(3 * SECOND, scheduler.Next(3000).nextMs);
 }
-
-// ---------------------------------------------------------------- priority
 
 TEST(DisplaySchedulerTest, EventDoesNotInterruptAnEvent) {
 	HAQuDA_DisplayScheduler scheduler;
@@ -281,12 +269,9 @@ TEST(DisplaySchedulerTest, ErrorPostedBeforeTheEventStartedDoesNotRequeueIt) {
 	scheduler.Post(display_event::wifiJoined);
 	scheduler.Post(display_error::wifiConnectFailed);
 
-	// the event was never drawn; the error goes first, then the event plays its full time
 	EXPECT_EQ(CONNECT_FAILED, scheduler.Next(0).item);
 	EXPECT_EQ(JOINED, scheduler.Next(5 * SECOND).item);
 }
-
-// ---------------------------------------------------------------- rotation
 
 TEST(DisplaySchedulerTest, ActiveUntilEventErrorAndEventRotateEachForItsClassTime) {
 	HAQuDA_DisplayScheduler scheduler;
@@ -323,7 +308,6 @@ TEST(DisplaySchedulerTest, EndedItemDropsOutOfTheRotation) {
 	scheduler.Next(1 * SECOND);
 	scheduler.MeasReady(true);
 
-	// the aqua picture ended while it waited: after the error's time the error plays on alone
 	EXPECT_EQ(SENSORS, scheduler.Next(11 * SECOND).item);
 	EXPECT_EQ(SENSORS, scheduler.Next(100 * SECOND).item);
 	EXPECT_FALSE(scheduler.Next(200 * SECOND).changed);
@@ -337,11 +321,8 @@ TEST(DisplaySchedulerTest, NewTimedEventPlaysBeforeTheRotationContinues) {
 	scheduler.Next(10 * SECOND);
 	scheduler.Post(display_event::wifiJoined);
 
-	// joined ends the reconnect snake and waits for the sensors' slot to end
 	EXPECT_EQ(JOINED, scheduler.Next(15 * SECOND).item);
 }
-
-// ---------------------------------------------------------------- end signals
 
 TEST(DisplaySchedulerTest, PostingAResultEndsTheBootSnake) {
 	HAQuDA_DisplayScheduler scheduler;
@@ -349,7 +330,6 @@ TEST(DisplaySchedulerTest, PostingAResultEndsTheBootSnake) {
 	scheduler.Next(0);
 	scheduler.Post(display_event::wifiJoined);
 
-	// the snake plays its 5 s, is not rotated on, the green picture follows for 5 s
 	EXPECT_EQ(BOOT, scheduler.Next(4 * SECOND).item);
 	EXPECT_EQ(JOINED, scheduler.Next(5 * SECOND).item);
 	EXPECT_EQ(display_source::none, scheduler.Next(10 * SECOND).source);
@@ -361,7 +341,6 @@ TEST(DisplaySchedulerTest, AnyErrorEndsTheBootSnakeToo) {
 	scheduler.Next(0);
 	scheduler.Post(display_error::sensorsFailed);
 
-	// the error interrupted the snake and the snake is over: it does not come back
 	EXPECT_EQ(SENSORS, scheduler.Next(1 * SECOND).item);
 	EXPECT_EQ(SENSORS, scheduler.Next(11 * SECOND).item);
 	EXPECT_FALSE(scheduler.Next(11 * SECOND).changed);
@@ -474,8 +453,6 @@ TEST(DisplaySchedulerTest, ErrorCanBePostedAgainOnceItEnded) {
 	EXPECT_TRUE(again.changed);
 }
 
-// ---------------------------------------------------------------- queue
-
 TEST(DisplaySchedulerTest, ConsecutiveDuplicatesAreCoalesced) {
 	HAQuDA_DisplayScheduler scheduler;
 	scheduler.Post(display_error::wifiConnectFailed);
@@ -513,7 +490,6 @@ TEST(DisplaySchedulerTest, PostEqualToThePlayingTimedItemIsCoalesced) {
 
 TEST(DisplaySchedulerTest, OverflowDropsTheOldestTimedEventOnly) {
 	HAQuDA_DisplayScheduler scheduler;
-	// a dead stop plays, so nothing leaves the queue
 	scheduler.Post(display_error::apFailed);
 	scheduler.Next(0);
 	for (int i = 0; i < 4; i++) {
@@ -573,8 +549,6 @@ TEST(DisplaySchedulerTest, QueueFullOfItemsThatMustNotBeDroppedRefusesTheNewOne)
 	EXPECT_EQ(DISPLAY_QUEUE_CAPACITY, scheduler.QueuedCount());
 	EXPECT_EQ(0, scheduler.DroppedCount());
 }
-
-// ---------------------------------------------------------------- background and measurements
 
 TEST(DisplaySchedulerTest, WaitingItemPlaysWhenNothingElseIsActive) {
 	HAQuDA_DisplayScheduler scheduler;
@@ -702,8 +676,6 @@ TEST(DisplaySchedulerTest, SensorsRecoveredGoesStraightToTheMeasurements) {
 
 	EXPECT_EQ(display_source::meas, scheduler.Next(10 * SECOND).source);
 }
-
-// ---------------------------------------------------------------- the 32 bit clock
 
 TEST(DisplaySchedulerTest, MinimumTimeSurvivesTheWrapOfTheClock) {
 	HAQuDA_DisplayScheduler scheduler;
