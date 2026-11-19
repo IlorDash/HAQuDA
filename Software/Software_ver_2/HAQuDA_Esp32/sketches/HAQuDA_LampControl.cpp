@@ -6,8 +6,6 @@
 
 namespace {
 	constexpr char FILE_NAME_LAMP[] = "/lamp";
-	// A slider or a row of taps writes once, after the last change: flash wear and the LED frames a write skips
-	constexpr uint32_t SAVE_DELAY_MS = 3000;
 
 	// Holds the critical section for its lifetime
 	class CriticalLock {
@@ -92,8 +90,10 @@ void HAQuDA_LampControl::showSensorsError() {
 }
 
 void HAQuDA_LampControl::Apply() {
-	// One copy for the decision and the picture: Submit() may change the settings in between
-	const lamp_settings s = copySettings();
+	apply(copySettings());
+}
+
+void HAQuDA_LampControl::apply(const lamp_settings &s) {
 	if (!sensorsRunning && needsSensors(s)) {
 		// No readings to draw. Nothing else is queued: SensorsStarted() is followed by an Apply()
 		showSensorsError();
@@ -150,17 +150,16 @@ void HAQuDA_LampControl::Handle(bool timeKnown, uint16_t minuteOfDay) {
 	minuteNow.store(timeKnown ? minuteOfDay : MINUTE_UNKNOWN);
 
 	if (applyPending.exchange(false)) {
-		Apply();
-	}
-	if (saveDirty.load() && ((uint32_t)(millis() - changedMs.load()) >= SAVE_DELAY_MS)) {
-		saveDirty.store(false);
-		save();
+		// The flag is cleared before the copy: a Submit() after the copy sets it again and is saved and applied on the next pass
+		const lamp_settings s = copySettings();
+		save(s);
+		apply(s);
 	}
 }
 
-void HAQuDA_LampControl::save() {
+void HAQuDA_LampControl::save(const lamp_settings &s) {
 	uint8_t record[LAMP_RECORD_LEN];
-	if (!HAQuDA_EncodeLampRecord(copySettings(), record, sizeof(record)) || !HAQuDA_FileStorage::WriteFile(FILE_NAME_LAMP, record, sizeof(record))) {
+	if (!HAQuDA_EncodeLampRecord(s, record, sizeof(record)) || !HAQuDA_FileStorage::WriteFile(FILE_NAME_LAMP, record, sizeof(record))) {
 		HAQuDA_Logger::LogError("Lamp settings: save failed");
 	}
 }
@@ -176,9 +175,7 @@ lamp_update_result HAQuDA_LampControl::Submit(const lamp_request &request) {
 		CriticalLock lock(mux);
 		settings = next;
 	}
-	// The flags follow the store, so Handle() that sees them reads the new settings
-	changedMs.store(millis());
-	saveDirty.store(true);
+	// The flag follows the store, so Handle() that sees it reads the new settings
 	applyPending.store(true);
 	return lamp_update_result::ok;
 }

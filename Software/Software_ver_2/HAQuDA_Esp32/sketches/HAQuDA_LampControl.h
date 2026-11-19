@@ -9,8 +9,8 @@
 
 // The lamp as the user set it on the web page: power, brightness, mode and the parameters of the modes (HAQuDA_LampSettings.h).
 //
-// The async_tcp task validates a change and stores it (Submit()); loop() puts it on the display (Handle() -> Apply()) and writes it
-// to /lamp a few seconds after the last change. The web task never touches the display, the flash or the logger. The accepted
+// The async_tcp task validates a change and stores it (Submit()); loop() writes it to /lamp and then puts it on the display
+// (Handle()), so a change is saved at once, before the lamp shows it. The web task never touches the display, the flash or the logger. The accepted
 // settings are what /api/status reports at once, the display follows within one loop() pass and the next ShowTask pass.
 //
 // Boot animations, events (WiFi joined or lost) and errors draw over the user's picture through HAQuDA_DisplayManip; whoever ends
@@ -38,9 +38,9 @@ class HAQuDA_LampControl {
 	// only when it raises the sensors error.
 	void Apply();
 
-	// Applies a change accepted since the last call, writes the settings to flash once they have been quiet for a few seconds, and
-	// stores the minute of the day for the night mode check of Submit(). minuteOfDay is valid only when timeKnown is true.
-	// loop task only; logs a failed write.
+	// Takes a change accepted since the last call, writes it to flash and only then puts it on the display, so the lamp never shows
+	// settings that a reset would lose. Also stores the minute of the day for the night mode check of Submit(). minuteOfDay is valid
+	// only when timeKnown is true. loop task only; logs a failed write.
 	void Handle(bool timeKnown, uint16_t minuteOfDay);
 
 	// Validates the fields of a web request and, if all are good, accepts them as the new settings (all or nothing). Returns the
@@ -62,7 +62,9 @@ class HAQuDA_LampControl {
 	void showSensorsError();
 	// The work of Apply(), without the sensors check
 	void show(const lamp_settings &s);
-	void save();
+	void save(const lamp_settings &s);
+	// The work of Apply() on a given copy, so Handle() saves and shows the same settings
+	void apply(const lamp_settings &s);
 
 	HAQuDA_DisplayManip &display;
 	HAQuDA_ErrorHandler &errHandler;
@@ -75,8 +77,6 @@ class HAQuDA_LampControl {
 	lamp_settings settings;
 	// Set by Submit() after the store, taken by Handle()
 	std::atomic<bool> applyPending{false};
-	std::atomic<bool> saveDirty{false};
-	std::atomic<uint32_t> changedMs{0};
 	// Minute of the day from the time service, MINUTE_UNKNOWN until NTP has synced; stored by Handle() (loop task), read by the async_tcp task
 	static constexpr uint16_t MINUTE_UNKNOWN = 0xFFFF;
 	std::atomic<uint16_t> minuteNow{MINUTE_UNKNOWN};
