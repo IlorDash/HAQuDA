@@ -384,9 +384,6 @@ void HAQuDA_MeasHandler::showMeas_standard(float data, div_dots divideDots) {
 }
 
 void HAQuDA_MeasHandler::drawSolid(const rgb_color &color) {
-	HAQuDA_LEDs::getInstance()->Clear();
-	vTaskDelay(100 / portTICK_PERIOD_MS);
-
 	HAQuDA_LEDs::getInstance()->FillColor(color.r, color.g, color.b);
 	HAQuDA_LEDs::getInstance()->Show();
 
@@ -395,8 +392,8 @@ void HAQuDA_MeasHandler::drawSolid(const rgb_color &color) {
 }
 
 void HAQuDA_MeasHandler::showMeas_night(float data, div_dots divideDots, uint8_t litCells) {
-	HAQuDA_LEDs::getInstance()->Clear();
-	vTaskDelay(100 / portTICK_PERIOD_MS);
+	// Only the pixel buffer is cleared: no empty frame is sent, so the old picture is replaced by the new one in a single frame
+	HAQuDA_LEDs::getInstance()->FillColor(0, 0, 0);
 
 	rgb_color color = {0, 0, 0};
 	HAQuDA_GetMeasRGB(data, divideDots, color);
@@ -431,8 +428,7 @@ void HAQuDA_MeasHandler::showMeas_multi(float *data, uint8_t dataSize, div_dots 
 		return;
 	}
 
-	HAQuDA_LEDs::getInstance()->Clear();
-	vTaskDelay(100 / portTICK_PERIOD_MS);
+	HAQuDA_LEDs::getInstance()->FillColor(0, 0, 0);
 
 	rgb_color colors[MULTI_MODE_PARAM_NUM];
 	for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
