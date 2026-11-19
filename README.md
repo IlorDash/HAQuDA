@@ -87,7 +87,7 @@ The WiFi page lists up to 10 saved networks, the newest first, and deletes all o
 ## Web pages
 The lamp serves its web pages from `Software/Web_Pages/`: `index.html`, `wifi_manager.html`, `style.css`, `app.js` and `wifi.js`. The pages use no external resources, so they work when the lamp runs as an access point without internet.
 
-The firmware does not read these files. It contains their gzipped bytes in `Software/Software_ver_2/HAQuDA_Esp32/sketches/WebPages.h`. After you change a page source, run `py -3 Software/Web_Pages/gen_web_pages.py` from any folder and commit the changed `WebPages.h` together with the source. The script needs Python 3 and nothing else.
+The firmware does not read these files. It contains their gzipped bytes in `Software/Software_ver_2/HAQuDA_Esp32/sketches/WebPages.h`. After you change a page source, run `py -3 Software/Web_Pages/gen_web_pages.py` from any folder and commit the changed `WebPages.h` together with the source. The script needs Python 3 and nothing else. The packed copy has the comments removed to save flash, and the sources keep them. The script stops with exit code 1 when a string, regular expression or comment in a source does not end.
 
 To design the pages without the lamp, run `py -3 Software/Web_Pages/preview_server.py` from any folder. The script opens `http://127.0.0.1:8080/` in your browser. It serves the page sources from disk on every request, so a saved change shows after a refresh. Press Ctrl+C in the terminal to stop it.
 

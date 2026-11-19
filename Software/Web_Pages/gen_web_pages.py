@@ -11,7 +11,12 @@ size), so only the deflate output depends on the installed zlib.
 
 The HTML pages reference the stylesheet and the scripts as "/style.css" and so on. The generator appends
 "?v=<hash of the asset>" to those references in the packed copy, so a browser that cached an asset for a day
-fetches the new one as soon as the lamp serves a changed page. The server ignores the query string.
+fetches the new one as soon as the lamp serves a changed page. The server ignores the query string. The hash covers
+the packed bytes, so an edit that only changes a comment does not change it.
+
+The packed copy has the comments removed (JS // and /* */, CSS /* */, HTML <!-- -->) to keep the pages small; the
+sources in Software/Web_Pages/ keep them. Nothing else is minified. A string, template literal, regular
+expression or comment that does not end stops the script with exit code 1.
 """
 
 import argparse
@@ -46,13 +51,231 @@ def read_source(file_name):
         return source.read().replace(b"\r\n", b"\n")
 
 
+class StripError(Exception):
+    pass
+
+
+class Output:
+    """Collects text and remembers the lines a removed comment touched, so they can be tidied at the end."""
+
+    def __init__(self):
+        self.parts = []
+        self.line = 0
+        self.touched = set()
+
+    def append(self, text):
+        self.parts.append(text)
+        self.line += text.count("\n")
+
+    def touch(self):
+        self.touched.add(self.line)
+
+    def result(self):
+        lines = "".join(self.parts).split("\n")
+        kept = []
+        for index, line in enumerate(lines):
+            if index in self.touched:
+                line = line.rstrip()
+                if not line:
+                    continue
+            kept.append(line)
+        return "\n".join(kept)
+
+
+JS_KEYWORDS_BEFORE_REGEX = {
+    "return", "typeof", "instanceof", "in", "of", "new", "delete", "void", "throw", "case", "do", "else", "yield", "await",
+}
+
+
+def is_word_char(c):
+    return c.isalnum() or c in "_$" or ord(c) > 127
+
+
+def skip_string(text, start, name):
+    quote = text[start]
+    i = start + 1
+    while i < len(text):
+        c = text[i]
+        if c == "\\":
+            i += 2
+        elif c == quote:
+            return i + 1
+        elif c == "\n":
+            break
+        else:
+            i += 1
+    raise StripError("{0}: unterminated string starting at line {1}".format(name, text.count("\n", 0, start) + 1))
+
+
+def skip_regex(text, start, name):
+    i = start + 1
+    in_class = False
+    while i < len(text):
+        c = text[i]
+        if c == "\\":
+            i += 2
+            continue
+        if c == "\n":
+            break
+        if c == "[":
+            in_class = True
+        elif c == "]":
+            in_class = False
+        elif c == "/" and not in_class:
+            return i + 1
+        i += 1
+    raise StripError("{0}: unterminated regular expression starting at line {1}".format(name, text.count("\n", 0, start) + 1))
+
+
+def skip_template_part(text, start, name):
+    """Returns (index after the part, True when a ${ substitution opens, False when the literal ends)."""
+    i = start
+    while i < len(text):
+        c = text[i]
+        if c == "\\":
+            i += 2
+        elif c == "`":
+            return i + 1, False
+        elif c == "$" and text[i + 1:i + 2] == "{":
+            return i + 2, True
+        else:
+            i += 1
+    raise StripError("{0}: unterminated template literal starting near line {1}".format(name, text.count("\n", 0, start) + 1))
+
+
+def skip_comment(text, i, out, run_start, name):
+    """Cuts the comment at text[i]; returns the index where copying resumes."""
+    out.append(text[run_start:i])
+    out.touch()
+    if text[i + 1] == "/":
+        end = text.find("\n", i)
+        return len(text) if end < 0 else end
+    end = text.find("*/", i + 2)
+    if end < 0:
+        raise StripError("{0}: unterminated comment starting at line {1}".format(name, text.count("\n", 0, i) + 1))
+    if "\n" in text[i:end]:
+        out.append("\n")
+        out.touch()
+    else:
+        out.append(" ")
+    return end + 2
+
+
+def strip_js(text, name):
+    out = Output()
+    n = len(text)
+    i = 0
+    run_start = 0
+    regex_allowed = True
+    braces = []
+    while i < n:
+        c = text[i]
+        if c == "/":
+            following = text[i + 1:i + 2]
+            if following in ("/", "*"):
+                i = run_start = skip_comment(text, i, out, run_start, name)
+            elif regex_allowed:
+                i = skip_regex(text, i, name)
+                regex_allowed = False
+            else:
+                i += 1
+                regex_allowed = True
+        elif c in "'\"":
+            i = skip_string(text, i, name)
+            regex_allowed = False
+        elif c == "`" or (c == "}" and braces and braces[-1] == "template"):
+            if c == "}":
+                braces.pop()
+            i, substitution = skip_template_part(text, i + 1, name)
+            if substitution:
+                braces.append("template")
+            regex_allowed = substitution
+        elif is_word_char(c):
+            j = i
+            while j < n and is_word_char(text[j]):
+                j += 1
+            regex_allowed = text[i:j] in JS_KEYWORDS_BEFORE_REGEX
+            i = j
+        elif c.isspace():
+            i += 1
+        else:
+            if c == "{":
+                braces.append("block")
+            elif c == "}" and braces:
+                braces.pop()
+            regex_allowed = c not in ")]}"
+            i += 1
+    out.append(text[run_start:])
+    return out.result()
+
+
+def strip_css(text, name):
+    out = Output()
+    n = len(text)
+    i = 0
+    run_start = 0
+    while i < n:
+        c = text[i]
+        if c == "/" and text[i + 1:i + 2] == "*":
+            i = run_start = skip_comment(text, i, out, run_start, name)
+        elif c in "'\"":
+            i = skip_string(text, i, name)
+        else:
+            i += 1
+    out.append(text[run_start:])
+    return out.result()
+
+
+RAW_ELEMENT = re.compile(r"<(script|style|pre|textarea)\b[^>]*>|<!--", re.I)
+
+
+def strip_html(text, name):
+    out = Output()
+    i = 0
+    while True:
+        match = RAW_ELEMENT.search(text, i)
+        if match is None:
+            out.append(text[i:])
+            break
+        out.append(text[i:match.start()])
+        if match.group(0) == "<!--":
+            end = text.find("-->", match.end())
+            if end < 0:
+                raise StripError("{0}: unterminated HTML comment at line {1}".format(name, text.count("\n", 0, match.start()) + 1))
+            out.touch()
+            i = end + 3
+            continue
+        tag = match.group(1).lower()
+        out.append(match.group(0))
+        close = re.compile(r"</" + tag + r"\s*>", re.I).search(text, match.end())
+        if close is None:
+            raise StripError("{0}: <{1}> is not closed".format(name, tag))
+        body = text[match.end():close.start()]
+        if tag == "script" and "src=" not in match.group(0):
+            body = strip_js(body, name + " <script>")
+        elif tag == "style":
+            body = strip_css(body, name + " <style>")
+        out.append(body)
+        out.append(close.group(0))
+        i = close.end()
+    return out.result()
+
+
+def strip_comments(file_name, text):
+    if file_name.endswith(".js"):
+        return strip_js(text, file_name)
+    if file_name.endswith(".css"):
+        return strip_css(text, file_name)
+    return strip_html(text, file_name)
+
+
 def asset_hash(file_name):
-    return hashlib.sha256(read_source(file_name)).hexdigest()[:8]
+    return hashlib.sha256(served(file_name)).hexdigest()[:8]
 
 
 def served(file_name):
-    """The bytes the lamp serves for a source: HTML pages get versioned asset references."""
-    data = read_source(file_name)
+    """The bytes the lamp serves for a source: comments removed, HTML pages get versioned asset references."""
+    data = strip_comments(file_name, read_source(file_name).decode("utf-8")).encode("utf-8")
     if not file_name.endswith(".html"):
         return data
     for asset in VERSIONED_ASSETS:
@@ -113,7 +336,11 @@ def main():
     parser.add_argument("--check", action="store_true", help="exit 1 when WebPages.h differs from the sources")
     args = parser.parse_args()
 
-    expected = render()
+    try:
+        expected = render()
+    except StripError as error:
+        print("cannot strip comments: {0}".format(error), file=sys.stderr)
+        return 1
     if args.check:
         try:
             with open(OUTPUT, "rb") as handle:
