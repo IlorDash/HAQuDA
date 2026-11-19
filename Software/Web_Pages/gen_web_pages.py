@@ -16,7 +16,8 @@ the packed bytes, so an edit that only changes a comment does not change it.
 
 The packed copy has the comments removed (JS // and /* */, CSS /* */, HTML <!-- -->) to keep the pages small; the
 sources in Software/Web_Pages/ keep them. Nothing else is minified. A string, template literal, regular
-expression or comment that does not end stops the script with exit code 1.
+expression or comment that does not end, an unterminated HTML comment, or an unclosed <script>, <style>, <pre> or
+<textarea> stops the script with exit code 1.
 """
 
 import argparse
@@ -168,6 +169,7 @@ def strip_js(text, name):
     run_start = 0
     regex_allowed = True
     braces = []
+    substitution_starts = []
     while i < n:
         c = text[i]
         if c == "/":
@@ -186,9 +188,11 @@ def strip_js(text, name):
         elif c == "`" or (c == "}" and braces and braces[-1] == "template"):
             if c == "}":
                 braces.pop()
+                substitution_starts.pop()
             i, substitution = skip_template_part(text, i + 1, name)
             if substitution:
                 braces.append("template")
+                substitution_starts.append(i)
             regex_allowed = substitution
         elif is_word_char(c):
             j = i
@@ -198,13 +202,22 @@ def strip_js(text, name):
             i = j
         elif c.isspace():
             i += 1
+        elif c in "+-" and text[i + 1:i + 2] == c:
+            # A postfix ++ / -- is followed by division; a prefix one by an operand, never by a "/"
+            regex_allowed = False
+            i += 2
         else:
+            # Known limit: a "/" after "}" is always taken as division, so a regex literal that starts
+            # a statement right after a block is not recognised
             if c == "{":
                 braces.append("block")
             elif c == "}" and braces:
                 braces.pop()
             regex_allowed = c not in ")]}"
             i += 1
+    if substitution_starts:
+        raise StripError("{0}: unterminated template substitution starting near line {1}".format(
+            name, text.count("\n", 0, substitution_starts[-1]) + 1))
     out.append(text[run_start:])
     return out.result()
 
