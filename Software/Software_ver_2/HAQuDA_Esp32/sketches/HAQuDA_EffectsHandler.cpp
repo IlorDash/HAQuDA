@@ -155,6 +155,10 @@ void HAQuDA_EffectsHandler::show_random(const random_led_params p) {
 
 void HAQuDA_EffectsHandler::show_fading(const fading_params p) {
 	stop_effect = false;
+	// The level saved here is wrong from the second pass of a running fade (the previous pass's last step), so an interrupted fade
+	// restores a wrong level. That is hidden only because whatever stops the effect then sets the brightness pending flag in
+	// HAQuDA_DisplayManip (Apply() via SetBrightness(), or RestoreBrightnessOnMeas()), and ShowTask applies it after this returns.
+	// A new path that stops an effect must be followed by one of those.
 	auto bright = HAQuDA_LEDs::getInstance()->GetBright();
 	HAQuDA_LEDs::getInstance()->Clear();
 	HAQuDA_LEDs::getInstance()->SetBright(p.start_bright);

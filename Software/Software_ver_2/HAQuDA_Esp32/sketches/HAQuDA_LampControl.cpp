@@ -4,17 +4,10 @@
 #include "HAQuDA_LEDsParams.h"
 #include "HAQuDA_Logger.h"
 
-// The lamp starts at the brightness LEDs::Begin() sets (raw DEFAULT_BRIGHTNESS). The percent scale has steps of 5, so the nearest
-// value gives raw 52 instead of 50
-static_assert((LAMP_DEFAULT_BRIGHT * MAX_BRIGHTNESS / 100) - DEFAULT_BRIGHTNESS <= 2, "the lamp's default brightness must match the boot brightness");
-static_assert(DEFAULT_BRIGHTNESS - (LAMP_DEFAULT_BRIGHT * MAX_BRIGHTNESS / 100) <= 2, "the lamp's default brightness must match the boot brightness");
-
 namespace {
 	constexpr char FILE_NAME_LAMP[] = "/lamp";
 	// A slider or a row of taps writes once, after the last change: flash wear and the LED frames a write skips
 	constexpr uint32_t SAVE_DELAY_MS = 3000;
-	// A fading effect stops within one step (≈ 0.2 s of LED show plus its pause), so a second pass after 1 s sees the final brightness
-	constexpr uint32_t REAPPLY_DELAY_MS = 1000;
 
 	// Holds the critical section for its lifetime
 	class CriticalLock {
@@ -113,8 +106,6 @@ void HAQuDA_LampControl::Apply() {
 		errHandler.ClearError();
 	}
 	show(s);
-	reapplyDue = true;
-	reapplyMs = millis();
 }
 
 void HAQuDA_LampControl::show(const lamp_settings &s) {
@@ -160,16 +151,6 @@ void HAQuDA_LampControl::Handle(bool timeKnown, uint16_t minuteOfDay) {
 
 	if (applyPending.exchange(false)) {
 		Apply();
-	}
-	// The second pass: the effect Apply() stopped (the access point fading) has restored its own brightness by now, and a
-	// meas picture drawn at that brightness is drawn again
-	if (reapplyDue && ((uint32_t)(millis() - reapplyMs) >= REAPPLY_DELAY_MS) && !errorShown()) {
-		reapplyDue = false;
-		const lamp_settings s = copySettings();
-		// A change accepted since the first pass is applied by the Apply() it queued
-		if (sensorsRunning || !needsSensors(s)) {
-			show(s);
-		}
 	}
 	if (saveDirty.load() && ((uint32_t)(millis() - changedMs.load()) >= SAVE_DELAY_MS)) {
 		saveDirty.store(false);

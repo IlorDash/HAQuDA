@@ -11,7 +11,7 @@
 //
 // The async_tcp task validates a change and stores it (Submit()); loop() puts it on the display (Handle() -> Apply()) and writes it
 // to /lamp a few seconds after the last change. The web task never touches the display, the flash or the logger. The accepted
-// settings are what /api/status reports at once, the display follows within one loop() pass.
+// settings are what /api/status reports at once, the display follows within one loop() pass and the next ShowTask pass.
 //
 // Boot animations, events (WiFi joined or lost) and errors draw over the user's picture through HAQuDA_DisplayManip; whoever ends
 // one calls Apply(), which brings back the user's picture.
@@ -33,9 +33,9 @@ class HAQuDA_LampControl {
 
 	// Puts the user's picture on the display: brightness, then power off (dark), a measurement mode or the lamp light colour. While
 	// the sensors are not running only power off and the lamp light are put on (the sensors error effect ends); a measurement mode
-	// shows the sensors error instead. Puts the picture on a second time about 1 s later (from Handle()): an effect that was
-	// running (the access point fading) restores its own brightness when it is stopped, after this call. May block the loop task for
-	// ≈ 0.2 s (brightness change). loop task only; logs only when it raises the sensors error.
+	// shows the sensors error instead. The brightness only reaches the LEDs at the top of the next ShowTask pass, after an effect
+	// that was running (the access point fading) has stopped and restored its own brightness. Does not block. loop task only; logs
+	// only when it raises the sensors error.
 	void Apply();
 
 	// Applies a change accepted since the last call, writes the settings to flash once they have been quiet for a few seconds, and
@@ -60,7 +60,7 @@ class HAQuDA_LampControl {
 	static bool needsSensors(const lamp_settings &s);
 	// Switches the display to the sensors error unless an error is already shown
 	void showSensorsError();
-	// The work of Apply(), without the sensors check and the second pass
+	// The work of Apply(), without the sensors check
 	void show(const lamp_settings &s);
 	void save();
 
@@ -76,9 +76,6 @@ class HAQuDA_LampControl {
 	// Set by Submit() after the store, taken by Handle()
 	std::atomic<bool> applyPending{false};
 	std::atomic<bool> saveDirty{false};
-	// The second pass of Apply(): due since reapplyMs. loop task only
-	bool reapplyDue = false;
-	uint32_t reapplyMs = 0;
 	std::atomic<uint32_t> changedMs{0};
 	// Minute of the day from the time service, MINUTE_UNKNOWN until NTP has synced; stored by Handle() (loop task), read by the async_tcp task
 	static constexpr uint16_t MINUTE_UNKNOWN = 0xFFFF;

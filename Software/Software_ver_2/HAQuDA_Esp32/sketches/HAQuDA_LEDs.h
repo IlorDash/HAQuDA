@@ -15,10 +15,12 @@
 // Frames are sent by ShowTask (and by setup() before ShowTask exists). The class does not serialise sends: a send from another
 // task while ShowTask runs is not supported, because NeoPixelBus can tear a frame if two tasks pass CanShow() together.
 // A frame send waits up to about 50 ms for the previous DMA frame and is dropped after that; the next Show() repaints the
-// picture. The picture buffer is not locked either; only GetBright() may be called from the loop task.
+// picture. The picture buffer is not locked either; the loop task must not call anything here except GetBright(), and
+// does not need to: it asks for a brightness through HAQuDA_DisplayManip::SetBrightness().
 //
-// Brightness uses the same scheme as Adafruit_NeoPixel (stored value = raw + 1, colours scaled when they are written, the
-// stored picture rescaled when the brightness changes).
+// Brightness is kept twice: as a raw scale factor for the pixels (same scheme as Adafruit_NeoPixel: stored value = raw + 1,
+// colours scaled when they are written, the stored picture rescaled when the brightness changes) and as the percent the
+// callers use. Percent is converted to raw only in SetBright().
 class HAQuDA_LEDs : public HAQuDA_ILEDs {
 
 	using LedBus = NeoPixelBus<NeoGrbFeature, NeoEsp32I2s1Ws2812xMethod>;
@@ -29,9 +31,14 @@ class HAQuDA_LEDs : public HAQuDA_ILEDs {
 	// descriptors and the I2S interrupt are allocated later, in Begin().
 	LedBus bus{LED_NUM_PIXELS, LED_PIN};
 
-	// Raw brightness + 1: 0 (before the first SetBright) means "no scaling", 1 means off. Written by ShowTask (SetBright),
-	// read by the loop task through GetBright().
+	// Raw brightness + 1: 0 (before Begin()) means "no scaling", 1 means off. Written by SetBright() and Begin(), read by
+	// scale() while colours are written.
 	std::atomic<uint8_t> brightness{0};
+
+	// Brightness in percent (0..100) as last passed to SetBright(). Written by SetBright() in ShowTask only (the loop task asks
+	// for a change through HAQuDA_DisplayManip::SetBrightness(), which ShowTask applies). Read by show_fading() (ShowTask), which
+	// saves it to restore when a fade is stopped.
+	std::atomic<uint8_t> brightPerCent{DEFAULT_BRIGHTNESS};
 
 	// Sends the buffer after the previous frame has left the DMA. Returns false when the DMA did not become free in time and
 	// the frame was lost. ShowTask.
@@ -51,9 +58,10 @@ class HAQuDA_LEDs : public HAQuDA_ILEDs {
 	// constructor. All of it runs once in setup(), none at runtime.
 	void Begin();
 
-	// Sets brightness in percent (0..100) of MAX_BRIGHTNESS, rescales the picture and shows it. Blocks 200 ms. ShowTask.
+	// Sets brightness in percent (0..100, more counts as 100) of MAX_BRIGHTNESS, rescales the picture and shows it. Blocks
+	// 200 ms. ShowTask (and setup() before ShowTask exists). The loop task never calls it: it sends a frame.
 	void SetBright(uint8_t bright_per_cent) override;
-	// Returns the raw brightness 0..150 (not percent). ShowTask or loop.
+	// Returns the brightness in percent (0..100) last set. ShowTask or loop.
 	uint8_t GetBright() override;
 
 	// Clears the picture and shows it. Blocks 200 ms. ShowTask.

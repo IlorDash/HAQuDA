@@ -3,7 +3,11 @@
 #include <cstdio>
 #include <cstring>
 
+#include "HAQuDA_LEDsParams.h"
 #include "HAQuDA_NightProgress.h"
+
+static_assert((DEFAULT_BRIGHTNESS >= LAMP_BRIGHT_MIN) && (DEFAULT_BRIGHTNESS <= LAMP_BRIGHT_MAX) && ((DEFAULT_BRIGHTNESS % LAMP_BRIGHT_STEP) == 0),
+			  "the boot brightness must be a step of the lamp page's brightness scale");
 
 namespace {
 	constexpr size_t MAX_FIELD_LEN = 32;
@@ -141,7 +145,7 @@ namespace {
 lamp_settings HAQuDA_LampDefaults() {
 	lamp_settings s{};
 	s.on = true;
-	s.bright = LAMP_DEFAULT_BRIGHT;
+	s.bright = DEFAULT_BRIGHTNESS;
 	s.mode = lamp_mode::multi;
 	s.standardParam = lamp_param::total;
 	s.multi[0] = lamp_param::pm25;

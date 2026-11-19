@@ -18,9 +18,6 @@ constexpr uint8_t LAMP_COLORS_NUM = 6;
 constexpr uint8_t LAMP_BRIGHT_MIN = 5;
 constexpr uint8_t LAMP_BRIGHT_MAX = 100;
 constexpr uint8_t LAMP_BRIGHT_STEP = 5;
-// The lamp's boot brightness is raw 50 of 150 (DEFAULT_BRIGHTNESS in HAQuDA_LEDsParams.h, 33.3 %). The steps of 5 % have no exact
-// match; 35 % is raw 52, the nearest.
-constexpr uint8_t LAMP_DEFAULT_BRIGHT = 35;
 
 // The longest JSON HAQuDA_BuildLampJson() writes is about 190 bytes
 constexpr size_t LAMP_JSON_BUF_LEN = 256;
@@ -67,7 +64,7 @@ enum class lamp_update_result : uint8_t {
 	night_needs_time
 };
 
-// Power on, 35 %, multi mode (PM2.5 on top, eCO2, temperature at the bottom), overall reading for standard, eCO2 for night,
+// Power on, DEFAULT_BRIGHTNESS (35 %), multi mode (PM2.5 on top, eCO2, temperature at the bottom), overall reading for standard, eCO2 for night,
 // night window 21:00 to 09:00, the first light colour. Any task.
 lamp_settings HAQuDA_LampDefaults();
 

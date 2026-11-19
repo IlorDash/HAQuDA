@@ -4,6 +4,7 @@
 #include <cstring>
 #include <string>
 
+#include "HAQuDA_LEDsParams.h"
 #include "HAQuDA_LampSettings.h"
 #include "HAQuDA_NightProgress.h"
 
@@ -22,7 +23,7 @@ TEST(LampSettingsTest, DefaultsAreValid) {
 }
 
 TEST(LampSettingsTest, DefaultsMatchTheDocumentedLamp) {
-	const uint8_t exp_bright = 35;
+	const uint8_t exp_bright = DEFAULT_BRIGHTNESS;
 	const uint16_t exp_from = 21 * 60;
 	const uint16_t exp_to = 9 * 60;
 

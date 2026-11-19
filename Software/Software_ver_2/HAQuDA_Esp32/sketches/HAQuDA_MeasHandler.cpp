@@ -152,8 +152,7 @@ static uint32_t webColor(const rgb_color &color) {
 // ShowTask zeroes count and then sum in ClearMeasData() without a lock. Here the count is read before and after
 // the sum: an unchanged non-zero count means no clear started before the second read, so the sum is the old one
 // and matches the count. A changed count means a clear ran in between, and that poll keeps the previous snapshot.
-// brightness is the lamp's raw LED brightness (HAQuDA_LEDs::GetBright()), the argument the lamp's own draw gives the colour scale.
-static void publishOne(HAQuDA_MeasSnapshot &snapshot, snapshot_param param, const meas_data &data, div_dots dotsOfParam, uint8_t brightness) {
+static void publishOne(HAQuDA_MeasSnapshot &snapshot, snapshot_param param, const meas_data &data, div_dots dotsOfParam) {
 	if (!data.newMeasDone) {
 		snapshot.Publish(param, NAN, 0);
 		return;
@@ -172,20 +171,17 @@ static void publishOne(HAQuDA_MeasSnapshot &snapshot, snapshot_param param, cons
 
 	float average = sum / countBefore;
 	rgb_color color = {0, 0, 0};
-	HAQuDA_GetMeasRGB(average, dotsOfParam, brightness, color);
+	HAQuDA_GetMeasRGB(average, dotsOfParam, color);
 	snapshot.Publish(param, average, webColor(color));
 }
 
 void HAQuDA_MeasHandler::publishSnapshots() {
-	// One byte (HAQuDA_LEDs::brightness, a std::atomic<uint8_t>) that ShowTask writes in SetBright():
-	// an atomic one-byte read, cheap, and a read during a brightness change gives the old or the new level,
-	// which the next poll corrects.
-	const uint8_t brightness = HAQuDA_LEDs::getInstance()->GetBright();
-	publishOne(measSnapshot, snapshot_param::temp, temp_meas, dots.temp, brightness);
-	publishOne(measSnapshot, snapshot_param::humid, humid_meas, dots.humid, brightness);
-	publishOne(measSnapshot, snapshot_param::eco2, eCO2_meas, dots.eCO2, brightness);
-	publishOne(measSnapshot, snapshot_param::tvoc, TVOC_meas, dots.TVOC, brightness);
-	publishOne(measSnapshot, snapshot_param::pm25, PM_2_5_meas, dots.PM2_5, brightness);
+	// The snapshot colour is the scale colour at full channel values: it does not depend on the lamp brightness.
+	publishOne(measSnapshot, snapshot_param::temp, temp_meas, dots.temp);
+	publishOne(measSnapshot, snapshot_param::humid, humid_meas, dots.humid);
+	publishOne(measSnapshot, snapshot_param::eco2, eCO2_meas, dots.eCO2);
+	publishOne(measSnapshot, snapshot_param::tvoc, TVOC_meas, dots.TVOC);
+	publishOne(measSnapshot, snapshot_param::pm25, PM_2_5_meas, dots.PM2_5);
 }
 
 void HAQuDA_MeasHandler::Show(int *show_meas_time) {
@@ -223,12 +219,6 @@ void HAQuDA_MeasHandler::Show(int *show_meas_time) {
 		if (!outcome.keepRequest) {
 			show_meas_immed = false;
 		}
-		if (!consumed) {
-			HAQuDA_LEDs::getInstance()->ResendSkippedFrame();
-		}
-	} else {
-		// The picture is drawn once a minute; if its frame was dropped during a flash operation, send it again now.
-		HAQuDA_LEDs::getInstance()->ResendSkippedFrame();
 	}
 }
 
@@ -328,7 +318,6 @@ bool HAQuDA_MeasHandler::totalMode() {
 
 	// Nothing is out of its range: the average colour of the readings that have a sample
 	const meas_type all[DISP_PARAMS_NUM] = {temp, humid, eCO2, TVOC, PM2_5};
-	const uint8_t brightness = HAQuDA_LEDs::getInstance()->GetBright();
 	uint16_t rSum = 0;
 	uint16_t gSum = 0;
 	uint16_t bSum = 0;
@@ -339,7 +328,7 @@ bool HAQuDA_MeasHandler::totalMode() {
 			continue;
 		}
 		rgb_color color = {0, 0, 0};
-		HAQuDA_GetMeasRGB(data->value / data->measNum, paramDots, brightness, color);
+		HAQuDA_GetMeasRGB(data->value / data->measNum, paramDots, color);
 		rSum += color.r;
 		gSum += color.g;
 		bSum += color.b;
@@ -392,7 +381,7 @@ bool HAQuDA_MeasHandler::nightMode() {
 
 void HAQuDA_MeasHandler::showMeas_standard(float data, div_dots divideDots) {
 	rgb_color color = {0, 0, 0};
-	HAQuDA_GetMeasRGB(data, divideDots, HAQuDA_LEDs::getInstance()->GetBright(), color);
+	HAQuDA_GetMeasRGB(data, divideDots, color);
 	drawSolid(color);
 }
 
@@ -412,10 +401,10 @@ void HAQuDA_MeasHandler::showMeas_night(float data, div_dots divideDots, uint8_t
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 
 	rgb_color color = {0, 0, 0};
-	uint8_t brightness = HAQuDA_LEDs::getInstance()->GetBright();
-	HAQuDA_GetMeasRGB(data, divideDots, brightness, color);
+	HAQuDA_GetMeasRGB(data, divideDots, color);
 
-	uint8_t whiteBright = brightness * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
+	// The same share of the largest colour channel at every brightness; the LED driver dims the colour and the grey together
+	const uint8_t whiteBright = COLOR_SCALE_MAX_CHANNEL * WHITE_BRIGHTNESS_COEFF / 100;
 	for (int i = 0; i < LED_COLUMN_NUM; i++) {
 		const bool colorColumn = HAQuDA_NightColumnIsColor(i);
 		uint32_t pixelColor = colorColumn ? HAQuDA_LEDs::getInstance()->GetColor(color.r, color.g, color.b)
@@ -449,9 +438,8 @@ void HAQuDA_MeasHandler::showMeas_multi(float *data, uint8_t dataSize, div_dots 
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 
 	rgb_color colors[MULTI_MODE_PARAM_NUM];
-	uint8_t brightness = HAQuDA_LEDs::getInstance()->GetBright();
 	for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
-		HAQuDA_GetMeasRGB(data[i], divDots[i], brightness, colors[i]);
+		HAQuDA_GetMeasRGB(data[i], divDots[i], colors[i]);
 	}
 	for (int i = 0; i < LED_ROW_NUM; i++) {
 		if (!(i % 2)) {
