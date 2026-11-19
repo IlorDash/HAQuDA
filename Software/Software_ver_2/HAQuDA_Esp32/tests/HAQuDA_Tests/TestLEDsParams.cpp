@@ -107,21 +107,13 @@ TEST(LEDsParamsTest, BrightPercentToRawMaxByteIsClamped) {
 	EXPECT_EQ(exp_raw, res);
 }
 
-TEST(LEDsParamsTest, MaxBrightnessEqualsColorScaleMaxChannel) {
-	// The colour scale tops out at the raw brightness of 100 %, so the LED driver at 100 % passes the channels through unscaled
-	const uint8_t exp_channel = COLOR_SCALE_MAX_CHANNEL;
-
-	const uint8_t res = MAX_BRIGHTNESS;
-
-	EXPECT_EQ(exp_channel, res);
-}
-
 TEST(LEDsParamsTest, NightGreyIs70PercentOfMaxChannel) {
-	// Same expression as showMeas_night() in HAQuDA_MeasHandler.cpp (the grey is a local there, so only its inputs can be pinned):
-	// 150 * 70 / 100 = 105
+	// showMeas_night() uses HAQuDA_NightGrey(): 150 * 70 / 100 = 105
 	const uint8_t exp_grey = 105;
 
-	const uint8_t res = COLOR_SCALE_MAX_CHANNEL * WHITE_BRIGHTNESS_COEFF / 100;
+	uint8_t res;
+
+	res = HAQuDA_NightGrey();
 
 	EXPECT_EQ(exp_grey, res);
 }

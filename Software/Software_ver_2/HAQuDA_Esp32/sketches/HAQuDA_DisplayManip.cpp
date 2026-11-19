@@ -1,6 +1,7 @@
 #include <atomic>
 
 #include "HAQuDA_DisplayManip.h"
+#include "HAQuDA_BrightnessApply.h"
 #include "HAQuDA_LEDsParams.h"
 #include "HAQuDA_LEDs.h"
 #include "HAQuDA_WebPageDisplayManip.h"
@@ -29,10 +30,11 @@ void HAQuDA_DisplayManip::applyPendingBrightness() {
 	const bool restore = (currentMode == meas) && restoreBrightnessPending.exchange(false);
 	// The percent is read after the flag: the setter writes the value first, so a flag seen here comes with its value
 	const bool pending = brightnessPending.exchange(false);
-	if (restore) {
+	const brightness_apply apply = HAQuDA_DecideBrightnessApply(pending, restore);
+	if (apply.clear) {
 		HAQuDA_LEDs::getInstance()->Clear();
 	}
-	if (restore || pending) {
+	if (apply.setBright) {
 		HAQuDA_LEDs::getInstance()->SetBright(brighntessPerCent.load());
 	}
 }

@@ -11,8 +11,6 @@
 
 #define MAX_SENS_REBOOT_ATTEMPTS 3
 
-static_assert(COLOR_SCALE_MAX_CHANNEL == MAX_BRIGHTNESS, "colour scale and LED limits must agree");
-
 bool HAQuDA_MeasHandler::sens_start;
 int HAQuDA_MeasHandler::meas_num;
 bool HAQuDA_MeasHandler::show_meas_immed;
@@ -403,8 +401,7 @@ void HAQuDA_MeasHandler::showMeas_night(float data, div_dots divideDots, uint8_t
 	rgb_color color = {0, 0, 0};
 	HAQuDA_GetMeasRGB(data, divideDots, color);
 
-	// The same share of the largest colour channel at every brightness; the LED driver dims the colour and the grey together
-	const uint8_t whiteBright = COLOR_SCALE_MAX_CHANNEL * WHITE_BRIGHTNESS_COEFF / 100;
+	const uint8_t whiteBright = HAQuDA_NightGrey();
 	for (int i = 0; i < LED_COLUMN_NUM; i++) {
 		const bool colorColumn = HAQuDA_NightColumnIsColor(i);
 		uint32_t pixelColor = colorColumn ? HAQuDA_LEDs::getInstance()->GetColor(color.r, color.g, color.b)

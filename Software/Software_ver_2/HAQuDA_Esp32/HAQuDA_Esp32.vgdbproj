@@ -56,6 +56,7 @@
         <string>sketches\HAQuDA_SensorsPresence.h</string>
         <string>sketches\HAQuDA_NightProgress.h</string>
         <string>sketches\HAQuDA_MeasShowPolicy.h</string>
+        <string>sketches\HAQuDA_BrightnessApply.h</string>
         <string>sketches\HAQuDA_LampSettings.h</string>
         <string>sketches\HAQuDA_LampControl.h</string>
       </OtherFiles>
