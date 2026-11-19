@@ -91,6 +91,11 @@
     <ClCompile Include="..\..\sketches\HAQuDA_ZH03BFrame.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_PMWarmup.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_PMReader.cpp" />
+    <ClCompile Include="TestAnimations.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_Animation.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_EffectAnimations.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_MeasAnimations.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_AnimationSet.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\sketches\HAQuDA_ColorScale.h" />
@@ -108,6 +113,10 @@
     <ClInclude Include="..\..\sketches\HAQuDA_IPMSerial.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_PMReader.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_SensorsPresence.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_Animation.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_EffectAnimations.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_MeasAnimations.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_AnimationSet.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_ILEDs.h" />
     <ClInclude Include="..\mocks\MockLEDs.h" />
     <ClInclude Include="..\fakes\FakePMSerial.h" />

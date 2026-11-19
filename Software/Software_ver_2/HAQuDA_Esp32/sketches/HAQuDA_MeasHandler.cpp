@@ -1,6 +1,7 @@
 #include "HAQuDA_MeasHandler.h"
 #include "HAQuDA_TimeHelper.h"
 #include "HAQuDA_LEDsParams.h"
+#include "HAQuDA_Animation.h"
 #include "HAQuDA_LEDs.h"
 #include "HAQuDA_WebPageDisplayManip.h"
 #include "Sensors.h"
@@ -10,6 +11,16 @@
 #define MAX_SENS_REBOOT_ATTEMPTS 3
 
 static_assert(COLOR_SCALE_MAX_CHANNEL == MAX_BRIGHTNESS, "colour scale and LED limits must agree");
+
+// The animation layer cannot include HAQuDA_LEDsParams.h (it pulls in Arduino.h), so it repeats these values
+static_assert(ANIM_COLUMNS == LED_COLUMN_NUM, "animation and LED geometry must agree");
+static_assert(ANIM_ROWS == LED_ROW_NUM, "animation and LED geometry must agree");
+static_assert(ANIM_NIGHT_WHITE_PERCENT == WHITE_BRIGHTNESS_COEFF, "night bar brightness must agree");
+static_assert(ANIM_COLOR_AQUA == COLOR_AQUA, "animation colours must agree with the LED colours");
+static_assert(ANIM_COLOR_LIME == COLOR_LIME, "animation colours must agree with the LED colours");
+static_assert(ANIM_COLOR_GREEN == COLOR_GREEN, "animation colours must agree with the LED colours");
+static_assert(ANIM_COLOR_RED == COLOR_RED, "animation colours must agree with the LED colours");
+static_assert(ANIM_COLOR_YELLOW == COLOR_YELLOW, "animation colours must agree with the LED colours");
 
 bool HAQuDA_MeasHandler::sens_start;
 int HAQuDA_MeasHandler::meas_num;
