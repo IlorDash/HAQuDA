@@ -19,8 +19,8 @@ plug.
    has opened its own access point, and an aqua fading plays once. This is normal on the first
    start. If a network is stored but the lamp cannot join it, the lime snake runs for about 30
    seconds first, and then the same red growing and aqua fading follow.
-5. Wait about one minute. The lamp averages the sensor readings of the first minute before it
-   draws the first colours.
+5. Wait a few seconds. The lamp draws the first colours as soon as the sensors have delivered
+   the readings of the mode; PM2.5 comes about 12 seconds later than the others.
 6. Read the colours as described in [Display modes](display-modes.md).
 
 !!! warning "If it fails"
@@ -33,7 +33,8 @@ plug.
       characters).
     - **Pixels light up one by one in random colours after the green flash or the aqua fading,
       and the colours do not start** — the lamp cannot start its sensors. It tries again every
-      5 minutes and starts the colours as soon as the sensors answer. Check the sensor wiring;
+      5 minutes and starts the colours as soon as the sensors answer. **Lamp light** and power
+      off work meanwhile. Check the sensor wiring;
       see [LED codes and troubleshooting](troubleshooting.md).
 
 → [All LED effects](troubleshooting.md#start-up-effects)
@@ -86,10 +87,25 @@ add a network while the lamp already runs in your network, see
 
 ## Select the display mode
 
-The lamp starts in **multi** mode.
+**Before you start:** the lamp runs in your network or on its access point, and you have the
+address of its main page (see [Page addresses](web-interface.md#page-addresses)).
 
-!!! note "WIP"
-    Selecting the display mode on the lamp or in the web pages is not ready yet. Until then, the
-    mode is fixed in `setup()` of `sketches/HAQuDA_Esp32.ino`.
+1. Open the main page in a browser and find the **Lamp** card under the lamp's picture.
+2. Press **Standard**, **Multi**, **Night** or **Lamp light**.
+3. Choose what the mode shows: a reading, three readings, a reading and the night times, or a
+   colour. The grid shows the change at once and the lamp draws it within about a second.
+4. Move the **Brightness** slider if you want. The page sends the value when you release it.
+5. Use the power switch to turn the matrix off and on.
+
+The lamp keeps your choice and shows it again after a restart. A new lamp starts in **Multi** mode
+at 35 %.
+
+!!! warning "If it fails"
+    - **The night mode needs the time from the internet.** — the lamp has no time, for example on
+      its access point. Join your network first, then select **Night**.
+    - **The card returns to the old settings** — the lamp refused the change; the card shows its
+      reply for about 10 seconds.
+    - **The card does not react** — the lamp does not answer. Wait until the status line shows the
+      lamp again.
 
 → [Modes in detail](display-modes.md)
