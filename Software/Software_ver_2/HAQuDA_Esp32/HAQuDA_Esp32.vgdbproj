@@ -58,6 +58,7 @@
         <string>sketches\HAQuDA_EffectAnimations.h</string>
         <string>sketches\HAQuDA_MeasAnimations.h</string>
         <string>sketches\HAQuDA_AnimationSet.h</string>
+        <string>sketches\HAQuDA_DisplayCatalog.h</string>
       </OtherFiles>
     </ProjectModeSettings>
   </Project>
