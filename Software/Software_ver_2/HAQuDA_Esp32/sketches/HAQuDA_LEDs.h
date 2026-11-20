@@ -25,8 +25,9 @@ class HAQuDA_LEDs : public HAQuDA_ILEDs {
 
 	static HAQuDA_LEDs *p_instance;
 
-	// The constructor allocates the pixel buffer and the DMA buffer; it runs on the first getInstance(), in setup(). The DMA
-	// descriptors and the I2S interrupt are allocated later, in Begin().
+	// The constructor allocates the pixel buffer and the DMA buffer; it runs on the first getInstance(), which is the global
+	// display service's constructor argument, before setup(). It touches no peripheral: the DMA descriptors and the I2S
+	// interrupt are allocated later, in Begin().
 	LedBus bus{LED_NUM_PIXELS, LED_PIN};
 
 	// Raw brightness + 1: 0 (before the first SetBright) means "no scaling", 1 means off. Written by ShowTask (SetBright),
@@ -51,7 +52,7 @@ class HAQuDA_LEDs : public HAQuDA_ILEDs {
 	// constructor. All of it runs once in setup(), none at runtime.
 	void Begin();
 
-	// Sets brightness in percent (0..100) of MAX_BRIGHTNESS, rescales the picture and shows it. Blocks 200 ms. ShowTask.
+	// Sets brightness in percent (0..100) of MAX_BRIGHTNESS, rescales the picture and sends it without waiting. ShowTask.
 	void SetBright(uint8_t bright_per_cent) override;
 	// Returns the raw brightness 0..150 (not percent). ShowTask or loop.
 	uint8_t GetBright() override;

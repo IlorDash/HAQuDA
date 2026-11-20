@@ -8,7 +8,7 @@ class HAQuDA_ILEDs {
   public:
 	virtual ~HAQuDA_ILEDs() = default;
 
-	// Sets brightness in percent of MAX_BRIGHTNESS (0..100) and redraws. ShowTask.
+	// Sets brightness in percent of MAX_BRIGHTNESS (0..100) and sends the picture without waiting. ShowTask.
 	virtual void SetBright(uint8_t brightPerCent) = 0;
 	// Returns the raw brightness (0..MAX_BRIGHTNESS). ShowTask or loop.
 	virtual uint8_t GetBright() = 0;

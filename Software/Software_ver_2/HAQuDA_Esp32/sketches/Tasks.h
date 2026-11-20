@@ -1,6 +1,6 @@
 #pragma once
 
-#include "HAQuDA_DisplayManip.h"
+#include "HAQuDA_DisplayService.h"
 
-void createTasks(HAQuDA_DisplayManip *dispManip);
+void createTasks(HAQuDA_DisplayService *display, TaskHandle_t *showTaskHandle);
 void deleteTasks();

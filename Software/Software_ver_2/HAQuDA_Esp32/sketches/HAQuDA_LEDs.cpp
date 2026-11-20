@@ -48,7 +48,8 @@ void HAQuDA_LEDs::SetBright(uint8_t bright_per_cent) {
 		bus.Dirty();
 		brightness.store(newBrightness);
 	}
-	HAQuDA_LEDs::Show();
+	// The animations count the 200 ms of the old blocking Show() in the wait they return from Step(), so waiting here as well would double it
+	showFrame();
 }
 
 uint8_t HAQuDA_LEDs::GetBright() {

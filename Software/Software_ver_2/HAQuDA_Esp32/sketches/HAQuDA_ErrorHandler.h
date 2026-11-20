@@ -4,10 +4,13 @@
 
 typedef enum { failedToConnectToWiFi, failedToCreateAP, failedToStartFS, failedToStartSensors, failedToUpdateNTP, noneError } error_type;
 
+class HAQuDA_DisplayService;
+
 class HAQuDA_ErrorHandler : HAQuDA_EffectsHandler {
 	friend class HAQuDA_WebPageDisplayManip;
 
 	static error_type currentError;
+	HAQuDA_DisplayService *display = nullptr;
 
 	static snake_params failedToCreateAPEffect;
 	static growing_params failedToConnectToWiFiEffect;
@@ -18,23 +21,27 @@ class HAQuDA_ErrorHandler : HAQuDA_EffectsHandler {
   public:
 	HAQuDA_ErrorHandler();
 
+	// The errors are posted to this service. Loop task, once in setup() before the first error
+	void SetDisplay(HAQuDA_DisplayService *displayService);
+
 	static void Show();
 
 	static error_type GetCurrentError() {
 		return currentError;
 	}
 
-	// Sets the error effect and logs it, does not block. Loop task only (setup runs in it).
+	// Posts the error, logs it, does not block. Loop task only (setup runs in it).
 	void FailedToConnectToWiFi();
-	// Sets the error effect and logs it, does not block. Loop task only.
+	// Posts the error, logs it, does not block. Loop task only.
 	void FailedToCreateAP();
-	// Sets the error effect, does not block and does not log (the file system is not available). Loop task only.
+	// Posts the error, does not block and does not log (the file system is not available). Loop task only.
 	void FailedToStartFS();
-	// Sets the error effect and logs it, does not block. Loop task only.
+	// Posts the error, logs it, does not block. Loop task only.
 	void FailedToStartSensors();
-	// Only sets the error effect, does not block. Called by the logger, so loop task only.
+	// Only records the error for the web page and posts nothing yet, does not block. Called by the logger, so loop task only.
 	void FailedToUpdateNTP();
 	void FailedToGetMeas(const char *msg);
+	// Ends the sensors error on the display
 	void ClearError();
 
 	~HAQuDA_ErrorHandler();

@@ -581,6 +581,42 @@ TEST(DisplaySchedulerTest, MeasurementsReplaceTheWaitingItemOnlyWhenReady) {
 	EXPECT_EQ(display_source::waiting, notReady.source);
 }
 
+TEST(DisplaySchedulerTest, StationBootShowsGreenThenTheWaitingSnakeThenTheMeasurements) {
+	HAQuDA_DisplayScheduler scheduler;
+	scheduler.Post(display_event::bootSnake);
+	scheduler.Next(0);
+	scheduler.SetBackground(anim_id::measMulti, BOOT);
+	scheduler.Post(display_event::wifiJoined);
+
+	const display_pick green = scheduler.Next(5 * SECOND);
+	const display_pick waiting = scheduler.Next(10 * SECOND);
+	const display_pick stillWaiting = scheduler.Next(18 * SECOND);
+	scheduler.MeasReady(true);
+	const display_pick meas = scheduler.Next(18 * SECOND + 100);
+
+	EXPECT_EQ(display_source::event, green.source);
+	EXPECT_EQ(anim_id::staticColor, green.anim);
+	EXPECT_EQ(display_source::waiting, waiting.source);
+	EXPECT_EQ(BOOT, waiting.item);
+	EXPECT_FALSE(stillWaiting.changed);
+	EXPECT_EQ(display_source::meas, meas.source);
+}
+
+TEST(DisplaySchedulerTest, ApWaitingPictureStaysTheFadingUntilTheMeasurementsAreReady) {
+	HAQuDA_DisplayScheduler scheduler;
+	scheduler.Post(display_event::apRunning);
+	scheduler.SetBackground(anim_id::measMulti, AP);
+	scheduler.Next(0);
+
+	const display_pick later = scheduler.Next(60 * SECOND);
+	scheduler.MeasReady(true);
+	const display_pick ready = scheduler.Next(60 * SECOND + 100);
+
+	EXPECT_EQ(AP, later.item);
+	EXPECT_EQ(anim_id::fading, later.anim);
+	EXPECT_EQ(display_source::meas, ready.source);
+}
+
 TEST(DisplaySchedulerTest, ReadyWithoutAMeasurementAnimationKeepsTheWaitingItem) {
 	HAQuDA_DisplayScheduler scheduler;
 	scheduler.SetBackground(anim_id::none, BOOT);

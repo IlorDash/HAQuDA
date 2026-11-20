@@ -194,7 +194,7 @@ uint32_t HAQuDA_FadingAnim::Step(uint32_t nowMs) {
 	}
 	switch (current) {
 		case phase::dark: {
-			// The driver's Show() and SetBright() each block 200 ms, the old timing counted both
+			// The old timing counted 200 ms for the dark frame and for the SetBright() frame
 			leds.FillColor(ANIM_COLOR_OFF);
 			leds.Show(ANIM_NO_WAIT_MS);
 			leds.SetBright(fromPercent);

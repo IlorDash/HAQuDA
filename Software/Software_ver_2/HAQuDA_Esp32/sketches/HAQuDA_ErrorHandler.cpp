@@ -1,6 +1,15 @@
 #include "HAQuDA_ErrorHandler.h"
+#include "HAQuDA_DisplayService.h"
 #include "HAQuDA_Logger.h"
 #include "HAQuDA_LEDsParams.h"
+
+namespace {
+	void postError(HAQuDA_DisplayService *display, display_error kind) {
+		if (display != nullptr) {
+			display->Post(kind);
+		}
+	}
+} // namespace
 
 snake_params HAQuDA_ErrorHandler::failedToCreateAPEffect;
 growing_params HAQuDA_ErrorHandler::failedToConnectToWiFiEffect;
@@ -61,37 +70,52 @@ void HAQuDA_ErrorHandler::Show() {
 	}
 }
 
+void HAQuDA_ErrorHandler::SetDisplay(HAQuDA_DisplayService *displayService) {
+	display = displayService;
+}
+
 void HAQuDA_ErrorHandler::FailedToStartFS() {
 	currentError = failedToStartFS;
+	postError(display, display_error::fsFailed);
 }
 
 void HAQuDA_ErrorHandler::FailedToConnectToWiFi() {
 	currentError = failedToConnectToWiFi;
+	postError(display, display_error::wifiConnectFailed);
 	HAQuDA_Logger::LogError("Failed connection to WiFi");
 }
 
 void HAQuDA_ErrorHandler::FailedToCreateAP() {
 	currentError = failedToCreateAP;
+	postError(display, display_error::apFailed);
 	HAQuDA_Logger::LogError("Failed creating Acces Point");
 }
 
 void HAQuDA_ErrorHandler::FailedToStartSensors() {
 	currentError = failedToStartSensors;
+	postError(display, display_error::sensorsFailed);
 	HAQuDA_Logger::LogError("Failed to start sensors");
 }
 
+// Not posted: while NTP has never synced every log line lands here, and a posted error would keep the lamp from showing the
+// measurements until the first sync. A recorded error never replaces another one, so the web page keeps the picture the lamp shows.
 void HAQuDA_ErrorHandler::FailedToUpdateNTP() {
-	// Called from the logger (loop task): must not block, ShowTask draws the effect on its own.
-	currentError = failedToUpdateNTP;
+	if (currentError == noneError) {
+		currentError = failedToUpdateNTP;
+	}
 }
 
 void HAQuDA_ErrorHandler::FailedToGetMeas(const char *msg) {
 	HAQuDA_Logger::LogError(msg);
 }
 
+// Also called in the AP branch after the WiFi error: the end is harmless when no sensors error plays
 void HAQuDA_ErrorHandler::ClearError() {
 	currentError = noneError;
 	SetEffect(noneEffect);
+	if (display != nullptr) {
+		display->End(display_end::sensorsRecovered);
+	}
 }
 
 HAQuDA_ErrorHandler::~HAQuDA_ErrorHandler() {

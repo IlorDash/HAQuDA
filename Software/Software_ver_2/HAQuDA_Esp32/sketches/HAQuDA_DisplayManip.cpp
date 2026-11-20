@@ -1,64 +1,36 @@
-#include <atomic>
-
 #include "HAQuDA_DisplayManip.h"
+#include "HAQuDA_DisplayService.h"
 #include "HAQuDA_LEDsParams.h"
-#include "HAQuDA_LEDs.h"
 #include "HAQuDA_WebPageDisplayManip.h"
 
-uint8_t HAQuDA_DisplayManip::brighntessPerCent;
 display_modes HAQuDA_DisplayManip::mode;
 
 static HAQuDA_MeasHandler *measHandler;
 static HAQuDA_EffectsHandler *effectsHandler;
 static HAQuDA_ErrorHandler *errHandler;
 static HAQuDA_WebPageDisplayManip *webDisp;
+static HAQuDA_DisplayService *display;
 
-// Set in the loop task, consumed in ShowTask.
-static std::atomic<bool> restoreBrightnessPending{false};
+// The WiFi handler tells its two pictures apart by the static colour it sets before SetEffect(staticColor)
+static uint32_t staticColorParam = COLOR_GREEN;
+
+// Shown until the measurements have a sample. Only the access point boot sets the fading effect, so that effect marks AP mode
+static display_item waitingItem = HAQuDA_ItemOf(display_event::bootSnake);
 
 HAQuDA_DisplayManip::HAQuDA_DisplayManip(HAQuDA_MeasHandler *_meas_handler, HAQuDA_EffectsHandler *_effects_handler, HAQuDA_ErrorHandler *_err_handler,
-										 HAQuDA_WebPageDisplayManip *_web_disp) {
-	brighntessPerCent = DEFAULT_BRIGHTNESS;
+										 HAQuDA_WebPageDisplayManip *_web_disp, HAQuDA_DisplayService *_display) {
 	mode = noneMode;
 
 	measHandler = _meas_handler;
 	effectsHandler = _effects_handler;
 	errHandler = _err_handler;
 	webDisp = _web_disp;
-}
-
-void HAQuDA_DisplayManip::Show(int *show_meas_time) {
-
-	switch (mode) {
-		case effect:
-			effectsHandler->Show();
-			break;
-		case meas:
-			// The error effect has returned by now, so its own brightness restore cannot overwrite this one.
-			// Clear first: the LEDs still hold the last error frame, and the first meas draw can be up to a minute away.
-			if (restoreBrightnessPending.exchange(false)) {
-				HAQuDA_LEDs::getInstance()->Clear();
-				HAQuDA_LEDs::getInstance()->SetBright(brighntessPerCent);
-			}
-			measHandler->Show(show_meas_time);
-			break;
-		case error:
-			errHandler->Show();
-			break;
-		default:
-			break;
-	}
-	vTaskDelay(100 / portTICK_PERIOD_MS);
+	display = _display;
 }
 
 void HAQuDA_DisplayManip::SetBrightness(const uint8_t new_brightness) {
-	brighntessPerCent = new_brightness;
-	HAQuDA_LEDs::getInstance()->SetBright(brighntessPerCent);
-	webDisp->SetBrightness(brighntessPerCent);
-}
-
-void HAQuDA_DisplayManip::RestoreBrightnessOnMeas() {
-	restoreBrightnessPending = true;
+	display->SetBrightness(new_brightness);
+	webDisp->SetBrightness(new_brightness);
 }
 
 bool HAQuDA_DisplayManip::SetMode(const display_modes m) {
@@ -111,6 +83,10 @@ void HAQuDA_DisplayManip::SetMeasMode(const meas_mode m) {
 
 	if (mode != meas)
 		SetMode(meas);
+
+	const anim_id measAnim = measHandler->CurrentAnim();
+	display->SetBackground(measAnim, waitingItem);
+	display->SetMeasEnabled(measAnim != anim_id::none);
 }
 
 meas_mode HAQuDA_DisplayManip::GetMeasDispMode() {
@@ -144,6 +120,26 @@ void HAQuDA_DisplayManip::SetEffect(const effect_type e) {
 	if (mode != effect)
 		SetMode(effect);
 	webDisp->SetEffect(e);
+
+	switch (e) {
+		case snake:
+			display->Post(display_event::wifiReconnecting);
+			display->End(display_end::reconnectStarted);
+			break;
+		case fading:
+			waitingItem = HAQuDA_ItemOf(display_event::apRunning);
+			display->Post(display_event::apRunning);
+			break;
+		case staticColor:
+			if (staticColorParam == COLOR_GREEN) {
+				display->Post(display_event::wifiJoined);
+			} else if (staticColorParam == COLOR_RED) {
+				display->Post(display_error::wifiLost);
+			}
+			break;
+		default:
+			break;
+	}
 }
 
 effect_type HAQuDA_DisplayManip::GetEffect() {
@@ -171,6 +167,7 @@ void HAQuDA_DisplayManip::SetEffectParam(const random_led_params p) {
 }
 
 void HAQuDA_DisplayManip::SetEffectParam(const uint32_t p) {
+	staticColorParam = p;
 	effectsHandler->SetStaticColorParam(p);
 	webDisp->SetEffectParam(p);
 }

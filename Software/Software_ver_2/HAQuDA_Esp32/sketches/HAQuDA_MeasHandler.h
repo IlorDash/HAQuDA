@@ -2,6 +2,7 @@
 
 #include "Arduino.h"
 #include "HAQuDA_ErrorHandler.h"
+#include "HAQuDA_IMeasSource.h"
 #include "HAQuDA_ColorScale.h"
 #include "HAQuDA_MeasSnapshot.h"
 #include "HAQuDA_PMResult.h"
@@ -38,7 +39,7 @@ typedef struct {
 // Declared, not included: HAQuDA_WebPageDisplayManip.h includes HAQuDA_DisplayManip.h, which includes this header.
 class HAQuDA_WebPageDisplayManip;
 
-class HAQuDA_MeasHandler {
+class HAQuDA_MeasHandler : public HAQuDA_IMeasSource {
 
 	HAQuDA_MeasSnapshot &measSnapshot;
 	void publishSnapshots();
@@ -64,6 +65,9 @@ class HAQuDA_MeasHandler {
 	static void showMeas_standard(float data, div_dots divideDots);
 	static void showMeas_night(float data, div_dots divideDots, uint8_t time);
 
+	static bool readAverage(meas_type type, float &average);
+	static div_dots dotsOf(meas_type type);
+
   public:
 	// snapshot receives the latest averages for the web page and webDisp the colours the lamp draws; both must outlive the handler.
 	HAQuDA_MeasHandler(HAQuDA_ErrorHandler *_err_handler, HAQuDA_MeasSnapshot &snapshot, HAQuDA_WebPageDisplayManip &webDisp);
@@ -78,6 +82,11 @@ class HAQuDA_MeasHandler {
 	void UpdateMeas(int *sensors_meas_time);
 
 	static void Show(int *show_meas_time);
+
+	// The animation the current mode shows, none when the mode or its parameter selects nothing
+	static anim_id CurrentAnim();
+	bool ReadAverages(anim_id &anim, meas_anim_data &data) override;
+	void RestartAveraging() override;
 
 	static void SetMeasDispMode(meas_mode m);
 	meas_mode GetMeasDispMode();

@@ -7,28 +7,20 @@
 typedef enum { effect, meas, error, event, noneMode } display_modes;
 
 class HAQuDA_WebPageDisplayManip;
+class HAQuDA_DisplayService;
 
+// Callers that are not converted to display posts yet go through these setters: each one also posts what the lamp must show
+// to the display service, which draws it in ShowTask.
 class HAQuDA_DisplayManip {
 
-	static uint8_t brighntessPerCent;
 	static display_modes mode;
 
   public:
 	// webDisp gets a copy of every setter call, for the web page; it must outlive this object.
 	HAQuDA_DisplayManip(HAQuDA_MeasHandler *_meas_handler, HAQuDA_EffectsHandler *_effects_handler, HAQuDA_ErrorHandler *_err_handler,
-						HAQuDA_WebPageDisplayManip *_web_disp);
-
-	static void Show(int *show_meas_time);
+						HAQuDA_WebPageDisplayManip *_web_disp, HAQuDA_DisplayService *_display);
 
 	static void SetBrightness(const uint8_t new_brightness);
-	uint8_t GetBrightness() {
-		return brighntessPerCent;
-	}
-
-	// Makes ShowTask clear the matrix and re-apply the user's brightness once it enters the meas mode: an error effect
-	// may leave the LEDs dim and its last frame lit.
-	// Call before leaving the error mode. loop task only.
-	static void RestoreBrightnessOnMeas();
 
 	static bool SetMode(const display_modes new_mode);
 
@@ -36,6 +28,7 @@ class HAQuDA_DisplayManip {
 		return mode;
 	};
 
+	// Selects the measurement picture; the display shows the waiting picture (boot snake, access point fading in AP mode) until the first sample
 	static void SetMeasMode(const meas_mode m);
 	meas_mode GetMeasDispMode();
 
@@ -44,6 +37,8 @@ class HAQuDA_DisplayManip {
 	static void SetNightTime(const night_time t);
 	static void SetMeasDivDots(const meas_div_dots d);
 
+	// Posts the event the effect stands for: snake = WiFi reconnecting, fading = access point running, static green = WiFi
+	// joined, static red = WiFi lost; the other effects and a static colour of any other value post nothing
 	static void SetEffect(const effect_type e);
 	effect_type GetEffect();
 

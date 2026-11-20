@@ -1,16 +1,10 @@
 #include "Tasks.h"
-#include "HAQuDA_ErrorHandler.h"
 
 void ShowTask(void *parameter) {
-
-	HAQuDA_DisplayManip *dispManip = (HAQuDA_DisplayManip *)parameter;
-	int show_meas_time = 0;
-
-	while (true)
-		dispManip->Show(&show_meas_time);
+	static_cast<HAQuDA_DisplayService *>(parameter)->RunTask();
 }
 
-void createTasks(HAQuDA_DisplayManip *dispManip) {
+void createTasks(HAQuDA_DisplayService *display, TaskHandle_t *showTaskHandle) {
 
-	xTaskCreatePinnedToCore(ShowTask, "WS2812 Effects task", 3000, (void *)dispManip, 1, NULL, 0);
+	xTaskCreatePinnedToCore(ShowTask, "WS2812 Effects task", 3000, (void *)display, 1, showTaskHandle, 0);
 }

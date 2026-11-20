@@ -94,12 +94,14 @@
     <ClCompile Include="TestAnimations.cpp" />
     <ClCompile Include="TestDisplayCatalog.cpp" />
     <ClCompile Include="TestDisplayScheduler.cpp" />
+    <ClCompile Include="TestDisplayEngine.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_Animation.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_EffectAnimations.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_MeasAnimations.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_AnimationSet.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_DisplayCatalog.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_DisplayScheduler.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_DisplayEngine.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\sketches\HAQuDA_ColorScale.h" />
@@ -123,6 +125,8 @@
     <ClInclude Include="..\..\sketches\HAQuDA_AnimationSet.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_DisplayCatalog.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_DisplayScheduler.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_IMeasSource.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_DisplayEngine.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_ILEDs.h" />
     <ClInclude Include="..\mocks\MockLEDs.h" />
     <ClInclude Include="..\fakes\FakePMSerial.h" />

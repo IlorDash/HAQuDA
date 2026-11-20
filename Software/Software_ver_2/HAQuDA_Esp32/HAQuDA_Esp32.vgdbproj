@@ -60,6 +60,9 @@
         <string>sketches\HAQuDA_AnimationSet.h</string>
         <string>sketches\HAQuDA_DisplayCatalog.h</string>
         <string>sketches\HAQuDA_DisplayScheduler.h</string>
+        <string>sketches\HAQuDA_IMeasSource.h</string>
+        <string>sketches\HAQuDA_DisplayEngine.h</string>
+        <string>sketches\HAQuDA_DisplayService.h</string>
       </OtherFiles>
     </ProjectModeSettings>
   </Project>

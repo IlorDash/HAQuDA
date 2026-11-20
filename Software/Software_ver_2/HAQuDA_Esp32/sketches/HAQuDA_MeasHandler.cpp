@@ -225,6 +225,111 @@ void HAQuDA_MeasHandler::Show(int *show_meas_time) {
 	}
 }
 
+anim_id HAQuDA_MeasHandler::CurrentAnim() {
+	switch (mode) {
+		case standard:
+			if (standard_m_p == noneType) {
+				return anim_id::none;
+			}
+			return (standard_m_p == total) ? anim_id::measTotal : anim_id::measStandard;
+		case multi:
+			return anim_id::measMulti;
+		case night:
+			return anim_id::measNight;
+		default:
+			return anim_id::none;
+	}
+}
+
+bool HAQuDA_MeasHandler::readAverage(meas_type type, float &average) {
+	const meas_data *data = nullptr;
+	switch (type) {
+		case temp:
+			data = &temp_meas;
+			break;
+		case humid:
+			data = &humid_meas;
+			break;
+		case eCO2:
+			data = &eCO2_meas;
+			break;
+		case TVOC:
+			data = &TVOC_meas;
+			break;
+		case PM2_5:
+			data = &PM_2_5_meas;
+			break;
+		default:
+			return false;
+	}
+	if (data->measNum == 0) {
+		return false;
+	}
+	average = data->value / data->measNum;
+	return true;
+}
+
+div_dots HAQuDA_MeasHandler::dotsOf(meas_type type) {
+	switch (type) {
+		case temp:
+			return dots.temp;
+		case humid:
+			return dots.humid;
+		case eCO2:
+			return dots.eCO2;
+		case TVOC:
+			return dots.TVOC;
+		case PM2_5:
+			return dots.PM2_5;
+		default:
+			return div_dots{};
+	}
+}
+
+bool HAQuDA_MeasHandler::ReadAverages(anim_id &anim, meas_anim_data &data) {
+	data = meas_anim_data{};
+	anim = CurrentAnim();
+	switch (anim) {
+		case anim_id::measStandard:
+		case anim_id::measNight: {
+			if (!readAverage(standard_m_p, data.values[0])) {
+				return false;
+			}
+			data.dots[0] = dotsOf(standard_m_p);
+			if (anim == anim_id::measNight) {
+				data.nightHour = get_nightMode_hour(night_m_time);
+			}
+			return true;
+		}
+		case anim_id::measMulti: {
+			for (uint8_t i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
+				if (!readAverage(multi_m_p.paramsArr[i], data.values[i])) {
+					return false;
+				}
+				data.dots[i] = multi_m_p.divideDotsArr[i];
+			}
+			return true;
+		}
+		case anim_id::measTotal: {
+			// The order the total animation expects: temp and humid are bad on both sides, the others above last only
+			const meas_type types[MEAS_ANIM_MAX_PARAMS] = {temp, humid, eCO2, TVOC, PM2_5};
+			for (uint8_t i = 0; i < MEAS_ANIM_MAX_PARAMS; i++) {
+				if (!readAverage(types[i], data.values[i])) {
+					return false;
+				}
+				data.dots[i] = dotsOf(types[i]);
+			}
+			return true;
+		}
+		default:
+			return false;
+	}
+}
+
+void HAQuDA_MeasHandler::RestartAveraging() {
+	ClearMeas();
+}
+
 void HAQuDA_MeasHandler::SetMeasDispMode(meas_mode m) {
 	if (m == noneMeas)
 		return;

@@ -3,6 +3,7 @@
 #include "HAQuDA_WiFi_handler.h"
 
 #include "HAQuDA_DisplayManip.h"
+#include "HAQuDA_DisplayService.h"
 #include "HAQuDA_MeasHandler.h"
 #include "HAQuDA_EffectsHandler.h"
 #include "HAQuDA_ErrorHandler.h"
@@ -27,7 +28,8 @@ HAQuDA_EffectsHandler EffectsHandler;
 HAQuDA_MeasSnapshot MeasSnapshot;
 HAQuDA_WebPageDisplayManip WebDisp;
 HAQuDA_MeasHandler MeasHandler(&ErrHandler, MeasSnapshot, WebDisp);
-HAQuDA_DisplayManip DispManip(&MeasHandler, &EffectsHandler, &ErrHandler, &WebDisp);
+HAQuDA_DisplayService Display(*HAQuDA_LEDs::getInstance(), MeasHandler, DEFAULT_BRIGHTNESS);
+HAQuDA_DisplayManip DispManip(&MeasHandler, &EffectsHandler, &ErrHandler, &WebDisp, &Display);
 HAQuDA_WiFi_handler WiFiHandler(&FileStorage, &DispManip, MeasSnapshot, WebDisp);
 
 int meas_start_time = 0;
@@ -44,6 +46,15 @@ constexpr uint32_t WIFI_ERROR_DISPLAY_MS = 10 * 1000;
 bool sensorsRunning = false;
 uint32_t sensorsStartRetryMs = 0;
 
+// The boot display has run by then, so the first value already covers the deepest effect code paths.
+constexpr uint32_t SHOW_STACK_FIRST_LOG_MS = 10 * 1000;
+constexpr uint32_t SHOW_STACK_CHECK_PERIOD_MS = 1000;
+
+TaskHandle_t showTaskHandle = nullptr;
+// Both written and read in the loop task only.
+uint32_t showStackMinLoggedBytes = UINT32_MAX;
+uint32_t showStackCheckMs = 0;
+
 void enableMeasurements();
 void leaveSensorsError();
 
@@ -58,10 +69,11 @@ void setup() {
 	HAQuDA_Logger::SetDedup(&LogDedup);
 	HAQuDA_TimeService::getInstance();
 	HAQuDA_LEDs::getInstance()->Begin();
-	createTasks(&DispManip);
+	ErrHandler.SetDisplay(&Display);
+	Display.Begin();
+	createTasks(&Display, &showTaskHandle);
 
-	DispManip.SetEffect(snake);
-	vTaskDelay(2000 / portTICK_PERIOD_MS);
+	Display.Post(display_event::bootSnake);
 
 	if (!FileStorage.Start()) {
 		DispManip.SetMode(error);
@@ -109,11 +121,9 @@ void setup() {
 	enableMeasurements();
 }
 
-// Loop task only. SetMode() refuses to leave the error mode while currentError is set, so clear it first; the error
-// effects (NTP fade, random pixels) leave the LEDs dim and lit, so ShowTask clears them and re-applies the user's brightness
-// when meas mode starts. Nothing may be logged between this call and SetMeasMode() in enableMeasurements().
+// Loop task only. SetMode() refuses to leave the error mode while currentError is set, so clear it first. Nothing may be
+// logged between this call and SetMeasMode() in enableMeasurements().
 void leaveSensorsError() {
-	HAQuDA_DisplayManip::RestoreBrightnessOnMeas();
 	ErrHandler.ClearError();
 }
 
@@ -144,8 +154,26 @@ void retrySensorsStart() {
 	}
 }
 
+// Loop task only: ShowTask must not log. StackType_t is uint8_t on the ESP32 port, so the value is in bytes.
+void logShowTaskStack() {
+	if ((showTaskHandle == nullptr) || (millis() < SHOW_STACK_FIRST_LOG_MS) || ((millis() - showStackCheckMs) < SHOW_STACK_CHECK_PERIOD_MS)) {
+		return;
+	}
+	showStackCheckMs = millis();
+	const uint32_t freeMinBytes = uxTaskGetStackHighWaterMark(showTaskHandle);
+	if (freeMinBytes >= showStackMinLoggedBytes) {
+		return;
+	}
+	showStackMinLoggedBytes = freeMinBytes;
+	// A log record keeps 31 characters; with the 4-digit value (the stack is 3000 B) this text is exactly 31
+	char msg[48] = {};
+	snprintf(msg, sizeof(msg), "ShowTask stack min free: %lu B", static_cast<unsigned long>(freeMinBytes));
+	HAQuDA_Logger::LogInfo(msg);
+}
+
 void loop() {
 	WiFiHandler.HandleConnection();
+	logShowTaskStack();
 	retrySensorsStart();
 	MeasHandler.UpdateMeas(&meas_start_time);
 	WebDisp.RefreshHour();
