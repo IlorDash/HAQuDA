@@ -42,7 +42,6 @@ class HAQuDA_DisplayManip {
 	};
 
 	static void SetMeasMode(const meas_mode m);
-	meas_mode GetMeasDispMode();
 
 	static void SetStandardMeasParam(const meas_type p);
 	static void SetMultiMeasParam(const multi_mode_params p);

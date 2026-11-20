@@ -14,7 +14,7 @@
 
 bool HAQuDA_MeasHandler::sens_start;
 int HAQuDA_MeasHandler::meas_num;
-bool HAQuDA_MeasHandler::show_meas_immed;
+std::atomic<bool> HAQuDA_MeasHandler::show_meas_immed;
 
 meas_mode HAQuDA_MeasHandler::mode;
 meas_type HAQuDA_MeasHandler::standard_m_p;
@@ -186,8 +186,10 @@ void HAQuDA_MeasHandler::publishSnapshots() {
 void HAQuDA_MeasHandler::Show(int *show_meas_time) {
 
 	bool show_meas_time_passed = (millis() - *show_meas_time > DISP_MEAS_PERIOD_MS);
+	// Taken before the draw: a SetMeasDispMode() that lands during the pass sets the flag again and survives its end
+	const bool immediateRequested = show_meas_immed.exchange(false);
 
-	if (show_meas_time_passed || show_meas_immed) {
+	if (show_meas_time_passed || immediateRequested) {
 
 		// A pass that could not draw (the shown reading has no sample yet, the first one comes within 2 s of a redraw) keeps the
 		// redraw request, so the next pass tries again instead of leaving the old picture up for a minute. The period timer and the
@@ -215,8 +217,8 @@ void HAQuDA_MeasHandler::Show(int *show_meas_time) {
 			*show_meas_time = millis();
 			ClearMeas();
 		}
-		if (!outcome.keepRequest) {
-			show_meas_immed = false;
+		if (immediateRequested && outcome.keepRequest) {
+			show_meas_immed = true;
 		}
 	}
 }
@@ -224,12 +226,9 @@ void HAQuDA_MeasHandler::Show(int *show_meas_time) {
 void HAQuDA_MeasHandler::SetMeasDispMode(meas_mode m) {
 	if (m == noneMeas)
 		return;
-	show_meas_immed = true;
+	// The mode first: ShowTask may take the request at any moment and must then draw the new mode
 	mode = m;
-}
-
-meas_mode HAQuDA_MeasHandler::GetMeasDispMode() {
-	return mode;
+	show_meas_immed = true;
 }
 
 void HAQuDA_MeasHandler::SetStandardMeasParam(const meas_type standard_p) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Arduino.h"
+#include <atomic>
 #include "HAQuDA_DisplayTypes.h"
 #include "HAQuDA_ErrorHandler.h"
 #include "HAQuDA_ColorScale.h"
@@ -45,7 +46,8 @@ class HAQuDA_MeasHandler {
 
 	static bool sens_start;
 	static int meas_num;
-	static bool show_meas_immed;
+	// Set by the loop task, taken by ShowTask
+	static std::atomic<bool> show_meas_immed;
 
 	static meas_mode mode;
 	static meas_type standard_m_p;
@@ -84,7 +86,6 @@ class HAQuDA_MeasHandler {
 	static void Show(int *show_meas_time);
 
 	static void SetMeasDispMode(meas_mode m);
-	meas_mode GetMeasDispMode();
 
 	static void SetStandardMeasParam(const meas_type standard_p);
 	static void SetMultiMeasParam(const multi_mode_params multi_p);

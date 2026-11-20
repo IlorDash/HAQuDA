@@ -134,10 +134,6 @@ void HAQuDA_DisplayManip::SetMeasMode(const meas_mode m) {
 		SetMode(meas);
 }
 
-meas_mode HAQuDA_DisplayManip::GetMeasDispMode() {
-	return measHandler->GetMeasDispMode();
-};
-
 void HAQuDA_DisplayManip::SetStandardMeasParam(const meas_type p) {
 	// Mirror first: a draw that lands in between reports colours of the old key, and those are what the LEDs show
 	webDisp->SetStandardMeasParam(p);
