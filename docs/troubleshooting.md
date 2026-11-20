@@ -21,7 +21,7 @@ Effects in the tables use these names:
 | Effect | Cause | Action |
 |------------------------|-------|------------|
 | Lime snake | The lamp starts, or it reconnects to a stored WiFi network. | Wait for it to end. |
-| Green, whole matrix, about 3 seconds | The lamp joined your WiFi network and got an address from your router. | Nothing. The matrix goes dark, then shows colours after about a minute. |
+| Green, whole matrix, about 3 seconds | The lamp joined your WiFi network and got an address from your router. | Nothing. The matrix goes dark, then shows colours as soon as the sensors have delivered the readings of the mode: after a few seconds, and about 12 to 14 seconds with PM2.5. |
 | Red growing for about 12 seconds, then an aqua fading. Before the red growing the lime snake runs for about 2 seconds, or for about 30 seconds when a network is stored | No network is stored, or the lamp could not join the stored one. It opens its access point. | Nothing on the first start. Otherwise check the name and the password of your network and add it again ([Quick guide](quick-guide.md#connect-the-lamp-to-your-wifi)). |
 | Aqua fading, once | The access point runs and the sensors start. | Join the lamp's network and open `http://192.168.4.22/`. |
 | Dark matrix that stays dark, the lamp's WiFi network usually does not appear, the LED on the ESP32 board does not blink | The lamp could not create its access point and stops. | Unplug the lamp and plug it in again. If it repeats, check the access point password in your build (8 to 63 characters). |
