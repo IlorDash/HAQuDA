@@ -1,6 +1,5 @@
 #include "HAQuDA_WebPageDisplayManip.h"
 #include "HAQuDA_LEDsParams.h"
-#include "HAQuDA_TimeHelper.h"
 
 // The mapping below lists every enumerator of these firmware enums, the last one being the "none" sentinel. A new enumerator
 // shifts the sentinel and stops the build here, so the switches are revisited; a value outside the list maps to what draws nothing.
@@ -209,9 +208,8 @@ void HAQuDA_WebPageDisplayManip::SetEffectParam(const uint32_t p) {
 	HAQuDA_WebPictureSetStaticColor(picture, p, millis());
 }
 
-void HAQuDA_WebPageDisplayManip::RefreshHour() {
-	uint8_t hour = 0;
-	hourNow.store(HAQuDA_TimeService::GetCachedHour(&hour) ? hour : HOUR_UNKNOWN);
+void HAQuDA_WebPageDisplayManip::SetMinuteOfDay(bool timeKnown, uint16_t minuteOfDay) {
+	minuteNow.store(timeKnown ? minuteOfDay : MINUTE_UNKNOWN);
 }
 
 void HAQuDA_WebPageDisplayManip::fillErrorEffect(error_type kind, web_display_state &state) const {
@@ -256,9 +254,9 @@ size_t HAQuDA_WebPageDisplayManip::BuildJson(char *buf, size_t size) {
 		copy = picture;
 	}
 
-	const uint8_t hour = hourNow.load();
+	const uint16_t minuteOfDay = minuteNow.load();
 	web_display_state state;
-	HAQuDA_WebPictureBuild(copy, toError(currentError), hour != HOUR_UNKNOWN, hour, nowMs, state);
+	HAQuDA_WebPictureBuild(copy, toError(currentError), minuteOfDay != MINUTE_UNKNOWN, minuteOfDay, nowMs, state);
 	if (state.source == web_source::error) {
 		fillErrorEffect(currentError, state);
 	}

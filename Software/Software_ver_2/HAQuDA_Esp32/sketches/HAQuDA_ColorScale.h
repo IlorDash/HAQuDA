@@ -18,6 +18,8 @@ struct rgb_color {
 };
 
 // Maps a measured value to a colour: blue below dots.first, blue to green up to dots.mid, green to red up to dots.last,
-// red above. brightness is the raw LED brightness (0..COLOR_SCALE_MAX_CHANNEL) and sets the colour gradient slope.
+// red above. The channels are independent of the lamp's brightness (the LED driver dims them), and the gradient slope is
+// (2 * COLOR_SCALE_MAX_CHANNEL) / (dots.last - dots.first) in integer arithmetic: a mid dot in the middle of the range takes the
+// outgoing channel exactly to 0 there.
 // color is left untouched when no range matches (data is NaN). Any task.
-void HAQuDA_GetMeasRGB(float data, div_dots dots, uint8_t brightness, rgb_color &color);
+void HAQuDA_GetMeasRGB(float data, div_dots dots, rgb_color &color);

@@ -1,8 +1,7 @@
 #pragma once
 
+#include "HAQuDA_DisplayTypes.h"
 #include "HAQuDA_EffectsHandler.h"
-
-typedef enum { failedToConnectToWiFi, failedToCreateAP, failedToStartFS, failedToStartSensors, failedToUpdateNTP, noneError } error_type;
 
 class HAQuDA_ErrorHandler : HAQuDA_EffectsHandler {
 	friend class HAQuDA_WebPageDisplayManip;

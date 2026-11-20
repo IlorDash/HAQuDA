@@ -1541,7 +1541,7 @@ TEST(WebPageDisplayTranslatorTest, MeasNightShape) {
 	const size_t buf_size = 256;
 
 	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
-						   "00ff00\"],\"white\":3,\"whiteColor\":\"#808080\"}";
+						   "00ff00\"],\"lit\":3,\"whiteColor\":\"#808080\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1553,7 +1553,7 @@ TEST(WebPageDisplayTranslatorTest, MeasNightShape) {
 	state.keys[0] = web_meas_key::pm25;
 	state.measDrawn = true;
 	state.measColors[0] = 0x00FF00;
-	state.nightHour = 6;
+	state.nightLit = 3;
 	state.measWhiteColor = 0x808080;
 	char buf[buf_size];
 
@@ -1569,7 +1569,7 @@ TEST(WebPageDisplayTranslatorTest, MeasNightIgnoresSecondAndThirdKeyAndColor) {
 	const size_t buf_size = 256;
 
 	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
-						   "00ff00\"],\"white\":3,\"whiteColor\":\"#808080\"}";
+						   "00ff00\"],\"lit\":3,\"whiteColor\":\"#808080\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1585,7 +1585,7 @@ TEST(WebPageDisplayTranslatorTest, MeasNightIgnoresSecondAndThirdKeyAndColor) {
 	state.measColors[0] = 0x00FF00;
 	state.measColors[1] = 0x00BB00;
 	state.measColors[2] = 0x0000CC;
-	state.nightHour = 6;
+	state.nightLit = 3;
 	state.measWhiteColor = 0x808080;
 	char buf[buf_size];
 
@@ -1597,12 +1597,12 @@ TEST(WebPageDisplayTranslatorTest, MeasNightIgnoresSecondAndThirdKeyAndColor) {
 	EXPECT_STREQ(exp_json, buf);
 }
 
-TEST(WebPageDisplayTranslatorTest, MeasNightHour0WhiteRows) {
+TEST(WebPageDisplayTranslatorTest, MeasNightLit0Cells) {
 	const size_t buf_size = 256;
 
-	// night start: no white rows
+	// no time known: no light
 	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
-						   "00ff00\"],\"white\":0,\"whiteColor\":\"#808080\"}";
+						   "00ff00\"],\"lit\":0,\"whiteColor\":\"#808080\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1614,7 +1614,7 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour0WhiteRows) {
 	state.keys[0] = web_meas_key::pm25;
 	state.measDrawn = true;
 	state.measColors[0] = 0x00FF00;
-	state.nightHour = 0;
+	state.nightLit = 0;
 	state.measWhiteColor = 0x808080;
 	char buf[buf_size];
 
@@ -1626,12 +1626,12 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour0WhiteRows) {
 	EXPECT_STREQ(exp_json, buf);
 }
 
-TEST(WebPageDisplayTranslatorTest, MeasNightHour1WhiteRows) {
+TEST(WebPageDisplayTranslatorTest, MeasNightLit1Cell) {
 	const size_t buf_size = 256;
 
-	// 1 * 6 / 12 = 0.5, rounded up
+	// the first cell of the light
 	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
-						   "00ff00\"],\"white\":1,\"whiteColor\":\"#808080\"}";
+						   "00ff00\"],\"lit\":1,\"whiteColor\":\"#808080\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1643,7 +1643,7 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour1WhiteRows) {
 	state.keys[0] = web_meas_key::pm25;
 	state.measDrawn = true;
 	state.measColors[0] = 0x00FF00;
-	state.nightHour = 1;
+	state.nightLit = 1;
 	state.measWhiteColor = 0x808080;
 	char buf[buf_size];
 
@@ -1655,12 +1655,11 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour1WhiteRows) {
 	EXPECT_STREQ(exp_json, buf);
 }
 
-TEST(WebPageDisplayTranslatorTest, MeasNightHour2WhiteRows) {
+TEST(WebPageDisplayTranslatorTest, MeasNightLit6CellsFillTheFirstColumn) {
 	const size_t buf_size = 256;
 
-	// 2 * 6 / 12 = 1 exactly
 	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
-						   "00ff00\"],\"white\":1,\"whiteColor\":\"#808080\"}";
+						   "00ff00\"],\"lit\":6,\"whiteColor\":\"#808080\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1672,7 +1671,7 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour2WhiteRows) {
 	state.keys[0] = web_meas_key::pm25;
 	state.measDrawn = true;
 	state.measColors[0] = 0x00FF00;
-	state.nightHour = 2;
+	state.nightLit = 6;
 	state.measWhiteColor = 0x808080;
 	char buf[buf_size];
 
@@ -1684,12 +1683,11 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour2WhiteRows) {
 	EXPECT_STREQ(exp_json, buf);
 }
 
-TEST(WebPageDisplayTranslatorTest, MeasNightHour6WhiteRows) {
+TEST(WebPageDisplayTranslatorTest, MeasNightLit7CellsStartTheSecondColumn) {
 	const size_t buf_size = 256;
 
-	// 6 * 6 / 12 = 3 exactly
 	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
-						   "00ff00\"],\"white\":3,\"whiteColor\":\"#808080\"}";
+						   "00ff00\"],\"lit\":7,\"whiteColor\":\"#808080\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1701,7 +1699,7 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour6WhiteRows) {
 	state.keys[0] = web_meas_key::pm25;
 	state.measDrawn = true;
 	state.measColors[0] = 0x00FF00;
-	state.nightHour = 6;
+	state.nightLit = 7;
 	state.measWhiteColor = 0x808080;
 	char buf[buf_size];
 
@@ -1713,12 +1711,11 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour6WhiteRows) {
 	EXPECT_STREQ(exp_json, buf);
 }
 
-TEST(WebPageDisplayTranslatorTest, MeasNightHour7WhiteRows) {
+TEST(WebPageDisplayTranslatorTest, MeasNightLit11Cells) {
 	const size_t buf_size = 256;
 
-	// 7 * 6 / 12 = 3.5, rounded up
 	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
-						   "00ff00\"],\"white\":4,\"whiteColor\":\"#808080\"}";
+						   "00ff00\"],\"lit\":11,\"whiteColor\":\"#808080\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1730,7 +1727,7 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour7WhiteRows) {
 	state.keys[0] = web_meas_key::pm25;
 	state.measDrawn = true;
 	state.measColors[0] = 0x00FF00;
-	state.nightHour = 7;
+	state.nightLit = 11;
 	state.measWhiteColor = 0x808080;
 	char buf[buf_size];
 
@@ -1742,12 +1739,11 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour7WhiteRows) {
 	EXPECT_STREQ(exp_json, buf);
 }
 
-TEST(WebPageDisplayTranslatorTest, MeasNightHour11WhiteRows) {
+TEST(WebPageDisplayTranslatorTest, MeasNightLit17Cells) {
 	const size_t buf_size = 256;
 
-	// 11 * 6 / 12 = 5.5, rounded up
 	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
-						   "00ff00\"],\"white\":6,\"whiteColor\":\"#808080\"}";
+						   "00ff00\"],\"lit\":17,\"whiteColor\":\"#808080\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1759,7 +1755,7 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour11WhiteRows) {
 	state.keys[0] = web_meas_key::pm25;
 	state.measDrawn = true;
 	state.measColors[0] = 0x00FF00;
-	state.nightHour = 11;
+	state.nightLit = 17;
 	state.measWhiteColor = 0x808080;
 	char buf[buf_size];
 
@@ -1771,12 +1767,12 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour11WhiteRows) {
 	EXPECT_STREQ(exp_json, buf);
 }
 
-TEST(WebPageDisplayTranslatorTest, MeasNightHour12WhiteRows) {
+TEST(WebPageDisplayTranslatorTest, MeasNightLit18CellsAllOn) {
 	const size_t buf_size = 256;
 
-	// 12 = outside the night window: all rows white
+	// the end of the window, or outside it: the whole light
 	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
-						   "00ff00\"],\"white\":6,\"whiteColor\":\"#808080\"}";
+						   "00ff00\"],\"lit\":18,\"whiteColor\":\"#808080\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1788,7 +1784,7 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour12WhiteRows) {
 	state.keys[0] = web_meas_key::pm25;
 	state.measDrawn = true;
 	state.measColors[0] = 0x00FF00;
-	state.nightHour = 12;
+	state.nightLit = 18;
 	state.measWhiteColor = 0x808080;
 	char buf[buf_size];
 
@@ -1800,12 +1796,11 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour12WhiteRows) {
 	EXPECT_STREQ(exp_json, buf);
 }
 
-TEST(WebPageDisplayTranslatorTest, MeasNightHour13WhiteRows) {
+TEST(WebPageDisplayTranslatorTest, MeasNightLit19CellsIsClampedTo18) {
 	const size_t buf_size = 256;
 
-	// above 12 is clamped to 12
 	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
-						   "00ff00\"],\"white\":6,\"whiteColor\":\"#808080\"}";
+						   "00ff00\"],\"lit\":18,\"whiteColor\":\"#808080\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1817,7 +1812,7 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour13WhiteRows) {
 	state.keys[0] = web_meas_key::pm25;
 	state.measDrawn = true;
 	state.measColors[0] = 0x00FF00;
-	state.nightHour = 13;
+	state.nightLit = 19;
 	state.measWhiteColor = 0x808080;
 	char buf[buf_size];
 
@@ -1829,12 +1824,11 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour13WhiteRows) {
 	EXPECT_STREQ(exp_json, buf);
 }
 
-TEST(WebPageDisplayTranslatorTest, MeasNightHour255WhiteRows) {
+TEST(WebPageDisplayTranslatorTest, MeasNightLit255CellsIsClampedTo18) {
 	const size_t buf_size = 256;
 
-	// far above 12 is clamped to 12
 	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
-						   "00ff00\"],\"white\":6,\"whiteColor\":\"#808080\"}";
+						   "00ff00\"],\"lit\":18,\"whiteColor\":\"#808080\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1846,7 +1840,7 @@ TEST(WebPageDisplayTranslatorTest, MeasNightHour255WhiteRows) {
 	state.keys[0] = web_meas_key::pm25;
 	state.measDrawn = true;
 	state.measColors[0] = 0x00FF00;
-	state.nightHour = 255;
+	state.nightLit = 255;
 	state.measWhiteColor = 0x808080;
 	char buf[buf_size];
 
@@ -1874,7 +1868,7 @@ TEST(WebPageDisplayTranslatorTest, MeasWhiteOnlyInNightLayout) {
 	state.keys[0] = web_meas_key::pm25;
 	state.measDrawn = true;
 	state.measColors[0] = 0x00FF00;
-	state.nightHour = 6;
+	state.nightLit = 3;
 	state.measWhiteColor = 0x808080;
 	char buf[buf_size];
 
@@ -1958,7 +1952,7 @@ TEST(WebPageDisplayTranslatorTest, MeasNightNotDrawnIsHold) {
 	state.keys[0] = web_meas_key::pm25;
 	state.measDrawn = false;
 	state.measColors[0] = 0x00FF00;
-	state.nightHour = 6;
+	state.nightLit = 3;
 	state.measWhiteColor = 0x808080;
 	char buf[buf_size];
 
@@ -2000,7 +1994,7 @@ TEST(WebPageDisplayTranslatorTest, MeasWhiteColorHighByteIsMasked) {
 	const size_t buf_size = 256;
 
 	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
-						   "000000\"],\"white\":0,\"whiteColor\":\"#654321\"}";
+						   "000000\"],\"lit\":0,\"whiteColor\":\"#654321\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -2012,7 +2006,7 @@ TEST(WebPageDisplayTranslatorTest, MeasWhiteColorHighByteIsMasked) {
 	state.keys[0] = web_meas_key::pm25;
 	state.measDrawn = true;
 	state.measColors[0] = 0x000000;
-	state.nightHour = 0;
+	state.nightLit = 0;
 	state.measWhiteColor = 0xCD654321;
 	char buf[buf_size];
 
@@ -2106,7 +2100,7 @@ TEST(WebPageDisplayTranslatorTest, MeasWhiteColorIsLowerCaseAndZeroPadded) {
 	const size_t buf_size = 256;
 
 	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"meas\",\"bright\":50,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"pm25\"],\"colors\":[\"#"
-						   "000000\"],\"white\":0,\"whiteColor\":\"#0a0b0c\"}";
+						   "000000\"],\"lit\":0,\"whiteColor\":\"#0a0b0c\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -2118,7 +2112,7 @@ TEST(WebPageDisplayTranslatorTest, MeasWhiteColorIsLowerCaseAndZeroPadded) {
 	state.keys[0] = web_meas_key::pm25;
 	state.measDrawn = true;
 	state.measColors[0] = 0x000000;
-	state.nightHour = 0;
+	state.nightLit = 0;
 	state.measWhiteColor = 0x0A0B0C;
 	char buf[buf_size];
 
@@ -2428,7 +2422,7 @@ TEST(WebPageDisplayTranslatorTest, WorstCaseMultiMeasFitsJsonBufLen) {
 
 TEST(WebPageDisplayTranslatorTest, WorstCaseNightMeasFitsJsonBufLen) {
 	const char *exp_json = "{\"seq\":4294967295,\"age\":4294967295,\"src\":\"meas\",\"bright\":100,\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"humid\"],"
-						   "\"colors\":[\"#ffffff\"],\"white\":6,\"whiteColor\":\"#ffffff\"}";
+						   "\"colors\":[\"#ffffff\"],\"lit\":18,\"whiteColor\":\"#ffffff\"}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -2438,7 +2432,7 @@ TEST(WebPageDisplayTranslatorTest, WorstCaseNightMeasFitsJsonBufLen) {
 	state.brightPercent = 100;
 	state.layout = web_meas_layout::night;
 	state.keys[0] = web_meas_key::humid;
-	state.nightHour = 12;
+	state.nightLit = 18;
 	state.measDrawn = true;
 	state.measColors[0] = 0xFFFFFF;
 	state.measWhiteColor = 0xFFFFFF;
@@ -2642,159 +2636,4 @@ TEST(WebPageDisplayTranslatorTest, BufferNullReturnsZero) {
 	res = HAQuDA_TranslateDisplayToJson(state, buf, size);
 
 	EXPECT_EQ(exp_len, res);
-}
-
-// ---------------------------------------------------------------- night hour
-
-TEST(WebPageNightHourTest, WindowAcrossMidnightFirstHourIsZero) {
-	const uint8_t exp_hour = 0;
-
-	uint8_t res;
-
-	res = HAQuDA_NightHour(21, 9, 21);
-
-	EXPECT_EQ(exp_hour, res);
-}
-
-TEST(WebPageNightHourTest, WindowAcrossMidnightBeforeMidnight) {
-	const uint8_t exp_hour = 2;
-
-	uint8_t res;
-
-	res = HAQuDA_NightHour(21, 9, 23);
-
-	EXPECT_EQ(exp_hour, res);
-}
-
-TEST(WebPageNightHourTest, WindowAcrossMidnightAtMidnight) {
-	const uint8_t exp_hour = 3;
-
-	uint8_t res;
-
-	res = HAQuDA_NightHour(21, 9, 0);
-
-	EXPECT_EQ(exp_hour, res);
-}
-
-TEST(WebPageNightHourTest, WindowAcrossMidnightLastFullHour) {
-	const uint8_t exp_hour = 11;
-
-	uint8_t res;
-
-	res = HAQuDA_NightHour(21, 9, 8);
-
-	EXPECT_EQ(exp_hour, res);
-}
-
-// The finish hour belongs to the window, but it is 12 hours after the start, which is the "outside" value too
-TEST(WebPageNightHourTest, WindowAcrossMidnightFinishHour) {
-	const uint8_t exp_hour = 12;
-
-	uint8_t res;
-
-	res = HAQuDA_NightHour(21, 9, 9);
-
-	EXPECT_EQ(exp_hour, res);
-}
-
-TEST(WebPageNightHourTest, WindowAcrossMidnightDayHourIsOutside) {
-	const uint8_t exp_hour = 12;
-
-	uint8_t res;
-
-	res = HAQuDA_NightHour(21, 9, 15);
-
-	EXPECT_EQ(exp_hour, res);
-}
-
-TEST(WebPageNightHourTest, WindowAcrossMidnightHourBeforeStartIsOutside) {
-	const uint8_t exp_hour = 12;
-
-	uint8_t res;
-
-	res = HAQuDA_NightHour(21, 9, 20);
-
-	EXPECT_EQ(exp_hour, res);
-}
-
-TEST(WebPageNightHourTest, WindowInOneDayInside) {
-	const uint8_t exp_hour = 4;
-
-	uint8_t res;
-
-	res = HAQuDA_NightHour(1, 6, 5);
-
-	EXPECT_EQ(exp_hour, res);
-}
-
-TEST(WebPageNightHourTest, WindowInOneDayFinishHourIsInside) {
-	const uint8_t exp_hour = 5;
-
-	uint8_t res;
-
-	res = HAQuDA_NightHour(1, 6, 6);
-
-	EXPECT_EQ(exp_hour, res);
-}
-
-TEST(WebPageNightHourTest, WindowInOneDayBeforeStartIsOutside) {
-	const uint8_t exp_hour = 12;
-
-	uint8_t res;
-
-	res = HAQuDA_NightHour(1, 6, 0);
-
-	EXPECT_EQ(exp_hour, res);
-}
-
-TEST(WebPageNightHourTest, WindowInOneDayAfterFinishIsOutside) {
-	const uint8_t exp_hour = 12;
-
-	uint8_t res;
-
-	res = HAQuDA_NightHour(1, 6, 7);
-
-	EXPECT_EQ(exp_hour, res);
-}
-
-TEST(WebPageNightHourTest, HourAbove23IsOutside) {
-	const uint8_t exp_hour = 12;
-
-	uint8_t res;
-
-	res = HAQuDA_NightHour(21, 9, 24);
-
-	EXPECT_EQ(exp_hour, res);
-}
-
-// A window with start == finish holds only that one hour
-TEST(WebPageNightHourTest, StartEqualsFinishAtThatHourIsZero) {
-	const uint8_t exp_hour = 0;
-
-	uint8_t res;
-
-	res = HAQuDA_NightHour(5, 5, 5);
-
-	EXPECT_EQ(exp_hour, res);
-}
-
-TEST(WebPageNightHourTest, StartEqualsFinishOtherHourIsOutside) {
-	const uint8_t exp_hour = 12;
-
-	uint8_t res;
-
-	res = HAQuDA_NightHour(5, 5, 6);
-
-	EXPECT_EQ(exp_hour, res);
-}
-
-// Current behaviour as is: a window longer than 12 hours gives hours-in above 12 (the lamp's own function does the same)
-TEST(WebPageNightHourTest, SameDayWindowLongerThan12HoursGivesValueAbove12) {
-	const uint8_t exp_hour = 14;
-
-	uint8_t res;
-
-	res = HAQuDA_NightHour(1, 20, 15);
-
-	EXPECT_EQ(exp_hour, res);
 }

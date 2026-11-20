@@ -1,11 +1,12 @@
 #include <atomic>
 
 #include "HAQuDA_DisplayManip.h"
+#include "HAQuDA_BrightnessApply.h"
 #include "HAQuDA_LEDsParams.h"
 #include "HAQuDA_LEDs.h"
 #include "HAQuDA_WebPageDisplayManip.h"
 
-uint8_t HAQuDA_DisplayManip::brighntessPerCent;
+std::atomic<uint8_t> HAQuDA_DisplayManip::brighntessPerCent;
 display_modes HAQuDA_DisplayManip::mode;
 
 static HAQuDA_MeasHandler *measHandler;
@@ -13,8 +14,30 @@ static HAQuDA_EffectsHandler *effectsHandler;
 static HAQuDA_ErrorHandler *errHandler;
 static HAQuDA_WebPageDisplayManip *webDisp;
 
-// Set in the loop task, consumed in ShowTask.
+// Both are set in the loop task and consumed in ShowTask, which is the only task that may send an LED frame.
+// brightnessPending: brighntessPerCent has not reached the LEDs yet.
+// restoreBrightnessPending: the matrix must also be cleared when the meas mode starts.
+static std::atomic<bool> brightnessPending{false};
 static std::atomic<bool> restoreBrightnessPending{false};
+
+// Puts a requested brightness on the LEDs. Runs at the top of every ShowTask pass, so an effect that restores its own saved
+// brightness when it stops has already returned and cannot overwrite the user's value. This is the only thing that corrects a level
+// restored by show_fading(): every path that stops an effect must be followed by SetBrightness() or RestoreBrightnessOnMeas().
+void HAQuDA_DisplayManip::applyPendingBrightness() {
+	const display_modes currentMode = mode;
+	// The restore waits for the meas mode: the error effect has returned by then, so its own brightness restore cannot overwrite this
+	// one. Clear first: the LEDs still hold the last error frame, and the first meas draw can be up to a minute away.
+	const bool restore = (currentMode == meas) && restoreBrightnessPending.exchange(false);
+	// The percent is read after the flag: the setter writes the value first, so a flag seen here comes with its value
+	const bool pending = brightnessPending.exchange(false);
+	const brightness_apply apply = HAQuDA_DecideBrightnessApply(pending, restore);
+	if (apply.clear) {
+		HAQuDA_LEDs::getInstance()->Clear();
+	}
+	if (apply.setBright) {
+		HAQuDA_LEDs::getInstance()->SetBright(brighntessPerCent.load());
+	}
+}
 
 HAQuDA_DisplayManip::HAQuDA_DisplayManip(HAQuDA_MeasHandler *_meas_handler, HAQuDA_EffectsHandler *_effects_handler, HAQuDA_ErrorHandler *_err_handler,
 										 HAQuDA_WebPageDisplayManip *_web_disp) {
@@ -29,17 +52,13 @@ HAQuDA_DisplayManip::HAQuDA_DisplayManip(HAQuDA_MeasHandler *_meas_handler, HAQu
 
 void HAQuDA_DisplayManip::Show(int *show_meas_time) {
 
+	applyPendingBrightness();
+
 	switch (mode) {
 		case effect:
 			effectsHandler->Show();
 			break;
 		case meas:
-			// The error effect has returned by now, so its own brightness restore cannot overwrite this one.
-			// Clear first: the LEDs still hold the last error frame, and the first meas draw can be up to a minute away.
-			if (restoreBrightnessPending.exchange(false)) {
-				HAQuDA_LEDs::getInstance()->Clear();
-				HAQuDA_LEDs::getInstance()->SetBright(brighntessPerCent);
-			}
 			measHandler->Show(show_meas_time);
 			break;
 		case error:
@@ -52,9 +71,11 @@ void HAQuDA_DisplayManip::Show(int *show_meas_time) {
 }
 
 void HAQuDA_DisplayManip::SetBrightness(const uint8_t new_brightness) {
-	brighntessPerCent = new_brightness;
-	HAQuDA_LEDs::getInstance()->SetBright(brighntessPerCent);
-	webDisp->SetBrightness(brighntessPerCent);
+	brighntessPerCent.store(new_brightness);
+	// After the value: ShowTask reads the value once it sees the flag
+	brightnessPending.store(true);
+	// The page and the status report the user's value at once, not when ShowTask gets to it
+	webDisp->SetBrightness(new_brightness);
 }
 
 void HAQuDA_DisplayManip::RestoreBrightnessOnMeas() {
@@ -112,10 +133,6 @@ void HAQuDA_DisplayManip::SetMeasMode(const meas_mode m) {
 	if (mode != meas)
 		SetMode(meas);
 }
-
-meas_mode HAQuDA_DisplayManip::GetMeasDispMode() {
-	return measHandler->GetMeasDispMode();
-};
 
 void HAQuDA_DisplayManip::SetStandardMeasParam(const meas_type p) {
 	// Mirror first: a draw that lands in between reports colours of the old key, and those are what the LEDs show

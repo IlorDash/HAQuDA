@@ -25,7 +25,7 @@ Effects in the tables use these names:
 | Red growing for about 12 seconds, then an aqua fading. Before the red growing the lime snake runs for about 2 seconds, or for about 30 seconds when a network is stored | No network is stored, or the lamp could not join the stored one. It opens its access point. | Nothing on the first start. Otherwise check the name and the password of your network and add it again ([Quick guide](quick-guide.md#connect-the-lamp-to-your-wifi)). |
 | Aqua fading, once | The access point runs and the sensors start. | Join the lamp's network and open `http://192.168.4.22/`. |
 | Dark matrix that stays dark, the lamp's WiFi network usually does not appear, the LED on the ESP32 board does not blink | The lamp could not create its access point and stops. | Unplug the lamp and plug it in again. If it repeats, check the access point password in your build (8 to 63 characters). |
-| Random pixels after the green flash or the aqua fading, until the sensors start | The lamp could not start its sensors (the CCS811, the DHT22 or the ZH03B does not answer). It tries up to three times to power the sensors off and on, keeps the effect, and tries again every 5 minutes. Each round of tries blocks the lamp for several seconds, up to about 27 seconds when the DHT22 or the ZH03B is missing. | Check the sensor power and the wiring; the log names the missing sensor (see [Log messages](#log-messages)). The colours start by themselves once the sensors answer. In your network, when the time server has not answered since the start, the matrix stays dark instead of showing the effect. |
+| Random pixels after the green flash or the aqua fading, until the sensors start | The lamp could not start its sensors (the CCS811, the DHT22 or the ZH03B does not answer). It tries up to three times to power the sensors off and on, keeps the effect, and tries again every 5 minutes. Each round of tries blocks the lamp for several seconds, up to about 27 seconds when the DHT22 or the ZH03B is missing. | Check the sensor power and the wiring; the log names the missing sensor (see [Log messages](#log-messages)). The colours start by themselves once the sensors answer. **Lamp light** and power off from the web page replace the effect, because they need no readings; a measurement mode keeps it. In your network, when the time server has not answered since the start, the matrix stays dark instead of showing the effect. |
 | Red fading, again and again; it does not stop | The lamp could not start its file system and stops. | Unplug the lamp and plug it in again. If it repeats, flash the lamp again. |
 
 ---
@@ -49,8 +49,9 @@ Effects in the tables use these names:
 
 | Effect | Cause | Action |
 |------------------------|-------|------------|
-| The matrix is dark for the first minute after a start | The lamp averages the first minute of readings before it draws. | Wait. In the standard and night mode the matrix can show a meaningless colour during this minute. |
-| The picture does not change for several minutes | In multi mode, one of temperature, eCO2 or PM2.5 delivers no reading, and the lamp keeps the old picture. One missed CCS811 reading discards the whole minute of eCO2 and TVOC. | Open the log and look for `Failed to get ... meas` lines (see [Log messages](#log-messages)). Check the wiring of that sensor. |
+| The matrix is dark for the first seconds after a start | The lamp draws once every value of the mode has a reading; PM2.5 needs a 12-second warm-up. | Wait. |
+| The matrix is dark and the web page shows the lamp as off | You switched the lamp off in the Lamp card. | Press the power switch ([The Lamp card](web-interface.md#lamp-card)). |
+| The picture does not change for several minutes | In a measurement mode, one of the shown values delivers no reading, and the lamp keeps the old picture. One missed CCS811 reading discards the whole minute of eCO2 and TVOC. | Open the log and look for `Failed to get ... meas` lines (see [Log messages](#log-messages)). Check the wiring of that sensor. |
 | eCO2 and TVOC never show green | The lamp shows these two values in steps. | Nothing; see [Colour scale](display-modes.md#colour-scale). |
 | An animation, for example the lime snake, freezes for a fraction of a second when WiFi connects | The WiFi connection and the matrix share one processor core, so the picture waits while WiFi starts. | Nothing. It is harmless. Parts of the matrix no longer flash random colours during file system writes or a WiFi connection. |
 | The LED on the ESP32 board does not blink | The lamp has not finished its start, or its main loop is blocked, usually while it retries a lost WiFi connection. | Wait for the start or the reconnect. If the LED stays still for minutes, unplug the lamp and plug it in again. |
@@ -69,6 +70,9 @@ Each line has the form `time - level : message`; see [Log page](web-interface.md
 | `Connected to WiFi` | Info | The lamp joined your network. | Nothing. |
 | `Created Acces Point` | Info | The lamp opened its access point. | Join it and open `http://192.168.4.22/`. |
 | `Started sensors` | Info | The sensors answer. | Nothing. |
+| `Lamp settings loaded` | Info | The lamp read its saved settings from `/lamp`. | Nothing. |
+| `Lamp settings bad, defaults` | ERROR | The file `/lamp` is damaged or of another format. The lamp uses the defaults. | Set your choice again on the web page; the lamp overwrites the file. |
+| `Lamp settings: save failed` | ERROR | The lamp could not write `/lamp`. The change works until the next restart. | Make the change again. If it repeats, flash the lamp again. |
 | `Failed connection to WiFi` | ERROR | The lamp could not join a stored network. | Check the name and the password of your network. |
 | `Failed creating Acces Point` | ERROR | The access point cannot start. | See the dark matrix above. |
 | `CreateAP: captive DNS not started` | ERROR | The lamp's DNS for the access point did not start. | Open `http://192.168.4.22/` by hand. |

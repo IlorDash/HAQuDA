@@ -33,7 +33,7 @@ address returns the main page.
 
 The page asks the lamp for new values every 5 seconds and loads nothing from the internet, so it
 works in access point mode. From top to bottom it shows the header, the lamp's picture with the air
-index, the tiles and the links.
+index, the Lamp card, the tiles and the links.
 
 ### Header and banners
 
@@ -76,8 +76,9 @@ lamp has answered, and after three missed answers in a row, the grid shows three
 readings instead: PM2.5 above, eCO₂ in the middle, temperature below. When the lamp does not answer
 at all, the grid goes dark.
 
-While the grid shows an effect or an error, the legend beside it gives a caption instead of the
-readings.
+While the lamp shows your picture, the legend beside the grid lists the readings of the current
+mode, or **Lamp light** with the colour name, or **Lamp is off**. While the grid shows an effect or
+an error, the legend gives a caption instead.
 
 | Caption | The lamp is |
 |---------|-------------|
@@ -87,6 +88,32 @@ readings.
 | **WiFi connection lost** | Flashing red after it lost the network. |
 | **The lamp is showing an effect, not readings** | Showing any other effect, for example the random pixels. |
 | **Can't connect to WiFi**, **Can't start the access point**, **Storage error**, **Sensor error**, **Can't get the time** | Signalling this error; see [LED codes](troubleshooting.md#start-up-effects). |
+
+### The Lamp card {#lamp-card}
+
+The card controls the lamp. It is hidden when the lamp sends no lamp settings.
+
+| Control | Action |
+|---------|--------|
+| Power switch | Switches the lamp on and off. When it is off, the matrix goes dark, and the other controls of the card are locked. The measurements, the web pages and the log keep running. |
+| **Brightness** | Slider from 5 to 100 % in steps of 5. The grid follows the slider while you drag it, and the page sends the value when you release it. |
+| **Standard** | One reading on the whole matrix. Pick it from the chips: **Overall**, **Temperature**, **Humidity**, **eCO₂**, **TVOC** or **PM2.5**. **Overall** shows the colour of the first reading out of its range, in the order temperature, humidity, eCO₂, TVOC, PM2.5, or the average colour of all readings when none is out of range. |
+| **Multi** | Three readings in three bands, **Top**, **Middle** and **Bottom**, each from a list. |
+| **Night** | One reading from the list **Reading** and the night light, set with the times **Night light from** and **to** (`HH:MM`). The button reads **needs internet** and stays locked while the lamp has no time. |
+| **Lamp light** | One of six solid colours: **Warm white**, **Neutral**, **Cool white**, **Amber**, **Lavender**, **Teal**. |
+
+The grid shows a change at once, before the lamp answers; the lamp draws it within about a
+second. When the lamp refuses a change, the card returns to the last settings the lamp accepted and
+shows the lamp's reply in red for about 10 seconds. The replies are in English:
+
+| Reply | Cause |
+|-------|-------|
+| **The night mode needs the time from the internet.** | The lamp has no time, for example on its access point. |
+| **The night light must start and end at different times.** | **Night light from** and **to** are equal. |
+| **The lamp did not accept the change.** or **No answer from the lamp.** | The page got no usable answer. |
+
+While the lamp does not answer, the card shows **Controls are unavailable while the lamp isn’t
+responding**. How the modes look on the lamp is in [Display modes](display-modes.md#multi-mode).
 
 ### Readings and air index
 

@@ -1,4 +1,5 @@
 #include "HAQuDA_WebPageDisplayState.h"
+#include "HAQuDA_NightProgress.h"
 
 namespace {
 	constexpr size_t MULTI_KEYS_NUM = 3;
@@ -62,8 +63,8 @@ void HAQuDA_WebPictureInit(web_picture_state &state, uint8_t brightPercent) {
 	state.multiKeys[0] = {web_meas_key::temp, true};
 	state.multiKeys[1] = {web_meas_key::eco2, true};
 	state.multiKeys[2] = {web_meas_key::pm25, true};
-	state.nightStart = 21;
-	state.nightFinish = 9;
+	state.nightStart = NIGHT_DEFAULT_FROM_MIN;
+	state.nightFinish = NIGHT_DEFAULT_TO_MIN;
 	state.brightPercent = brightPercent;
 }
 
@@ -164,7 +165,7 @@ bool HAQuDA_WebPictureSetMultiKeys(web_picture_state &state, const web_key keys[
 	return false;
 }
 
-bool HAQuDA_WebPictureSetNightWindow(web_picture_state &state, uint8_t start, uint8_t finish, uint32_t nowMs) {
+bool HAQuDA_WebPictureSetNightWindow(web_picture_state &state, uint16_t start, uint16_t finish, uint32_t nowMs) {
 	const bool changed = (state.nightStart != start) || (state.nightFinish != finish);
 	state.nightStart = start;
 	state.nightFinish = finish;
@@ -201,7 +202,8 @@ bool HAQuDA_WebPictureCheckError(web_picture_state &state, web_error currentErro
 	return true;
 }
 
-void HAQuDA_WebPictureBuild(const web_picture_state &state, web_error currentError, bool hourKnown, uint8_t hour, uint32_t nowMs, web_display_state &out) {
+void HAQuDA_WebPictureBuild(const web_picture_state &state, web_error currentError, bool timeKnown, uint16_t minuteOfDay, uint32_t nowMs,
+							web_display_state &out) {
 	out = web_display_state{};
 	out.seq = state.seq;
 	out.ageMs = nowMs - state.startMs;
@@ -234,7 +236,7 @@ void HAQuDA_WebPictureBuild(const web_picture_state &state, web_error currentErr
 				}
 			}
 		}
-		out.nightHour = hourKnown ? HAQuDA_NightHour(state.nightStart, state.nightFinish, hour) : 0;
+		out.nightLit = timeKnown ? HAQuDA_NightLitCells(state.nightStart, state.nightFinish, minuteOfDay) : 0;
 		out.measDrawn = state.measDrawn;
 		for (size_t i = 0; i < MULTI_KEYS_NUM; i++) {
 			out.measColors[i] = state.measColors[i];

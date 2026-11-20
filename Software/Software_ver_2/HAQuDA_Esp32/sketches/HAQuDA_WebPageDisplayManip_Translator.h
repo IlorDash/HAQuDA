@@ -65,7 +65,7 @@ struct web_display_state {
 	uint32_t staticColor;
 	web_meas_layout layout;
 	web_meas_key keys[3]; // standard and night use keys[0], multi uses all three in paramsArr order
-	uint8_t nightHour;	  // get_nightMode_hour(): 0..11 hours into the night window, 12 = outside it
+	uint8_t nightLit;	  // night light cells lit, 0..18 (HAQuDA_NightLitCells(), 0 when the time is unknown)
 	uint8_t brightPercent;
 	// The colours the lamp drew for the current measurement picture, full-scale 0xRRGGBB (the lamp's 0..150 channels scaled to
 	// 0..255): measColors[0] for standard, [0] for night, all three for multi in the order of keys. measWhiteColor is the grey of
@@ -76,19 +76,14 @@ struct web_display_state {
 };
 
 // Measurement picture ("fx":"meas"): "layout", "keys" (1 for standard and night, 3 for multi), "colors" (the colours the lamp drew,
-// "#rrggbb": one per key for multi in the order of keys, one for standard and night), and for night "white" (page rows of the bar)
-// and "whiteColor" ("#rrggbb" of the bar). While the lamp has not drawn the picture (measDrawn false) or the layout is none the
+// "#rrggbb": one per key for multi in the order of keys, one for standard and night), and for night "lit" (cells of the night light
+// on, 0..18: the page lights them bottom up in its three right columns, left column first) and "whiteColor" ("#rrggbb" of the
+// light). While the lamp has not drawn the picture (measDrawn false) or the layout is none the
 // output is "fx":"hold": the LEDs show their previous frame.
 //
 // Buffer size that holds every JSON the translator writes: the longest one (an error with a fading effect, every number at its
 // maximum) is about 200 bytes.
 constexpr size_t WEB_DISPLAY_JSON_BUF_LEN = 256;
-
-// Night hour the lamp passes to its progress bar for `hour` (0..23, local time): hours since `start` while the hour is inside the
-// window start..finish (both ends included; finish < start means the window crosses midnight), 12 outside it, and also for an
-// hour above 23. Same result as the lamp's get_nightMode_hour(); a window longer than 12 hours gives values above 12, the
-// translator clamps them. The caller passes 0 when the time is unknown, as the lamp does. Any task.
-uint8_t HAQuDA_NightHour(uint8_t start, uint8_t finish, uint8_t hour);
 
 // Writes the JSON of `state` into buf (NUL-terminated) and returns its length. Returns 0 when it does not fit or buf is
 // null / size is 0, when source is out of range, or when source is web_source::error and error is out of range (error is

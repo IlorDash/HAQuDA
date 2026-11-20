@@ -1,13 +1,18 @@
 #pragma once
 
-#include "Arduino.h"
+#include <cstdint>
+
+#include "HAQuDA_ColorScale.h"
 
 #define LED_PIN 26
 #define LED_NUM_PIXELS 109
+// Raw NeoPixel brightness (0..255) at 100 %: the LED current limit. Everything else counts brightness in percent.
 #define MAX_BRIGHTNESS 150
-#define DEFAULT_BRIGHTNESS 50
+// Brightness in percent (5..100 in steps of 5, the lamp page's scale) the lamp starts with
+#define DEFAULT_BRIGHTNESS 35
 #define LED_COLUMN_NUM 9
 #define LED_ROW_NUM 12
+// Night bar grey as a percentage of the largest colour channel (COLOR_SCALE_MAX_CHANNEL)
 #define WHITE_BRIGHTNESS_COEFF 70
 
 #define COLORS_NUM 3
@@ -20,3 +25,17 @@
 #define COLOR_YELLOW 0xFFFF00
 #define COLOR_WHITE 0xFFFFFF
 
+// The colour scale tops out at the raw brightness of 100 %: its channels are dimmed by the LED driver, never scaled again here
+static_assert(COLOR_SCALE_MAX_CHANNEL == MAX_BRIGHTNESS, "colour scale and LED limits must agree");
+
+// Grey channel of the night bar: the same share (WHITE_BRIGHTNESS_COEFF percent) of the largest colour channel at every
+// brightness, the LED driver dims it together with the colour. Any task.
+constexpr uint8_t HAQuDA_NightGrey() {
+	return static_cast<uint8_t>(COLOR_SCALE_MAX_CHANNEL * WHITE_BRIGHTNESS_COEFF / 100);
+}
+
+// Raw NeoPixel brightness (0..MAX_BRIGHTNESS) of a brightness in percent; more than 100 counts as 100. The only
+// percent to raw conversion of the firmware, used by HAQuDA_LEDs::SetBright(). Any task.
+constexpr uint8_t HAQuDA_BrightPercentToRaw(uint8_t brightPerCent) {
+	return static_cast<uint8_t>((((brightPerCent > 100) ? 100 : brightPerCent) * MAX_BRIGHTNESS) / 100);
+}

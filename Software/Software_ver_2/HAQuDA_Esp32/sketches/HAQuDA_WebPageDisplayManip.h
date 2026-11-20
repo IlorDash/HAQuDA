@@ -32,7 +32,7 @@ class HAQuDA_WebPageDisplayManip {
 	void SetStandardMeasParam(const meas_type p);
 	// The three parameters of the multi layout. Any task.
 	void SetMultiMeasParam(const multi_mode_params p);
-	// Night window in hours. Any task.
+	// Night window in minutes since midnight. Any task.
 	void SetNightTime(const night_time t);
 	// The lamp has drawn a measurement picture: the colours it put on the LEDs as full-scale 0xRRGGBB (the lamp's 0..150 channels
 	// scaled to 0..255), the same scale /api/status uses. colors[0] for standard and night, all three for multi (the bands in the
@@ -49,12 +49,11 @@ class HAQuDA_WebPageDisplayManip {
 	void SetEffectParam(const random_led_params p);
 	void SetEffectParam(const uint32_t p);
 
-	// Reads the current hour from the time service's cached time (no network, no heap) for the night bar. The time client is
-	// written without a lock by the loop task (the logger) and by ShowTask (get_nightMode_hour() while the night layout is shown),
-	// and created lazily, so it is read here and not from the async_tcp task; the result reaches BuildJson() through an atomic.
-	// A read that overlaps a sync can give a wrong hour for that one pass (harmless, the next pass corrects it). Cheap enough to
-	// call on every pass. loop task only.
-	void RefreshHour();
+	// Stores the current minute of the day (0..1439) for the night light, read by the loop task from the time service's cached
+	// time; minuteOfDay is valid only when timeKnown is true. The value reaches BuildJson() through an atomic. A read that overlapped
+	// a sync can be a wrong minute for that one pass (harmless, the next pass corrects it). Cheap enough to call on every pass.
+	// loop task only.
+	void SetMinuteOfDay(bool timeKnown, uint16_t minuteOfDay);
 
 	// Writes the JSON of the current picture into buf and returns its length, 0 when it does not fit (use
 	// WEB_DISPLAY_JSON_BUF_LEN bytes). Reads the error kind now, so an error raised outside HAQuDA_DisplayManip is seen while the
@@ -68,7 +67,7 @@ class HAQuDA_WebPageDisplayManip {
 	portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
 	web_picture_state picture;
 
-	// Current hour (0..23) read by RefreshHour(), or HOUR_UNKNOWN. Written by the loop task, read by the async_tcp task.
-	static constexpr uint8_t HOUR_UNKNOWN = 0xFF;
-	std::atomic<uint8_t> hourNow{HOUR_UNKNOWN};
+	// Minute of the day (0..1439) stored by SetMinuteOfDay(), or MINUTE_UNKNOWN. Written by the loop task, read by the async_tcp task.
+	static constexpr uint16_t MINUTE_UNKNOWN = 0xFFFF;
+	std::atomic<uint16_t> minuteNow{MINUTE_UNKNOWN};
 };
