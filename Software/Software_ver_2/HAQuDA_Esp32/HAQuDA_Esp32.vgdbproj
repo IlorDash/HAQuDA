@@ -59,6 +59,10 @@
         <string>sketches\HAQuDA_BrightnessApply.h</string>
         <string>sketches\HAQuDA_LampSettings.h</string>
         <string>sketches\HAQuDA_LampControl.h</string>
+        <string>sketches\HAQuDA_IFileStorage.h</string>
+        <string>sketches\HAQuDA_ILampDisplay.h</string>
+        <string>sketches\HAQuDA_ILogger.h</string>
+        <string>sketches\HAQuDA_LampAdapters.h</string>
       </OtherFiles>
     </ProjectModeSettings>
   </Project>

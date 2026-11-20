@@ -4,8 +4,6 @@
 
 #include "HAQuDA_NightProgress.h"
 
-// ---------------------------------------------------------------- NightLitCells
-
 TEST(NightProgressTest, LitCellsWindowStartIsOne) {
 	const uint16_t from = 21 * 60;
 	const uint16_t to = 9 * 60;
@@ -220,8 +218,6 @@ TEST(NightProgressTest, LitCellsToAboveRangeGivesZero) {
 	EXPECT_EQ(exp_lit, res);
 }
 
-// ---------------------------------------------------------------- NightColumnIsColor
-
 TEST(NightProgressTest, ColumnZeroIsColor) {
 	const bool exp_is_color = true;
 
@@ -297,8 +293,6 @@ TEST(NightProgressTest, ColumnsSevenAndEightAreNightLight) {
 	EXPECT_EQ(exp_is_color, res0);
 	EXPECT_EQ(exp_is_color, res1);
 }
-
-// ---------------------------------------------------------------- NightLightRows
 
 TEST(NightProgressTest, LightRowsNoCellsLitIsZero) {
 	const uint8_t lit = 0;
@@ -523,8 +517,6 @@ TEST(NightProgressTest, LightRowsMoreThanAllCellsStaysAtTwelve) {
 
 	EXPECT_EQ(exp_rows, res);
 }
-
-// ---------------------------------------------------------------- More window edges
 
 TEST(NightProgressTest, LitCellsLastMinuteBeforeTheSecondCellIsStillOne) {
 	// 40 of 720 minutes: 18 * 40 / 720 = 1 exactly

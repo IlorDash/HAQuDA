@@ -65,7 +65,7 @@ class HAQuDA_MeasHandler {
 	static bool nightMode();
 	static void showMeas_multi(float *data, uint8_t dataSize, div_dots *divideDots, uint8_t divideDotsSize);
 	static void showMeas_standard(float data, div_dots divideDots);
-	// Fills the whole matrix with one colour and reports it to the web mirror. ShowTask only.
+	// ShowTask only
 	static void drawSolid(const rgb_color &color);
 	// litCells: night light cells on (HAQuDA_NightLitCells()), 0 when the time is unknown
 	static void showMeas_night(float data, div_dots divideDots, uint8_t litCells);

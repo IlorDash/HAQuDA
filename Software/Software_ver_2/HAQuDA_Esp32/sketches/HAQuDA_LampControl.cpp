@@ -1,13 +1,10 @@
 #include "HAQuDA_LampControl.h"
 
-#include "HAQuDA_FileStorage.h"
 #include "HAQuDA_LEDsParams.h"
-#include "HAQuDA_Logger.h"
 
 namespace {
 	constexpr char FILE_NAME_LAMP[] = "/lamp";
 
-	// Holds the critical section for its lifetime
 	class CriticalLock {
 	  public:
 		explicit CriticalLock(portMUX_TYPE &muxToLock) : mux(muxToLock) {
@@ -22,28 +19,10 @@ namespace {
 	  private:
 		portMUX_TYPE &mux;
 	};
-
-	meas_type toMeasType(lamp_param p) {
-		switch (p) {
-			case lamp_param::temp:
-				return temp;
-			case lamp_param::humid:
-				return humid;
-			case lamp_param::eco2:
-				return eCO2;
-			case lamp_param::tvoc:
-				return TVOC;
-			case lamp_param::pm25:
-				return PM2_5;
-			case lamp_param::total:
-			default:
-				return total;
-		}
-	}
 } // namespace
 
-HAQuDA_LampControl::HAQuDA_LampControl(HAQuDA_DisplayManip &displayManip, HAQuDA_ErrorHandler &errorHandler)
-	: display(displayManip), errHandler(errorHandler), settings(HAQuDA_LampDefaults()) {
+HAQuDA_LampControl::HAQuDA_LampControl(HAQuDA_IFileStorage &fileStorage, HAQuDA_ILampDisplay &lampDisplay, HAQuDA_ILogger &lampLogger)
+	: files(fileStorage), display(lampDisplay), logger(lampLogger), settings(HAQuDA_LampDefaults()) {
 }
 
 lamp_settings HAQuDA_LampControl::copySettings() const {
@@ -53,23 +32,18 @@ lamp_settings HAQuDA_LampControl::copySettings() const {
 
 void HAQuDA_LampControl::Load() {
 	lamp_settings loaded = HAQuDA_LampDefaults();
-	if (HAQuDA_FileStorage::Exists(FILE_NAME_LAMP)) {
+	if (files.Exists(FILE_NAME_LAMP)) {
 		uint8_t record[LAMP_RECORD_LEN];
-		if ((HAQuDA_FileStorage::FileSize(FILE_NAME_LAMP) == static_cast<int>(LAMP_RECORD_LEN))
-			&& HAQuDA_FileStorage::ReadFile(FILE_NAME_LAMP, record, sizeof(record)) && HAQuDA_DecodeLampRecord(record, sizeof(record), loaded)) {
-			HAQuDA_Logger::LogInfo("Lamp settings loaded");
+		if ((files.FileSize(FILE_NAME_LAMP) == static_cast<int>(LAMP_RECORD_LEN)) && files.ReadFile(FILE_NAME_LAMP, record, sizeof(record))
+			&& HAQuDA_DecodeLampRecord(record, sizeof(record), loaded)) {
+			logger.LogInfo("Lamp settings loaded");
 		} else {
 			// A failed decode leaves `loaded` at the defaults
-			HAQuDA_Logger::LogError("Lamp settings bad, defaults");
+			logger.LogError("Lamp settings bad, defaults");
 		}
 	}
 	CriticalLock lock(mux);
 	settings = loaded;
-}
-
-bool HAQuDA_LampControl::errorShown() {
-	// The test HAQuDA_DisplayManip::SetMode() uses to refuse a change
-	return (HAQuDA_DisplayManip::GetMode() == error) && (HAQuDA_ErrorHandler::GetCurrentError() != noneError);
 }
 
 bool HAQuDA_LampControl::needsSensors(const lamp_settings &s) {
@@ -81,12 +55,10 @@ void HAQuDA_LampControl::SensorsStarted() {
 }
 
 void HAQuDA_LampControl::showSensorsError() {
-	if (errorShown()) {
+	if (display.ErrorShown()) {
 		return;
 	}
-	// The same pair setup() uses; the error is the one an unstarted sensor set leaves on the matrix
-	display.SetMode(error);
-	errHandler.FailedToStartSensors();
+	display.ShowSensorsError();
 }
 
 void HAQuDA_LampControl::Apply() {
@@ -102,46 +74,38 @@ void HAQuDA_LampControl::apply(const lamp_settings &s) {
 	// In the loop task an error on the display is the sensors one (the other errors of setup() end in a stop or are cleared), and the
 	// display refuses to leave it. The user chose a picture that needs no sensors, so the error ends; the page, the log and the next
 	// measurement mode still report the failure
-	if (errorShown()) {
-		errHandler.ClearError();
+	if (display.ErrorShown()) {
+		display.ClearError();
 	}
 	show(s);
 }
 
 void HAQuDA_LampControl::show(const lamp_settings &s) {
-	display.SetBrightness(s.bright);
+	display.SetBrightnessPercent(s.brightPercent);
 
 	if (!s.on) {
 		// Dark, not an error picture: the measurements, the web server and the log keep running
-		display.SetEffectParam(static_cast<uint32_t>(COLOR_OFF));
-		display.SetEffect(staticColor);
+		display.ShowColor(static_cast<uint32_t>(COLOR_OFF));
 		return;
 	}
 	switch (s.mode) {
 		case lamp_mode::standard:
-			display.SetStandardMeasParam(toMeasType(s.standardParam));
-			display.SetMeasMode(standard);
+			display.ShowStandard(s.standardParam);
 			break;
 		case lamp_mode::multi: {
-			multi_mode_params params = {};
+			lamp_param bottomToTop[LAMP_MULTI_NUM] = {};
 			// The meas handler counts the bands from the bottom of the lamp, the page from the top
-			for (size_t i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
-				params.paramsArr[i] = toMeasType(s.multi[MULTI_MODE_PARAM_NUM - 1 - i]);
+			for (size_t i = 0; i < LAMP_MULTI_NUM; i++) {
+				bottomToTop[i] = s.multi[LAMP_MULTI_NUM - 1 - i];
 			}
-			display.SetMultiMeasParam(params);
-			display.SetMeasMode(multi);
+			display.ShowMulti(bottomToTop);
 			break;
 		}
-		case lamp_mode::night: {
-			const night_time window = {s.nightFrom, s.nightTo};
-			display.SetStandardMeasParam(toMeasType(s.nightParam));
-			display.SetNightTime(window);
-			display.SetMeasMode(night);
+		case lamp_mode::night:
+			display.ShowNight(s.nightParam, s.nightFromMin, s.nightToMin);
 			break;
-		}
 		case lamp_mode::light:
-			display.SetEffectParam(HAQuDA_LampColor(s.color));
-			display.SetEffect(staticColor);
+			display.ShowColor(HAQuDA_LampColor(s.color));
 			break;
 	}
 }
@@ -159,8 +123,8 @@ void HAQuDA_LampControl::Handle(bool timeKnown, uint16_t minuteOfDay) {
 
 void HAQuDA_LampControl::save(const lamp_settings &s) {
 	uint8_t record[LAMP_RECORD_LEN];
-	if (!HAQuDA_EncodeLampRecord(s, record, sizeof(record)) || !HAQuDA_FileStorage::WriteFile(FILE_NAME_LAMP, record, sizeof(record))) {
-		HAQuDA_Logger::LogError("Lamp settings: save failed");
+	if (!HAQuDA_EncodeLampRecord(s, record, sizeof(record)) || !files.WriteFile(FILE_NAME_LAMP, record, sizeof(record))) {
+		logger.LogError("Lamp settings: save failed");
 	}
 }
 

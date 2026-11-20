@@ -8,8 +8,6 @@
 #include "HAQuDA_LampSettings.h"
 #include "HAQuDA_NightProgress.h"
 
-// ---------------------------------------------------------------- Defaults and validity
-
 TEST(LampSettingsTest, DefaultsAreValid) {
 	const bool exp_valid = true;
 
@@ -32,13 +30,13 @@ TEST(LampSettingsTest, DefaultsMatchTheDocumentedLamp) {
 	res = HAQuDA_LampDefaults();
 
 	EXPECT_TRUE(res.on);
-	EXPECT_EQ(exp_bright, res.bright);
+	EXPECT_EQ(exp_bright, res.brightPercent);
 	EXPECT_EQ(lamp_mode::multi, res.mode);
 	EXPECT_EQ(lamp_param::pm25, res.multi[0]);
 	EXPECT_EQ(lamp_param::eco2, res.multi[1]);
 	EXPECT_EQ(lamp_param::temp, res.multi[2]);
-	EXPECT_EQ(exp_from, res.nightFrom);
-	EXPECT_EQ(exp_to, res.nightTo);
+	EXPECT_EQ(exp_from, res.nightFromMin);
+	EXPECT_EQ(exp_to, res.nightToMin);
 	EXPECT_EQ(0, res.color);
 }
 
@@ -46,7 +44,7 @@ TEST(LampSettingsTest, ValidRejectsBrightnessOffTheStep) {
 	const bool exp_valid = false;
 
 	lamp_settings settings = HAQuDA_LampDefaults();
-	settings.bright = 52;
+	settings.brightPercent = 52;
 
 	bool res;
 
@@ -59,7 +57,7 @@ TEST(LampSettingsTest, ValidRejectsBrightnessBelowMinimum) {
 	const bool exp_valid = false;
 
 	lamp_settings settings = HAQuDA_LampDefaults();
-	settings.bright = 0;
+	settings.brightPercent = 0;
 
 	bool res;
 
@@ -72,7 +70,7 @@ TEST(LampSettingsTest, ValidRejectsBrightnessAboveMaximum) {
 	const bool exp_valid = false;
 
 	lamp_settings settings = HAQuDA_LampDefaults();
-	settings.bright = 105;
+	settings.brightPercent = 105;
 
 	bool res;
 
@@ -111,8 +109,8 @@ TEST(LampSettingsTest, ValidRejectsEqualNightTimes) {
 	const bool exp_valid = false;
 
 	lamp_settings settings = HAQuDA_LampDefaults();
-	settings.nightFrom = 300;
-	settings.nightTo = 300;
+	settings.nightFromMin = 300;
+	settings.nightToMin = 300;
 
 	bool res;
 
@@ -125,7 +123,7 @@ TEST(LampSettingsTest, ValidRejectsNightTimeAboveADay) {
 	const bool exp_valid = false;
 
 	lamp_settings settings = HAQuDA_LampDefaults();
-	settings.nightTo = 24 * 60;
+	settings.nightToMin = 24 * 60;
 
 	bool res;
 
@@ -164,7 +162,7 @@ TEST(LampSettingsTest, ValidAcceptsMinimumBrightness) {
 	const bool exp_valid = true;
 
 	lamp_settings settings = HAQuDA_LampDefaults();
-	settings.bright = LAMP_BRIGHT_MIN;
+	settings.brightPercent = LAMP_BRIGHT_MIN;
 
 	bool res;
 
@@ -177,7 +175,7 @@ TEST(LampSettingsTest, ValidAcceptsMaximumBrightness) {
 	const bool exp_valid = true;
 
 	lamp_settings settings = HAQuDA_LampDefaults();
-	settings.bright = LAMP_BRIGHT_MAX;
+	settings.brightPercent = LAMP_BRIGHT_MAX;
 
 	bool res;
 
@@ -190,7 +188,7 @@ TEST(LampSettingsTest, ValidAcceptsLastMinuteOfTheDay) {
 	const bool exp_valid = true;
 
 	lamp_settings settings = HAQuDA_LampDefaults();
-	settings.nightFrom = MINUTES_PER_DAY - 1;
+	settings.nightFromMin = MINUTES_PER_DAY - 1;
 
 	bool res;
 
@@ -255,7 +253,7 @@ TEST(LampSettingsTest, ValidRejectsNightFromAboveADay) {
 	const bool exp_valid = false;
 
 	lamp_settings settings = HAQuDA_LampDefaults();
-	settings.nightFrom = MINUTES_PER_DAY;
+	settings.nightFromMin = MINUTES_PER_DAY;
 
 	bool res;
 
@@ -263,8 +261,6 @@ TEST(LampSettingsTest, ValidRejectsNightFromAboveADay) {
 
 	EXPECT_EQ(exp_valid, res);
 }
-
-// ---------------------------------------------------------------- Update
 
 TEST(LampSettingsTest, UpdatePowerOff) {
 	const lamp_update_result exp_result = lamp_update_result::ok;
@@ -324,7 +320,7 @@ TEST(LampSettingsTest, UpdateBrightnessValidStep) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_bright, settings.bright);
+	EXPECT_EQ(exp_bright, settings.brightPercent);
 }
 
 TEST(LampSettingsTest, UpdateUnknownModeIsBad) {
@@ -354,7 +350,7 @@ TEST(LampSettingsTest, UpdateNightWindowWithoutTimeIsAllowed) {
 	res = HAQuDA_LampUpdate(settings, request, false);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_from, settings.nightFrom);
+	EXPECT_EQ(exp_from, settings.nightFromMin);
 }
 
 TEST(LampSettingsTest, UpdateStandardParam) {
@@ -463,8 +459,8 @@ TEST(LampSettingsTest, UpdateNightWindowCrossingMidnight) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_from, settings.nightFrom);
-	EXPECT_EQ(exp_to, settings.nightTo);
+	EXPECT_EQ(exp_from, settings.nightFromMin);
+	EXPECT_EQ(exp_to, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateColorIndex) {
@@ -544,15 +540,15 @@ TEST(LampSettingsTest, UpdateEmptyRequestIsNothing) {
 
 	EXPECT_EQ(exp_result, res);
 	EXPECT_EQ(exp_settings.on, settings.on);
-	EXPECT_EQ(exp_settings.bright, settings.bright);
+	EXPECT_EQ(exp_settings.brightPercent, settings.brightPercent);
 	EXPECT_EQ(exp_settings.mode, settings.mode);
 	EXPECT_EQ(exp_settings.standardParam, settings.standardParam);
 	EXPECT_EQ(exp_settings.multi[0], settings.multi[0]);
 	EXPECT_EQ(exp_settings.multi[1], settings.multi[1]);
 	EXPECT_EQ(exp_settings.multi[2], settings.multi[2]);
 	EXPECT_EQ(exp_settings.nightParam, settings.nightParam);
-	EXPECT_EQ(exp_settings.nightFrom, settings.nightFrom);
-	EXPECT_EQ(exp_settings.nightTo, settings.nightTo);
+	EXPECT_EQ(exp_settings.nightFromMin, settings.nightFromMin);
+	EXPECT_EQ(exp_settings.nightToMin, settings.nightToMin);
 	EXPECT_EQ(exp_settings.color, settings.color);
 }
 
@@ -649,7 +645,7 @@ TEST(LampSettingsTest, UpdateBrightnessMinimumIsAccepted) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_bright, settings.bright);
+	EXPECT_EQ(exp_bright, settings.brightPercent);
 }
 
 TEST(LampSettingsTest, UpdateBrightnessMaximumIsAccepted) {
@@ -665,7 +661,7 @@ TEST(LampSettingsTest, UpdateBrightnessMaximumIsAccepted) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_bright, settings.bright);
+	EXPECT_EQ(exp_bright, settings.brightPercent);
 }
 
 TEST(LampSettingsTest, UpdateBrightnessLeadingZerosAreAccepted) {
@@ -681,7 +677,7 @@ TEST(LampSettingsTest, UpdateBrightnessLeadingZerosAreAccepted) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_bright, settings.bright);
+	EXPECT_EQ(exp_bright, settings.brightPercent);
 }
 
 TEST(LampSettingsTest, UpdateBrightnessZeroIsBad) {
@@ -697,7 +693,7 @@ TEST(LampSettingsTest, UpdateBrightnessZeroIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.bright, settings.bright);
+	EXPECT_EQ(exp_settings.brightPercent, settings.brightPercent);
 }
 
 TEST(LampSettingsTest, UpdateBrightnessFourIsBad) {
@@ -713,7 +709,7 @@ TEST(LampSettingsTest, UpdateBrightnessFourIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.bright, settings.bright);
+	EXPECT_EQ(exp_settings.brightPercent, settings.brightPercent);
 }
 
 TEST(LampSettingsTest, UpdateBrightnessSevenOffTheStepIsBad) {
@@ -729,7 +725,7 @@ TEST(LampSettingsTest, UpdateBrightnessSevenOffTheStepIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.bright, settings.bright);
+	EXPECT_EQ(exp_settings.brightPercent, settings.brightPercent);
 }
 
 TEST(LampSettingsTest, UpdateBrightnessNinetyNineIsBad) {
@@ -745,7 +741,7 @@ TEST(LampSettingsTest, UpdateBrightnessNinetyNineIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.bright, settings.bright);
+	EXPECT_EQ(exp_settings.brightPercent, settings.brightPercent);
 }
 
 TEST(LampSettingsTest, UpdateBrightnessOneHundredOneIsBad) {
@@ -761,7 +757,7 @@ TEST(LampSettingsTest, UpdateBrightnessOneHundredOneIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.bright, settings.bright);
+	EXPECT_EQ(exp_settings.brightPercent, settings.brightPercent);
 }
 
 TEST(LampSettingsTest, UpdateBrightnessOneHundredFiveIsBad) {
@@ -777,7 +773,7 @@ TEST(LampSettingsTest, UpdateBrightnessOneHundredFiveIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.bright, settings.bright);
+	EXPECT_EQ(exp_settings.brightPercent, settings.brightPercent);
 }
 
 TEST(LampSettingsTest, UpdateBrightnessFourDigitsIsBad) {
@@ -793,7 +789,7 @@ TEST(LampSettingsTest, UpdateBrightnessFourDigitsIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.bright, settings.bright);
+	EXPECT_EQ(exp_settings.brightPercent, settings.brightPercent);
 }
 
 TEST(LampSettingsTest, UpdateBrightnessFourDigitsWithLeadingZeroIsBad) {
@@ -809,7 +805,7 @@ TEST(LampSettingsTest, UpdateBrightnessFourDigitsWithLeadingZeroIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.bright, settings.bright);
+	EXPECT_EQ(exp_settings.brightPercent, settings.brightPercent);
 }
 
 TEST(LampSettingsTest, UpdateBrightnessEmptyIsBad) {
@@ -825,7 +821,7 @@ TEST(LampSettingsTest, UpdateBrightnessEmptyIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.bright, settings.bright);
+	EXPECT_EQ(exp_settings.brightPercent, settings.brightPercent);
 }
 
 TEST(LampSettingsTest, UpdateBrightnessLettersAreBad) {
@@ -841,7 +837,7 @@ TEST(LampSettingsTest, UpdateBrightnessLettersAreBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.bright, settings.bright);
+	EXPECT_EQ(exp_settings.brightPercent, settings.brightPercent);
 }
 
 TEST(LampSettingsTest, UpdateBrightnessNegativeIsBad) {
@@ -857,7 +853,7 @@ TEST(LampSettingsTest, UpdateBrightnessNegativeIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.bright, settings.bright);
+	EXPECT_EQ(exp_settings.brightPercent, settings.brightPercent);
 }
 
 TEST(LampSettingsTest, UpdateBrightnessTrailingSpaceIsBad) {
@@ -873,7 +869,7 @@ TEST(LampSettingsTest, UpdateBrightnessTrailingSpaceIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.bright, settings.bright);
+	EXPECT_EQ(exp_settings.brightPercent, settings.brightPercent);
 }
 
 TEST(LampSettingsTest, UpdateBrightnessDecimalIsBad) {
@@ -889,7 +885,7 @@ TEST(LampSettingsTest, UpdateBrightnessDecimalIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.bright, settings.bright);
+	EXPECT_EQ(exp_settings.brightPercent, settings.brightPercent);
 }
 
 TEST(LampSettingsTest, UpdateBrightnessPlusSignIsBad) {
@@ -905,7 +901,7 @@ TEST(LampSettingsTest, UpdateBrightnessPlusSignIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.bright, settings.bright);
+	EXPECT_EQ(exp_settings.brightPercent, settings.brightPercent);
 }
 
 TEST(LampSettingsTest, UpdateModeStandardIsAccepted) {
@@ -1054,7 +1050,7 @@ TEST(LampSettingsTest, UpdateNightModeWithoutTimeRefusesTheWholeRequest) {
 	res = HAQuDA_LampUpdate(settings, request, false);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.bright, settings.bright);
+	EXPECT_EQ(exp_settings.brightPercent, settings.brightPercent);
 	EXPECT_EQ(exp_settings.mode, settings.mode);
 }
 
@@ -1089,7 +1085,7 @@ TEST(LampSettingsTest, UpdateBrightnessWhileInNightModeWithoutTimeIsAccepted) {
 	res = HAQuDA_LampUpdate(settings, request, false);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_bright, settings.bright);
+	EXPECT_EQ(exp_bright, settings.brightPercent);
 	EXPECT_EQ(exp_mode, settings.mode);
 }
 
@@ -1456,7 +1452,7 @@ TEST(LampSettingsTest, UpdateNightToMidnightIsAccepted) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_to, settings.nightTo);
+	EXPECT_EQ(exp_to, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateNightToLastMinuteIsAccepted) {
@@ -1472,7 +1468,7 @@ TEST(LampSettingsTest, UpdateNightToLastMinuteIsAccepted) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_to, settings.nightTo);
+	EXPECT_EQ(exp_to, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateNightWindowWithinOneDayIsAccepted) {
@@ -1490,8 +1486,8 @@ TEST(LampSettingsTest, UpdateNightWindowWithinOneDayIsAccepted) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_from, settings.nightFrom);
-	EXPECT_EQ(exp_to, settings.nightTo);
+	EXPECT_EQ(exp_from, settings.nightFromMin);
+	EXPECT_EQ(exp_to, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateNightToEmptyIsBad) {
@@ -1507,7 +1503,7 @@ TEST(LampSettingsTest, UpdateNightToEmptyIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.nightTo, settings.nightTo);
+	EXPECT_EQ(exp_settings.nightToMin, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateNightToHour24IsBad) {
@@ -1523,7 +1519,7 @@ TEST(LampSettingsTest, UpdateNightToHour24IsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.nightTo, settings.nightTo);
+	EXPECT_EQ(exp_settings.nightToMin, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateNightToMinute60AtLastHourIsBad) {
@@ -1539,7 +1535,7 @@ TEST(LampSettingsTest, UpdateNightToMinute60AtLastHourIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.nightTo, settings.nightTo);
+	EXPECT_EQ(exp_settings.nightToMin, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateNightToMinute60IsBad) {
@@ -1555,7 +1551,7 @@ TEST(LampSettingsTest, UpdateNightToMinute60IsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.nightTo, settings.nightTo);
+	EXPECT_EQ(exp_settings.nightToMin, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateNightToHour24Minute59IsBad) {
@@ -1571,7 +1567,7 @@ TEST(LampSettingsTest, UpdateNightToHour24Minute59IsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.nightTo, settings.nightTo);
+	EXPECT_EQ(exp_settings.nightToMin, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateNightToNinetyNineIsBad) {
@@ -1587,7 +1583,7 @@ TEST(LampSettingsTest, UpdateNightToNinetyNineIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.nightTo, settings.nightTo);
+	EXPECT_EQ(exp_settings.nightToMin, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateNightToSingleDigitHourIsBad) {
@@ -1603,7 +1599,7 @@ TEST(LampSettingsTest, UpdateNightToSingleDigitHourIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.nightTo, settings.nightTo);
+	EXPECT_EQ(exp_settings.nightToMin, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateNightToSingleDigitMinuteIsBad) {
@@ -1619,7 +1615,7 @@ TEST(LampSettingsTest, UpdateNightToSingleDigitMinuteIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.nightTo, settings.nightTo);
+	EXPECT_EQ(exp_settings.nightToMin, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateNightToLettersIsBad) {
@@ -1635,7 +1631,7 @@ TEST(LampSettingsTest, UpdateNightToLettersIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.nightTo, settings.nightTo);
+	EXPECT_EQ(exp_settings.nightToMin, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateNightToDashSeparatorIsBad) {
@@ -1651,7 +1647,7 @@ TEST(LampSettingsTest, UpdateNightToDashSeparatorIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.nightTo, settings.nightTo);
+	EXPECT_EQ(exp_settings.nightToMin, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateNightToNoSeparatorIsBad) {
@@ -1667,7 +1663,7 @@ TEST(LampSettingsTest, UpdateNightToNoSeparatorIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.nightTo, settings.nightTo);
+	EXPECT_EQ(exp_settings.nightToMin, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateNightToWithSecondsIsBad) {
@@ -1683,7 +1679,7 @@ TEST(LampSettingsTest, UpdateNightToWithSecondsIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.nightTo, settings.nightTo);
+	EXPECT_EQ(exp_settings.nightToMin, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateNightToPlusSignIsBad) {
@@ -1699,7 +1695,7 @@ TEST(LampSettingsTest, UpdateNightToPlusSignIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.nightTo, settings.nightTo);
+	EXPECT_EQ(exp_settings.nightToMin, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateNightToLeadingSpaceIsBad) {
@@ -1715,7 +1711,7 @@ TEST(LampSettingsTest, UpdateNightToLeadingSpaceIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.nightTo, settings.nightTo);
+	EXPECT_EQ(exp_settings.nightToMin, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateNightToTrailingSpaceIsBad) {
@@ -1731,7 +1727,7 @@ TEST(LampSettingsTest, UpdateNightToTrailingSpaceIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.nightTo, settings.nightTo);
+	EXPECT_EQ(exp_settings.nightToMin, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateNightToNegativeHourIsBad) {
@@ -1747,7 +1743,7 @@ TEST(LampSettingsTest, UpdateNightToNegativeHourIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.nightTo, settings.nightTo);
+	EXPECT_EQ(exp_settings.nightToMin, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateNightFromHour24IsBad) {
@@ -1763,7 +1759,7 @@ TEST(LampSettingsTest, UpdateNightFromHour24IsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.nightFrom, settings.nightFrom);
+	EXPECT_EQ(exp_settings.nightFromMin, settings.nightFromMin);
 }
 
 TEST(LampSettingsTest, UpdateNightBadFromKeepsTheValidTo) {
@@ -1780,8 +1776,8 @@ TEST(LampSettingsTest, UpdateNightBadFromKeepsTheValidTo) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.nightFrom, settings.nightFrom);
-	EXPECT_EQ(exp_settings.nightTo, settings.nightTo);
+	EXPECT_EQ(exp_settings.nightFromMin, settings.nightFromMin);
+	EXPECT_EQ(exp_settings.nightToMin, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateNightBadToKeepsTheValidFrom) {
@@ -1798,8 +1794,8 @@ TEST(LampSettingsTest, UpdateNightBadToKeepsTheValidFrom) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.nightFrom, settings.nightFrom);
-	EXPECT_EQ(exp_settings.nightTo, settings.nightTo);
+	EXPECT_EQ(exp_settings.nightFromMin, settings.nightFromMin);
+	EXPECT_EQ(exp_settings.nightToMin, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateNightFromEqualToStoredToIsRefused) {
@@ -1815,8 +1811,8 @@ TEST(LampSettingsTest, UpdateNightFromEqualToStoredToIsRefused) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.nightFrom, settings.nightFrom);
-	EXPECT_EQ(exp_settings.nightTo, settings.nightTo);
+	EXPECT_EQ(exp_settings.nightFromMin, settings.nightFromMin);
+	EXPECT_EQ(exp_settings.nightToMin, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateNightToEqualToStoredFromIsRefused) {
@@ -1832,8 +1828,8 @@ TEST(LampSettingsTest, UpdateNightToEqualToStoredFromIsRefused) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.nightFrom, settings.nightFrom);
-	EXPECT_EQ(exp_settings.nightTo, settings.nightTo);
+	EXPECT_EQ(exp_settings.nightFromMin, settings.nightFromMin);
+	EXPECT_EQ(exp_settings.nightToMin, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateNightEqualTimesInOneRequestAreRefused) {
@@ -1850,8 +1846,8 @@ TEST(LampSettingsTest, UpdateNightEqualTimesInOneRequestAreRefused) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.nightFrom, settings.nightFrom);
-	EXPECT_EQ(exp_settings.nightTo, settings.nightTo);
+	EXPECT_EQ(exp_settings.nightFromMin, settings.nightFromMin);
+	EXPECT_EQ(exp_settings.nightToMin, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateColorFirstIndexIsAccepted) {
@@ -2112,7 +2108,7 @@ TEST(LampSettingsTest, UpdateBrightnessLongerThan32CharactersIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.bright, settings.bright);
+	EXPECT_EQ(exp_settings.brightPercent, settings.brightPercent);
 }
 
 TEST(LampSettingsTest, UpdateModeLongerThan32CharactersIsBad) {
@@ -2184,7 +2180,7 @@ TEST(LampSettingsTest, UpdateNightToLongerThan32CharactersIsBad) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.nightTo, settings.nightTo);
+	EXPECT_EQ(exp_settings.nightToMin, settings.nightToMin);
 }
 
 TEST(LampSettingsTest, UpdateColorLongerThan32CharactersIsBad) {
@@ -2221,7 +2217,7 @@ TEST(LampSettingsTest, UpdateLongFieldRefusesTheWholeRequest) {
 	res = HAQuDA_LampUpdate(settings, request, true);
 
 	EXPECT_EQ(exp_result, res);
-	EXPECT_EQ(exp_settings.bright, settings.bright);
+	EXPECT_EQ(exp_settings.brightPercent, settings.brightPercent);
 	EXPECT_EQ(exp_settings.multi[0], settings.multi[0]);
 	EXPECT_EQ(exp_settings.multi[1], settings.multi[1]);
 	EXPECT_EQ(exp_settings.multi[2], settings.multi[2]);
@@ -2244,15 +2240,15 @@ TEST(LampSettingsTest, UpdateBadColorKeepsEveryOtherField) {
 
 	EXPECT_EQ(exp_result, res);
 	EXPECT_EQ(exp_settings.on, settings.on);
-	EXPECT_EQ(exp_settings.bright, settings.bright);
+	EXPECT_EQ(exp_settings.brightPercent, settings.brightPercent);
 	EXPECT_EQ(exp_settings.mode, settings.mode);
 	EXPECT_EQ(exp_settings.standardParam, settings.standardParam);
 	EXPECT_EQ(exp_settings.multi[0], settings.multi[0]);
 	EXPECT_EQ(exp_settings.multi[1], settings.multi[1]);
 	EXPECT_EQ(exp_settings.multi[2], settings.multi[2]);
 	EXPECT_EQ(exp_settings.nightParam, settings.nightParam);
-	EXPECT_EQ(exp_settings.nightFrom, settings.nightFrom);
-	EXPECT_EQ(exp_settings.nightTo, settings.nightTo);
+	EXPECT_EQ(exp_settings.nightFromMin, settings.nightFromMin);
+	EXPECT_EQ(exp_settings.nightToMin, settings.nightToMin);
 	EXPECT_EQ(exp_settings.color, settings.color);
 }
 
@@ -2272,15 +2268,15 @@ TEST(LampSettingsTest, UpdateBadMultiInTheMiddleKeepsTheLaterFields) {
 
 	EXPECT_EQ(exp_result, res);
 	EXPECT_EQ(exp_settings.on, settings.on);
-	EXPECT_EQ(exp_settings.bright, settings.bright);
+	EXPECT_EQ(exp_settings.brightPercent, settings.brightPercent);
 	EXPECT_EQ(exp_settings.mode, settings.mode);
 	EXPECT_EQ(exp_settings.standardParam, settings.standardParam);
 	EXPECT_EQ(exp_settings.multi[0], settings.multi[0]);
 	EXPECT_EQ(exp_settings.multi[1], settings.multi[1]);
 	EXPECT_EQ(exp_settings.multi[2], settings.multi[2]);
 	EXPECT_EQ(exp_settings.nightParam, settings.nightParam);
-	EXPECT_EQ(exp_settings.nightFrom, settings.nightFrom);
-	EXPECT_EQ(exp_settings.nightTo, settings.nightTo);
+	EXPECT_EQ(exp_settings.nightFromMin, settings.nightFromMin);
+	EXPECT_EQ(exp_settings.nightToMin, settings.nightToMin);
 	EXPECT_EQ(exp_settings.color, settings.color);
 }
 
@@ -2309,15 +2305,15 @@ TEST(LampSettingsTest, UpdateAllFieldsAtOnceAreApplied) {
 
 	EXPECT_EQ(exp_result, res);
 	EXPECT_FALSE(settings.on);
-	EXPECT_EQ(exp_bright, settings.bright);
+	EXPECT_EQ(exp_bright, settings.brightPercent);
 	EXPECT_EQ(lamp_mode::night, settings.mode);
 	EXPECT_EQ(lamp_param::pm25, settings.standardParam);
 	EXPECT_EQ(lamp_param::humid, settings.multi[0]);
 	EXPECT_EQ(lamp_param::tvoc, settings.multi[1]);
 	EXPECT_EQ(lamp_param::temp, settings.multi[2]);
 	EXPECT_EQ(lamp_param::tvoc, settings.nightParam);
-	EXPECT_EQ(exp_from, settings.nightFrom);
-	EXPECT_EQ(exp_to, settings.nightTo);
+	EXPECT_EQ(exp_from, settings.nightFromMin);
+	EXPECT_EQ(exp_to, settings.nightToMin);
 	EXPECT_EQ(exp_color, settings.color);
 }
 
@@ -2465,8 +2461,6 @@ TEST(LampSettingsTest, UpdateTextOkIsTheDocumentedMessage) {
 	EXPECT_STREQ(exp_text, res);
 }
 
-// ---------------------------------------------------------------- Json
-
 TEST(LampSettingsTest, JsonOfDefaultsWithoutTime) {
 	const char *exp_json = "{\"on\":true,\"bright\":35,\"mode\":\"multi\",\"multi\":[\"pm25\",\"eco2\",\"temp\"],\"std\":\"total\","
 						   "\"night\":{\"param\":\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":false}";
@@ -2490,15 +2484,15 @@ TEST(LampSettingsTest, JsonWithTimeCarriesTheClock) {
 
 	lamp_settings settings = HAQuDA_LampDefaults();
 	settings.on = false;
-	settings.bright = 5;
+	settings.brightPercent = 5;
 	settings.mode = lamp_mode::night;
 	settings.multi[0] = lamp_param::temp;
 	settings.multi[1] = lamp_param::humid;
 	settings.multi[2] = lamp_param::tvoc;
 	settings.standardParam = lamp_param::pm25;
 	settings.nightParam = lamp_param::humid;
-	settings.nightFrom = 7 * 60 + 5;
-	settings.nightTo = 23 * 60 + 59;
+	settings.nightFromMin = 7 * 60 + 5;
+	settings.nightToMin = 23 * 60 + 59;
 	settings.color = 4;
 	char buf[LAMP_JSON_BUF_LEN];
 
@@ -2512,14 +2506,14 @@ TEST(LampSettingsTest, JsonWithTimeCarriesTheClock) {
 
 TEST(LampSettingsTest, JsonLongestFitsTheBuffer) {
 	lamp_settings settings = HAQuDA_LampDefaults();
-	settings.bright = 100;
+	settings.brightPercent = 100;
 	settings.mode = lamp_mode::standard;
 	settings.multi[0] = lamp_param::humid;
 	settings.multi[1] = lamp_param::humid;
 	settings.multi[2] = lamp_param::humid;
 	settings.nightParam = lamp_param::humid;
-	settings.nightFrom = 23 * 60 + 59;
-	settings.nightTo = 23 * 60 + 58;
+	settings.nightFromMin = 23 * 60 + 59;
+	settings.nightToMin = 23 * 60 + 58;
 	settings.color = 5;
 	char buf[LAMP_JSON_BUF_LEN];
 
@@ -2667,7 +2661,7 @@ TEST(LampSettingsTest, JsonPowerOffAtFullBrightness) {
 
 	lamp_settings settings = HAQuDA_LampDefaults();
 	settings.on = false;
-	settings.bright = LAMP_BRIGHT_MAX;
+	settings.brightPercent = LAMP_BRIGHT_MAX;
 	char buf[LAMP_JSON_BUF_LEN];
 
 	size_t res;
@@ -2821,7 +2815,6 @@ TEST(LampSettingsTest, JsonBufferOfSizeZeroGivesZeroAndIsNotTouched) {
 }
 
 TEST(LampSettingsTest, JsonBufferShorterThanTheFirstFieldGivesZero) {
-	// 10 bytes cut the text inside the first field
 
 	const size_t exp_len = 0;
 
@@ -2849,8 +2842,6 @@ TEST(LampSettingsTest, JsonBufferOfSizeZeroAndNullGivesZero) {
 
 	EXPECT_EQ(exp_len, res);
 }
-
-// ---------------------------------------------------------------- Colors
 
 TEST(LampSettingsTest, ColorOutOfRangeIsZero) {
 	const uint32_t exp_color = 0;
@@ -2946,13 +2937,11 @@ TEST(LampSettingsTest, ColorIndexTwoFiftyFiveIsZero) {
 	EXPECT_EQ(exp_color, res);
 }
 
-// ---------------------------------------------------------------- Record
-
 TEST(LampSettingsTest, EncodeInvalidSettingsFails) {
 	const bool exp_encoded = false;
 
 	lamp_settings settings = HAQuDA_LampDefaults();
-	settings.bright = 3;
+	settings.brightPercent = 3;
 	uint8_t record[LAMP_RECORD_LEN];
 
 	bool res;
@@ -3093,20 +3082,19 @@ TEST(LampSettingsTest, RecordRoundTripKeepsEveryField) {
 	EXPECT_TRUE(encoded);
 	EXPECT_TRUE(res);
 	EXPECT_EQ(exp_settings.on, decoded.on);
-	EXPECT_EQ(exp_settings.bright, decoded.bright);
+	EXPECT_EQ(exp_settings.brightPercent, decoded.brightPercent);
 	EXPECT_EQ(exp_settings.mode, decoded.mode);
 	EXPECT_EQ(exp_settings.standardParam, decoded.standardParam);
 	EXPECT_EQ(exp_settings.multi[0], decoded.multi[0]);
 	EXPECT_EQ(exp_settings.multi[1], decoded.multi[1]);
 	EXPECT_EQ(exp_settings.multi[2], decoded.multi[2]);
 	EXPECT_EQ(exp_settings.nightParam, decoded.nightParam);
-	EXPECT_EQ(exp_settings.nightFrom, decoded.nightFrom);
-	EXPECT_EQ(exp_settings.nightTo, decoded.nightTo);
+	EXPECT_EQ(exp_settings.nightFromMin, decoded.nightFromMin);
+	EXPECT_EQ(exp_settings.nightToMin, decoded.nightToMin);
 	EXPECT_EQ(exp_settings.color, decoded.color);
 }
 
 TEST(LampSettingsTest, RecordRoundTripKeepsTheBoundaryValues) {
-	// brightness 100, last colour, window from 23:59 to 00:00, night mode
 
 	const lamp_settings exp_settings
 		= {true, 100, lamp_mode::night, lamp_param::pm25, {lamp_param::temp, lamp_param::temp, lamp_param::temp}, lamp_param::temp, 23 * 60 + 59, 0, 5};
@@ -3122,15 +3110,15 @@ TEST(LampSettingsTest, RecordRoundTripKeepsTheBoundaryValues) {
 	EXPECT_TRUE(encoded);
 	EXPECT_TRUE(res);
 	EXPECT_EQ(exp_settings.on, decoded.on);
-	EXPECT_EQ(exp_settings.bright, decoded.bright);
+	EXPECT_EQ(exp_settings.brightPercent, decoded.brightPercent);
 	EXPECT_EQ(exp_settings.mode, decoded.mode);
 	EXPECT_EQ(exp_settings.standardParam, decoded.standardParam);
 	EXPECT_EQ(exp_settings.multi[0], decoded.multi[0]);
 	EXPECT_EQ(exp_settings.multi[1], decoded.multi[1]);
 	EXPECT_EQ(exp_settings.multi[2], decoded.multi[2]);
 	EXPECT_EQ(exp_settings.nightParam, decoded.nightParam);
-	EXPECT_EQ(exp_settings.nightFrom, decoded.nightFrom);
-	EXPECT_EQ(exp_settings.nightTo, decoded.nightTo);
+	EXPECT_EQ(exp_settings.nightFromMin, decoded.nightFromMin);
+	EXPECT_EQ(exp_settings.nightToMin, decoded.nightToMin);
 	EXPECT_EQ(exp_settings.color, decoded.color);
 }
 
@@ -3149,15 +3137,15 @@ TEST(LampSettingsTest, DecodeStoredLayoutGivesTheDefaults) {
 
 	EXPECT_TRUE(res);
 	EXPECT_EQ(exp_settings.on, decoded.on);
-	EXPECT_EQ(exp_settings.bright, decoded.bright);
+	EXPECT_EQ(exp_settings.brightPercent, decoded.brightPercent);
 	EXPECT_EQ(exp_settings.mode, decoded.mode);
 	EXPECT_EQ(exp_settings.standardParam, decoded.standardParam);
 	EXPECT_EQ(exp_settings.multi[0], decoded.multi[0]);
 	EXPECT_EQ(exp_settings.multi[1], decoded.multi[1]);
 	EXPECT_EQ(exp_settings.multi[2], decoded.multi[2]);
 	EXPECT_EQ(exp_settings.nightParam, decoded.nightParam);
-	EXPECT_EQ(exp_settings.nightFrom, decoded.nightFrom);
-	EXPECT_EQ(exp_settings.nightTo, decoded.nightTo);
+	EXPECT_EQ(exp_settings.nightFromMin, decoded.nightFromMin);
+	EXPECT_EQ(exp_settings.nightToMin, decoded.nightToMin);
 	EXPECT_EQ(exp_settings.color, decoded.color);
 }
 
@@ -3544,14 +3532,14 @@ TEST(LampSettingsTest, DecodeFailureLeavesOutUntouched) {
 
 	EXPECT_FALSE(res);
 	EXPECT_EQ(exp_settings.on, decoded.on);
-	EXPECT_EQ(exp_settings.bright, decoded.bright);
+	EXPECT_EQ(exp_settings.brightPercent, decoded.brightPercent);
 	EXPECT_EQ(exp_settings.mode, decoded.mode);
 	EXPECT_EQ(exp_settings.standardParam, decoded.standardParam);
 	EXPECT_EQ(exp_settings.multi[0], decoded.multi[0]);
 	EXPECT_EQ(exp_settings.multi[1], decoded.multi[1]);
 	EXPECT_EQ(exp_settings.multi[2], decoded.multi[2]);
 	EXPECT_EQ(exp_settings.nightParam, decoded.nightParam);
-	EXPECT_EQ(exp_settings.nightFrom, decoded.nightFrom);
-	EXPECT_EQ(exp_settings.nightTo, decoded.nightTo);
+	EXPECT_EQ(exp_settings.nightFromMin, decoded.nightFromMin);
+	EXPECT_EQ(exp_settings.nightToMin, decoded.nightToMin);
 	EXPECT_EQ(exp_settings.color, decoded.color);
 }

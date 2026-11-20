@@ -8,6 +8,7 @@
 #include "HAQuDA_ErrorHandler.h"
 #include "HAQuDA_WebPageDisplayManip.h"
 #include "HAQuDA_LampControl.h"
+#include "HAQuDA_LampAdapters.h"
 
 #include "HAQuDA_FileStorage.h"
 #include "HAQuDA_Logger.h"
@@ -29,7 +30,10 @@ HAQuDA_MeasSnapshot MeasSnapshot;
 HAQuDA_WebPageDisplayManip WebDisp;
 HAQuDA_MeasHandler MeasHandler(&ErrHandler, MeasSnapshot, WebDisp);
 HAQuDA_DisplayManip DispManip(&MeasHandler, &EffectsHandler, &ErrHandler, &WebDisp);
-HAQuDA_LampControl LampControl(DispManip, ErrHandler);
+HAQuDA_FileStorageAdapter LampFiles;
+HAQuDA_LampDisplayAdapter LampDisplay(ErrHandler);
+HAQuDA_LoggerAdapter LampLogger;
+HAQuDA_LampControl LampControl(LampFiles, LampDisplay, LampLogger);
 HAQuDA_WiFi_handler WiFiHandler(&FileStorage, &DispManip, MeasSnapshot, WebDisp, LampControl);
 
 int meas_start_time = 0;

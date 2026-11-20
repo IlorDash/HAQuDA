@@ -2,11 +2,8 @@
 
 namespace {
 	constexpr uint8_t PAGE_ROWS = 6;
-	// A page cell is two lamp rows high
 	constexpr uint8_t LAMP_ROWS_PER_CELL = 2;
-	// Lamp columns per page column: the colour column and the two night light columns it belongs to
 	constexpr uint8_t COLUMNS_PER_GROUP = 3;
-	// A stripe is one page row: one cell per page column
 	constexpr uint8_t CELLS_PER_STRIPE = 3;
 } // namespace
 

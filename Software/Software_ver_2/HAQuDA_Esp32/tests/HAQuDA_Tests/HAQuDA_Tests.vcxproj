@@ -84,10 +84,12 @@
     <ClCompile Include="TestNightProgress.cpp" />
     <ClCompile Include="TestMeasShowPolicy.cpp" />
     <ClCompile Include="TestLampSettings.cpp" />
+    <ClCompile Include="TestLampControl.cpp" />
     <ClCompile Include="TestLEDsParams.cpp" />
     <ClCompile Include="TestBrightnessApply.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_NightProgress.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_LampSettings.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_LampControl.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_ColorScale.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_DateFormat.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_LogDedup.cpp" />
@@ -119,9 +121,16 @@
     <ClInclude Include="..\..\sketches\HAQuDA_MeasShowPolicy.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_BrightnessApply.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_LampSettings.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_LampControl.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_IFileStorage.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_ILampDisplay.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_ILogger.h" />
     <ClInclude Include="..\fakes\freertos\FreeRTOS.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_ILEDs.h" />
     <ClInclude Include="..\mocks\MockLEDs.h" />
+    <ClInclude Include="..\mocks\MockFileStorage.h" />
+    <ClInclude Include="..\mocks\MockLampDisplay.h" />
+    <ClInclude Include="..\mocks\MockLogger.h" />
     <ClInclude Include="..\fakes\FakePMSerial.h" />
   </ItemGroup>
   <ItemGroup>

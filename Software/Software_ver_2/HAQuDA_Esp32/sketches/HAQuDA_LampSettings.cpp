@@ -52,7 +52,6 @@ namespace {
 		return true;
 	}
 
-	// "HH:MM" to minutes since midnight
 	bool parseTime(const char *text, size_t len, uint16_t &out) {
 		if ((len != 5) || (text[2] != ':')) {
 			return false;
@@ -75,7 +74,6 @@ namespace {
 		return true;
 	}
 
-	// Three keys separated by commas, none of them total
 	bool parseMulti(const char *text, size_t len, lamp_param (&out)[LAMP_MULTI_NUM]) {
 		lamp_param parsed[LAMP_MULTI_NUM] = {lamp_param::temp, lamp_param::temp, lamp_param::temp};
 		size_t start = 0;
@@ -101,7 +99,6 @@ namespace {
 		return (text == nullptr) || (strnlen(text, MAX_FIELD_LEN + 1) <= MAX_FIELD_LEN);
 	}
 
-	// One field of a request with the result to report when it is too long
 	struct field_ref {
 		const char *text;
 		lamp_update_result ifBad;
@@ -145,21 +142,21 @@ namespace {
 lamp_settings HAQuDA_LampDefaults() {
 	lamp_settings s{};
 	s.on = true;
-	s.bright = DEFAULT_BRIGHTNESS;
+	s.brightPercent = DEFAULT_BRIGHTNESS;
 	s.mode = lamp_mode::multi;
 	s.standardParam = lamp_param::total;
 	s.multi[0] = lamp_param::pm25;
 	s.multi[1] = lamp_param::eco2;
 	s.multi[2] = lamp_param::temp;
 	s.nightParam = lamp_param::eco2;
-	s.nightFrom = NIGHT_DEFAULT_FROM_MIN;
-	s.nightTo = NIGHT_DEFAULT_TO_MIN;
+	s.nightFromMin = NIGHT_DEFAULT_FROM_MIN;
+	s.nightToMin = NIGHT_DEFAULT_TO_MIN;
 	s.color = 0;
 	return s;
 }
 
 bool HAQuDA_LampSettingsValid(const lamp_settings &s) {
-	if ((s.bright < LAMP_BRIGHT_MIN) || (s.bright > LAMP_BRIGHT_MAX) || ((s.bright % LAMP_BRIGHT_STEP) != 0)) {
+	if ((s.brightPercent < LAMP_BRIGHT_MIN) || (s.brightPercent > LAMP_BRIGHT_MAX) || ((s.brightPercent % LAMP_BRIGHT_STEP) != 0)) {
 		return false;
 	}
 	if ((static_cast<size_t>(s.mode) >= MODE_NUM) || !paramInRange(s.standardParam, true) || !paramInRange(s.nightParam, false)) {
@@ -170,7 +167,7 @@ bool HAQuDA_LampSettingsValid(const lamp_settings &s) {
 			return false;
 		}
 	}
-	return (s.color < LAMP_COLORS_NUM) && (s.nightFrom < MINUTES_PER_DAY) && (s.nightTo < MINUTES_PER_DAY) && (s.nightFrom != s.nightTo);
+	return (s.color < LAMP_COLORS_NUM) && (s.nightFromMin < MINUTES_PER_DAY) && (s.nightToMin < MINUTES_PER_DAY) && (s.nightFromMin != s.nightToMin);
 }
 
 lamp_update_result HAQuDA_LampUpdate(lamp_settings &settings, const lamp_request &request, bool timeKnown) {
@@ -201,7 +198,7 @@ lamp_update_result HAQuDA_LampUpdate(lamp_settings &settings, const lamp_request
 			return lamp_update_result::bad_on;
 		}
 	}
-	if ((request.bright != nullptr) && !parseBright(request.bright, strlen(request.bright), next.bright)) {
+	if ((request.bright != nullptr) && !parseBright(request.bright, strlen(request.bright), next.brightPercent)) {
 		return lamp_update_result::bad_bright;
 	}
 	if (request.mode != nullptr) {
@@ -228,11 +225,11 @@ lamp_update_result HAQuDA_LampUpdate(lamp_settings &settings, const lamp_request
 	if ((request.nightParam != nullptr) && !parseParam(request.nightParam, strlen(request.nightParam), false, next.nightParam)) {
 		return lamp_update_result::bad_night_param;
 	}
-	if (((request.nightFrom != nullptr) && !parseTime(request.nightFrom, strlen(request.nightFrom), next.nightFrom))
-		|| ((request.nightTo != nullptr) && !parseTime(request.nightTo, strlen(request.nightTo), next.nightTo))) {
+	if (((request.nightFrom != nullptr) && !parseTime(request.nightFrom, strlen(request.nightFrom), next.nightFromMin))
+		|| ((request.nightTo != nullptr) && !parseTime(request.nightTo, strlen(request.nightTo), next.nightToMin))) {
 		return lamp_update_result::bad_time;
 	}
-	if (next.nightFrom == next.nightTo) {
+	if (next.nightFromMin == next.nightToMin) {
 		return lamp_update_result::night_window_empty;
 	}
 	if (request.color != nullptr) {
@@ -284,9 +281,9 @@ size_t HAQuDA_BuildLampJson(const lamp_settings &s, bool timeKnown, uint16_t min
 	const int head = snprintf(buf, size,
 							  "{\"on\":%s,\"bright\":%u,\"mode\":\"%s\",\"multi\":[\"%s\",\"%s\",\"%s\"],\"std\":\"%s\","
 							  "\"night\":{\"param\":\"%s\",\"from\":\"%02u:%02u\",\"to\":\"%02u:%02u\"},\"color\":%u,\"time\":%s",
-							  s.on ? "true" : "false", static_cast<unsigned>(s.bright), modeName(s.mode), paramName(s.multi[0]), paramName(s.multi[1]),
-							  paramName(s.multi[2]), paramName(s.standardParam), paramName(s.nightParam), static_cast<unsigned>(s.nightFrom / 60),
-							  static_cast<unsigned>(s.nightFrom % 60), static_cast<unsigned>(s.nightTo / 60), static_cast<unsigned>(s.nightTo % 60),
+							  s.on ? "true" : "false", static_cast<unsigned>(s.brightPercent), modeName(s.mode), paramName(s.multi[0]), paramName(s.multi[1]),
+							  paramName(s.multi[2]), paramName(s.standardParam), paramName(s.nightParam), static_cast<unsigned>(s.nightFromMin / 60),
+							  static_cast<unsigned>(s.nightFromMin % 60), static_cast<unsigned>(s.nightToMin / 60), static_cast<unsigned>(s.nightToMin % 60),
 							  static_cast<unsigned>(s.color), timeKnown ? "true" : "false");
 	if ((head < 0) || (static_cast<size_t>(head) >= size)) {
 		buf[0] = '\0';
@@ -317,7 +314,7 @@ bool HAQuDA_EncodeLampRecord(const lamp_settings &s, uint8_t *out, size_t size) 
 	out[3] = static_cast<uint8_t>((LAMP_RECORD_MAGIC >> 24) & 0xFF);
 	out[4] = LAMP_RECORD_VERSION;
 	out[5] = s.on ? 1 : 0;
-	out[6] = s.bright;
+	out[6] = s.brightPercent;
 	out[7] = static_cast<uint8_t>(s.mode);
 	out[8] = static_cast<uint8_t>(s.standardParam);
 	out[9] = static_cast<uint8_t>(s.multi[0]);
@@ -325,8 +322,8 @@ bool HAQuDA_EncodeLampRecord(const lamp_settings &s, uint8_t *out, size_t size) 
 	out[11] = static_cast<uint8_t>(s.multi[2]);
 	out[12] = static_cast<uint8_t>(s.nightParam);
 	out[13] = s.color;
-	putU16(out + 14, s.nightFrom);
-	putU16(out + 16, s.nightTo);
+	putU16(out + 14, s.nightFromMin);
+	putU16(out + 16, s.nightToMin);
 	putU16(out + RECORD_BODY_LEN, fletcher16(out, RECORD_BODY_LEN));
 	return true;
 }
@@ -343,7 +340,7 @@ bool HAQuDA_DecodeLampRecord(const uint8_t *data, size_t len, lamp_settings &out
 	}
 	lamp_settings s{};
 	s.on = data[5] == 1;
-	s.bright = data[6];
+	s.brightPercent = data[6];
 	s.mode = static_cast<lamp_mode>(data[7]);
 	s.standardParam = static_cast<lamp_param>(data[8]);
 	s.multi[0] = static_cast<lamp_param>(data[9]);
@@ -351,8 +348,8 @@ bool HAQuDA_DecodeLampRecord(const uint8_t *data, size_t len, lamp_settings &out
 	s.multi[2] = static_cast<lamp_param>(data[11]);
 	s.nightParam = static_cast<lamp_param>(data[12]);
 	s.color = data[13];
-	s.nightFrom = getU16(data + 14);
-	s.nightTo = getU16(data + 16);
+	s.nightFromMin = getU16(data + 14);
+	s.nightToMin = getU16(data + 16);
 	if (!HAQuDA_LampSettingsValid(s)) {
 		return false;
 	}
