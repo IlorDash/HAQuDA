@@ -137,7 +137,39 @@ namespace {
 	uint16_t getU16(const uint8_t *in) {
 		return static_cast<uint16_t>(in[0] | (in[1] << 8));
 	}
+
+	struct form_field {
+		const char *name;
+		const char *lamp_request::*member;
+	};
+
+	const form_field FORM_FIELDS[] = {{"on", &lamp_request::on},
+									  {"bright", &lamp_request::bright},
+									  {"mode", &lamp_request::mode},
+									  {"std", &lamp_request::standardParam},
+									  {"multi", &lamp_request::multi},
+									  {"night_param", &lamp_request::nightParam},
+									  {"night_from", &lamp_request::nightFrom},
+									  {"night_to", &lamp_request::nightTo},
+									  {"color", &lamp_request::color}};
 } // namespace
+
+bool HAQuDA_SetLampField(lamp_request &request, const char *name, const char *value) {
+	if ((name == nullptr) || (value == nullptr)) {
+		return false;
+	}
+	for (const form_field &field : FORM_FIELDS) {
+		if (strcmp(name, field.name) != 0) {
+			continue;
+		}
+		if (request.*(field.member) != nullptr) {
+			return false;
+		}
+		request.*(field.member) = value;
+		return true;
+	}
+	return false;
+}
 
 lamp_settings HAQuDA_LampDefaults() {
 	lamp_settings s{};

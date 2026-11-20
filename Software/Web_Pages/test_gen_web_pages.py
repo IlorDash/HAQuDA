@@ -4,6 +4,7 @@ import os
 import sys
 import tempfile
 import unittest
+import zlib
 from unittest import mock
 
 import gen_web_pages as gen
@@ -560,6 +561,166 @@ class MainTest(unittest.TestCase):
             res = gen.main()
 
         self.assertEqual(exp_code, res)
+
+
+class HeaderOutputTest(unittest.TestCase):
+    def test_main_writes_the_rendered_header_and_returns_zero(self):
+        exp_code = 0
+        exp_message = "wrote "
+        page = b"var a = 1; // note\n"
+        stdout = io.StringIO()
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = os.path.join(directory, "WebPages.h")
+            with mock.patch.object(sys, "argv", ["gen_web_pages.py"]), \
+                    mock.patch.object(gen, "OUTPUT", output), \
+                    mock.patch.object(gen, "SOURCES", ["app.js"]), \
+                    mock.patch.object(gen, "read_source", return_value=page), \
+                    contextlib.redirect_stdout(stdout):
+                exp_bytes = gen.render()
+
+                res = gen.main()
+
+            with open(output, "rb") as handle:
+                written = handle.read()
+
+        self.assertEqual(exp_code, res)
+        self.assertEqual(exp_bytes, written)
+        self.assertIn(exp_message, stdout.getvalue())
+
+    def test_rendered_header_holds_one_gzip_array_per_source(self):
+        exp_array = b"const uint8_t WEB_APP_JS_GZ[] PROGMEM = {"
+        exp_length = b"constexpr size_t WEB_APP_JS_GZ_LEN = sizeof(WEB_APP_JS_GZ);"
+        page = b"var a = 1;\n"
+
+        with mock.patch.object(gen, "SOURCES", ["app.js"]), \
+                mock.patch.object(gen, "read_source", return_value=page):
+            res = gen.render()
+
+        self.assertIn(exp_array, res)
+        self.assertIn(exp_length, res)
+
+    def test_check_returns_zero_for_the_header_main_wrote(self):
+        exp_code = 0
+        exp_message = "up to date"
+        page = b"var a = 1;\n"
+        stdout = io.StringIO()
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = os.path.join(directory, "WebPages.h")
+            with mock.patch.object(gen, "OUTPUT", output), \
+                    mock.patch.object(gen, "SOURCES", ["app.js"]), \
+                    mock.patch.object(gen, "read_source", return_value=page):
+                with open(output, "wb") as handle:
+                    handle.write(gen.render())
+                with mock.patch.object(sys, "argv", ["gen_web_pages.py", "--check"]), \
+                        contextlib.redirect_stdout(stdout):
+                    res = gen.main()
+
+        self.assertEqual(exp_code, res)
+        self.assertIn(exp_message, stdout.getvalue())
+
+    def test_check_accepts_a_header_with_crlf_line_endings(self):
+        exp_code = 0
+        exp_message = "up to date"
+        page = b"var a = 1;\n"
+        stdout = io.StringIO()
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = os.path.join(directory, "WebPages.h")
+            with mock.patch.object(gen, "OUTPUT", output), \
+                    mock.patch.object(gen, "SOURCES", ["app.js"]), \
+                    mock.patch.object(gen, "read_source", return_value=page):
+                with open(output, "wb") as handle:
+                    handle.write(gen.render().replace(b"\n", b"\r\n"))
+                with mock.patch.object(sys, "argv", ["gen_web_pages.py", "--check"]), \
+                        contextlib.redirect_stdout(stdout):
+                    res = gen.main()
+
+        self.assertEqual(exp_code, res)
+        self.assertIn(exp_message, stdout.getvalue())
+
+    def test_check_returns_one_for_a_header_of_other_pages(self):
+        exp_code = 1
+        exp_message = "stale"
+        old_page = b"var a = 1;\n"
+        new_page = b"var a = 2;\n"
+        stderr = io.StringIO()
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = os.path.join(directory, "WebPages.h")
+            with mock.patch.object(gen, "OUTPUT", output), \
+                    mock.patch.object(gen, "SOURCES", ["app.js"]):
+                with mock.patch.object(gen, "read_source", return_value=old_page):
+                    with open(output, "wb") as handle:
+                        handle.write(gen.render())
+                with mock.patch.object(gen, "read_source", return_value=new_page), \
+                        mock.patch.object(sys, "argv", ["gen_web_pages.py", "--check"]), \
+                        contextlib.redirect_stderr(stderr):
+                    res = gen.main()
+
+        self.assertEqual(exp_code, res)
+        self.assertIn(exp_message, stderr.getvalue())
+
+    def test_check_returns_one_for_a_header_that_is_not_arrays(self):
+        exp_code = 1
+        page = b"var a = 1;\n"
+        stderr = io.StringIO()
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = os.path.join(directory, "WebPages.h")
+            with open(output, "wb") as handle:
+                handle.write(b"#pragma once\n// not a generated header\n")
+            with mock.patch.object(gen, "OUTPUT", output), \
+                    mock.patch.object(gen, "SOURCES", ["app.js"]), \
+                    mock.patch.object(gen, "read_source", return_value=page), \
+                    mock.patch.object(sys, "argv", ["gen_web_pages.py", "--check"]), \
+                    contextlib.redirect_stderr(stderr):
+                res = gen.main()
+
+        self.assertEqual(exp_code, res)
+
+    def test_check_returns_one_when_the_header_is_missing(self):
+        exp_code = 1
+        page = b"var a = 1;\n"
+        stderr = io.StringIO()
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = os.path.join(directory, "missing", "WebPages.h")
+            with mock.patch.object(gen, "OUTPUT", output), \
+                    mock.patch.object(gen, "SOURCES", ["app.js"]), \
+                    mock.patch.object(gen, "read_source", return_value=page), \
+                    mock.patch.object(sys, "argv", ["gen_web_pages.py", "--check"]), \
+                    contextlib.redirect_stderr(stderr):
+                res = gen.main()
+
+        self.assertEqual(exp_code, res)
+
+    def test_check_accepts_the_current_pages_with_other_deflate_bytes(self):
+        exp_code = 0
+        exp_message = "different zlib build"
+        page = b"var a = 1; var b = 2; var c = 3; var d = 4;\n"
+        stored_level = 0
+        stdout = io.StringIO()
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = os.path.join(directory, "WebPages.h")
+            with mock.patch.object(gen, "OUTPUT", output), \
+                    mock.patch.object(gen, "SOURCES", ["app.js"]), \
+                    mock.patch.object(gen, "read_source", return_value=page):
+                exp_bytes = gen.render()
+                stored = zlib.compressobj(stored_level, zlib.DEFLATED, -15)
+                with mock.patch.object(gen.zlib, "compressobj", return_value=stored):
+                    other_bytes = gen.render()
+                with open(output, "wb") as handle:
+                    handle.write(other_bytes)
+                with mock.patch.object(sys, "argv", ["gen_web_pages.py", "--check"]), \
+                        contextlib.redirect_stdout(stdout):
+                    res = gen.main()
+
+        self.assertNotEqual(exp_bytes, other_bytes)
+        self.assertEqual(exp_code, res)
+        self.assertIn(exp_message, stdout.getvalue())
 
 
 class RealSourcesTest(unittest.TestCase):

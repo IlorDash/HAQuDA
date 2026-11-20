@@ -63,6 +63,9 @@
         <string>sketches\HAQuDA_ILampDisplay.h</string>
         <string>sketches\HAQuDA_ILogger.h</string>
         <string>sketches\HAQuDA_LampAdapters.h</string>
+        <string>sketches\HAQuDA_TotalColor.h</string>
+        <string>sketches\HAQuDA_DisplayTypes.h</string>
+        <string>sketches\HAQuDA_LampDisplayRules.h</string>
       </OtherFiles>
     </ProjectModeSettings>
   </Project>

@@ -1,6 +1,7 @@
 #include "HAQuDA_MeasHandler.h"
 #include "HAQuDA_MeasShowPolicy.h"
 #include "HAQuDA_NightProgress.h"
+#include "HAQuDA_TotalColor.h"
 #include "HAQuDA_TimeHelper.h"
 #include "HAQuDA_LEDsParams.h"
 #include "HAQuDA_LEDs.h"
@@ -246,25 +247,6 @@ void HAQuDA_MeasHandler::SetMeasDivDots(const meas_div_dots _dots) {
 	dots = _dots;
 }
 
-meas_type HAQuDA_MeasHandler::checkBadMeas() {
-	if (((temp_meas.value / temp_meas.measNum) >= dots.temp.last) || ((temp_meas.value / temp_meas.measNum) <= dots.temp.first)) {
-		return temp;
-	}
-	if (((humid_meas.value / humid_meas.measNum) >= dots.humid.last) || ((humid_meas.value / humid_meas.measNum) <= dots.humid.first)) {
-		return humid;
-	}
-	if ((eCO2_meas.value / eCO2_meas.measNum) >= dots.eCO2.last) {
-		return eCO2;
-	}
-	if ((TVOC_meas.value / TVOC_meas.measNum) >= dots.TVOC.last) {
-		return TVOC;
-	}
-	if ((PM_2_5_meas.value / PM_2_5_meas.measNum) >= dots.PM2_5.last) {
-		return PM2_5;
-	}
-	return noneType;
-}
-
 // The sums of one reading and its thresholds, nullptr for total and none. The caller divides by measNum only after checking it
 // is not 0: no sample since the last redraw has no average (0 / 0 is NaN, which the colour scale leaves undrawn).
 static meas_data *selectMeas(meas_type p, const meas_div_dots &allDots, div_dots &dotsOut) {
@@ -307,36 +289,21 @@ bool HAQuDA_MeasHandler::standardMode() {
 }
 
 bool HAQuDA_MeasHandler::totalMode() {
-	div_dots paramDots = {0, 0, 0};
-	const meas_data *worst = selectMeas(checkBadMeas(), dots, paramDots);
-	if ((worst != nullptr) && (worst->measNum != 0)) {
-		showMeas_standard(worst->value / worst->measNum, paramDots);
-		return true;
-	}
-
-	// Nothing is out of its range: the average colour of the readings that have a sample
-	const meas_type all[DISP_PARAMS_NUM] = {temp, humid, eCO2, TVOC, PM2_5};
-	uint16_t rSum = 0;
-	uint16_t gSum = 0;
-	uint16_t bSum = 0;
-	uint8_t sampled = 0;
-	for (size_t i = 0; i < DISP_PARAMS_NUM; i++) {
-		const meas_data *data = selectMeas(all[i], dots, paramDots);
-		if ((data == nullptr) || (data->measNum == 0)) {
-			continue;
+	static_assert(TOTAL_READING_NUM == DISP_PARAMS_NUM, "the overall rule takes one reading per displayed parameter");
+	const meas_type all[TOTAL_READING_NUM] = {temp, humid, eCO2, TVOC, PM2_5};
+	total_reading readings[TOTAL_READING_NUM] = {};
+	for (size_t i = 0; i < TOTAL_READING_NUM; i++) {
+		const meas_data *data = selectMeas(all[i], dots, readings[i].dots);
+		if ((data != nullptr) && (data->measNum != 0)) {
+			readings[i].hasSample = true;
+			readings[i].average = data->value / data->measNum;
 		}
-		rgb_color color = {0, 0, 0};
-		HAQuDA_GetMeasRGB(data->value / data->measNum, paramDots, color);
-		rSum += color.r;
-		gSum += color.g;
-		bSum += color.b;
-		sampled++;
 	}
-	if (sampled == 0) {
+	rgb_color color = {0, 0, 0};
+	if (!HAQuDA_TotalColor(readings, color)) {
 		return false;
 	}
-	const rgb_color average = {static_cast<uint8_t>(rSum / sampled), static_cast<uint8_t>(gSum / sampled), static_cast<uint8_t>(bSum / sampled)};
-	drawSolid(average);
+	drawSolid(color);
 	return true;
 }
 

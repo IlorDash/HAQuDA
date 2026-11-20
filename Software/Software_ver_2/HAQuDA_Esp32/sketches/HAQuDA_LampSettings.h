@@ -44,6 +44,9 @@ struct lamp_request {
 	const char *color;
 };
 
+// Stores the pointer, not a copy: `value` must outlive the request. Empty and over-long values are stored too, HAQuDA_LampUpdate() judges them.
+bool HAQuDA_SetLampField(lamp_request &request, const char *name, const char *value);
+
 enum class lamp_update_result : uint8_t {
 	ok,
 	nothing,

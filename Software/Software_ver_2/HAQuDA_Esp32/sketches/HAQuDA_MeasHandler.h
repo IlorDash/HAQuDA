@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Arduino.h"
+#include "HAQuDA_DisplayTypes.h"
 #include "HAQuDA_ErrorHandler.h"
 #include "HAQuDA_ColorScale.h"
 #include "HAQuDA_MeasSnapshot.h"
@@ -13,8 +14,6 @@
 #define SENSORS_MEAS_PERIOD_MS 1000 * 2
 
 typedef enum { standard, multi, night, noneMeas } meas_mode;
-
-typedef enum { total, eCO2, TVOC, PM2_5, temp, humid, noneType } meas_type;
 
 typedef struct {
 	meas_type paramsArr[MULTI_MODE_PARAM_NUM];
@@ -55,7 +54,6 @@ class HAQuDA_MeasHandler {
 	static meas_div_dots dots;
 
 	static void checkMeasCorrect(pm_meas_result pmResult);
-	static meas_type checkBadMeas();
 	// The mode functions return false when they could not draw because the shown reading has no sample yet (Show() then tries
 	// again on its next pass), true when they drew or never will
 	static bool standardMode();

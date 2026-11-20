@@ -435,15 +435,15 @@ void HAQuDA_WebServer::handleDisp(AsyncWebServerRequest *request) {
 }
 
 void HAQuDA_WebServer::handleLampUpdate(AsyncWebServerRequest *request) {
-	// The form fields of HAQuDA_LampSettings.h, in the order of lamp_request
-	static const char *const FIELD_NAMES[] = {"on", "bright", "mode", "std", "multi", "night_param", "night_from", "night_to", "color"};
-	constexpr size_t FIELD_NUM = sizeof(FIELD_NAMES) / sizeof(FIELD_NAMES[0]);
-	const char *values[FIELD_NUM] = {nullptr};
-	for (size_t i = 0; i < FIELD_NUM; i++) {
-		AsyncWebParameter *param = request->getParam(FIELD_NAMES[i], true);
-		values[i] = (param != nullptr) ? param->value().c_str() : nullptr;
+	// The values point into the parameters of the request, which live until the reply is sent
+	lamp_request lampRequest = {};
+	const size_t paramNum = request->params();
+	for (size_t i = 0; i < paramNum; i++) {
+		const AsyncWebParameter *param = request->getParam(i);
+		if ((param != nullptr) && param->isPost() && !param->isFile()) {
+			HAQuDA_SetLampField(lampRequest, param->name().c_str(), param->value().c_str());
+		}
 	}
-	const lamp_request lampRequest = {values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8]};
 
 	const lamp_update_result result = lampControl.Submit(lampRequest);
 	if (result != lamp_update_result::ok) {

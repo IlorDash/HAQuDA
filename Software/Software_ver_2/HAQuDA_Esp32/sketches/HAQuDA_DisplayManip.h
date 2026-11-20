@@ -2,11 +2,10 @@
 
 #include <atomic>
 
+#include "HAQuDA_DisplayTypes.h"
 #include "HAQuDA_MeasHandler.h"
 #include "HAQuDA_EffectsHandler.h"
 #include "HAQuDA_ErrorHandler.h"
-
-typedef enum { effect, meas, error, event, noneMode } display_modes;
 
 class HAQuDA_WebPageDisplayManip;
 

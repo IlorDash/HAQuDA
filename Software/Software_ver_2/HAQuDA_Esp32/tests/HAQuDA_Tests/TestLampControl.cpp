@@ -14,7 +14,9 @@ using ::testing::_;
 using ::testing::DoAll;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
+using ::testing::HasSubstr;
 using ::testing::InSequence;
+using ::testing::Not;
 using ::testing::Return;
 using ::testing::SetArrayArgument;
 using ::testing::StrEq;
@@ -657,4 +659,114 @@ TEST(LampControlTest, ShowMultiReversesTheBandsToBottomToTopOnce) {
 	}
 
 	control.Apply();
+}
+
+TEST(LampControlTest, BuildJsonAfterHandleWithTimeCarriesTheMinuteOfDay) {
+	const uint16_t minute_of_day = 10 * 60 + 5;
+	const char *const exp_now = "\"now\":\"10:05\"";
+	const char *const exp_time = "\"time\":true";
+
+	StrictMock<MockFileStorage> files;
+	StrictMock<MockLampDisplay> display;
+	StrictMock<MockLogger> logger;
+	HAQuDA_LampControl control(files, display, logger);
+	control.Handle(true, minute_of_day);
+
+	char res_json[LAMP_JSON_BUF_LEN];
+
+	control.BuildJson(res_json, sizeof(res_json));
+
+	EXPECT_THAT(res_json, HasSubstr(exp_now));
+	EXPECT_THAT(res_json, HasSubstr(exp_time));
+}
+
+TEST(LampControlTest, BuildJsonAfterHandleWithTimeMatchesTheJsonWriter) {
+	const uint16_t minute_of_day = 17 * 60 + 42;
+	char exp_json[LAMP_JSON_BUF_LEN];
+	HAQuDA_BuildLampJson(HAQuDA_LampDefaults(), true, minute_of_day, exp_json, sizeof(exp_json));
+
+	StrictMock<MockFileStorage> files;
+	StrictMock<MockLampDisplay> display;
+	StrictMock<MockLogger> logger;
+	HAQuDA_LampControl control(files, display, logger);
+	control.Handle(true, minute_of_day);
+
+	char res_json[LAMP_JSON_BUF_LEN];
+
+	control.BuildJson(res_json, sizeof(res_json));
+
+	EXPECT_STREQ(exp_json, res_json);
+}
+
+TEST(LampControlTest, BuildJsonAfterHandleAtMidnightCarriesZeroMinute) {
+	const uint16_t midnight = 0;
+	const char *const exp_now = "\"now\":\"00:00\"";
+
+	StrictMock<MockFileStorage> files;
+	StrictMock<MockLampDisplay> display;
+	StrictMock<MockLogger> logger;
+	HAQuDA_LampControl control(files, display, logger);
+	control.Handle(true, midnight);
+
+	char res_json[LAMP_JSON_BUF_LEN];
+
+	control.BuildJson(res_json, sizeof(res_json));
+
+	EXPECT_THAT(res_json, HasSubstr(exp_now));
+}
+
+TEST(LampControlTest, BuildJsonAfterHandleWithoutTimeHasNoNow) {
+	const uint16_t ignored_minute = 10 * 60;
+	const char *const exp_time = "\"time\":false";
+	const char *const exp_now = "\"now\"";
+
+	StrictMock<MockFileStorage> files;
+	StrictMock<MockLampDisplay> display;
+	StrictMock<MockLogger> logger;
+	HAQuDA_LampControl control(files, display, logger);
+	control.Handle(false, ignored_minute);
+
+	char res_json[LAMP_JSON_BUF_LEN];
+
+	control.BuildJson(res_json, sizeof(res_json));
+
+	EXPECT_THAT(res_json, HasSubstr(exp_time));
+	EXPECT_THAT(res_json, Not(HasSubstr(exp_now)));
+}
+
+TEST(LampControlTest, BuildJsonBeforeAnyHandleHasNoNow) {
+	const char *const exp_time = "\"time\":false";
+	const char *const exp_now = "\"now\"";
+
+	StrictMock<MockFileStorage> files;
+	StrictMock<MockLampDisplay> display;
+	StrictMock<MockLogger> logger;
+	HAQuDA_LampControl control(files, display, logger);
+
+	char res_json[LAMP_JSON_BUF_LEN];
+
+	control.BuildJson(res_json, sizeof(res_json));
+
+	EXPECT_THAT(res_json, HasSubstr(exp_time));
+	EXPECT_THAT(res_json, Not(HasSubstr(exp_now)));
+}
+
+TEST(LampControlTest, BuildJsonForgetsTheMinuteWhenTheTimeIsLost) {
+	const uint16_t minute_of_day = 10 * 60;
+	const char *const exp_time = "\"time\":false";
+	const char *const exp_now = "\"now\"";
+
+	StrictMock<MockFileStorage> files;
+	StrictMock<MockLampDisplay> display;
+	StrictMock<MockLogger> logger;
+	HAQuDA_LampControl control(files, display, logger);
+	control.Handle(true, minute_of_day);
+	control.Handle(false, minute_of_day);
+
+	char res_json[LAMP_JSON_BUF_LEN];
+
+	control.BuildJson(res_json, sizeof(res_json));
+
+	EXPECT_THAT(res_json, HasSubstr(exp_time));
+	EXPECT_THAT(res_json, Not(HasSubstr(exp_now)));
 }

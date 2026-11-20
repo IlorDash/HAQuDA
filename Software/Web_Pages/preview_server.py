@@ -134,7 +134,7 @@ PARAMS = [
 ]
 # Parameters the failed sensors would leave empty in the sensor-fail scenario (CCS811 and ZH03B)
 FAILED_KEYS = {"eco2", "tvoc", "pm25"}
-# The lamp's fixed thresholds for the overall reading (HAQuDA_MeasHandler::checkBadMeas()): out of range is at or below the first
+# The lamp's fixed thresholds for the overall reading (HAQuDA_TotalColor()): out of range is at or below the first
 # number or at or above the second. Not the stand-in dots above: the overall reading is judged against the lamp's own
 TOTAL_LIMITS = {"temp": (20.0, 30.0), "humid": (40.0, 80.0), "eco2": (float("-inf"), 5000.0), "tvoc": (float("-inf"), 1000.0),
                 "pm25": (float("-inf"), 45.0)}

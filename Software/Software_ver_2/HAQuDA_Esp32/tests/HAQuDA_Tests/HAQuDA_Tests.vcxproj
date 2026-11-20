@@ -85,12 +85,17 @@
     <ClCompile Include="TestMeasShowPolicy.cpp" />
     <ClCompile Include="TestLampSettings.cpp" />
     <ClCompile Include="TestLampControl.cpp" />
+    <ClCompile Include="TestLampForm.cpp" />
+    <ClCompile Include="TestLampDisplayRules.cpp" />
+    <ClCompile Include="TestTotalColor.cpp" />
     <ClCompile Include="TestLEDsParams.cpp" />
     <ClCompile Include="TestBrightnessApply.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_NightProgress.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_LampSettings.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_LampControl.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_ColorScale.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_TotalColor.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_LampDisplayRules.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_DateFormat.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_LogDedup.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_MeasSnapshot.cpp" />
@@ -103,6 +108,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\sketches\HAQuDA_ColorScale.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_TotalColor.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_DisplayTypes.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_LampDisplayRules.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_DateFormat.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_LogDedup.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_MeasSnapshot.h" />
