@@ -25,6 +25,10 @@ class HAQuDA_DisplayService {
 	bool SetBackground(anim_id measAnim, display_item waiting);
 	bool SetMeasEnabled(bool enabled);
 	bool SetBrightness(uint8_t percent);
+	// The lamp's own picture replaces the measurements as the background: a colour that events and errors show over, or dark that
+	// only errors show over
+	bool SetLampLight(uint32_t rgb);
+	bool SetLampOff();
 
 	uint16_t DroppedPostCount() const;
 

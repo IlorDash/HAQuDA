@@ -22,6 +22,14 @@
   measurement layouts in the colours the lamp drew, the snake, the growing, the random pixels, the
   fading and the single colours, and a caption that names what the lamp is doing. See
   [The lamp's picture](web-interface.md#lamp-picture).
+- **The Lamp card.** The main page switches the lamp on and off, sets the brightness from 5 to
+  100 % in steps of 5 and selects the mode: **Standard**, **Multi**, **Night** with its own night
+  window, or **Lamp light** in one of six colours. The grid shows a change at once; the lamp shows
+  it within about a second. See [The Lamp card](web-interface.md#lamp-card) and
+  [Display modes](display-modes.md).
+- **Saved settings.** The lamp writes every change to its flash before it shows it, so a reset
+  right after a change keeps it. With no file, or a damaged one, it starts with the defaults: on,
+  35 %, multi mode. See [Saved settings](display-modes.md#saved-settings).
 - **Address `haquda.local`.** The pages open at `http://haquda.local/` in your network and on the
   lamp's access point, and the router lists the lamp as `haquda`. See
   [Page addresses](web-interface.md#page-addresses).
@@ -51,7 +59,19 @@
 - **Green flash.** The green flash starts once the lamp has an address from your router. After
   a lost WiFi connection returns, the green flash shows and the colours come back.
 - **Sensors that do not start.** The lamp no longer restarts itself. It shows random pixels and
-  tries the sensors again every 5 minutes; the colours start when they answer.
+  tries the sensors again every 5 minutes; the colours start when they answer. Lamp light and
+  power off work meanwhile and replace the random pixels; a measurement mode keeps them.
+- **Brightness.** The lamp starts at 35 %. The colours of the measurements no longer depend on the
+  brightness: the colour scale is fixed and the LEDs dim it. The start-up snake and the WiFi
+  pictures play at 35 %, not at the saved brightness.
+- **Night light.** The night mode shows 18 cells that fill from the bottom over a window you set,
+  instead of six bars that grew by one LED per hour from 21:00 to 09:00.
+- **Overall reading.** The standard mode can show **Overall**: the first reading out of its range,
+  or the average colour.
+- **No dark blink.** The matrix no longer goes dark for about 0.3 seconds before each redraw or
+  after a change of brightness or mode.
+- **First picture sooner.** A picture is drawn as soon as its readings exist, not after the first
+  full minute, and a mode with no reading yet no longer shows a meaningless colour.
 - **All three sensors must answer.** The lamp starts the measurements only when the CCS811, the
   DHT22 and the ZH03B all answer. A missing DHT22 or ZH03B now gives the random pixels, and the
   log names each missing sensor (`Sensors start: DHT22 not responding`, `Sensors start: ZH03B
@@ -88,5 +108,4 @@ These features are not ready in this version.
 
 - [Opening the page automatically](web-interface.md#page-addresses) in access point mode.
 - [Recovery after a WiFi loss](troubleshooting.md#running-effects).
-- [Display mode selection](quick-guide.md#select-the-display-mode).
 - [DuckDNS updates](build-and-flash.md#set-the-build-variables).

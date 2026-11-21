@@ -7,7 +7,7 @@
 constexpr uint8_t DISPLAY_QUEUE_CAPACITY = 8;
 constexpr uint32_t DISPLAY_NO_DEADLINE = 0xFFFFFFFF;
 
-enum class display_source : uint8_t { none, event, error, waiting, meas };
+enum class display_source : uint8_t { none, event, error, waiting, meas, solid };
 
 struct display_pick {
 	bool changed;
@@ -27,7 +27,13 @@ class HAQuDA_DisplayScheduler {
 
 	void End(display_end end);
 
+	// Ends a solid background
 	void SetBackground(anim_id measAnim, display_item waiting);
+
+	// The lamp's own picture (light colour or off) replaces the measurements as the background and counts as the end of the waiting
+	// items. While it is off only errors show over it: events are not queued and the ones in the queue or playing are dropped.
+	// Every call restarts the solid picture (a new colour), the item playing over it is left alone.
+	void SetSolid(bool off);
 
 	void MeasReady(bool ready);
 
@@ -61,6 +67,7 @@ class HAQuDA_DisplayScheduler {
 	bool makeRoom();
 	void insertAt(uint8_t index, display_item item, entry_state state);
 	void removeAt(uint8_t index);
+	void dropEvents();
 	int8_t pickIndex() const;
 	uint8_t tierOf(const queue_entry &entry) const;
 	void startCurrent(display_item item, uint32_t nowMs);
@@ -72,6 +79,10 @@ class HAQuDA_DisplayScheduler {
 	current_item current;
 	display_item lastPosted = DISPLAY_ITEM_NONE;
 	bool measReadyNow = false;
+	bool solidActive = false;
+	bool eventsSuppressed = false;
+	uint16_t solidSerial = 0;
+	uint16_t shownSolidSerial = 0;
 	anim_id measAnim = anim_id::none;
 	display_item waitingItem = DISPLAY_ITEM_NONE;
 	uint8_t droppedCount = 0;

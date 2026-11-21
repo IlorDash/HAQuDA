@@ -37,21 +37,58 @@
 		<button type="button" class="bx" id="lastClose" data-i="close">Close</button>
 	</div>
 	<div class="grid">
-		<section class="lamp" id="lamp">
-			<div class="mrow">
-				<div class="matrix" id="matrix" aria-hidden="true"></div>
-				<div class="legend" id="legend">
-					<div><span data-i="lDust">Dust PM2.5</span><b id="lv-pm25">--</b></div>
-					<div><span>eCO&#8322;</span><b id="lv-eco2">--</b></div>
-					<div><span data-i="lTemp">Temperature</span><b id="lv-temp">--</b></div>
-					<p id="legendNote" role="status"></p>
+		<div class="left">
+			<section class="lamp" id="lamp">
+				<div class="mrow">
+					<div class="matrix" id="matrix" aria-hidden="true"></div>
+					<div class="legend" id="legend">
+						<div><span></span><b></b></div>
+						<div><span></span><b></b></div>
+						<div><span></span><b></b></div>
+						<p id="legendNote" role="status"></p>
+					</div>
 				</div>
-			</div>
-			<div class="idx">
-				<div class="idx-word" id="idxWord">&mdash;</div>
-				<div class="idx-sub" id="idxSub"></div>
-			</div>
-		</section>
+				<div class="idx">
+					<div class="idx-word" id="idxWord">&mdash;</div>
+					<div class="idx-sub" id="idxSub"></div>
+				</div>
+			</section>
+			<section class="lc" id="lc" aria-labelledby="lcT" hidden>
+				<div class="lc-h">
+					<div>
+						<div class="lc-t" id="lcT" data-i="lcTitle">Lamp</div>
+						<div class="lc-s" id="lcSum"></div>
+					</div>
+					<button type="button" class="sw" id="lcPower" role="switch" aria-checked="false" aria-label="Power"><i></i></button>
+				</div>
+				<div class="lc-dep" id="lcDep">
+					<div class="fld">
+						<div class="fl"><span data-i="lcBright">Brightness</span><b class="mono" id="lcBv"></b></div>
+						<input type="range" id="lcRange" min="5" max="100" step="5">
+					</div>
+					<div class="lc-modes" id="lcModes"></div>
+					<div class="lc-set">
+						<div class="fld" id="lcStd">
+							<div class="fl" data-i="lcRead">Reading</div>
+							<div class="chips" id="lcChips"></div>
+						</div>
+						<div class="lc-set" id="lcMulti"></div>
+						<div class="lc-night" id="lcNight">
+							<label class="fld"><span class="fl" data-i="lcRead">Reading</span><select class="sel" id="lcNp"></select></label>
+							<label class="fld"><span class="fl" data-i="lcFrom">Night light from</span><input class="sel" type="time" id="lcNf"></label>
+							<label class="fld"><span class="fl" data-i="lcTo">to</span><input class="sel" type="time" id="lcNt"></label>
+							<p class="hint" data-i="lcHint"></p>
+						</div>
+						<div class="fld" id="lcLight">
+							<div class="fl"><span data-i="lcColor">Color</span><b id="lcCn"></b></div>
+							<div class="sws" id="lcCols"></div>
+						</div>
+					</div>
+				</div>
+				<p class="hint" id="lcNote" role="status"></p>
+				<div class="reply bad" id="lcReply" hidden><i></i><span id="lcReplyText"></span></div>
+			</section>
+		</div>
 		<div class="side">
 			<div class="tiles" id="tiles"></div>
 			<nav class="links">

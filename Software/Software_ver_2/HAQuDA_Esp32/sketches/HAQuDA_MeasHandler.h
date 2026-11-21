@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Arduino.h"
+#include <atomic>
+#include "HAQuDA_DisplayTypes.h"
 #include "HAQuDA_ErrorHandler.h"
 #include "HAQuDA_IMeasSource.h"
 #include "HAQuDA_ColorScale.h"
@@ -15,17 +17,16 @@
 
 typedef enum { standard, multi, night, noneMeas } meas_mode;
 
-typedef enum { total, eCO2, TVOC, PM2_5, temp, humid, noneType } meas_type;
-
 typedef struct {
 	meas_type paramsArr[MULTI_MODE_PARAM_NUM];
 	float dataArr[MULTI_MODE_PARAM_NUM];
 	div_dots divideDotsArr[MULTI_MODE_PARAM_NUM];
 } multi_mode_params;
 
+// The night window, minutes since midnight (it may cross midnight)
 typedef struct {
-	uint8_t start;
-	uint8_t finish;
+	uint16_t start;
+	uint16_t finish;
 } night_time;
 
 typedef struct {
@@ -46,7 +47,8 @@ class HAQuDA_MeasHandler : public HAQuDA_IMeasSource {
 
 	static bool sens_start;
 	static int meas_num;
-	static bool show_meas_immed;
+	// Set by the loop task, taken by ShowTask
+	static std::atomic<bool> show_meas_immed;
 
 	static meas_mode mode;
 	static meas_type standard_m_p;
@@ -55,15 +57,19 @@ class HAQuDA_MeasHandler : public HAQuDA_IMeasSource {
 	static meas_div_dots dots;
 
 	static void checkMeasCorrect(pm_meas_result pmResult);
-	static meas_type checkBadMeas();
-	static uint8_t get_nightMode_hour(night_time timeBorder);
-	static void standardMode();
-	static void multiMode(multi_mode_params multiModeParams);
-	static void nightMode();
+	// The mode functions return false when they could not draw because the shown reading has no sample yet (Show() then tries
+	// again on its next pass), true when they drew or never will
+	static bool standardMode();
+	// Standard mode with the overall reading: the first reading out of its range, else the average colour of all of them
+	static bool totalMode();
+	static bool multiMode(multi_mode_params multiModeParams);
+	static bool nightMode();
 	static void showMeas_multi(float *data, uint8_t dataSize, div_dots *divideDots, uint8_t divideDotsSize);
-	static void showMeas_total(float *data, uint8_t dataSize, div_dots *dataDivideDots, uint8_t divideDotsSize);
 	static void showMeas_standard(float data, div_dots divideDots);
-	static void showMeas_night(float data, div_dots divideDots, uint8_t time);
+	// ShowTask only
+	static void drawSolid(const rgb_color &color);
+	// litCells: night light cells on (HAQuDA_NightLitCells()), 0 when the time is unknown
+	static void showMeas_night(float data, div_dots divideDots, uint8_t litCells);
 
 	static bool readAverage(meas_type type, float &average);
 	static div_dots dotsOf(meas_type type);
@@ -89,7 +95,6 @@ class HAQuDA_MeasHandler : public HAQuDA_IMeasSource {
 	void RestartAveraging() override;
 
 	static void SetMeasDispMode(meas_mode m);
-	meas_mode GetMeasDispMode();
 
 	static void SetStandardMeasParam(const meas_type standard_p);
 	static void SetMultiMeasParam(const multi_mode_params multi_p);

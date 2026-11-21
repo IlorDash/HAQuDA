@@ -78,7 +78,8 @@ a {
 }
 
 button,
-input {
+input,
+select {
 	font: inherit;
 	color: inherit;
 }
@@ -419,6 +420,11 @@ main.in {
 	display: none;
 }
 
+/* fewer than three readings: the lines hug their text instead of lining up with the pairs of grid rows */
+.legend.auto div {
+	height: auto;
+}
+
 .legend.fx p {
 	position: static;
 	width: auto;
@@ -521,6 +527,245 @@ main.in {
 	font-family: ui-monospace, Menlo, Consolas, monospace;
 	font-size: 11px;
 	color: var(--muted);
+}
+
+/* lamp card */
+
+.lc {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	margin-top: 14px;
+	padding: 14px;
+	border-radius: 14px;
+	background: var(--surface);
+}
+
+.lc.down {
+	opacity: 0.5;
+}
+
+.lc-h {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.lc-t {
+	font-size: 15px;
+	font-weight: 700;
+}
+
+.lc-s {
+	font-size: 12px;
+	color: var(--muted);
+}
+
+/* the touch area is 44 px high, the switch itself 30 */
+.sw {
+	position: relative;
+	display: flex;
+	flex: none;
+	align-items: center;
+	justify-content: flex-start;
+	width: 52px;
+	height: 30px;
+	padding: 3px;
+	border: 0;
+	border-radius: 999px;
+	background: var(--bar-off);
+	cursor: pointer;
+}
+
+.sw::before {
+	content: "";
+	position: absolute;
+	inset: -7px 0;
+}
+
+.sw i {
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	background: #ffffff;
+}
+
+.sw[aria-checked="true"] {
+	justify-content: flex-end;
+	background: #2fa84a;
+}
+
+.lc-dep,
+.lc-set {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.lc-set {
+	gap: 10px;
+}
+
+.lc-dep.off {
+	opacity: 0.4;
+}
+
+.lc-dep input[type="range"] {
+	width: 100%;
+	height: 28px;
+	margin: 0;
+	accent-color: var(--ink);
+}
+
+.fl b {
+	color: var(--ink);
+	font-size: 13px;
+	font-weight: 700;
+}
+
+.lc-modes {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 6px;
+}
+
+.md {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	min-height: 52px;
+	padding: 8px 12px;
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	background: transparent;
+	text-align: left;
+	cursor: pointer;
+}
+
+.md b {
+	font-size: 14px;
+}
+
+.md span {
+	font-size: 11px;
+	opacity: 0.75;
+}
+
+.md[aria-pressed="true"],
+.chip[aria-pressed="true"] {
+	border-color: var(--cta);
+	background: var(--cta);
+	color: var(--cta-ink);
+}
+
+.md:disabled,
+.chip:disabled,
+.cs:disabled,
+.sel:disabled {
+	cursor: default;
+}
+
+.lc-dep:not(.off) .md:disabled {
+	opacity: 0.45;
+}
+
+.chips,
+.sws {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.sws {
+	gap: 10px;
+}
+
+.chip {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	min-height: 36px;
+	padding: 0 12px;
+	border: 1px solid var(--border);
+	border-radius: 999px;
+	background: transparent;
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.chip i,
+.mr-l i {
+	flex: none;
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: var(--bar-off);
+}
+
+.mr3 {
+	display: grid;
+	grid-template-columns: 78px 1fr;
+	gap: 10px;
+	align-items: center;
+}
+
+.mr-l {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 13px;
+	color: var(--muted);
+}
+
+.mr-l i {
+	width: 8px;
+	height: 8px;
+	border-radius: 2px;
+}
+
+.sel {
+	width: 100%;
+	min-width: 0;
+	min-height: 42px;
+	padding: 0 10px;
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	background: var(--bg);
+	font-size: 15px;
+}
+
+.lc-night {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 10px 8px;
+}
+
+.lc-night .fld:first-child,
+.lc-night .hint {
+	grid-column: 1 / -1;
+}
+
+.lc-night .hint {
+	margin: 0;
+}
+
+.cs {
+	width: 40px;
+	height: 40px;
+	padding: 0;
+	border: 1px solid var(--border);
+	border-radius: 50%;
+	cursor: pointer;
+}
+
+.cs[aria-pressed="true"] {
+	box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink);
+}
+
+#lcNote {
+	margin: 0;
 }
 
 /* WiFi manager page */
@@ -972,11 +1217,40 @@ main.in {
 		padding-top: 28px;
 	}
 
-	.lamp {
+	.left {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
 		align-self: start;
+	}
+
+	.lamp {
 		padding: 24px;
 		border-radius: 18px;
 		background: var(--surface);
+	}
+
+	.lc {
+		margin-top: 0;
+		padding: 18px;
+		border-radius: 18px;
+	}
+
+	.lc-t {
+		font-size: 16px;
+	}
+
+	/* the reading and both times in one row, no hint */
+	.lc-night {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+
+	.lc-night .fld:first-child {
+		grid-column: auto;
+	}
+
+	.lc-night .hint {
+		display: none;
 	}
 
 	.idx-word {

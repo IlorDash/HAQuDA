@@ -42,9 +42,13 @@ bool HAQuDA_DisplayScheduler::post(display_item item) {
 	// Signals first, so a post never ends itself and ends what it replaces (a result ends the boot snake)
 	raise(entry->raises);
 
+	if (eventsSuppressed && (entry->cls == display_class::event)) {
+		return true;
+	}
+
 	if (isUntilEvent(*entry)) {
 		// Its end already happened, e.g. the measurements were ready before "access point running" was posted
-		if (measReadyNow && ((entry->endsOn & HAQuDA_EndBit(display_end::measReady)) != 0)) {
+		if ((measReadyNow || solidActive) && ((entry->endsOn & HAQuDA_EndBit(display_end::measReady)) != 0)) {
 			return true;
 		}
 		if (isActive(item)) {
@@ -87,8 +91,35 @@ void HAQuDA_DisplayScheduler::raise(uint16_t mask) {
 }
 
 void HAQuDA_DisplayScheduler::SetBackground(anim_id newMeasAnim, display_item newWaiting) {
+	solidActive = false;
+	eventsSuppressed = false;
 	measAnim = newMeasAnim;
 	waitingItem = (HAQuDA_GetDisplayEntry(newWaiting) != nullptr) ? newWaiting : DISPLAY_ITEM_NONE;
+}
+
+void HAQuDA_DisplayScheduler::SetSolid(bool off) {
+	solidActive = true;
+	eventsSuppressed = off;
+	solidSerial++;
+	raise(HAQuDA_EndBit(display_end::measReady));
+	if (off) {
+		dropEvents();
+	}
+}
+
+void HAQuDA_DisplayScheduler::dropEvents() {
+	for (uint8_t i = queueCount; i > 0; i--) {
+		const display_entry *entry = HAQuDA_GetDisplayEntry(queue[i - 1].id);
+		if ((entry != nullptr) && (entry->cls == display_class::event)) {
+			removeAt(i - 1);
+		}
+	}
+	if (current.valid) {
+		const display_entry *entry = HAQuDA_GetDisplayEntry(current.id);
+		if ((entry != nullptr) && (entry->cls == display_class::event)) {
+			current.valid = false;
+		}
+	}
 }
 
 void HAQuDA_DisplayScheduler::MeasReady(bool ready) {
@@ -262,6 +293,9 @@ display_pick HAQuDA_DisplayScheduler::describe(uint32_t nowMs) {
 			const uint32_t elapsedMs = nowMs - current.startMs;
 			pick.nextMs = (elapsedMs < playing->minMs) ? (playing->minMs - elapsedMs) : 0;
 		}
+	} else if (solidActive) {
+		pick.source = display_source::solid;
+		pick.anim = anim_id::staticColor;
 	} else if (measReadyNow && (measAnim != anim_id::none)) {
 		pick.source = display_source::meas;
 		pick.anim = measAnim;
@@ -274,7 +308,9 @@ display_pick HAQuDA_DisplayScheduler::describe(uint32_t nowMs) {
 		}
 	}
 
-	pick.changed = (pick.source != shownSource) || (pick.item != shownItem) || (pick.anim != shownAnim) || (startSerial != shownSerial);
+	const bool solidRestarted = (pick.source == display_source::solid) && (solidSerial != shownSolidSerial);
+	pick.changed = (pick.source != shownSource) || (pick.item != shownItem) || (pick.anim != shownAnim) || (startSerial != shownSerial) || solidRestarted;
+	shownSolidSerial = solidSerial;
 	shownSource = pick.source;
 	shownItem = pick.item;
 	shownAnim = pick.anim;

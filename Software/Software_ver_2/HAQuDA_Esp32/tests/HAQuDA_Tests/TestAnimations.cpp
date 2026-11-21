@@ -728,9 +728,9 @@ namespace {
 		return LedRecorder::pack(color.r, color.g, color.b);
 	}
 
-	rgb_color scaleColor(float value, div_dots dots, uint8_t rawBright) {
+	rgb_color scaleColor(float value, div_dots dots) {
 		rgb_color color = {0, 0, 0};
-		HAQuDA_GetMeasRGB(value, dots, rawBright, color);
+		HAQuDA_GetMeasRGB(value, dots, color);
 		return color;
 	}
 } // namespace
@@ -750,7 +750,7 @@ TEST(MeasAnimTest, StandardShowsDarkFrameThenThePictureThenResendsIt) {
 	EXPECT_EQ(300u, holdWait);
 	ASSERT_EQ(3u, leds.frames.size());
 	EXPECT_EQ(0u, leds.litCount(leds.frames[0]));
-	const uint32_t expected = packed(scaleColor(23, data.dots[0], 150));
+	const uint32_t expected = packed(scaleColor(23, data.dots[0]));
 	for (uint32_t color : leds.frames[1]) {
 		EXPECT_EQ(expected, color);
 	}
@@ -758,24 +758,20 @@ TEST(MeasAnimTest, StandardShowsDarkFrameThenThePictureThenResendsIt) {
 	EXPECT_EQ(0, leds.blockingCalls);
 }
 
-TEST(MeasAnimTest, BrightnessPercentIsConvertedToTheRawLevelOfTheColourScale) {
+TEST(MeasAnimTest, ColoursDoNotDependOnTheLampBrightness) {
 	LedRecorder leds;
 	HAQuDA_MeasStandardAnim meas(leds.mock);
 	const meas_anim_data data = lampData();
-	// 50 % of the 150 raw maximum = 75, which sets the slope of the colour ramp
 	ASSERT_TRUE(meas.Begin(HAQuDA_MeasParams(anim_id::measStandard), measContext(data, 50)));
 	meas.Step(0);
-
 	meas.Step(0);
 
-	const rgb_color expected = scaleColor(23, data.dots[0], 75);
+	const rgb_color expected = scaleColor(23, data.dots[0]);
 	EXPECT_EQ(packed(expected), leds.frames.back()[0]);
 	EXPECT_EQ(expected.r, meas.Drawn().colors[0].r);
 	EXPECT_EQ(expected.g, meas.Drawn().colors[0].g);
 	EXPECT_EQ(expected.b, meas.Drawn().colors[0].b);
 	EXPECT_EQ(1, meas.Drawn().colorCount);
-	// the two levels really differ, so the test would notice a unit mix-up
-	EXPECT_NE(packed(expected), packed(scaleColor(23, data.dots[0], 50)));
 }
 
 TEST(MeasAnimTest, NeverTouchesTheBrightnessOfTheLamp) {
@@ -814,7 +810,7 @@ TEST(MeasAnimTest, ABeginAgainShowsTheDarkFlashAndTheNewData) {
 	meas.Step(0);
 
 	EXPECT_EQ(0u, leds.litCount(leds.frames[2]));
-	EXPECT_EQ(packed(scaleColor(10, data.dots[0], 150)), leds.frames[3][0]);
+	EXPECT_EQ(packed(scaleColor(10, data.dots[0])), leds.frames[3][0]);
 }
 
 TEST(MeasAnimTest, NaNValueGivesADarkPicture) {
@@ -873,9 +869,9 @@ TEST(MeasAnimTest, MultiPutsTheThreeZonesInEveryColumn) {
 	ASSERT_TRUE(meas.Begin(HAQuDA_MeasParams(anim_id::measMulti), measContext(data, 100)));
 	meas.Step(0);
 	meas.Step(0);
-	const uint32_t c0 = packed(scaleColor(data.values[0], data.dots[0], 150));
-	const uint32_t c1 = packed(scaleColor(data.values[1], data.dots[1], 150));
-	const uint32_t c2 = packed(scaleColor(data.values[2], data.dots[2], 150));
+	const uint32_t c0 = packed(scaleColor(data.values[0], data.dots[0]));
+	const uint32_t c1 = packed(scaleColor(data.values[1], data.dots[1]));
+	const uint32_t c2 = packed(scaleColor(data.values[2], data.dots[2]));
 	ASSERT_NE(c0, c1);
 	ASSERT_NE(c1, c2);
 	ASSERT_NE(c0, c2);
@@ -899,17 +895,17 @@ TEST(MeasAnimTest, MultiPutsTheThreeZonesInEveryColumn) {
 	EXPECT_EQ(packed(meas.Drawn().colors[1]), c1);
 }
 
-TEST(MeasAnimTest, NightBarGrowsWithTheHourOnTheOtherColumns) {
+TEST(MeasAnimTest, NightLightGrowsWithTheLitCellsOnTheOtherColumns) {
 	LedRecorder leds;
 	HAQuDA_MeasNightAnim meas(leds.mock);
 	meas_anim_data data = lampData();
-	data.nightHour = 6;
+	data.nightLitCells = 4;
 	ASSERT_TRUE(meas.Begin(HAQuDA_MeasParams(anim_id::measNight), measContext(data, 100)));
 	meas.Step(0);
 	meas.Step(0);
-	const uint32_t colour = packed(scaleColor(23, data.dots[0], 150));
-	// 150 -> 1000 -> 70 %: 70
-	const uint32_t white = LedRecorder::pack(70, 70, 70);
+	const uint32_t colour = packed(scaleColor(23, data.dots[0]));
+	// 70 % of the largest colour channel (150)
+	const uint32_t white = LedRecorder::pack(105, 105, 105);
 
 	const std::vector<uint32_t> &frame = leds.frames.back();
 
@@ -918,27 +914,30 @@ TEST(MeasAnimTest, NightBarGrowsWithTheHourOnTheOtherColumns) {
 			EXPECT_EQ(colour, frame[HAQuDA_PixelOf(column, row)]) << "column " << static_cast<int>(column);
 		}
 	}
+	// four cells: two in the first pair of columns, one in each of the others, two lamp rows per cell
 	for (uint8_t column : {1, 2, 4, 5, 7, 8}) {
+		const uint8_t litRows = (column < 3) ? 4 : 2;
 		for (uint8_t row = 0; row < ANIM_ROWS; row++) {
-			EXPECT_EQ(row < 6 ? white : 0u, frame[HAQuDA_PixelOf(column, row)]) << "column " << static_cast<int>(column) << " row " << static_cast<int>(row);
+			EXPECT_EQ(row < litRows ? white : 0u, frame[HAQuDA_PixelOf(column, row)])
+				<< "column " << static_cast<int>(column) << " row " << static_cast<int>(row);
 		}
 	}
 	EXPECT_EQ(packed(meas.Drawn().white), white);
 	EXPECT_EQ(packed(meas.Drawn().colors[0]), colour);
 }
 
-TEST(MeasAnimTest, NightHourTwelveFillsTheBarAndZeroEmptiesIt) {
+TEST(MeasAnimTest, NightAllCellsFillTheLightAndNoCellEmptiesIt) {
 	LedRecorder leds;
 	HAQuDA_MeasNightAnim meas(leds.mock);
 	meas_anim_data data = lampData();
-	data.nightHour = 12;
+	data.nightLitCells = 18;
 	ASSERT_TRUE(meas.Begin(HAQuDA_MeasParams(anim_id::measNight), measContext(data, 100)));
 	meas.Step(0);
 	meas.Step(0);
 
 	EXPECT_EQ(static_cast<size_t>(ANIM_PIXELS), leds.litCount(leds.frames.back()));
 
-	data.nightHour = 0;
+	data.nightLitCells = 0;
 	ASSERT_TRUE(meas.Begin(HAQuDA_MeasParams(anim_id::measNight), measContext(data, 100)));
 	meas.Step(0);
 	meas.Step(0);
@@ -946,11 +945,11 @@ TEST(MeasAnimTest, NightHourTwelveFillsTheBarAndZeroEmptiesIt) {
 	EXPECT_EQ(static_cast<size_t>(3 * ANIM_ROWS), leds.litCount(leds.frames.back()));
 }
 
-TEST(MeasAnimTest, NightHourAboveTwelveIsClampedToAFullBar) {
+TEST(MeasAnimTest, NightLitCellsAboveTheMaximumAreClampedToAFullLight) {
 	LedRecorder leds;
 	HAQuDA_MeasNightAnim meas(leds.mock);
 	meas_anim_data data = lampData();
-	data.nightHour = 200;
+	data.nightLitCells = 200;
 	ASSERT_TRUE(meas.Begin(HAQuDA_MeasParams(anim_id::measNight), measContext(data, 100)));
 	meas.Step(0);
 	meas.Step(0);
@@ -976,7 +975,7 @@ TEST(MeasAnimTest, TotalAveragesTheFiveColoursWithoutOverflow) {
 	uint16_t gSum = 0;
 	uint16_t bSum = 0;
 	for (uint8_t i = 0; i < MEAS_ANIM_MAX_PARAMS; i++) {
-		const rgb_color color = scaleColor(data.values[i], data.dots[i], 150);
+		const rgb_color color = scaleColor(data.values[i], data.dots[i]);
 		rSum += color.r;
 		gSum += color.g;
 		bSum += color.b;
@@ -996,7 +995,7 @@ TEST(MeasAnimTest, TotalShowsTheFirstParameterOutsideItsRange) {
 	meas.Step(0);
 	meas.Step(0);
 
-	EXPECT_EQ(packed(scaleColor(5200, data.dots[2], 150)), leds.frames.back()[0]);
+	EXPECT_EQ(packed(scaleColor(5200, data.dots[2])), leds.frames.back()[0]);
 }
 
 TEST(MeasAnimTest, TotalTreatsTempAndHumidAsBadOnBothSides) {
@@ -1010,7 +1009,7 @@ TEST(MeasAnimTest, TotalTreatsTempAndHumidAsBadOnBothSides) {
 	meas.Step(0);
 	meas.Step(0);
 
-	EXPECT_EQ(packed(scaleColor(20, data.dots[0], 150)), leds.frames.back()[0]);
+	EXPECT_EQ(packed(scaleColor(20, data.dots[0])), leds.frames.back()[0]);
 }
 
 TEST(MeasAnimTest, TotalNeedsAllFiveThresholdSets) {

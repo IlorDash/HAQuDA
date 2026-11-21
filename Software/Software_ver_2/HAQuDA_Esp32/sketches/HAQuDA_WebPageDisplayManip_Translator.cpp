@@ -3,6 +3,8 @@
 #include <cstdarg>
 #include <cstdio>
 
+#include "HAQuDA_NightProgress.h"
+
 namespace {
 
 	// Lamp geometry and timing, mirrors HAQuDA_LEDsParams.h (LED_NUM_PIXELS, LED_ROW_NUM), the 100 ms pause
@@ -187,12 +189,6 @@ namespace {
 		}
 	}
 
-	// Night bar: white page rows = ceil(hour * PAGE_ROWS / 12), 12 (outside the window) fills all of them.
-	uint32_t nightWhiteRows(uint8_t hour) {
-		const uint32_t h = clampU32(hour, 0, 12);
-		return clampU32(divCeil(h * PAGE_ROWS, 12), 0, PAGE_ROWS);
-	}
-
 	void appendMeas(JsonWriter &w, const web_display_state &s) {
 		const char *layoutName = nullptr;
 		size_t keysNum = 1;
@@ -226,31 +222,12 @@ namespace {
 		}
 		w.Append("]");
 		if (s.layout == web_meas_layout::night) {
-			w.Append(",\"white\":%lu,\"whiteColor\":\"#%06lx\"", static_cast<unsigned long>(nightWhiteRows(s.nightHour)),
+			w.Append(",\"lit\":%lu,\"whiteColor\":\"#%06lx\"", static_cast<unsigned long>(clampU32(s.nightLit, 0, NIGHT_LIT_CELLS_MAX)),
 					 static_cast<unsigned long>(s.measWhiteColor & 0xFFFFFF));
 		}
 	}
 
 } // namespace
-
-uint8_t HAQuDA_NightHour(uint8_t start, uint8_t finish, uint8_t hour) {
-	constexpr uint8_t OUTSIDE_WINDOW = 12;
-	constexpr int HOURS_PER_DAY = 24;
-
-	if (hour >= HOURS_PER_DAY) {
-		return OUTSIDE_WINDOW;
-	}
-	const bool crossesMidnight = finish < start;
-	const bool inWindow = crossesMidnight ? ((hour >= start) || (hour <= finish)) : ((hour >= start) && (hour <= finish));
-	if (!inWindow) {
-		return OUTSIDE_WINDOW;
-	}
-	int hoursIn = static_cast<int>(hour) - static_cast<int>(start);
-	if (hoursIn < 0) {
-		hoursIn += HOURS_PER_DAY;
-	}
-	return static_cast<uint8_t>(hoursIn);
-}
 
 size_t HAQuDA_TranslateDisplayToJson(const web_display_state &state, char *buf, size_t size) {
 	if ((buf == nullptr) || (size == 0)) {

@@ -1,4 +1,7 @@
 #include "HAQuDA_MeasHandler.h"
+#include "HAQuDA_MeasShowPolicy.h"
+#include "HAQuDA_NightProgress.h"
+#include "HAQuDA_TotalColor.h"
 #include "HAQuDA_TimeHelper.h"
 #include "HAQuDA_LEDsParams.h"
 #include "HAQuDA_Animation.h"
@@ -10,12 +13,9 @@
 
 #define MAX_SENS_REBOOT_ATTEMPTS 3
 
-static_assert(COLOR_SCALE_MAX_CHANNEL == MAX_BRIGHTNESS, "colour scale and LED limits must agree");
-
-// The animation layer cannot include HAQuDA_LEDsParams.h (it pulls in Arduino.h), so it repeats these values
+// The animation layer repeats these values instead of including HAQuDA_LEDsParams.h (its LED_NUM_PIXELS is not the matrix size)
 static_assert(ANIM_COLUMNS == LED_COLUMN_NUM, "animation and LED geometry must agree");
 static_assert(ANIM_ROWS == LED_ROW_NUM, "animation and LED geometry must agree");
-static_assert(ANIM_NIGHT_WHITE_PERCENT == WHITE_BRIGHTNESS_COEFF, "night bar brightness must agree");
 static_assert(ANIM_COLOR_AQUA == COLOR_AQUA, "animation colours must agree with the LED colours");
 static_assert(ANIM_COLOR_LIME == COLOR_LIME, "animation colours must agree with the LED colours");
 static_assert(ANIM_COLOR_GREEN == COLOR_GREEN, "animation colours must agree with the LED colours");
@@ -24,7 +24,7 @@ static_assert(ANIM_COLOR_YELLOW == COLOR_YELLOW, "animation colours must agree w
 
 bool HAQuDA_MeasHandler::sens_start;
 int HAQuDA_MeasHandler::meas_num;
-bool HAQuDA_MeasHandler::show_meas_immed;
+std::atomic<bool> HAQuDA_MeasHandler::show_meas_immed;
 
 meas_mode HAQuDA_MeasHandler::mode;
 meas_type HAQuDA_MeasHandler::standard_m_p;
@@ -46,8 +46,8 @@ HAQuDA_MeasHandler::HAQuDA_MeasHandler(HAQuDA_ErrorHandler *_err_handler, HAQuDA
 	mode = noneMeas;
 	standard_m_p = noneType;
 
-	night_m_time.start = 21;
-	night_m_time.finish = 9;
+	night_m_time.start = NIGHT_DEFAULT_FROM_MIN;
+	night_m_time.finish = NIGHT_DEFAULT_TO_MIN;
 
 	dots.temp.first = 20;
 	dots.temp.mid = 26;
@@ -161,8 +161,7 @@ static uint32_t webColor(const rgb_color &color) {
 // ShowTask zeroes count and then sum in ClearMeasData() without a lock. Here the count is read before and after
 // the sum: an unchanged non-zero count means no clear started before the second read, so the sum is the old one
 // and matches the count. A changed count means a clear ran in between, and that poll keeps the previous snapshot.
-// brightness is the lamp's raw LED brightness (HAQuDA_LEDs::GetBright()), the argument the lamp's own draw gives the colour scale.
-static void publishOne(HAQuDA_MeasSnapshot &snapshot, snapshot_param param, const meas_data &data, div_dots dotsOfParam, uint8_t brightness) {
+static void publishOne(HAQuDA_MeasSnapshot &snapshot, snapshot_param param, const meas_data &data, div_dots dotsOfParam) {
 	if (!data.newMeasDone) {
 		snapshot.Publish(param, NAN, 0);
 		return;
@@ -181,47 +180,56 @@ static void publishOne(HAQuDA_MeasSnapshot &snapshot, snapshot_param param, cons
 
 	float average = sum / countBefore;
 	rgb_color color = {0, 0, 0};
-	HAQuDA_GetMeasRGB(average, dotsOfParam, brightness, color);
+	HAQuDA_GetMeasRGB(average, dotsOfParam, color);
 	snapshot.Publish(param, average, webColor(color));
 }
 
 void HAQuDA_MeasHandler::publishSnapshots() {
-	// One byte (HAQuDA_LEDs::brightness, a std::atomic<uint8_t>) that ShowTask writes in SetBright():
-	// an atomic one-byte read, cheap, and a read during a brightness change gives the old or the new level,
-	// which the next poll corrects.
-	const uint8_t brightness = HAQuDA_LEDs::getInstance()->GetBright();
-	publishOne(measSnapshot, snapshot_param::temp, temp_meas, dots.temp, brightness);
-	publishOne(measSnapshot, snapshot_param::humid, humid_meas, dots.humid, brightness);
-	publishOne(measSnapshot, snapshot_param::eco2, eCO2_meas, dots.eCO2, brightness);
-	publishOne(measSnapshot, snapshot_param::tvoc, TVOC_meas, dots.TVOC, brightness);
-	publishOne(measSnapshot, snapshot_param::pm25, PM_2_5_meas, dots.PM2_5, brightness);
+	// The snapshot colour is the scale colour at full channel values: it does not depend on the lamp brightness.
+	publishOne(measSnapshot, snapshot_param::temp, temp_meas, dots.temp);
+	publishOne(measSnapshot, snapshot_param::humid, humid_meas, dots.humid);
+	publishOne(measSnapshot, snapshot_param::eco2, eCO2_meas, dots.eCO2);
+	publishOne(measSnapshot, snapshot_param::tvoc, TVOC_meas, dots.TVOC);
+	publishOne(measSnapshot, snapshot_param::pm25, PM_2_5_meas, dots.PM2_5);
 }
 
 void HAQuDA_MeasHandler::Show(int *show_meas_time) {
 
 	bool show_meas_time_passed = (millis() - *show_meas_time > DISP_MEAS_PERIOD_MS);
+	// Taken before the draw: a SetMeasDispMode() that lands during the pass sets the flag again and survives its end
+	const bool immediateRequested = show_meas_immed.exchange(false);
 
-	if (show_meas_time_passed || show_meas_immed) {
+	if (show_meas_time_passed || immediateRequested) {
 
+		// A pass that could not draw (the shown reading has no sample yet, the first one comes within 2 s of a redraw) keeps the
+		// redraw request, so the next pass tries again instead of leaving the old picture up for a minute. The period timer and the
+		// sums still restart once the period has elapsed, so a reading that never gets a sample cannot let the other sums grow past
+		// one period (HAQuDA_DecideShowOutcome()).
+		bool consumed = true;
 		switch (mode) {
 			case standard: {
-				standardMode();
+				consumed = standardMode();
 				break;
 			}
 			case multi: {
-				multiMode(multi_m_p);
+				consumed = multiMode(multi_m_p);
 				break;
 			}
 			case night: {
-				nightMode();
+				consumed = nightMode();
 				break;
 			}
 			default:
 				break;
 		}
-		*show_meas_time = millis();
-		ClearMeas();
-		show_meas_immed = false;
+		const meas_show_outcome outcome = HAQuDA_DecideShowOutcome(consumed, show_meas_time_passed);
+		if (outcome.restartPeriod) {
+			*show_meas_time = millis();
+			ClearMeas();
+		}
+		if (immediateRequested && outcome.keepRequest) {
+			show_meas_immed = true;
+		}
 	}
 }
 
@@ -297,7 +305,10 @@ bool HAQuDA_MeasHandler::ReadAverages(anim_id &anim, meas_anim_data &data) {
 			}
 			data.dots[0] = dotsOf(standard_m_p);
 			if (anim == anim_id::measNight) {
-				data.nightHour = get_nightMode_hour(night_m_time);
+				DateTimeStruct currTime;
+				if (HAQuDA_TimeService::getInstance()->GetDateTime(&currTime)) {
+					data.nightLitCells = HAQuDA_NightLitCells(night_m_time.start, night_m_time.finish, currTime.hour * 60 + currTime.min);
+				}
 			}
 			return true;
 		}
@@ -333,12 +344,9 @@ void HAQuDA_MeasHandler::RestartAveraging() {
 void HAQuDA_MeasHandler::SetMeasDispMode(meas_mode m) {
 	if (m == noneMeas)
 		return;
-	show_meas_immed = true;
+	// The mode first: ShowTask may take the request at any moment and must then draw the new mode
 	mode = m;
-}
-
-meas_mode HAQuDA_MeasHandler::GetMeasDispMode() {
-	return mode;
+	show_meas_immed = true;
 }
 
 void HAQuDA_MeasHandler::SetStandardMeasParam(const meas_type standard_p) {
@@ -356,217 +364,110 @@ void HAQuDA_MeasHandler::SetMeasDivDots(const meas_div_dots _dots) {
 	dots = _dots;
 }
 
-meas_type HAQuDA_MeasHandler::checkBadMeas() {
-	if (((temp_meas.value / temp_meas.measNum) >= dots.temp.last) || ((temp_meas.value / temp_meas.measNum) <= dots.temp.first)) {
-		return temp;
-	}
-	if (((humid_meas.value / humid_meas.measNum) >= dots.humid.last) || ((humid_meas.value / humid_meas.measNum) <= dots.humid.first)) {
-		return humid;
-	}
-	if ((eCO2_meas.value / eCO2_meas.measNum) >= dots.eCO2.last) {
-		return eCO2;
-	}
-	if ((TVOC_meas.value / TVOC_meas.measNum) >= dots.TVOC.last) {
-		return TVOC;
-	}
-	if ((PM_2_5_meas.value / PM_2_5_meas.measNum) >= dots.PM2_5.last) {
-		return PM2_5;
-	}
-	return noneType;
-}
-
-void HAQuDA_MeasHandler::standardMode() {
-	switch (standard_m_p) {
-		case total: {
-			meas_type badParam = checkBadMeas();
-			switch (badParam) {
-				case temp: {
-					showMeas_standard(temp_meas.value / temp_meas.measNum, dots.temp);
-					break;
-				}
-				case humid: {
-					showMeas_standard(humid_meas.value / humid_meas.measNum, dots.humid);
-					break;
-				}
-				case eCO2: {
-					showMeas_standard(eCO2_meas.value / eCO2_meas.measNum, dots.eCO2);
-					break;
-				}
-				case TVOC: {
-					showMeas_standard(TVOC_meas.value / TVOC_meas.measNum, dots.TVOC);
-					break;
-				}
-				case PM2_5: {
-					showMeas_standard(PM_2_5_meas.value / PM_2_5_meas.measNum, dots.PM2_5);
-					break;
-				}
-				case total: {
-					float measValuesArr[DISP_PARAMS_NUM];
-					div_dots measDivideDots[DISP_PARAMS_NUM];
-
-					measValuesArr[0] = temp_meas.value / temp_meas.measNum;
-					measDivideDots[0] = dots.temp;
-
-					measValuesArr[1] = humid_meas.value / humid_meas.measNum;
-					measDivideDots[1] = dots.humid;
-
-					measValuesArr[2] = eCO2_meas.value / eCO2_meas.measNum;
-					measDivideDots[2] = dots.eCO2;
-
-					measValuesArr[3] = TVOC_meas.value / TVOC_meas.measNum;
-					measDivideDots[3] = dots.TVOC;
-
-					measValuesArr[4] = PM_2_5_meas.value / PM_2_5_meas.measNum;
-					measDivideDots[4] = dots.PM2_5;
-
-					showMeas_total(measValuesArr, sizeof(measValuesArr), measDivideDots, sizeof(measDivideDots));
-					break;
-				}
-				default:
-					break;
-			}
-			break;
-		}
-		case temp: {
-			showMeas_standard(temp_meas.value / temp_meas.measNum, dots.temp);
-			break;
-		}
-		case humid: {
-			showMeas_standard(humid_meas.value / humid_meas.measNum, dots.humid);
-			break;
-		}
-		case eCO2: {
-			showMeas_standard(eCO2_meas.value / eCO2_meas.measNum, dots.eCO2);
-			break;
-		}
-		case TVOC: {
-			showMeas_standard(TVOC_meas.value / TVOC_meas.measNum, dots.TVOC);
-			break;
-		}
-		case PM2_5: {
-			showMeas_standard(PM_2_5_meas.value / PM_2_5_meas.measNum, dots.PM2_5);
-			break;
-		}
+// The sums of one reading and its thresholds, nullptr for total and none. The caller divides by measNum only after checking it
+// is not 0: no sample since the last redraw has no average (0 / 0 is NaN, which the colour scale leaves undrawn).
+static meas_data *selectMeas(meas_type p, const meas_div_dots &allDots, div_dots &dotsOut) {
+	switch (p) {
+		case temp:
+			dotsOut = allDots.temp;
+			return &temp_meas;
+		case humid:
+			dotsOut = allDots.humid;
+			return &humid_meas;
+		case eCO2:
+			dotsOut = allDots.eCO2;
+			return &eCO2_meas;
+		case TVOC:
+			dotsOut = allDots.TVOC;
+			return &TVOC_meas;
+		case PM2_5:
+			dotsOut = allDots.PM2_5;
+			return &PM_2_5_meas;
 		default:
-			break;
+			return nullptr;
 	}
 }
 
-void HAQuDA_MeasHandler::multiMode(multi_mode_params multiModeParams) {
-	for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
-		switch (multiModeParams.paramsArr[i]) {
-			case temp: {
-				if (temp_meas.measNum == 0)
-					return;
+bool HAQuDA_MeasHandler::standardMode() {
+	if (standard_m_p == total) {
+		return totalMode();
+	}
+	div_dots paramDots = {0, 0, 0};
+	const meas_data *data = selectMeas(standard_m_p, dots, paramDots);
+	if (data == nullptr) {
+		// No reading chosen: nothing will ever be drawn, so there is nothing to retry
+		return true;
+	}
+	if (data->measNum == 0) {
+		return false;
+	}
+	showMeas_standard(data->value / data->measNum, paramDots);
+	return true;
+}
 
-				multiModeParams.dataArr[i] = temp_meas.value / temp_meas.measNum;
-				break;
-			}
-			case humid: {
-				if (humid_meas.measNum == 0)
-					return;
-
-				multiModeParams.dataArr[i] = humid_meas.value / humid_meas.measNum;
-				break;
-			}
-			case eCO2: {
-				if (eCO2_meas.measNum == 0)
-					return;
-
-				multiModeParams.dataArr[i] = eCO2_meas.value / eCO2_meas.measNum;
-				break;
-			}
-			case PM2_5: {
-				if (PM_2_5_meas.measNum == 0)
-					return;
-
-				multiModeParams.dataArr[i] = PM_2_5_meas.value / PM_2_5_meas.measNum;
-				break;
-			}
-			case TVOC: {
-				if (TVOC_meas.measNum == 0)
-					return;
-
-				multiModeParams.dataArr[i] = TVOC_meas.value / TVOC_meas.measNum;
-				break;
-			}
-			default:
-				break;
+bool HAQuDA_MeasHandler::totalMode() {
+	static_assert(TOTAL_READING_NUM == DISP_PARAMS_NUM, "the overall rule takes one reading per displayed parameter");
+	const meas_type all[TOTAL_READING_NUM] = {temp, humid, eCO2, TVOC, PM2_5};
+	total_reading readings[TOTAL_READING_NUM] = {};
+	for (size_t i = 0; i < TOTAL_READING_NUM; i++) {
+		const meas_data *data = selectMeas(all[i], dots, readings[i].dots);
+		if ((data != nullptr) && (data->measNum != 0)) {
+			readings[i].hasSample = true;
+			readings[i].average = data->value / data->measNum;
 		}
+	}
+	rgb_color color = {0, 0, 0};
+	if (!HAQuDA_TotalColor(readings, color)) {
+		return false;
+	}
+	drawSolid(color);
+	return true;
+}
+
+bool HAQuDA_MeasHandler::multiMode(multi_mode_params multiModeParams) {
+	for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
+		// The thresholds are taken from the current ones, so SetMeasDivDots() reaches the multi picture too
+		const meas_data *data = selectMeas(multiModeParams.paramsArr[i], dots, multiModeParams.divideDotsArr[i]);
+		if (data == nullptr) {
+			return true;
+		}
+		if (data->measNum == 0) {
+			return false;
+		}
+		multiModeParams.dataArr[i] = data->value / data->measNum;
 	}
 	showMeas_multi(multiModeParams.dataArr, sizeof(multiModeParams.dataArr) / sizeof(multiModeParams.dataArr[0]), multiModeParams.divideDotsArr,
 				   sizeof(multiModeParams.divideDotsArr) / sizeof(multiModeParams.divideDotsArr[0]));
+	return true;
 }
 
-uint8_t HAQuDA_MeasHandler::get_nightMode_hour(night_time timeBorder) {
+bool HAQuDA_MeasHandler::nightMode() {
+	div_dots paramDots = {0, 0, 0};
+	meas_data *data = selectMeas(standard_m_p, dots, paramDots);
+	if (data == nullptr) {
+		return true;
+	}
+	if (data->measNum == 0) {
+		return false;
+	}
+
+	uint8_t litCells = 0;
 	DateTimeStruct currTime;
-
-	if (!HAQuDA_TimeService::getInstance()->GetDateTime(&currTime)) {
-		return 0;
+	if (HAQuDA_TimeService::getInstance()->GetDateTime(&currTime)) {
+		litCells = HAQuDA_NightLitCells(night_m_time.start, night_m_time.finish, currTime.hour * 60 + currTime.min);
 	}
-
-	bool isBordersInDifferentDays = (timeBorder.finish < timeBorder.start);
-
-	if (isBordersInDifferentDays) {
-		if ((currTime.hour >= timeBorder.start) || (currTime.hour <= timeBorder.finish)) {
-			int8_t hourDiff = currTime.hour - timeBorder.start;
-			hourDiff += (hourDiff < 0) ? 24 : 0;
-			return hourDiff;
-		} else {
-			return 12;
-		}
-	} else {
-		if ((currTime.hour >= timeBorder.start) && (currTime.hour <= timeBorder.finish)) {
-			int8_t hourDiff = currTime.hour - timeBorder.start;
-			return hourDiff;
-		} else {
-			return 12;
-		}
-	}
-	return 12;
-}
-
-void HAQuDA_MeasHandler::nightMode() {
-	uint8_t nightMode_hour = get_nightMode_hour(night_m_time);
-
-	switch (standard_m_p) {
-		case temp: {
-			showMeas_night(temp_meas.value / temp_meas.measNum, dots.temp, nightMode_hour);
-			ClearMeasData(temp_meas);
-			break;
-		}
-		case humid: {
-			showMeas_night(humid_meas.value / humid_meas.measNum, dots.humid, nightMode_hour);
-			ClearMeasData(humid_meas);
-			break;
-		}
-		case eCO2: {
-			showMeas_night(eCO2_meas.value / eCO2_meas.measNum, dots.eCO2, nightMode_hour);
-			ClearMeasData(eCO2_meas);
-			break;
-		}
-		case TVOC: {
-			showMeas_night(TVOC_meas.value / TVOC_meas.measNum, dots.TVOC, nightMode_hour);
-			ClearMeasData(TVOC_meas);
-			break;
-		}
-		case PM2_5: {
-			showMeas_night(PM_2_5_meas.value / PM_2_5_meas.measNum, dots.PM2_5, nightMode_hour);
-			ClearMeasData(PM_2_5_meas);
-			break;
-		}
-		default:
-			break;
-	}
+	showMeas_night(data->value / data->measNum, paramDots, litCells);
+	ClearMeasData(*data);
+	return true;
 }
 
 void HAQuDA_MeasHandler::showMeas_standard(float data, div_dots divideDots) {
-	HAQuDA_LEDs::getInstance()->Clear();
-	vTaskDelay(100 / portTICK_PERIOD_MS);
+	rgb_color color = {0, 0, 0};
+	HAQuDA_GetMeasRGB(data, divideDots, color);
+	drawSolid(color);
+}
 
-	rgb_color color;
-	uint8_t brightness = HAQuDA_LEDs::getInstance()->GetBright();
-	HAQuDA_GetMeasRGB(data, divideDots, brightness, color);
+void HAQuDA_MeasHandler::drawSolid(const rgb_color &color) {
 	HAQuDA_LEDs::getInstance()->FillColor(color.r, color.g, color.b);
 	HAQuDA_LEDs::getInstance()->Show();
 
@@ -574,19 +475,23 @@ void HAQuDA_MeasHandler::showMeas_standard(float data, div_dots divideDots) {
 	webDisp->SetMeasDrawn(standard, drawnColors, 0);
 }
 
-void HAQuDA_MeasHandler::showMeas_night(float data, div_dots divideDots, uint8_t time) {
-	HAQuDA_LEDs::getInstance()->Clear();
-	vTaskDelay(100 / portTICK_PERIOD_MS);
+void HAQuDA_MeasHandler::showMeas_night(float data, div_dots divideDots, uint8_t litCells) {
+	// Only the pixel buffer is cleared: no empty frame is sent, so the old picture is replaced by the new one in a single frame
+	HAQuDA_LEDs::getInstance()->FillColor(0, 0, 0);
 
-	rgb_color color;
-	uint8_t brightness = HAQuDA_LEDs::getInstance()->GetBright();
-	HAQuDA_GetMeasRGB(data, divideDots, brightness, color);
+	rgb_color color = {0, 0, 0};
+	HAQuDA_GetMeasRGB(data, divideDots, color);
 
-	uint8_t whiteBright = brightness * 1000 / MAX_BRIGHTNESS * WHITE_BRIGHTNESS_COEFF / 1000;
+	const uint8_t whiteBright = HAQuDA_NightGrey();
 	for (int i = 0; i < LED_COLUMN_NUM; i++) {
-		uint32_t pixelColor = (!(i % 3)) ? HAQuDA_LEDs::getInstance()->GetColor(color.r, color.g, color.b)
-										 : HAQuDA_LEDs::getInstance()->GetColor(whiteBright, whiteBright, whiteBright);
-		uint8_t pixelNum = (!(i % 3)) ? LED_ROW_NUM : time;
+		const bool colorColumn = HAQuDA_NightColumnIsColor(i);
+		uint32_t pixelColor = colorColumn ? HAQuDA_LEDs::getInstance()->GetColor(color.r, color.g, color.b)
+										  : HAQuDA_LEDs::getInstance()->GetColor(whiteBright, whiteBright, whiteBright);
+		uint8_t pixelNum = colorColumn ? LED_ROW_NUM : HAQuDA_NightLightRows(litCells, i);
+		// NeoPixel fill() with a count of 0 fills to the end of the strip
+		if (pixelNum == 0) {
+			continue;
+		}
 		uint8_t startPixel = (!(i % 2)) ? (i * LED_ROW_NUM) : (i * LED_ROW_NUM + LED_ROW_NUM - pixelNum);
 		HAQuDA_LEDs::getInstance()->FillColorFrom(pixelColor, startPixel, pixelNum);
 	}
@@ -607,13 +512,11 @@ void HAQuDA_MeasHandler::showMeas_multi(float *data, uint8_t dataSize, div_dots 
 		return;
 	}
 
-	HAQuDA_LEDs::getInstance()->Clear();
-	vTaskDelay(100 / portTICK_PERIOD_MS);
+	HAQuDA_LEDs::getInstance()->FillColor(0, 0, 0);
 
 	rgb_color colors[MULTI_MODE_PARAM_NUM];
-	uint8_t brightness = HAQuDA_LEDs::getInstance()->GetBright();
 	for (int i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
-		HAQuDA_GetMeasRGB(data[i], divDots[i], brightness, colors[i]);
+		HAQuDA_GetMeasRGB(data[i], divDots[i], colors[i]);
 	}
 	for (int i = 0; i < LED_ROW_NUM; i++) {
 		if (!(i % 2)) {
@@ -630,32 +533,6 @@ void HAQuDA_MeasHandler::showMeas_multi(float *data, uint8_t dataSize, div_dots 
 
 	const uint32_t drawnColors[MULTI_MODE_PARAM_NUM] = {webColor(colors[0]), webColor(colors[1]), webColor(colors[2])};
 	webDisp->SetMeasDrawn(multi, drawnColors, 0);
-}
-
-void HAQuDA_MeasHandler::showMeas_total(float *data, uint8_t dataSize, div_dots *dataDivideDots, uint8_t divideDotsSize) {
-	if (dataSize != MULTI_MODE_PARAM_NUM) {
-		return;
-	}
-	if (divideDotsSize != DIVIDE_DOTS_NUM) {
-		return;
-	}
-	rgb_color colorsArr[DISP_PARAMS_NUM];
-	uint8_t brightness = HAQuDA_LEDs::getInstance()->GetBright();
-	for (int i = 0; i < DISP_PARAMS_NUM; i++) {
-		HAQuDA_GetMeasRGB(data[i], dataDivideDots[i], brightness, colorsArr[i]);
-	}
-
-	uint8_t r, g, b;
-	for (int i = 0; i < DISP_PARAMS_NUM; i++) {
-		r += colorsArr[i].r;
-		g += colorsArr[i].g;
-		b += colorsArr[i].b;
-	}
-	r /= DISP_PARAMS_NUM;
-	g /= DISP_PARAMS_NUM;
-	b /= DISP_PARAMS_NUM;
-	HAQuDA_LEDs::getInstance()->FillColor(r, g, b);
-	HAQuDA_LEDs::getInstance()->Show();
 }
 
 HAQuDA_MeasHandler::~HAQuDA_MeasHandler() {

@@ -5,7 +5,7 @@
 #include "HAQuDA_ColorScale.h"
 #include "HAQuDA_ILEDs.h"
 
-// Duplicated from HAQuDA_LEDsParams.h, which includes Arduino.h; its LED_NUM_PIXELS 109 addresses nothing
+// Duplicated from HAQuDA_LEDsParams.h, whose LED_NUM_PIXELS 109 is one more than the matrix has
 constexpr uint8_t ANIM_COLUMNS = 9;
 constexpr uint8_t ANIM_ROWS = 12;
 constexpr uint16_t ANIM_PIXELS = ANIM_COLUMNS * ANIM_ROWS;
@@ -25,8 +25,6 @@ constexpr uint32_t ANIM_COLOR_LIME = 0x99FF33;
 constexpr uint32_t ANIM_COLOR_GREEN = 0x01FF00;
 constexpr uint32_t ANIM_COLOR_RED = 0xFF0000;
 constexpr uint32_t ANIM_COLOR_YELLOW = 0xFFFF00;
-
-constexpr uint8_t ANIM_NIGHT_WHITE_PERCENT = 70;
 
 enum class anim_id : uint8_t { snake, growing, randomPixels, fading, staticColor, measStandard, measMulti, measNight, measTotal, none };
 constexpr uint8_t ANIM_COUNT = static_cast<uint8_t>(anim_id::none);
@@ -74,7 +72,8 @@ constexpr uint8_t MEAS_ANIM_MAX_PARAMS = 5;
 struct meas_anim_data {
 	float values[MEAS_ANIM_MAX_PARAMS];
 	div_dots dots[MEAS_ANIM_MAX_PARAMS];
-	uint8_t nightHour;
+	// Night light cells on (HAQuDA_NightLitCells()), 0 when the time is unknown
+	uint8_t nightLitCells;
 };
 
 struct anim_context {

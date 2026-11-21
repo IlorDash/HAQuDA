@@ -27,7 +27,7 @@ see [Colour scale](display-modes.md#colour-scale).
 | Connectivity | WiFi station on one of up to 10 stored networks; own access point at `192.168.4.22` as a fallback; the web pages also answer at `haquda.local` |
 | Services | Web server on port 80 (pages in English and Russian), WebSerial log, time from NTP with a fixed offset of UTC+3 (station mode only) |
 | Dynamic DNS (DuckDNS) | <span class="wip">WIP</span> |
-| Display update | Sensors are read every few seconds; the matrix is redrawn once a minute with the average of that minute |
+| Display update | Sensors are read every few seconds; the matrix is redrawn once a minute with the average of that minute, and at once when you change the mode |
 | Error indication | LED effects and log lines |
 
 ---
@@ -53,12 +53,13 @@ The limits of every value and the resulting colours are in [Display modes](displ
 
 | Mode | The matrix shows |
 |------|------------------|
-| Multi (default) | Three horizontal zones: temperature, eCO2 and PM2.5. |
-| Standard | The whole matrix in the colour of one chosen value. |
-| Night | The colour of one chosen value in three columns and a white progress bar of the night in the others. |
+| Multi (default) | Three horizontal zones: by default temperature, eCO2 and PM2.5. |
+| Standard | The whole matrix in the colour of one chosen value, or of the overall state. |
+| Night | The colour of one chosen value in three columns and a night light that fills over the night in the others. |
+| Lamp light | One of six solid colours. |
 
-The lamp starts in multi mode. Selecting the display mode without changing the firmware is not
-ready <span class="wip">WIP</span>; see [Mode selection](quick-guide.md#select-the-display-mode).
+You choose the mode, the brightness and the power on the main page of the lamp; see
+[Mode selection](quick-guide.md#select-the-display-mode). The lamp keeps your choice.
 
 Details are in [Display modes](display-modes.md).
 

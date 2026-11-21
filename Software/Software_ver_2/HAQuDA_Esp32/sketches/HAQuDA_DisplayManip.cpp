@@ -30,7 +30,28 @@ HAQuDA_DisplayManip::HAQuDA_DisplayManip(HAQuDA_MeasHandler *_meas_handler, HAQu
 
 void HAQuDA_DisplayManip::SetBrightness(const uint8_t new_brightness) {
 	display->SetBrightness(new_brightness);
+	// The page and the status report the user's value at once, not when ShowTask gets to it
 	webDisp->SetBrightness(new_brightness);
+}
+
+void HAQuDA_DisplayManip::selectLampColor(const uint32_t rgb) {
+	effectsHandler->SetStaticColorParam(rgb);
+	webDisp->SetEffectParam(rgb);
+	effectsHandler->SetEffect(staticColor);
+	if (mode != effect)
+		SetMode(effect);
+	webDisp->SetEffect(staticColor);
+	display->SetMeasEnabled(false);
+}
+
+void HAQuDA_DisplayManip::ShowLampLight(const uint32_t rgb) {
+	selectLampColor(rgb);
+	display->SetLampLight(rgb);
+}
+
+void HAQuDA_DisplayManip::ShowLampOff() {
+	selectLampColor(COLOR_OFF);
+	display->SetLampOff();
 }
 
 bool HAQuDA_DisplayManip::SetMode(const display_modes m) {
@@ -88,10 +109,6 @@ void HAQuDA_DisplayManip::SetMeasMode(const meas_mode m) {
 	display->SetBackground(measAnim, waitingItem);
 	display->SetMeasEnabled(measAnim != anim_id::none);
 }
-
-meas_mode HAQuDA_DisplayManip::GetMeasDispMode() {
-	return measHandler->GetMeasDispMode();
-};
 
 void HAQuDA_DisplayManip::SetStandardMeasParam(const meas_type p) {
 	// Mirror first: a draw that lands in between reports colours of the old key, and those are what the LEDs show

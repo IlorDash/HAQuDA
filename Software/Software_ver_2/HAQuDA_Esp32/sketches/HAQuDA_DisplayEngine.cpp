@@ -39,6 +39,14 @@ void HAQuDA_DisplayEngine::Apply(const display_message &message) {
 		case display_msg::brightness:
 			setBrightness(message.value);
 			break;
+		case display_msg::lampLight:
+			solidColor = message.color;
+			scheduler.SetSolid(false);
+			break;
+		case display_msg::lampOff:
+			solidColor = ANIM_COLOR_OFF;
+			scheduler.SetSolid(true);
+			break;
 	}
 }
 
@@ -111,7 +119,19 @@ void HAQuDA_DisplayEngine::applyWanted(uint32_t nowMs) {
 	}
 	stopActive();
 	switchPending = false;
-	startItem(nowMs);
+	if (wanted.source == display_source::solid) {
+		startSolid(nowMs);
+	} else {
+		startItem(nowMs);
+	}
+}
+
+void HAQuDA_DisplayEngine::startSolid(uint32_t nowMs) {
+	HAQuDA_Animation *next = animations.Get(anim_id::staticColor);
+	if ((next != nullptr) && next->Begin(HAQuDA_StaticColorParams(solidColor), makeContext(nowMs))) {
+		active = next;
+		nextStepMs = nowMs;
+	}
 }
 
 void HAQuDA_DisplayEngine::startItem(uint32_t nowMs) {

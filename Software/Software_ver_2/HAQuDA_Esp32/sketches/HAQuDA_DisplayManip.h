@@ -1,10 +1,9 @@
 #pragma once
 
+#include "HAQuDA_DisplayTypes.h"
 #include "HAQuDA_MeasHandler.h"
 #include "HAQuDA_EffectsHandler.h"
 #include "HAQuDA_ErrorHandler.h"
-
-typedef enum { effect, meas, error, event, noneMode } display_modes;
 
 class HAQuDA_WebPageDisplayManip;
 class HAQuDA_DisplayService;
@@ -15,12 +14,22 @@ class HAQuDA_DisplayManip {
 
 	static display_modes mode;
 
+	// Feeds the web mirror and the effect handler with the lamp's static colour
+	static void selectLampColor(const uint32_t rgb);
+
   public:
 	// webDisp gets a copy of every setter call, for the web page; it must outlive this object.
 	HAQuDA_DisplayManip(HAQuDA_MeasHandler *_meas_handler, HAQuDA_EffectsHandler *_effects_handler, HAQuDA_ErrorHandler *_err_handler,
 						HAQuDA_WebPageDisplayManip *_web_disp, HAQuDA_DisplayService *_display);
 
+	// Posts the user's brightness in percent (0..100) to the display service, which puts it on the LEDs in ShowTask, and updates the
+	// web mirror at once. loop task only.
 	static void SetBrightness(const uint8_t new_brightness);
+
+	// The lamp's own pictures are backgrounds like the measurements: events and errors show over the light, only errors over off.
+	// loop task only.
+	static void ShowLampLight(const uint32_t rgb);
+	static void ShowLampOff();
 
 	static bool SetMode(const display_modes new_mode);
 
@@ -30,7 +39,6 @@ class HAQuDA_DisplayManip {
 
 	// Selects the measurement picture; the display shows the waiting picture (boot snake, access point fading in AP mode) until the first sample
 	static void SetMeasMode(const meas_mode m);
-	meas_mode GetMeasDispMode();
 
 	static void SetStandardMeasParam(const meas_type p);
 	static void SetMultiMeasParam(const multi_mode_params p);

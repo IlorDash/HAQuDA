@@ -33,6 +33,14 @@ bool HAQuDA_DisplayService::SetBrightness(uint8_t percent) {
 	return send(display_message{display_msg::brightness, percent, 0});
 }
 
+bool HAQuDA_DisplayService::SetLampLight(uint32_t rgb) {
+	return send(display_message{display_msg::lampLight, 0, 0, rgb});
+}
+
+bool HAQuDA_DisplayService::SetLampOff() {
+	return send(display_message{display_msg::lampOff, 0, 0, 0});
+}
+
 uint16_t HAQuDA_DisplayService::DroppedPostCount() const {
 	return droppedPosts.load();
 }

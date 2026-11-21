@@ -401,3 +401,56 @@ TEST_F(DisplayEngineTest, FadePutsBackTheLampBrightnessWhenAnErrorInterruptsIt) 
 	ASSERT_FALSE(brightCalls.empty());
 	EXPECT_EQ(40, brightCalls.back());
 }
+
+TEST_F(DisplayEngineTest, LampLightDrawsTheColourAsAStaticPicture) {
+	engine.Apply(display_message{display_msg::lampLight, 0, 0, 0xFFB46B});
+	EXPECT_CALL(leds, FillColor(testing::Matcher<uint32_t>(0xFFB46Bu))).Times(testing::AtLeast(1));
+
+	engine.Run(0);
+
+	EXPECT_EQ(anim_id::staticColor, engine.ActiveAnim());
+}
+
+TEST_F(DisplayEngineTest, LampOffDrawsDark) {
+	engine.Apply(display_message{display_msg::lampOff, 0, 0, 0});
+	EXPECT_CALL(leds, FillColor(testing::Matcher<uint32_t>(0u))).Times(testing::AtLeast(1));
+
+	engine.Run(0);
+
+	EXPECT_EQ(anim_id::staticColor, engine.ActiveAnim());
+}
+
+TEST_F(DisplayEngineTest, ANewLampColourReplacesTheOldOne) {
+	engine.Apply(display_message{display_msg::lampLight, 0, 0, 0xFFB46B});
+	engine.Run(0);
+	engine.Apply(display_message{display_msg::lampLight, 0, 0, 0x112233});
+	EXPECT_CALL(leds, FillColor(testing::Matcher<uint32_t>(0x112233u))).Times(testing::AtLeast(1));
+
+	engine.Run(100);
+}
+
+TEST_F(DisplayEngineTest, LampOffDoesNotShowAnEventButShowsAnError) {
+	engine.Apply(display_message{display_msg::lampOff, 0, 0, 0});
+	engine.Run(0);
+
+	engine.Apply(eventMsg(display_event::wifiReconnecting));
+	engine.Run(100);
+	EXPECT_EQ(anim_id::staticColor, engine.ActiveAnim());
+
+	engine.Apply(errorMsg(display_error::sensorsFailed));
+	engine.Run(200);
+	EXPECT_EQ(anim_id::randomPixels, engine.ActiveAnim());
+}
+
+TEST_F(DisplayEngineTest, MeasurementsReplaceTheLampLightWhenTheyAreSelected) {
+	source.ready = true;
+	engine.Apply(display_message{display_msg::lampLight, 0, 0, 0xFFB46B});
+	engine.Run(0);
+
+	engine.Apply(backgroundMsg(anim_id::measMulti));
+	engine.Apply(measEnabledMsg(true));
+	engine.Run(100);
+	engine.Run(200);
+
+	EXPECT_EQ(anim_id::measMulti, engine.ActiveAnim());
+}

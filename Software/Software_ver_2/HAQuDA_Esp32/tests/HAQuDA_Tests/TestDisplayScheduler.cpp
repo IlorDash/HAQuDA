@@ -749,3 +749,122 @@ TEST(DisplaySchedulerTest, RotationKeepsItsTimesAcrossTheWrap) {
 	EXPECT_EQ(RECONNECTING, scheduler.Next(start + 14999).item);
 	EXPECT_EQ(SENSORS, scheduler.Next(start + 15000).item);
 }
+
+TEST(DisplaySchedulerTest, LampLightIsTheBackgroundAndEventsShowOverIt) {
+	HAQuDA_DisplayScheduler scheduler;
+	scheduler.SetSolid(false);
+
+	const display_pick light = scheduler.Next(0);
+	scheduler.Post(display_event::wifiJoined);
+	const display_pick during = scheduler.Next(1000);
+	const display_pick after = scheduler.Next(6000);
+
+	EXPECT_EQ(display_source::solid, light.source);
+	EXPECT_EQ(anim_id::staticColor, light.anim);
+	EXPECT_EQ(DISPLAY_NO_DEADLINE, light.nextMs);
+	EXPECT_EQ(display_source::event, during.source);
+	EXPECT_EQ(display_source::solid, after.source);
+	EXPECT_TRUE(after.changed);
+}
+
+TEST(DisplaySchedulerTest, LampLightWinsOverReadyMeasurements) {
+	HAQuDA_DisplayScheduler scheduler;
+	scheduler.SetBackground(anim_id::measMulti, DISPLAY_ITEM_NONE);
+	scheduler.MeasReady(true);
+	scheduler.Next(0);
+
+	scheduler.SetSolid(false);
+
+	const display_pick pick = scheduler.Next(100);
+	EXPECT_EQ(display_source::solid, pick.source);
+	EXPECT_TRUE(pick.changed);
+}
+
+TEST(DisplaySchedulerTest, ANewMeasurementBackgroundEndsTheLampPicture) {
+	HAQuDA_DisplayScheduler scheduler;
+	scheduler.SetSolid(true);
+	scheduler.Next(0);
+
+	scheduler.SetBackground(anim_id::measMulti, DISPLAY_ITEM_NONE);
+	scheduler.MeasReady(true);
+
+	EXPECT_EQ(display_source::meas, scheduler.Next(100).source);
+	EXPECT_TRUE(scheduler.Post(display_event::wifiJoined));
+	EXPECT_EQ(display_source::event, scheduler.Next(200).source);
+}
+
+TEST(DisplaySchedulerTest, LampOffIgnoresEventsButShowsErrors) {
+	HAQuDA_DisplayScheduler scheduler;
+	scheduler.SetSolid(true);
+	scheduler.Next(0);
+
+	EXPECT_TRUE(scheduler.Post(display_event::wifiJoined));
+	EXPECT_EQ(display_source::solid, scheduler.Next(100).source);
+
+	scheduler.Post(display_error::wifiLost);
+	const display_pick error = scheduler.Next(200);
+	EXPECT_EQ(display_source::error, error.source);
+	EXPECT_EQ(LOST, error.item);
+
+	scheduler.End(display_end::reconnectStarted);
+	EXPECT_EQ(display_source::solid, scheduler.Next(10 * SECOND + 200).source);
+}
+
+TEST(DisplaySchedulerTest, LampOffDropsThePlayingAndTheQueuedEvents) {
+	HAQuDA_DisplayScheduler scheduler;
+	scheduler.Post(display_event::wifiJoined);
+	scheduler.Post(display_event::wifiReconnecting);
+	ASSERT_EQ(display_source::event, scheduler.Next(0).source);
+
+	scheduler.SetSolid(true);
+
+	EXPECT_EQ(display_source::solid, scheduler.Next(100).source);
+	EXPECT_EQ(0, scheduler.QueuedCount());
+}
+
+TEST(DisplaySchedulerTest, LampOffKeepsAnErrorThatIsPlaying) {
+	HAQuDA_DisplayScheduler scheduler;
+	scheduler.Post(display_error::sensorsFailed);
+	ASSERT_EQ(display_source::error, scheduler.Next(0).source);
+
+	scheduler.SetSolid(true);
+
+	EXPECT_EQ(SENSORS, scheduler.Next(100).item);
+}
+
+TEST(DisplaySchedulerTest, LampLightEndsTheApPictureAfterItsMinimumTime) {
+	HAQuDA_DisplayScheduler scheduler;
+	scheduler.Post(display_event::apRunning);
+	scheduler.Next(0);
+
+	scheduler.SetSolid(false);
+
+	EXPECT_EQ(AP, scheduler.Next(4 * SECOND).item);
+	EXPECT_EQ(display_source::solid, scheduler.Next(5 * SECOND).source);
+}
+
+TEST(DisplaySchedulerTest, ApPictureIsNotQueuedOverTheLampLight) {
+	HAQuDA_DisplayScheduler scheduler;
+	scheduler.SetSolid(false);
+
+	EXPECT_TRUE(scheduler.Post(display_event::apRunning));
+
+	EXPECT_EQ(display_source::solid, scheduler.Next(0).source);
+}
+
+TEST(DisplaySchedulerTest, ANewLampColourRestartsTheSolidPictureButNotAnEventOverIt) {
+	HAQuDA_DisplayScheduler scheduler;
+	scheduler.SetSolid(false);
+	scheduler.Next(0);
+
+	scheduler.SetSolid(false);
+	EXPECT_TRUE(scheduler.Next(100).changed);
+	EXPECT_FALSE(scheduler.Next(200).changed);
+
+	scheduler.Post(display_event::wifiReconnecting);
+	scheduler.Next(300);
+	scheduler.SetSolid(false);
+	const display_pick pick = scheduler.Next(400);
+	EXPECT_EQ(display_source::event, pick.source);
+	EXPECT_FALSE(pick.changed);
+}

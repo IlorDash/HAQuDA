@@ -8,15 +8,16 @@
 
 constexpr uint32_t DISPLAY_MEAS_PERIOD_MS = 60 * 1000;
 
-enum class display_msg : uint8_t { event, error, end, background, measEnabled, brightness };
+enum class display_msg : uint8_t { event, error, end, background, measEnabled, brightness, lampLight, lampOff };
 
 // What a producer task sends to ShowTask; value and extra depend on kind: event/error/end carry the enum value, background carries
-// the measurement animation and the waiting item, measEnabled the flag, brightness the percent
+// the measurement animation and the waiting item, measEnabled the flag, brightness the percent, lampLight the colour
 // The engine decides itself when the measurements are ready: the first sample ends the waiting item
 struct display_message {
 	display_msg kind;
 	uint8_t value;
 	uint8_t extra;
+	uint32_t color;
 };
 
 // ShowTask only: not thread-safe. The FreeRTOS queue and the task loop live in HAQuDA_DisplayService; time comes in as nowMs
@@ -39,6 +40,7 @@ class HAQuDA_DisplayEngine {
 	void probeSample();
 	void applyWanted(uint32_t nowMs);
 	void startItem(uint32_t nowMs);
+	void startSolid(uint32_t nowMs);
 	bool startMeas(uint32_t nowMs);
 	void refreshMeas(uint32_t nowMs);
 	bool measPeriodOver(uint32_t nowMs) const;
@@ -52,6 +54,7 @@ class HAQuDA_DisplayEngine {
 	HAQuDA_DisplayScheduler scheduler;
 
 	uint8_t brightPercent;
+	uint32_t solidColor = 0;
 	uint32_t seedState = 0x9E3779B9;
 
 	HAQuDA_Animation *active = nullptr;

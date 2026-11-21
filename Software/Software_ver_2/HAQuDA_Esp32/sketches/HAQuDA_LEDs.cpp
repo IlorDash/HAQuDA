@@ -19,14 +19,14 @@ HAQuDA_LEDs *HAQuDA_LEDs::getInstance() {
 void HAQuDA_LEDs::Begin() {
 	bus.Begin();
 	HAQuDA_LEDs::Show();
-	brightness.store(DEFAULT_BRIGHTNESS + 1);
+	// Stored directly instead of through SetBright(): the picture is empty, so there is nothing to rescale, and SetBright()
+	// would add a second 200 ms Show().
+	brightness.store(HAQuDA_BrightPercentToRaw(DEFAULT_BRIGHTNESS) + 1);
+	brightPerCent.store(DEFAULT_BRIGHTNESS);
 }
 
 void HAQuDA_LEDs::SetBright(uint8_t bright_per_cent) {
-	if (bright_per_cent > 100) {
-		bright_per_cent = 100;
-	}
-	uint16_t raw = bright_per_cent * MAX_BRIGHTNESS / 100;
+	uint8_t raw = HAQuDA_BrightPercentToRaw(bright_per_cent);
 	uint8_t newBrightness = raw + 1;
 	uint8_t currentBrightness = brightness.load();
 	if (newBrightness != currentBrightness) {
@@ -48,12 +48,13 @@ void HAQuDA_LEDs::SetBright(uint8_t bright_per_cent) {
 		bus.Dirty();
 		brightness.store(newBrightness);
 	}
+	brightPerCent.store(bright_per_cent > 100 ? 100 : bright_per_cent);
 	// The animations count the 200 ms of the old blocking Show() in the wait they return from Step(), so waiting here as well would double it
 	showFrame();
 }
 
 uint8_t HAQuDA_LEDs::GetBright() {
-	return brightness.load() - 1;
+	return brightPerCent.load();
 }
 
 void HAQuDA_LEDs::Clear() {

@@ -106,8 +106,8 @@ TEST(WebPageDisplayStateTest, InitStandardKeyIsInvalid) {
 TEST(WebPageDisplayStateTest, InitNightWindowIs21To9) {
 	const uint8_t brightness = 50;
 
-	const uint8_t exp_start = 21;
-	const uint8_t exp_finish = 9;
+	const uint16_t exp_start = 21 * 60;
+	const uint16_t exp_finish = 9 * 60;
 
 	web_picture_state state{};
 
@@ -169,7 +169,7 @@ TEST(WebPageDisplayStateTest, InitResetsDirtyState) {
 	const web_error exp_error = web_error::none;
 	const web_effect exp_effect = web_effect::none;
 	const web_meas_layout exp_layout = web_meas_layout::none;
-	const uint8_t exp_night_start = 21;
+	const uint16_t exp_night_start = 21 * 60;
 
 	web_picture_state state;
 	std::memset(&state, dirty_byte, sizeof(state));
@@ -1797,8 +1797,8 @@ TEST(WebPageDisplayStateTest, SetNightWindowStartChangeBumps) {
 
 	const uint32_t exp_seq = 5;
 
-	const uint8_t start = 22;
-	const uint8_t finish = 9;
+	const uint16_t start = 22 * 60 + 15;
+	const uint16_t finish = 9 * 60;
 	web_picture_state state{};
 	HAQuDA_WebPictureInit(state, brightness);
 	state.source = web_source::meas;
@@ -1823,8 +1823,8 @@ TEST(WebPageDisplayStateTest, SetNightWindowFinishChangeBumps) {
 
 	const uint32_t exp_seq = 5;
 
-	const uint8_t start = 21;
-	const uint8_t finish = 8;
+	const uint16_t start = 21 * 60;
+	const uint16_t finish = 8 * 60 + 45;
 	web_picture_state state{};
 	HAQuDA_WebPictureInit(state, brightness);
 	state.source = web_source::meas;
@@ -1847,8 +1847,8 @@ TEST(WebPageDisplayStateTest, SetNightWindowIdenticalReturnsFalse) {
 	const uint32_t start_before = 1000;
 	const uint32_t now_ms = 7000;
 
-	const uint8_t start = 21;
-	const uint8_t finish = 9;
+	const uint16_t start = 21 * 60;
+	const uint16_t finish = 9 * 60;
 	web_picture_state state{};
 	HAQuDA_WebPictureInit(state, brightness);
 	state.source = web_source::meas;
@@ -1871,8 +1871,8 @@ TEST(WebPageDisplayStateTest, SetNightWindowInMeasStandardStoresWithoutBump) {
 	const uint32_t start_before = 1000;
 	const uint32_t now_ms = 7000;
 
-	const uint8_t start = 22;
-	const uint8_t finish = 8;
+	const uint16_t start = 22 * 60;
+	const uint16_t finish = 8 * 60 + 30;
 	web_picture_state state{};
 	HAQuDA_WebPictureInit(state, brightness);
 	state.source = web_source::meas;
@@ -1897,8 +1897,8 @@ TEST(WebPageDisplayStateTest, SetNightWindowOutsideMeasStoresWithoutBump) {
 	const uint32_t start_before = 1000;
 	const uint32_t now_ms = 7000;
 
-	const uint8_t start = 22;
-	const uint8_t finish = 8;
+	const uint16_t start = 22 * 60;
+	const uint16_t finish = 8 * 60 + 30;
 	web_picture_state state{};
 	HAQuDA_WebPictureInit(state, brightness);
 	state.source = web_source::effect;
@@ -2076,8 +2076,8 @@ TEST(WebPageDisplayStateTest, SetBrightnessDoesNotTouchSeqOrStart) {
 TEST(WebPageDisplayStateTest, BuildAgeIsNowMinusStart) {
 	const uint8_t brightness = 50;
 	const web_error current_error = web_error::none;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	const uint32_t now_ms = 1500;
 	const uint32_t start_ms = 1000;
 
@@ -2088,7 +2088,7 @@ TEST(WebPageDisplayStateTest, BuildAgeIsNowMinusStart) {
 	state.startMs = start_ms;
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_EQ(exp_age, out.ageMs);
 }
@@ -2096,8 +2096,8 @@ TEST(WebPageDisplayStateTest, BuildAgeIsNowMinusStart) {
 TEST(WebPageDisplayStateTest, BuildAgeSurvivesMillisWrap) {
 	const uint8_t brightness = 50;
 	const web_error current_error = web_error::none;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	const uint32_t now_ms = 100;
 	const uint32_t start_ms = UINT32_MAX - 99;
 
@@ -2108,7 +2108,7 @@ TEST(WebPageDisplayStateTest, BuildAgeSurvivesMillisWrap) {
 	state.startMs = start_ms;
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_EQ(exp_age, out.ageMs);
 }
@@ -2116,8 +2116,8 @@ TEST(WebPageDisplayStateTest, BuildAgeSurvivesMillisWrap) {
 TEST(WebPageDisplayStateTest, BuildAgeIsZeroAtStartTime) {
 	const uint8_t brightness = 50;
 	const web_error current_error = web_error::none;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	const uint32_t now_ms = 1000;
 	const uint32_t start_ms = 1000;
 
@@ -2128,7 +2128,7 @@ TEST(WebPageDisplayStateTest, BuildAgeIsZeroAtStartTime) {
 	state.startMs = start_ms;
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_EQ(exp_age, out.ageMs);
 }
@@ -2136,8 +2136,8 @@ TEST(WebPageDisplayStateTest, BuildAgeIsZeroAtStartTime) {
 TEST(WebPageDisplayStateTest, BuildCopiesSeqSourceAndBrightness) {
 	const uint8_t brightness = 50;
 	const web_error current_error = web_error::none;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	const uint32_t now_ms = 7000;
 
 	const uint32_t exp_seq = 42;
@@ -2150,7 +2150,7 @@ TEST(WebPageDisplayStateTest, BuildCopiesSeqSourceAndBrightness) {
 	state.source = web_source::meas;
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_EQ(exp_seq, out.seq);
 	EXPECT_EQ(exp_source, out.source);
@@ -2160,8 +2160,8 @@ TEST(WebPageDisplayStateTest, BuildCopiesSeqSourceAndBrightness) {
 TEST(WebPageDisplayStateTest, BuildEffectSourceCopiesEffectAndAllParams) {
 	const uint8_t brightness = 50;
 	const web_error current_error = web_error::none;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	const uint32_t now_ms = 7000;
 
 	const web_effect exp_effect = web_effect::fading;
@@ -2182,7 +2182,7 @@ TEST(WebPageDisplayStateTest, BuildEffectSourceCopiesEffectAndAllParams) {
 	state.staticColor = exp_static;
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_EQ(exp_effect, out.effect);
 	EXPECT_EQ(exp_snake.color, out.snake.color);
@@ -2203,8 +2203,8 @@ TEST(WebPageDisplayStateTest, BuildEffectSourceCopiesEffectAndAllParams) {
 TEST(WebPageDisplayStateTest, BuildEffectSourceHasNoErrorOrLayout) {
 	const uint8_t brightness = 50;
 	const web_error current_error = web_error::wifi;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	const uint32_t now_ms = 7000;
 
 	const web_error exp_error = web_error::none;
@@ -2216,7 +2216,7 @@ TEST(WebPageDisplayStateTest, BuildEffectSourceHasNoErrorOrLayout) {
 	state.layout = web_meas_layout::multi;
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_EQ(exp_error, out.error);
 	EXPECT_EQ(exp_layout, out.layout);
@@ -2225,8 +2225,8 @@ TEST(WebPageDisplayStateTest, BuildEffectSourceHasNoErrorOrLayout) {
 TEST(WebPageDisplayStateTest, BuildErrorSourceTakesCurrentErrorNotSeenError) {
 	const uint8_t brightness = 50;
 	const web_error current_error = web_error::ntp;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	const uint32_t now_ms = 7000;
 
 	const web_error exp_error = web_error::ntp;
@@ -2237,7 +2237,7 @@ TEST(WebPageDisplayStateTest, BuildErrorSourceTakesCurrentErrorNotSeenError) {
 	state.seenError = web_error::wifi;
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_EQ(exp_error, out.error);
 }
@@ -2245,8 +2245,8 @@ TEST(WebPageDisplayStateTest, BuildErrorSourceTakesCurrentErrorNotSeenError) {
 TEST(WebPageDisplayStateTest, BuildErrorSourceHasNoEffect) {
 	const uint8_t brightness = 50;
 	const web_error current_error = web_error::ntp;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	const uint32_t now_ms = 7000;
 
 	const web_effect exp_effect = web_effect::none;
@@ -2257,7 +2257,7 @@ TEST(WebPageDisplayStateTest, BuildErrorSourceHasNoEffect) {
 	state.effect = web_effect::snake;
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_EQ(exp_effect, out.effect);
 }
@@ -2265,14 +2265,14 @@ TEST(WebPageDisplayStateTest, BuildErrorSourceHasNoEffect) {
 TEST(WebPageDisplayStateTest, BuildEventSourceIsBare) {
 	const uint8_t brightness = 50;
 	const web_error current_error = web_error::ntp;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	const uint32_t now_ms = 7000;
 
 	const web_effect exp_effect = web_effect::none;
 	const web_error exp_error = web_error::none;
 	const web_meas_layout exp_layout = web_meas_layout::none;
-	const uint8_t exp_night_hour = 0;
+	const uint8_t exp_night_lit = 0;
 
 	web_picture_state state{};
 	HAQuDA_WebPictureInit(state, brightness);
@@ -2281,25 +2281,25 @@ TEST(WebPageDisplayStateTest, BuildEventSourceIsBare) {
 	state.layout = web_meas_layout::multi;
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_EQ(exp_effect, out.effect);
 	EXPECT_EQ(exp_error, out.error);
 	EXPECT_EQ(exp_layout, out.layout);
-	EXPECT_EQ(exp_night_hour, out.nightHour);
+	EXPECT_EQ(exp_night_lit, out.nightLit);
 }
 
 TEST(WebPageDisplayStateTest, BuildNoneSourceIsBare) {
 	const uint8_t brightness = 50;
 	const web_error current_error = web_error::ntp;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	const uint32_t now_ms = 7000;
 
 	const web_effect exp_effect = web_effect::none;
 	const web_error exp_error = web_error::none;
 	const web_meas_layout exp_layout = web_meas_layout::none;
-	const uint8_t exp_night_hour = 0;
+	const uint8_t exp_night_lit = 0;
 
 	web_picture_state state{};
 	HAQuDA_WebPictureInit(state, brightness);
@@ -2308,19 +2308,19 @@ TEST(WebPageDisplayStateTest, BuildNoneSourceIsBare) {
 	state.layout = web_meas_layout::multi;
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_EQ(exp_effect, out.effect);
 	EXPECT_EQ(exp_error, out.error);
 	EXPECT_EQ(exp_layout, out.layout);
-	EXPECT_EQ(exp_night_hour, out.nightHour);
+	EXPECT_EQ(exp_night_lit, out.nightLit);
 }
 
 TEST(WebPageDisplayStateTest, BuildMeasStandardUsesStandardKey) {
 	const uint8_t brightness = 50;
 	const web_error current_error = web_error::none;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	const uint32_t now_ms = 7000;
 
 	const web_meas_layout exp_layout = web_meas_layout::standard;
@@ -2335,7 +2335,7 @@ TEST(WebPageDisplayStateTest, BuildMeasStandardUsesStandardKey) {
 	state.multiKeys[1] = {web_meas_key::humid, true};
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_EQ(exp_layout, out.layout);
 	EXPECT_EQ(exp_key, out.keys[0]);
@@ -2346,8 +2346,8 @@ TEST(WebPageDisplayStateTest, BuildMeasStandardUsesStandardKey) {
 TEST(WebPageDisplayStateTest, BuildMeasStandardMissingKeyMakesLayoutNone) {
 	const uint8_t brightness = 50;
 	const web_error current_error = web_error::none;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	const uint32_t now_ms = 7000;
 
 	const web_meas_layout exp_layout = web_meas_layout::none;
@@ -2359,7 +2359,7 @@ TEST(WebPageDisplayStateTest, BuildMeasStandardMissingKeyMakesLayoutNone) {
 	state.standardKey = {web_meas_key::pm25, false};
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_EQ(exp_layout, out.layout);
 }
@@ -2367,8 +2367,8 @@ TEST(WebPageDisplayStateTest, BuildMeasStandardMissingKeyMakesLayoutNone) {
 TEST(WebPageDisplayStateTest, BuildMeasNightUsesStandardKey) {
 	const uint8_t brightness = 50;
 	const web_error current_error = web_error::none;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	const uint32_t now_ms = 7000;
 
 	const web_meas_layout exp_layout = web_meas_layout::night;
@@ -2383,7 +2383,7 @@ TEST(WebPageDisplayStateTest, BuildMeasNightUsesStandardKey) {
 	state.multiKeys[1] = {web_meas_key::humid, true};
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_EQ(exp_layout, out.layout);
 	EXPECT_EQ(exp_key, out.keys[0]);
@@ -2394,8 +2394,8 @@ TEST(WebPageDisplayStateTest, BuildMeasNightUsesStandardKey) {
 TEST(WebPageDisplayStateTest, BuildMeasNightMissingKeyMakesLayoutNone) {
 	const uint8_t brightness = 50;
 	const web_error current_error = web_error::none;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	const uint32_t now_ms = 7000;
 
 	const web_meas_layout exp_layout = web_meas_layout::none;
@@ -2407,7 +2407,7 @@ TEST(WebPageDisplayStateTest, BuildMeasNightMissingKeyMakesLayoutNone) {
 	state.standardKey = {web_meas_key::pm25, false};
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_EQ(exp_layout, out.layout);
 }
@@ -2415,8 +2415,8 @@ TEST(WebPageDisplayStateTest, BuildMeasNightMissingKeyMakesLayoutNone) {
 TEST(WebPageDisplayStateTest, BuildMeasMultiCopiesAllThreeKeys) {
 	const uint8_t brightness = 50;
 	const web_error current_error = web_error::none;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	const uint32_t now_ms = 7000;
 
 	const web_meas_layout exp_layout = web_meas_layout::multi;
@@ -2431,7 +2431,7 @@ TEST(WebPageDisplayStateTest, BuildMeasMultiCopiesAllThreeKeys) {
 	state.multiKeys[2] = {exp_keys[2], true};
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_EQ(exp_layout, out.layout);
 	EXPECT_EQ(exp_keys[0], out.keys[0]);
@@ -2442,8 +2442,8 @@ TEST(WebPageDisplayStateTest, BuildMeasMultiCopiesAllThreeKeys) {
 TEST(WebPageDisplayStateTest, BuildMeasMultiFirstKeyMissingMakesLayoutNone) {
 	const uint8_t brightness = 50;
 	const web_error current_error = web_error::none;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	const uint32_t now_ms = 7000;
 
 	const web_meas_layout exp_layout = web_meas_layout::none;
@@ -2455,7 +2455,7 @@ TEST(WebPageDisplayStateTest, BuildMeasMultiFirstKeyMissingMakesLayoutNone) {
 	state.multiKeys[0].valid = false;
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_EQ(exp_layout, out.layout);
 }
@@ -2463,8 +2463,8 @@ TEST(WebPageDisplayStateTest, BuildMeasMultiFirstKeyMissingMakesLayoutNone) {
 TEST(WebPageDisplayStateTest, BuildMeasMultiSecondKeyMissingMakesLayoutNone) {
 	const uint8_t brightness = 50;
 	const web_error current_error = web_error::none;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	const uint32_t now_ms = 7000;
 
 	const web_meas_layout exp_layout = web_meas_layout::none;
@@ -2476,7 +2476,7 @@ TEST(WebPageDisplayStateTest, BuildMeasMultiSecondKeyMissingMakesLayoutNone) {
 	state.multiKeys[1].valid = false;
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_EQ(exp_layout, out.layout);
 }
@@ -2484,8 +2484,8 @@ TEST(WebPageDisplayStateTest, BuildMeasMultiSecondKeyMissingMakesLayoutNone) {
 TEST(WebPageDisplayStateTest, BuildMeasMultiThirdKeyMissingMakesLayoutNone) {
 	const uint8_t brightness = 50;
 	const web_error current_error = web_error::none;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	const uint32_t now_ms = 7000;
 
 	const web_meas_layout exp_layout = web_meas_layout::none;
@@ -2497,7 +2497,7 @@ TEST(WebPageDisplayStateTest, BuildMeasMultiThirdKeyMissingMakesLayoutNone) {
 	state.multiKeys[2].valid = false;
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_EQ(exp_layout, out.layout);
 }
@@ -2505,8 +2505,8 @@ TEST(WebPageDisplayStateTest, BuildMeasMultiThirdKeyMissingMakesLayoutNone) {
 TEST(WebPageDisplayStateTest, BuildMeasLayoutNoneStaysNone) {
 	const uint8_t brightness = 50;
 	const web_error current_error = web_error::none;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	const uint32_t now_ms = 7000;
 
 	const web_meas_layout exp_layout = web_meas_layout::none;
@@ -2516,7 +2516,7 @@ TEST(WebPageDisplayStateTest, BuildMeasLayoutNoneStaysNone) {
 	state.source = web_source::meas;
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_EQ(exp_layout, out.layout);
 }
@@ -2524,8 +2524,8 @@ TEST(WebPageDisplayStateTest, BuildMeasLayoutNoneStaysNone) {
 TEST(WebPageDisplayStateTest, BuildMeasSourceHasNoEffectOrError) {
 	const uint8_t brightness = 50;
 	const web_error current_error = web_error::ntp;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	const uint32_t now_ms = 7000;
 
 	const web_effect exp_effect = web_effect::none;
@@ -2538,20 +2538,20 @@ TEST(WebPageDisplayStateTest, BuildMeasSourceHasNoEffectOrError) {
 	state.effect = web_effect::snake;
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_EQ(exp_effect, out.effect);
 	EXPECT_EQ(exp_error, out.error);
 }
 
-TEST(WebPageDisplayStateTest, BuildMeasHourUnknownGivesNightHourZero) {
+TEST(WebPageDisplayStateTest, BuildMeasTimeUnknownGivesNoLitCells) {
 	const uint8_t brightness = 50;
 	const web_error current_error = web_error::none;
-	const bool hour_known = false;
-	const uint8_t hour = 23;
+	const bool time_known = false;
+	const uint16_t minute_of_day = 23 * 60;
 	const uint32_t now_ms = 7000;
 
-	const uint8_t exp_night_hour = 0;
+	const uint8_t exp_night_lit = 0;
 
 	web_picture_state state{};
 	HAQuDA_WebPictureInit(state, brightness);
@@ -2560,19 +2560,19 @@ TEST(WebPageDisplayStateTest, BuildMeasHourUnknownGivesNightHourZero) {
 	state.standardKey = {web_meas_key::pm25, true};
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
-	EXPECT_EQ(exp_night_hour, out.nightHour);
+	EXPECT_EQ(exp_night_lit, out.nightLit);
 }
 
-TEST(WebPageDisplayStateTest, BuildMeasHourKnownUsesDefaultNightWindow) {
+TEST(WebPageDisplayStateTest, BuildMeasTimeKnownUsesDefaultNightWindow) {
 	const uint8_t brightness = 50;
 	const web_error current_error = web_error::none;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60; // 2 h into the 12 h window 21:00..09:00
 	const uint32_t now_ms = 7000;
 
-	const uint8_t exp_night_hour = 2;
+	const uint8_t exp_night_lit = 3;
 
 	web_picture_state state{};
 	HAQuDA_WebPictureInit(state, brightness);
@@ -2581,42 +2581,42 @@ TEST(WebPageDisplayStateTest, BuildMeasHourKnownUsesDefaultNightWindow) {
 	state.standardKey = {web_meas_key::pm25, true};
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
-	EXPECT_EQ(exp_night_hour, out.nightHour);
+	EXPECT_EQ(exp_night_lit, out.nightLit);
 }
 
-TEST(WebPageDisplayStateTest, BuildMeasHourKnownUsesStoredNightWindow) {
+TEST(WebPageDisplayStateTest, BuildMeasTimeKnownUsesStoredNightWindow) {
 	const uint8_t brightness = 50;
 	const web_error current_error = web_error::none;
-	const bool hour_known = true;
-	const uint8_t hour = 5;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 5 * 60; // 240 of the 300 minutes of 01:00..06:00
 	const uint32_t now_ms = 7000;
 
-	const uint8_t exp_night_hour = 4;
+	const uint8_t exp_night_lit = 15;
 
 	web_picture_state state{};
 	HAQuDA_WebPictureInit(state, brightness);
 	state.source = web_source::meas;
 	state.layout = web_meas_layout::night;
 	state.standardKey = {web_meas_key::pm25, true};
-	state.nightStart = 1;
-	state.nightFinish = 6;
+	state.nightStart = 1 * 60;
+	state.nightFinish = 6 * 60;
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
-	EXPECT_EQ(exp_night_hour, out.nightHour);
+	EXPECT_EQ(exp_night_lit, out.nightLit);
 }
 
-TEST(WebPageDisplayStateTest, BuildMeasHourOutsideWindowIsTwelve) {
+TEST(WebPageDisplayStateTest, BuildMeasTimeOutsideWindowLightsAllCells) {
 	const uint8_t brightness = 50;
 	const web_error current_error = web_error::none;
-	const bool hour_known = true;
-	const uint8_t hour = 15;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 15 * 60;
 	const uint32_t now_ms = 7000;
 
-	const uint8_t exp_night_hour = 12;
+	const uint8_t exp_night_lit = 18;
 
 	web_picture_state state{};
 	HAQuDA_WebPictureInit(state, brightness);
@@ -2625,16 +2625,16 @@ TEST(WebPageDisplayStateTest, BuildMeasHourOutsideWindowIsTwelve) {
 	state.standardKey = {web_meas_key::pm25, true};
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
-	EXPECT_EQ(exp_night_hour, out.nightHour);
+	EXPECT_EQ(exp_night_lit, out.nightLit);
 }
 
 TEST(WebPageDisplayStateTest, BuildResetsStaleOutput) {
 	const uint8_t brightness = 50;
 	const web_error current_error = web_error::none;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	const uint32_t now_ms = 7000;
 	const uint8_t dirty_byte = 0xFF;
 
@@ -2643,7 +2643,7 @@ TEST(WebPageDisplayStateTest, BuildResetsStaleOutput) {
 	const web_effect exp_effect = web_effect::none;
 	const web_meas_layout exp_layout = web_meas_layout::none;
 	const web_meas_key exp_key = web_meas_key::total;
-	const uint8_t exp_night_hour = 0;
+	const uint8_t exp_night_lit = 0;
 
 	web_picture_state state{};
 	HAQuDA_WebPictureInit(state, brightness);
@@ -2651,7 +2651,7 @@ TEST(WebPageDisplayStateTest, BuildResetsStaleOutput) {
 	web_display_state out;
 	std::memset(&out, dirty_byte, sizeof(out));
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_EQ(exp_error, out.error);
 	EXPECT_EQ(exp_effect, out.effect);
@@ -2659,7 +2659,7 @@ TEST(WebPageDisplayStateTest, BuildResetsStaleOutput) {
 	EXPECT_EQ(exp_key, out.keys[0]);
 	EXPECT_EQ(exp_key, out.keys[1]);
 	EXPECT_EQ(exp_key, out.keys[2]);
-	EXPECT_EQ(exp_night_hour, out.nightHour);
+	EXPECT_EQ(exp_night_lit, out.nightLit);
 	EXPECT_EQ(exp_zero, out.snake.color);
 	EXPECT_EQ(exp_zero, out.growing.color);
 	EXPECT_EQ(exp_zero, out.fading.color);
@@ -3441,8 +3441,8 @@ TEST(WebPageDisplayStateTest, SetNightWindowChangeInNightKeepsMeasDrawn) {
 	const uint32_t start_before = 1000;
 	const uint32_t now_ms = 7000;
 
-	const uint8_t start = 22;
-	const uint8_t finish = 6;
+	const uint16_t start = 22 * 60;
+	const uint16_t finish = 6 * 60;
 	web_picture_state state{};
 	HAQuDA_WebPictureInit(state, brightness);
 	state.source = web_source::meas;
@@ -3469,8 +3469,8 @@ TEST(WebPageDisplayStateTest, BuildMeasCopiesDrawnFlagColorsAndWhite) {
 	const uint32_t exp_white = 0x808080;
 
 	const web_error current_error = web_error::none;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	web_picture_state state{};
 	HAQuDA_WebPictureInit(state, brightness);
 	state.source = web_source::meas;
@@ -3485,7 +3485,7 @@ TEST(WebPageDisplayStateTest, BuildMeasCopiesDrawnFlagColorsAndWhite) {
 	state.startMs = start_before;
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_TRUE(out.measDrawn);
 	EXPECT_EQ(exp_colors[0], out.measColors[0]);
@@ -3501,8 +3501,8 @@ TEST(WebPageDisplayStateTest, BuildMeasNotDrawnKeepsFlagFalse) {
 	const uint32_t now_ms = 7000;
 
 	const web_error current_error = web_error::none;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	web_picture_state state{};
 	HAQuDA_WebPictureInit(state, brightness);
 	state.source = web_source::meas;
@@ -3512,7 +3512,7 @@ TEST(WebPageDisplayStateTest, BuildMeasNotDrawnKeepsFlagFalse) {
 	state.startMs = start_before;
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_FALSE(out.measDrawn);
 }
@@ -3526,8 +3526,8 @@ TEST(WebPageDisplayStateTest, BuildNonMeasEffectSourceDoesNotCopyMeasDrawn) {
 	const uint32_t exp_zero = 0;
 
 	const web_error current_error = web_error::none;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	web_picture_state state{};
 	HAQuDA_WebPictureInit(state, brightness);
 	state.source = web_source::effect;
@@ -3540,7 +3540,7 @@ TEST(WebPageDisplayStateTest, BuildNonMeasEffectSourceDoesNotCopyMeasDrawn) {
 	state.startMs = start_before;
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_FALSE(out.measDrawn);
 	EXPECT_EQ(exp_zero, out.measColors[0]);
@@ -3558,8 +3558,8 @@ TEST(WebPageDisplayStateTest, BuildNonMeasErrorSourceDoesNotCopyMeasDrawn) {
 	const uint32_t exp_zero = 0;
 
 	const web_error current_error = web_error::none;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	web_picture_state state{};
 	HAQuDA_WebPictureInit(state, brightness);
 	state.source = web_source::error;
@@ -3572,7 +3572,7 @@ TEST(WebPageDisplayStateTest, BuildNonMeasErrorSourceDoesNotCopyMeasDrawn) {
 	state.startMs = start_before;
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_FALSE(out.measDrawn);
 	EXPECT_EQ(exp_zero, out.measColors[0]);
@@ -3590,8 +3590,8 @@ TEST(WebPageDisplayStateTest, BuildNonMeasNoneSourceDoesNotCopyMeasDrawn) {
 	const uint32_t exp_zero = 0;
 
 	const web_error current_error = web_error::none;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	web_picture_state state{};
 	HAQuDA_WebPictureInit(state, brightness);
 	state.source = web_source::none;
@@ -3604,7 +3604,7 @@ TEST(WebPageDisplayStateTest, BuildNonMeasNoneSourceDoesNotCopyMeasDrawn) {
 	state.startMs = start_before;
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_FALSE(out.measDrawn);
 	EXPECT_EQ(exp_zero, out.measColors[0]);
@@ -3622,8 +3622,8 @@ TEST(WebPageDisplayStateTest, BuildNonMeasEventSourceDoesNotCopyMeasDrawn) {
 	const uint32_t exp_zero = 0;
 
 	const web_error current_error = web_error::none;
-	const bool hour_known = true;
-	const uint8_t hour = 23;
+	const bool time_known = true;
+	const uint16_t minute_of_day = 23 * 60;
 	web_picture_state state{};
 	HAQuDA_WebPictureInit(state, brightness);
 	state.source = web_source::event;
@@ -3636,7 +3636,7 @@ TEST(WebPageDisplayStateTest, BuildNonMeasEventSourceDoesNotCopyMeasDrawn) {
 	state.startMs = start_before;
 	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, hour_known, hour, now_ms, out);
+	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
 
 	EXPECT_FALSE(out.measDrawn);
 	EXPECT_EQ(exp_zero, out.measColors[0]);

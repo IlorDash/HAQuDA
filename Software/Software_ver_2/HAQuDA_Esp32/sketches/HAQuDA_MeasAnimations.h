@@ -28,7 +28,6 @@ class HAQuDA_MeasAnim : public HAQuDA_Animation {
 
 	meas_anim_data data = {};
 	meas_drawn drawn = {};
-	uint8_t rawBright = 0;
 
   private:
 	const anim_id id;
