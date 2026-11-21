@@ -1012,6 +1012,32 @@ TEST(MeasAnimTest, TotalTreatsTempAndHumidAsBadOnBothSides) {
 	EXPECT_EQ(packed(scaleColor(20, data.dots[0])), leds.frames.back()[0]);
 }
 
+TEST(MeasAnimTest, TotalLeavesOutReadingsWithoutASample) {
+	LedRecorder leds;
+	HAQuDA_MeasTotalAnim meas(leds.mock);
+	meas_anim_data data = lampData();
+	data.values[0] = 26;
+	data.values[1] = 60;
+	data.values[4] = 20;
+	data.noSample[2] = true;
+	data.noSample[3] = true;
+	ASSERT_TRUE(meas.Begin(HAQuDA_MeasParams(anim_id::measTotal), measContext(data, 100)));
+	meas.Step(0);
+	meas.Step(0);
+
+	uint16_t rSum = 0;
+	uint16_t gSum = 0;
+	uint16_t bSum = 0;
+	for (const uint8_t i : {0, 1, 4}) {
+		const rgb_color color = scaleColor(data.values[i], data.dots[i]);
+		rSum += color.r;
+		gSum += color.g;
+		bSum += color.b;
+	}
+
+	EXPECT_EQ(LedRecorder::pack(static_cast<uint8_t>(rSum / 3), static_cast<uint8_t>(gSum / 3), static_cast<uint8_t>(bSum / 3)), leds.frames.back()[0]);
+}
+
 TEST(MeasAnimTest, TotalNeedsAllFiveThresholdSets) {
 	LedRecorder leds;
 	HAQuDA_MeasTotalAnim meas(leds.mock);

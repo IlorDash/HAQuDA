@@ -156,12 +156,15 @@ bool HAQuDA_DisplayEngine::startMeas(uint32_t nowMs) {
 	if (next == nullptr) {
 		return false;
 	}
+	// A rejected start must leave the running picture alone, or the matrix freezes on its last frame
+	if (!next->Begin(HAQuDA_MeasParams(anim), context)) {
+		if (active == next) {
+			active = nullptr;
+		}
+		return false;
+	}
 	if (active != next) {
 		stopActive();
-	}
-	if (!next->Begin(HAQuDA_MeasParams(anim), context)) {
-		active = nullptr;
-		return false;
 	}
 	active = next;
 	nextStepMs = nowMs;

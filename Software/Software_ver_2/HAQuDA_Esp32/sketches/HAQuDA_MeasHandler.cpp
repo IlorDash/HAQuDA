@@ -317,20 +317,22 @@ bool HAQuDA_MeasHandler::ReadAverages(anim_id &anim, meas_anim_data &data) {
 				if (!readAverage(multi_m_p.paramsArr[i], data.values[i])) {
 					return false;
 				}
-				data.dots[i] = multi_m_p.divideDotsArr[i];
+				// The lamp page sets only the parameters, so the bounds come from the parameter type, not from divideDotsArr
+				data.dots[i] = dotsOf(multi_m_p.paramsArr[i]);
 			}
 			return true;
 		}
 		case anim_id::measTotal: {
 			// The order the total animation expects: temp and humid are bad on both sides, the others above last only
 			const meas_type types[MEAS_ANIM_MAX_PARAMS] = {temp, humid, eCO2, TVOC, PM2_5};
+			bool anySample = false;
 			for (uint8_t i = 0; i < MEAS_ANIM_MAX_PARAMS; i++) {
-				if (!readAverage(types[i], data.values[i])) {
-					return false;
-				}
+				// A sensor that gives nothing (CCS811 down, ZH03B warming up) must not stop the other readings from colouring the lamp
+				data.noSample[i] = !readAverage(types[i], data.values[i]);
+				anySample = anySample || !data.noSample[i];
 				data.dots[i] = dotsOf(types[i]);
 			}
-			return true;
+			return anySample;
 		}
 		default:
 			return false;

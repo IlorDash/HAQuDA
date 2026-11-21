@@ -72,6 +72,8 @@ constexpr uint8_t MEAS_ANIM_MAX_PARAMS = 5;
 struct meas_anim_data {
 	float values[MEAS_ANIM_MAX_PARAMS];
 	div_dots dots[MEAS_ANIM_MAX_PARAMS];
+	// Only the total animation skips a reading without a sample; zero-initialised data means every reading has one
+	bool noSample[MEAS_ANIM_MAX_PARAMS];
 	// Night light cells on (HAQuDA_NightLitCells()), 0 when the time is unknown
 	uint8_t nightLitCells;
 };

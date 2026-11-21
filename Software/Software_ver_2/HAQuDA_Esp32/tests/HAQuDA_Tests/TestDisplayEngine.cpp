@@ -263,6 +263,21 @@ TEST_F(DisplayEngineTest, AccessPointKeepsFadingUntilTheFirstSample) {
 	EXPECT_EQ(anim_id::measMulti, engine.ActiveAnim());
 }
 
+TEST_F(DisplayEngineTest, ARejectedMeasurementStartKeepsTheRunningPicture) {
+	engine.Apply(eventMsg(display_event::bootSnake));
+	engine.Run(0);
+	engine.Apply(backgroundMsg(anim_id::measMulti, BOOT_ITEM));
+	engine.Apply(measEnabledMsg(true));
+	source.ready = true;
+	source.data.dots[1] = div_dots{0, 0, 0};
+
+	engine.Run(1 * SECOND);
+	engine.Run(2 * SECOND);
+
+	EXPECT_EQ(anim_id::snake, engine.ActiveAnim());
+	EXPECT_EQ(0, source.restartCalls);
+}
+
 TEST_F(DisplayEngineTest, TheWaitingPictureShowsNothingWithoutAWaitingItem) {
 	startMeasurements(0);
 

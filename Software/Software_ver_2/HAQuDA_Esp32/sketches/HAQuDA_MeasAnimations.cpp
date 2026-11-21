@@ -124,7 +124,7 @@ void HAQuDA_MeasNightAnim::draw() {
 void HAQuDA_MeasTotalAnim::draw() {
 	total_reading readings[TOTAL_READING_NUM] = {};
 	for (uint8_t i = 0; i < TOTAL_READING_NUM; i++) {
-		readings[i] = total_reading{data.values[i], true, data.dots[i]};
+		readings[i] = total_reading{data.values[i], !data.noSample[i], data.dots[i]};
 	}
 	rgb_color color = {0, 0, 0};
 	HAQuDA_TotalColor(readings, color);
