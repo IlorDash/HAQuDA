@@ -25,6 +25,10 @@ constexpr uint16_t WEB_SERVER_PORT = 80;
 // as <name>.local in station mode and on the access point. Fixed, so the name does not depend on the build flags.
 constexpr char STA_HOSTNAME[] = "haquda";
 
+// The async_tcp task sends the reply to the restart request during this time, and loop()'s LampControl.Handle() saves a
+// just-submitted /lamp edit before the restart
+constexpr uint32_t USER_RESTART_DELAY_MS = 1000;
+
 class HAQuDA_WebServer {
 	static void recvMsg(uint8_t *data, size_t len);
 
@@ -40,11 +44,16 @@ class HAQuDA_WebServer {
 	HAQuDA_WebPageDisplayManip &webDisp;
 	// What the user set for the lamp: POST /api/lamp submits to it, /api/status reports it, loop() applies it
 	HAQuDA_LampControl &lampControl;
-	// Written by loop() only (scheduleRestart(), from finishJoinOk / finishSwitchOk / finishSwitchFail), read by loop() and
-	// the async_tcp task. The time and the delay are stored before the flag, so they are read only while the flag is set.
+	// Written by loop() only (scheduleRestart(), from finishJoinOk / finishSwitchOk / finishSwitchFail and from
+	// HandleDeferredWork() for a restart the web page asked for), read by loop() and the async_tcp task. The time, the delay
+	// and the reason are stored before the flag, so they are read only while the flag is set.
 	std::atomic<bool> restartPending{false};
 	std::atomic<uint32_t> restartRequestMs{0};
 	std::atomic<uint32_t> restartDelayMs{0};
+	std::atomic<bool> restartByUser{false};
+	// Set by the async_tcp task (handleRestart(), under joinMux, together with its check of the join state), never cleared:
+	// loop() turns it into a scheduled restart. queueJoinRequest() refuses joins while it is set.
+	std::atomic<bool> restartRequested{false};
 	// A log call writes to SPIFFS and WebSerial and the logger has no lock, so the async_tcp task does not call it:
 	// it posts a string literal here and loop() logs it in HandleDeferredWork().
 	std::atomic<const char *> deferredLogError{nullptr};
@@ -125,6 +134,8 @@ class HAQuDA_WebServer {
 	void handleJoin(AsyncWebServerRequest *request);
 	void handleJoinDismiss(AsyncWebServerRequest *request);
 	void handleBoot(AsyncWebServerRequest *request);
+	// 202 when accepted, 409 while a network check is running or a restart is already coming. Only sets restartRequested.
+	void handleRestart(AsyncWebServerRequest *request);
 	void WebSerialPrintStoredLogs();
 
 	// Writes the log record a web handler posted and restarts the lamp once the delay set by scheduleRestart() (after a
