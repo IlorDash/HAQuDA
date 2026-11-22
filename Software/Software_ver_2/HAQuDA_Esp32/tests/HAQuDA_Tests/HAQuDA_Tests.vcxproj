@@ -66,6 +66,8 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="TestColorScale.cpp" />
     <ClCompile Include="TestLogDedup.cpp" />
+    <ClCompile Include="TestTouchDebounce.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_TouchDebounce.cpp" />
     <ClCompile Include="TestMeasSnapshot.cpp" />
     <ClCompile Include="TestWiFiJoin.cpp" />
     <ClCompile Include="TestWiFiCreds.cpp" />
@@ -113,6 +115,7 @@
     <ClInclude Include="..\..\sketches\HAQuDA_LampDisplayRules.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_DateFormat.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_LogDedup.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_TouchDebounce.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_MeasSnapshot.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_WiFiJoin.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_JoinLast.h" />

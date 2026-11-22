@@ -66,6 +66,7 @@
         <string>sketches\HAQuDA_TotalColor.h</string>
         <string>sketches\HAQuDA_DisplayTypes.h</string>
         <string>sketches\HAQuDA_LampDisplayRules.h</string>
+        <string>sketches\HAQuDA_TouchDebounce.h</string>
       </OtherFiles>
     </ProjectModeSettings>
   </Project>
