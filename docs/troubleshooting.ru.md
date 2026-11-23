@@ -86,7 +86,8 @@
 | `WiFi switch: ok, network saved first` | Info | Лампа подключилась к новой сети. Она перезапустится примерно через 1 секунду. | Ничего. |
 | `WiFi switch: no_network, staying on the current network` | ERROR | Лампа не видит сеть. Ничего не меняется. Окончание может быть и `scan_failed`. | См. [Результаты добавления сети](web-interface.md#add-results). |
 | `WiFi switch: wrong_password, restarting to rejoin the saved networks` | ERROR | Лампа не смогла подключиться к новой сети и перезапускается. Другие причины: `no_network`, `timeout`, `save_failed`. | Подождите; затем обе страницы покажут причину. |
-| `Restarting after a WiFi network change` | Info | Лампа перезапускается после пройденной проверки или после перехода. | Ничего. |
+| `Restart: WiFi network change` | Info | Лампа перезапускается после пройденной проверки или после перехода. | Ничего. |
+| `Restart: web page request` | Info | Лампа перезагружается, потому что вы нажали **«Перезагрузить лампу»**; см. [Перезагрузка лампы](web-interface.md#restart-lamp). | Ничего. |
 | `Sensors start: CCS811 not found` | ERROR | CCS811 не отвечает. | Проверьте питание CCS811 и подключение по I2C. |
 | `Sensors start: DHT22 not responding` | ERROR | DHT22 не дал показаний в течение 5 секунд после подачи питания на датчики. | Проверьте подключение DHT22. |
 | `Sensors start: ZH03B sends no frames` | ERROR | ZH03B не прислал корректного кадра в течение 5 секунд после подачи питания на датчики. | Проверьте подключение ZH03B и его питание 5 В. |

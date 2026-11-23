@@ -86,7 +86,8 @@ Each line has the form `time - level : message`; see [Log page](web-interface.md
 | `WiFi switch: ok, network saved first` | Info | The lamp joined the new network. It restarts in about 1 second. | Nothing. |
 | `WiFi switch: no_network, staying on the current network` | ERROR | The lamp does not see the network. Nothing changes. The ending can also be `scan_failed`. | See [Results of adding a network](web-interface.md#add-results). |
 | `WiFi switch: wrong_password, restarting to rejoin the saved networks` | ERROR | The lamp could not join the new network and restarts. Other reasons: `no_network`, `timeout`, `save_failed`. | Wait; both pages then show the reason. |
-| `Restarting after a WiFi network change` | Info | The lamp restarts after a passed check or after a switch. | Nothing. |
+| `Restart: WiFi network change` | Info | The lamp restarts after a passed check or after a switch. | Nothing. |
+| `Restart: web page request` | Info | The lamp restarts because you pressed **Restart lamp**; see [Restart the lamp](web-interface.md#restart-lamp). | Nothing. |
 | `Sensors start: CCS811 not found` | ERROR | The CCS811 does not answer. | Check the CCS811 power and I2C wiring. |
 | `Sensors start: DHT22 not responding` | ERROR | The DHT22 gave no reading within 5 seconds after the sensors powered on. | Check the DHT22 wiring. |
 | `Sensors start: ZH03B sends no frames` | ERROR | The ZH03B sent no valid frame within 5 seconds after the sensors powered on. | Check the ZH03B wiring and its 5 V supply. |

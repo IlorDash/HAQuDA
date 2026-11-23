@@ -163,11 +163,18 @@ void HAQuDA_WebServer::HandleDeferredWork() {
 		HAQuDA_Logger::LogError(logMsg);
 	}
 
+	// The request flag stays set (no exchange): queueJoinRequest() keeps refusing joins in the gap before restartPending is set.
+	// If a WiFi restart got scheduled first, it keeps its reason.
+	if (restartRequested.load() && !restartPending.load()) {
+		restartByUser.store(true);
+		scheduleRestart(USER_RESTART_DELAY_MS);
+	}
+
 	if (!restartPending.load()) {
 		return;
 	}
 	if ((uint32_t)(millis() - restartRequestMs.load()) >= restartDelayMs.load()) {
-		HAQuDA_Logger::LogInfo("Restarting after a WiFi network change");
+		HAQuDA_Logger::LogInfo(restartByUser.load() ? "Restart: web page request" : "Restart: WiFi network change");
 		ESP.restart();
 	}
 }
@@ -231,7 +238,7 @@ void HAQuDA_WebServer::scheduleRestart(uint32_t delayMs) {
 join_queue_result HAQuDA_WebServer::queueJoinRequest(const TWiFiCreds &creds) {
 	join_queue_result result = join_queue_result::queued;
 	portENTER_CRITICAL(&joinMux);
-	if (restartPending.load() || (joinView.state == join_state::ok)) {
+	if (restartPending.load() || restartRequested.load() || (joinView.state == join_state::ok)) {
 		result = join_queue_result::restarting;
 	} else if (joinRequestPending.load() || (joinView.state == join_state::checking) || (joinView.state == join_state::switching)) {
 		result = join_queue_result::checking;
@@ -248,6 +255,23 @@ join_queue_result HAQuDA_WebServer::queueJoinRequest(const TWiFiCreds &creds) {
 	}
 	portEXIT_CRITICAL(&joinMux);
 	return result;
+}
+
+void HAQuDA_WebServer::handleRestart(AsyncWebServerRequest *request) {
+	int code = 202;
+	const char *text = "The lamp is restarting.";
+	portENTER_CRITICAL(&joinMux);
+	if (restartPending.load() || restartRequested.load() || (joinView.state == join_state::ok)) {
+		code = 409;
+		text = "The lamp is already restarting.";
+	} else if (joinRequestPending.load() || (joinView.state == join_state::checking) || (joinView.state == join_state::switching)) {
+		code = 409;
+		text = "The lamp is checking a WiFi network. Try again when the check is over.";
+	} else {
+		restartRequested.store(true);
+	}
+	portEXIT_CRITICAL(&joinMux);
+	sendText(request, code, text);
 }
 
 bool HAQuDA_WebServer::takeJoinRequest(TWiFiCreds &creds) {
@@ -549,6 +573,8 @@ void HAQuDA_WebServer::WebServerResponds_init() {
 	server.on("/api/boot", HTTP_GET, [this](AsyncWebServerRequest *request) { handleBoot(request); });
 	server.on("/api/join", HTTP_GET, [this](AsyncWebServerRequest *request) { handleJoin(request); });
 	server.on("/api/join/dismiss", HTTP_POST, [this](AsyncWebServerRequest *request) { handleJoinDismiss(request); });
+
+	server.on("/api/restart", HTTP_POST, [this](AsyncWebServerRequest *request) { handleRestart(request); });
 
 	server.on("/delete_wifi_creds", HTTP_POST, [this](AsyncWebServerRequest *request) { delete_WiFiCreds(request); });
 	server.on("/add_wifi_creds", HTTP_POST, [this](AsyncWebServerRequest *request) { handle_NewWiFiCreds(request); });
