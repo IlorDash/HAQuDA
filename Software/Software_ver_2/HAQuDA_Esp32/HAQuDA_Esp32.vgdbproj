@@ -68,6 +68,7 @@
         <string>sketches\HAQuDA_LampDisplayRules.h</string>
         <string>sketches\HAQuDA_PressCounter.h</string>
         <string>sketches\HAQuDA_TouchDebounce.h</string>
+        <string>sketches\HAQuDA_TouchGestures.h</string>
         <string>sketches\HAQuDA_TouchPoller.h</string>
         <string>sketches\HAQuDA_TouchButtons.h</string>
       </OtherFiles>

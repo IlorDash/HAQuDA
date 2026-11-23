@@ -70,6 +70,8 @@
     <ClCompile Include="TestPressCounter.cpp" />
     <ClCompile Include="TestTouchPoller.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_TouchDebounce.cpp" />
+    <ClCompile Include="TestTouchGestures.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_TouchGestures.cpp" />
     <ClCompile Include="TestMeasSnapshot.cpp" />
     <ClCompile Include="TestWiFiJoin.cpp" />
     <ClCompile Include="TestWiFiCreds.cpp" />
@@ -119,6 +121,7 @@
     <ClInclude Include="..\..\sketches\HAQuDA_LogDedup.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_PressCounter.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_TouchDebounce.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_TouchGestures.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_TouchPoller.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_MeasSnapshot.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_WiFiJoin.h" />
