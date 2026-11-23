@@ -27,7 +27,7 @@ enum class display_class : uint8_t { event, error, fatal };
 
 enum class display_end_cond : uint8_t { timed, untilEvent };
 
-enum class display_end : uint8_t { measReady, bootResult, wifiJoined, reconnectStarted, sensorsRecovered, ntpSynced, count };
+enum class display_end : uint8_t { measReady, bootResult, wifiJoined, sensorsRecovered, ntpSynced, count };
 constexpr uint8_t DISPLAY_END_COUNT = static_cast<uint8_t>(display_end::count);
 
 constexpr uint16_t HAQuDA_EndBit(display_end end) {

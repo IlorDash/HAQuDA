@@ -136,17 +136,25 @@ TEST(DisplayCatalogTest, UntilEventRowsThatCanEndHaveAnEndSignal) {
 	EXPECT_EQ(HAQuDA_EndBit(display_end::wifiJoined), row(display_event::wifiReconnecting).endsOn);
 	EXPECT_EQ(until, row(display_event::apRunning).end);
 	EXPECT_EQ(HAQuDA_EndBit(display_end::measReady), row(display_event::apRunning).endsOn);
-	EXPECT_EQ(until, row(display_error::wifiLost).end);
-	EXPECT_EQ(HAQuDA_EndBit(display_end::reconnectStarted) | HAQuDA_EndBit(display_end::wifiJoined), row(display_error::wifiLost).endsOn);
 	EXPECT_EQ(until, row(display_error::sensorsFailed).end);
 	EXPECT_EQ(HAQuDA_EndBit(display_end::sensorsRecovered), row(display_error::sensorsFailed).endsOn);
 	EXPECT_EQ(until, row(display_error::ntpFailed).end);
 	EXPECT_EQ(HAQuDA_EndBit(display_end::ntpSynced), row(display_error::ntpFailed).endsOn);
 }
 
-TEST(DisplayCatalogTest, TimedRowsAreJoinedWifiAndTheBootConnectError) {
+TEST(DisplayCatalogTest, TimedRowsAreJoinedWifiAndTheWifiErrors) {
 	EXPECT_EQ(display_end_cond::timed, row(display_event::wifiJoined).end);
 	EXPECT_EQ(display_end_cond::timed, row(display_error::wifiConnectFailed).end);
+	EXPECT_EQ(display_end_cond::timed, row(display_error::wifiLost).end);
+}
+
+TEST(DisplayCatalogTest, WifiLostIsTimedForTenSecondsAndRaisesTheBootResult) {
+	const display_entry &lost = row(display_error::wifiLost);
+
+	EXPECT_EQ(display_end_cond::timed, lost.end);
+	EXPECT_EQ(0, lost.endsOn);
+	EXPECT_EQ(10000u, lost.minMs);
+	EXPECT_EQ(HAQuDA_EndBit(display_end::bootResult), lost.raises);
 }
 
 TEST(DisplayCatalogTest, JoinedWifiRaisesTheBootResultAndTheJoinSignal) {

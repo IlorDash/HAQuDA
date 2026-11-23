@@ -36,7 +36,7 @@ HAQuDA_FileStorageAdapter LampFiles;
 HAQuDA_LampDisplayAdapter LampDisplay(ErrHandler);
 HAQuDA_LoggerAdapter LampLogger;
 HAQuDA_LampControl LampControl(LampFiles, LampDisplay, LampLogger);
-HAQuDA_WiFi_handler WiFiHandler(&FileStorage, &DispManip, MeasSnapshot, WebDisp, LampControl);
+HAQuDA_WiFi_handler WiFiHandler(&FileStorage, Display, MeasSnapshot, WebDisp, LampControl);
 
 int meas_start_time = 0;
 int builtin_blink_start_time = 0;
@@ -45,8 +45,6 @@ int builtin_blink_start_time = 0;
 // 5 minutes keeps the power-cycle block of loop() (up to ~27 s: 4 start attempts of up to ~5 s plus 3 power-offs of 2 s) rare
 // and the log free of retry spam.
 constexpr uint32_t SENSORS_START_RETRY_PERIOD_MS = 5 * 60 * 1000;
-
-constexpr uint32_t WIFI_ERROR_DISPLAY_MS = 10 * 1000;
 
 // Both written and read in the loop task only (setup runs in it too).
 // LampControl keeps its own copy of sensorsRunning, set by LampControl.SensorsStarted(): any new path that starts the sensors must
@@ -97,9 +95,6 @@ void setup() {
 	if (!WiFiHandler.Connect()) {
 		DispManip.SetMode(error);
 		ErrHandler.FailedToConnectToWiFi();
-		// CreateAP() replaces the red growing effect with the access point effect, so without this pause the user
-		// never sees that the WiFi connection failed. Blocks the loop task only; ShowTask draws on the other core.
-		vTaskDelay(pdMS_TO_TICKS(WIFI_ERROR_DISPLAY_MS));
 
 		if (!WiFiHandler.CreateAP()) {
 			DispManip.SetMode(error);

@@ -38,7 +38,6 @@ class HAQuDA_WebServer {
 	const HAQuDA_MeasSnapshot &measSnapshot;
 	// The picture the lamp shows, for /api/disp
 	HAQuDA_WebPageDisplayManip &webDisp;
-	// What the user set for the lamp: POST /api/lamp submits to it, /api/status reports it, loop() applies it
 	HAQuDA_LampControl &lampControl;
 	// Written by loop() only (scheduleRestart(), from finishJoinOk / finishSwitchOk / finishSwitchFail), read by loop() and
 	// the async_tcp task. The time and the delay are stored before the flag, so they are read only while the flag is set.

@@ -18,8 +18,8 @@ namespace {
 
 		{HAQuDA_ItemOf(display_error::wifiConnectFailed), "wifi connect failed", HAQuDA_GrowingParams(ANIM_COLOR_RED, 100), display_class::error,
 		 display_end_cond::timed, NO_END, HAQuDA_EndBit(display_end::bootResult), WIFI_CONNECT_FAILED_MIN_MS},
-		{HAQuDA_ItemOf(display_error::wifiLost), "wifi lost", HAQuDA_StaticColorParams(ANIM_COLOR_RED), display_class::error, display_end_cond::untilEvent,
-		 HAQuDA_EndBit(display_end::reconnectStarted) | HAQuDA_EndBit(display_end::wifiJoined), HAQuDA_EndBit(display_end::bootResult), DISPLAY_ERROR_MIN_MS},
+		{HAQuDA_ItemOf(display_error::wifiLost), "wifi lost", HAQuDA_StaticColorParams(ANIM_COLOR_RED), display_class::error, display_end_cond::timed, NO_END,
+		 HAQuDA_EndBit(display_end::bootResult), DISPLAY_ERROR_MIN_MS},
 		{HAQuDA_ItemOf(display_error::apFailed), "ap failed", HAQuDA_SnakeParams(ANIM_COLOR_RED, 100, 1), display_class::fatal, display_end_cond::untilEvent,
 		 NO_END, HAQuDA_EndBit(display_end::bootResult), DISPLAY_ERROR_MIN_MS},
 		{HAQuDA_ItemOf(display_error::fsFailed), "fs failed", HAQuDA_FadingParams(ANIM_COLOR_RED, 10, 100, 0, 5), display_class::fatal,
@@ -32,7 +32,7 @@ namespace {
 
 	static_assert(sizeof(CATALOG) / sizeof(CATALOG[0]) == DISPLAY_ITEM_COUNT, "one catalog row per display_event and display_error value");
 
-	const char *const END_NAMES[DISPLAY_END_COUNT] = {"meas ready", "boot result", "wifi joined", "reconnect started", "sensors recovered", "ntp synced"};
+	const char *const END_NAMES[DISPLAY_END_COUNT] = {"meas ready", "boot result", "wifi joined", "sensors recovered", "ntp synced"};
 } // namespace
 
 const display_entry *HAQuDA_GetDisplayEntry(display_item item) {

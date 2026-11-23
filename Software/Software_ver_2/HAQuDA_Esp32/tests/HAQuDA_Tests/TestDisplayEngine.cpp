@@ -469,3 +469,46 @@ TEST_F(DisplayEngineTest, MeasurementsReplaceTheLampLightWhenTheyAreSelected) {
 
 	EXPECT_EQ(anim_id::measMulti, engine.ActiveAnim());
 }
+
+TEST_F(DisplayEngineTest, WifiLostAppliedWithTheReconnectSnakeInOneBatchShowsRedThenTheSnake) {
+	EXPECT_CALL(leds, FillColor(testing::Matcher<uint32_t>(ANIM_COLOR_RED))).Times(testing::AtLeast(1));
+	EXPECT_CALL(leds, FillColor(testing::Matcher<uint32_t>(0u))).Times(testing::AtLeast(1));
+	engine.Apply(errorMsg(display_error::wifiLost));
+	engine.Apply(eventMsg(display_event::wifiReconnecting));
+
+	engine.Run(0);
+	EXPECT_EQ(anim_id::staticColor, engine.ActiveAnim());
+	engine.Run(10 * SECOND - 1);
+	EXPECT_EQ(anim_id::staticColor, engine.ActiveAnim());
+	engine.Run(10 * SECOND);
+
+	EXPECT_EQ(anim_id::snake, engine.ActiveAnim());
+}
+
+TEST_F(DisplayEngineTest, WifiLostAppliedWithTheReconnectSnakeAndTheJoinInOneBatchShowsRedThenGreenNeverTheSnake) {
+	EXPECT_CALL(leds, FillColor(testing::Matcher<uint32_t>(ANIM_COLOR_RED))).Times(testing::AtLeast(1));
+	EXPECT_CALL(leds, FillColor(testing::Matcher<uint32_t>(ANIM_COLOR_GREEN))).Times(testing::AtLeast(1));
+	engine.Apply(errorMsg(display_error::wifiLost));
+	engine.Apply(eventMsg(display_event::wifiReconnecting));
+	engine.Apply(eventMsg(display_event::wifiJoined));
+
+	engine.Run(0);
+	EXPECT_EQ(anim_id::staticColor, engine.ActiveAnim());
+	engine.Run(10 * SECOND - 1);
+	EXPECT_EQ(anim_id::staticColor, engine.ActiveAnim());
+	engine.Run(10 * SECOND);
+	EXPECT_EQ(anim_id::staticColor, engine.ActiveAnim());
+	engine.Run(15 * SECOND);
+
+	EXPECT_EQ(anim_id::none, engine.ActiveAnim());
+}
+
+TEST_F(DisplayEngineTest, UntilEventErrorAppliedWithItsOwnEndSignalInOneBatchIsRemovedUnseen) {
+	EXPECT_CALL(leds, Show(testing::_)).Times(0);
+	engine.Apply(errorMsg(display_error::sensorsFailed));
+	engine.Apply(endMsg(display_end::sensorsRecovered));
+
+	engine.Run(0);
+
+	EXPECT_EQ(anim_id::none, engine.ActiveAnim());
+}

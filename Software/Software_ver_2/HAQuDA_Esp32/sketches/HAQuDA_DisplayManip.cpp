@@ -11,7 +11,6 @@ static HAQuDA_ErrorHandler *errHandler;
 static HAQuDA_WebPageDisplayManip *webDisp;
 static HAQuDA_DisplayService *display;
 
-// The WiFi handler tells its two pictures apart by the static colour it sets before SetEffect(staticColor)
 static uint32_t staticColorParam = COLOR_GREEN;
 
 // Shown until the measurements have a sample. Only the access point boot sets the fading effect, so that effect marks AP mode
@@ -141,7 +140,6 @@ void HAQuDA_DisplayManip::SetEffect(const effect_type e) {
 	switch (e) {
 		case snake:
 			display->Post(display_event::wifiReconnecting);
-			display->End(display_end::reconnectStarted);
 			break;
 		case fading:
 			waitingItem = HAQuDA_ItemOf(display_event::apRunning);

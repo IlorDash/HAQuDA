@@ -98,7 +98,6 @@ TEST(DisplaySchedulerTest, TimedErrorPlaysTenSecondsAndTheBootConnectErrorFive) 
 	HAQuDA_DisplayScheduler lost;
 	lost.Post(display_error::wifiLost);
 	lost.Next(0);
-	lost.End(display_end::reconnectStarted);
 	HAQuDA_DisplayScheduler connectFailed;
 	connectFailed.Post(display_error::wifiConnectFailed);
 	connectFailed.Next(0);
@@ -370,18 +369,47 @@ TEST(DisplaySchedulerTest, EndSignalRemovesAWaitingItemThatNeverPlayed) {
 	EXPECT_EQ(display_source::none, scheduler.Next(5 * SECOND).source);
 }
 
-TEST(DisplaySchedulerTest, WifiLostEndsOnReconnectStartButNotBeforeItsMinimumTime) {
+TEST(DisplaySchedulerTest, WifiLostIsNotCutShortByTheReconnectSnake) {
 	HAQuDA_DisplayScheduler scheduler;
 	scheduler.Post(display_error::wifiLost);
 	scheduler.Next(0);
 
-	scheduler.End(display_end::reconnectStarted);
+	scheduler.Post(display_event::wifiReconnecting);
 
 	EXPECT_EQ(LOST, scheduler.Next(9 * SECOND).item);
-	EXPECT_EQ(display_source::none, scheduler.Next(10 * SECOND).source);
+	EXPECT_EQ(RECONNECTING, scheduler.Next(10 * SECOND).item);
 }
 
-TEST(DisplaySchedulerTest, WifiLostAlsoEndsWhenTheWifiIsJoinedAgain) {
+TEST(DisplaySchedulerTest, WifiLostPostedWithTheReconnectSnakeInOneBatchPlaysFirstThenTheSnake) {
+	HAQuDA_DisplayScheduler scheduler;
+	scheduler.Post(display_error::wifiLost);
+	scheduler.Post(display_event::wifiReconnecting);
+
+	const display_pick first = scheduler.Next(0);
+	const display_pick during = scheduler.Next(10 * SECOND - 1);
+	const display_pick after = scheduler.Next(10 * SECOND);
+
+	EXPECT_EQ(LOST, first.item);
+	EXPECT_EQ(LOST, during.item);
+	EXPECT_FALSE(during.changed);
+	EXPECT_EQ(RECONNECTING, after.item);
+	EXPECT_TRUE(after.changed);
+}
+
+TEST(DisplaySchedulerTest, WifiLostPostedWithTheReconnectSnakeAndTheJoinInOneBatchNeverShowsTheSnake) {
+	HAQuDA_DisplayScheduler scheduler;
+	scheduler.Post(display_error::wifiLost);
+	scheduler.Post(display_event::wifiReconnecting);
+	scheduler.Post(display_event::wifiJoined);
+
+	const std::vector<display_item> shown = drain(scheduler, 0);
+
+	ASSERT_EQ(2u, shown.size());
+	EXPECT_EQ(LOST, shown[0]);
+	EXPECT_EQ(JOINED, shown[1]);
+}
+
+TEST(DisplaySchedulerTest, WifiLostIsFollowedByTheJoinedWifiAfterItsMinimumTime) {
 	HAQuDA_DisplayScheduler scheduler;
 	scheduler.Post(display_error::wifiLost);
 	scheduler.Next(0);
@@ -440,16 +468,16 @@ TEST(DisplaySchedulerTest, ActiveUntilEventItemIsNotQueuedTwiceEvenWithOthersBet
 
 TEST(DisplaySchedulerTest, ErrorCanBePostedAgainOnceItEnded) {
 	HAQuDA_DisplayScheduler scheduler;
-	scheduler.Post(display_error::wifiLost);
+	scheduler.Post(display_error::sensorsFailed);
 	scheduler.Next(0);
-	scheduler.End(display_end::reconnectStarted);
+	scheduler.End(display_end::sensorsRecovered);
 
-	scheduler.Post(display_error::wifiLost);
+	scheduler.Post(display_error::sensorsFailed);
 
 	// the new occurrence plays after the minimum time of the ended one; the same item again still counts as a change
 	EXPECT_EQ(1, scheduler.QueuedCount());
 	const display_pick again = scheduler.Next(10 * SECOND);
-	EXPECT_EQ(LOST, again.item);
+	EXPECT_EQ(SENSORS, again.item);
 	EXPECT_TRUE(again.changed);
 }
 
@@ -663,7 +691,6 @@ TEST(DisplaySchedulerTest, ErrorInterruptsTheMeasurementsAndTheyReturn) {
 	scheduler.Post(display_error::wifiLost);
 
 	EXPECT_EQ(display_source::error, scheduler.Next(100).source);
-	scheduler.End(display_end::reconnectStarted);
 	EXPECT_EQ(display_source::meas, scheduler.Next(10 * SECOND + 100).source);
 }
 
@@ -806,7 +833,6 @@ TEST(DisplaySchedulerTest, LampOffIgnoresEventsButShowsErrors) {
 	EXPECT_EQ(display_source::error, error.source);
 	EXPECT_EQ(LOST, error.item);
 
-	scheduler.End(display_end::reconnectStarted);
 	EXPECT_EQ(display_source::solid, scheduler.Next(10 * SECOND + 200).source);
 }
 

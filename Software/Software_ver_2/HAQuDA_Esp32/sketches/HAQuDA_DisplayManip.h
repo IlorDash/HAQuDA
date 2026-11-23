@@ -14,7 +14,6 @@ class HAQuDA_DisplayManip {
 
 	static display_modes mode;
 
-	// Feeds the web mirror and the effect handler with the lamp's static colour
 	static void selectLampColor(const uint32_t rgb);
 
   public:

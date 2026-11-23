@@ -27,7 +27,6 @@ class HAQuDA_DisplayScheduler {
 
 	void End(display_end end);
 
-	// Ends a solid background
 	void SetBackground(anim_id measAnim, display_item waiting);
 
 	// The lamp's own picture (light colour or off) replaces the measurements as the background and counts as the end of the waiting

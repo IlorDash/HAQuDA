@@ -60,7 +60,6 @@ class HAQuDA_MeasHandler : public HAQuDA_IMeasSource {
 	// The mode functions return false when they could not draw because the shown reading has no sample yet (Show() then tries
 	// again on its next pass), true when they drew or never will
 	static bool standardMode();
-	// Standard mode with the overall reading: the first reading out of its range, else the average colour of all of them
 	static bool totalMode();
 	static bool multiMode(multi_mode_params multiModeParams);
 	static bool nightMode();

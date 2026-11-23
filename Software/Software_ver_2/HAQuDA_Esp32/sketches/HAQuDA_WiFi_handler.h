@@ -9,7 +9,7 @@
 
 #include "TimeHelper.h"
 #include "HAQuDA_WebServer.h"
-#include "HAQuDA_DisplayManip.h"
+#include "HAQuDA_DisplayService.h"
 
 #include "HAQuDA_LEDsParams.h"
 
@@ -34,9 +34,10 @@ class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
 	// The network under test; the password is wiped when the check ends
 	TWiFiCreds joinCreds;
 	// Station mode: a switch is under way or has ended in a restart that is still to come. It keeps HandleConnection() from
-	// reconnecting to the stored networks while the lamp has left its network on purpose. Cleared only when the scan
-	// found nothing (the lamp never left); otherwise the restart ends it.
-	bool stationSwitchActive = false;
+	// reconnecting to the stored networks and showConnectionLost() from posting the red picture while the lamp has left its
+	// network on purpose. Written by loop(), read by the WiFi event task. Cleared only when the scan found nothing (the lamp
+	// never left); otherwise the restart ends it.
+	std::atomic<bool> stationSwitchActive{false};
 	// True once registerDisconnectRecorder() has run
 	bool disconnectRecorderRegistered = false;
 	// The disconnect handler is registered once (Connect() on the station path, CreateAP() on the access point path) and
@@ -51,15 +52,12 @@ class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
 	// joinActive is set, loop() clears it before setting joinActive.
 	std::atomic<uint32_t> joinDisconnectStreak{0};
 
-	// True while the disconnect handler draws its red "connection lost" picture. Written by the WiFi event task, read by
-	// loop(): HandleConnection() waits for it to end (at most 5 s) before it starts the snake, so the handler's writes
-	// never land on the snake.
-	std::atomic<bool> dropPictureActive{false};
+	HAQuDA_DisplayService &display;
 
 	static void WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info);
-	// Disconnect handler, registered once in Connect() and never removed (see joinActive). Draws the red picture (3 s) only
-	// when the lamp goes from connected to disconnected; later disconnect events of the same outage draw nothing.
-	// Called from the WiFi event task; blocks it for about 3.2 s.
+	// Disconnect handler, registered once in Connect() and never removed (see joinActive). Posts the "connection lost" picture
+	// only when the lamp goes from connected to disconnected and is neither switching networks nor an access point; later
+	// disconnect events of the same outage post nothing. WiFi event task; never blocks.
 	void showConnectionLost();
 
 	IPAddress AP_ip = IPAddress(192, 168, 4, 22);
@@ -70,7 +68,6 @@ class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
 	bool createAP();
 	bool connectToWiFi(const char *ssidLocal, const char *passLocal);
 	void waitUntilWiFiConnected();
-	// Green matrix for 3 s, then off. Loop task only (setup / HandleConnection): blocks for the flash.
 	void showJoinedWiFi();
 	// Starts the mDNS responder so the page opens as http://haquda.local/ in the home network and on the lamp's own
 	// access point. The access point needs it too: iOS, macOS and newer Android resolve *.local only by multicast
@@ -106,10 +103,9 @@ class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
 	bool joinedNetwork(const char *ssid) const;
 
   public:
-	// snapshot feeds the web page with the latest measurements, webDisp with the picture the lamp shows and lampControl holds the
-	// user's lamp settings (the web routes change them, a reconnect restores them on the display); all must outlive the handler.
-	HAQuDA_WiFi_handler(HAQuDA_FileStorage *currFS, HAQuDA_DisplayManip *_dispManip, const HAQuDA_MeasSnapshot &snapshot, HAQuDA_WebPageDisplayManip &webDispIn,
-						HAQuDA_LampControl &lampControlIn);
+	// All references must outlive the handler.
+	HAQuDA_WiFi_handler(HAQuDA_FileStorage *currFS, HAQuDA_DisplayService &displayIn, const HAQuDA_MeasSnapshot &snapshot,
+						HAQuDA_WebPageDisplayManip &webDispIn, HAQuDA_LampControl &lampControlIn);
 	~HAQuDA_WiFi_handler();
 	// True from GOT_IP until DISCONNECTED (LOST_IP does not clear it). Written only by the WiFi event task (GOT_IP and
 	// disconnect handlers); the loop task reads it.
