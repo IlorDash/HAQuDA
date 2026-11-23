@@ -1963,7 +1963,8 @@ TEST(ButtonsSettingsTest, UpdateTextOfResetWithFieldsIsNotEmpty) {
 }
 
 TEST(ButtonsSettingsTest, JsonOfDefaultsHasNoArguments) {
-	const char *const exp_json = "{\"locked\":false,\"buttons\":{\"2\":{\"a\":\"power\"},\"6\":{\"a\":\"up\"},\"8\":{\"a\":\"next\"},\"9\":{\"a\":\"down\"}}}";
+	const char *const exp_json
+		= "{\"locked\":false,\"buttons\":{\"2\":{\"a\":\"power\"},\"6\":{\"a\":\"up\"},\"8\":{\"a\":\"next\"},\"9\":{\"a\":\"down\"}},\"saveErr\":0}";
 
 	buttons_settings s = HAQuDA_ButtonsDefaults();
 
@@ -1971,14 +1972,15 @@ TEST(ButtonsSettingsTest, JsonOfDefaultsHasNoArguments) {
 
 	size_t res;
 
-	res = HAQuDA_BuildButtonsJson(s, buf, sizeof(buf));
+	res = HAQuDA_BuildButtonsJson(s, 0, buf, sizeof(buf));
 
 	EXPECT_STREQ(exp_json, buf);
 	EXPECT_EQ(strlen(exp_json), res);
 }
 
 TEST(ButtonsSettingsTest, JsonLockedIsTrue) {
-	const char *const exp_json = "{\"locked\":true,\"buttons\":{\"2\":{\"a\":\"power\"},\"6\":{\"a\":\"up\"},\"8\":{\"a\":\"next\"},\"9\":{\"a\":\"down\"}}}";
+	const char *const exp_json
+		= "{\"locked\":true,\"buttons\":{\"2\":{\"a\":\"power\"},\"6\":{\"a\":\"up\"},\"8\":{\"a\":\"next\"},\"9\":{\"a\":\"down\"}},\"saveErr\":0}";
 
 	buttons_settings s = HAQuDA_ButtonsDefaults();
 	s.locked = true;
@@ -1986,14 +1988,15 @@ TEST(ButtonsSettingsTest, JsonLockedIsTrue) {
 
 	size_t res;
 
-	res = HAQuDA_BuildButtonsJson(s, buf, sizeof(buf));
+	res = HAQuDA_BuildButtonsJson(s, 0, buf, sizeof(buf));
 
 	EXPECT_STREQ(exp_json, buf);
 	EXPECT_EQ(strlen(exp_json), res);
 }
 
 TEST(ButtonsSettingsTest, JsonNoneAction) {
-	const char *const exp_json = "{\"locked\":false,\"buttons\":{\"2\":{\"a\":\"none\"},\"6\":{\"a\":\"up\"},\"8\":{\"a\":\"next\"},\"9\":{\"a\":\"down\"}}}";
+	const char *const exp_json
+		= "{\"locked\":false,\"buttons\":{\"2\":{\"a\":\"none\"},\"6\":{\"a\":\"up\"},\"8\":{\"a\":\"next\"},\"9\":{\"a\":\"down\"}},\"saveErr\":0}";
 
 	buttons_settings s = HAQuDA_ButtonsDefaults();
 	s.buttons[0].action = button_action::none;
@@ -2001,15 +2004,15 @@ TEST(ButtonsSettingsTest, JsonNoneAction) {
 
 	size_t res;
 
-	res = HAQuDA_BuildButtonsJson(s, buf, sizeof(buf));
+	res = HAQuDA_BuildButtonsJson(s, 0, buf, sizeof(buf));
 
 	EXPECT_STREQ(exp_json, buf);
 	EXPECT_EQ(strlen(exp_json), res);
 }
 
 TEST(ButtonsSettingsTest, JsonModeActionHasTheModeKey) {
-	const char *const exp_json
-		= "{\"locked\":false,\"buttons\":{\"2\":{\"a\":\"power\"},\"6\":{\"a\":\"up\"},\"8\":{\"a\":\"next\"},\"9\":{\"a\":\"mode\",\"arg\":\"night\"}}}";
+	const char *const exp_json = "{\"locked\":false,\"buttons\":{\"2\":{\"a\":\"power\"},\"6\":{\"a\":\"up\"},\"8\":{\"a\":\"next\"},\"9\":{\"a\":\"mode\","
+								 "\"arg\":\"night\"}},\"saveErr\":0}";
 
 	buttons_settings s = HAQuDA_ButtonsDefaults();
 	s.buttons[3] = {button_action::mode, lamp_mode::night, lamp_param::total};
@@ -2017,15 +2020,15 @@ TEST(ButtonsSettingsTest, JsonModeActionHasTheModeKey) {
 
 	size_t res;
 
-	res = HAQuDA_BuildButtonsJson(s, buf, sizeof(buf));
+	res = HAQuDA_BuildButtonsJson(s, 0, buf, sizeof(buf));
 
 	EXPECT_STREQ(exp_json, buf);
 	EXPECT_EQ(strlen(exp_json), res);
 }
 
 TEST(ButtonsSettingsTest, JsonShowActionHasTheReadingKey) {
-	const char *const exp_json
-		= "{\"locked\":false,\"buttons\":{\"2\":{\"a\":\"show\",\"arg\":\"eco2\"},\"6\":{\"a\":\"up\"},\"8\":{\"a\":\"next\"},\"9\":{\"a\":\"down\"}}}";
+	const char *const exp_json = "{\"locked\":false,\"buttons\":{\"2\":{\"a\":\"show\",\"arg\":\"eco2\"},\"6\":{\"a\":\"up\"},\"8\":{\"a\":\"next\"},\"9\":{"
+								 "\"a\":\"down\"}},\"saveErr\":0}";
 
 	buttons_settings s = HAQuDA_ButtonsDefaults();
 	s.buttons[0] = {button_action::show, lamp_mode::standard, lamp_param::eco2};
@@ -2033,14 +2036,14 @@ TEST(ButtonsSettingsTest, JsonShowActionHasTheReadingKey) {
 
 	size_t res;
 
-	res = HAQuDA_BuildButtonsJson(s, buf, sizeof(buf));
+	res = HAQuDA_BuildButtonsJson(s, 0, buf, sizeof(buf));
 
 	EXPECT_STREQ(exp_json, buf);
 	EXPECT_EQ(strlen(exp_json), res);
 }
 
 TEST(ButtonsSettingsTest, JsonLongestCaseIsExactlyTheDocumentedLength) {
-	const size_t exp_len = 164;
+	const size_t exp_len = 185;
 
 	buttons_settings s = HAQuDA_ButtonsDefaults();
 	s.buttons[0] = {button_action::mode, lamp_mode::standard, lamp_param::total};
@@ -2051,28 +2054,30 @@ TEST(ButtonsSettingsTest, JsonLongestCaseIsExactlyTheDocumentedLength) {
 
 	size_t res;
 
-	res = HAQuDA_BuildButtonsJson(s, buf, sizeof(buf));
+	res = HAQuDA_BuildButtonsJson(s, 4294967295u, buf, sizeof(buf));
 
 	EXPECT_EQ(exp_len, res);
 	EXPECT_LT(res, BUTTONS_JSON_BUF_LEN);
 }
 
 TEST(ButtonsSettingsTest, JsonBufferOfLengthPlusOneFits) {
-	const char *const exp_json = "{\"locked\":false,\"buttons\":{\"2\":{\"a\":\"power\"},\"6\":{\"a\":\"up\"},\"8\":{\"a\":\"next\"},\"9\":{\"a\":\"down\"}}}";
+	const char *const exp_json
+		= "{\"locked\":false,\"buttons\":{\"2\":{\"a\":\"power\"},\"6\":{\"a\":\"up\"},\"8\":{\"a\":\"next\"},\"9\":{\"a\":\"down\"}},\"saveErr\":0}";
 
 	const buttons_settings s = HAQuDA_ButtonsDefaults();
 	char buf[BUTTONS_JSON_BUF_LEN];
 
 	size_t res;
 
-	res = HAQuDA_BuildButtonsJson(s, buf, strlen(exp_json) + 1);
+	res = HAQuDA_BuildButtonsJson(s, 0, buf, strlen(exp_json) + 1);
 
 	EXPECT_STREQ(exp_json, buf);
 	EXPECT_EQ(strlen(exp_json), res);
 }
 
 TEST(ButtonsSettingsTest, JsonBufferOfExactLengthGivesZeroAndEmptyText) {
-	const char *const json = "{\"locked\":false,\"buttons\":{\"2\":{\"a\":\"power\"},\"6\":{\"a\":\"up\"},\"8\":{\"a\":\"next\"},\"9\":{\"a\":\"down\"}}}";
+	const char *const json
+		= "{\"locked\":false,\"buttons\":{\"2\":{\"a\":\"power\"},\"6\":{\"a\":\"up\"},\"8\":{\"a\":\"next\"},\"9\":{\"a\":\"down\"}},\"saveErr\":0}";
 	const size_t exp_res = 0;
 
 	const buttons_settings s = HAQuDA_ButtonsDefaults();
@@ -2080,7 +2085,7 @@ TEST(ButtonsSettingsTest, JsonBufferOfExactLengthGivesZeroAndEmptyText) {
 
 	size_t res;
 
-	res = HAQuDA_BuildButtonsJson(s, buf, strlen(json));
+	res = HAQuDA_BuildButtonsJson(s, 0, buf, strlen(json));
 
 	EXPECT_EQ(exp_res, res);
 	EXPECT_STREQ("", buf);
@@ -2094,7 +2099,7 @@ TEST(ButtonsSettingsTest, JsonBufferOfFourBytesGivesZero) {
 
 	size_t res;
 
-	res = HAQuDA_BuildButtonsJson(s, buf, sizeof(buf));
+	res = HAQuDA_BuildButtonsJson(s, 0, buf, sizeof(buf));
 
 	EXPECT_EQ(exp_res, res);
 }
@@ -2107,7 +2112,7 @@ TEST(ButtonsSettingsTest, JsonSizeZeroGivesZero) {
 
 	size_t res;
 
-	res = HAQuDA_BuildButtonsJson(s, buf, 0);
+	res = HAQuDA_BuildButtonsJson(s, 0, buf, 0);
 
 	EXPECT_EQ(exp_res, res);
 }
@@ -2119,7 +2124,7 @@ TEST(ButtonsSettingsTest, JsonNullBufferGivesZero) {
 
 	size_t res;
 
-	res = HAQuDA_BuildButtonsJson(s, nullptr, BUTTONS_JSON_BUF_LEN);
+	res = HAQuDA_BuildButtonsJson(s, 0, nullptr, BUTTONS_JSON_BUF_LEN);
 
 	EXPECT_EQ(exp_res, res);
 }
@@ -2134,7 +2139,7 @@ TEST(ButtonsSettingsTest, JsonOfInvalidSettingsGivesZeroAndEmptyText) {
 
 	size_t res;
 
-	res = HAQuDA_BuildButtonsJson(s, buf, sizeof(buf));
+	res = HAQuDA_BuildButtonsJson(s, 0, buf, sizeof(buf));
 
 	EXPECT_EQ(exp_res, res);
 	EXPECT_STREQ("", buf);
@@ -3332,4 +3337,132 @@ TEST(LampKeysTest, ParseParamNullIsRefusedAndKeepsOutput) {
 
 	EXPECT_FALSE(res);
 	EXPECT_EQ(exp_param, out);
+}
+
+TEST(ButtonsSettingsTest, SameOfEqualSettingsIsTrue) {
+	const buttons_settings a = HAQuDA_ButtonsDefaults();
+	buttons_settings b = HAQuDA_ButtonsDefaults();
+
+	bool res;
+
+	res = HAQuDA_ButtonsSame(a, b);
+
+	EXPECT_TRUE(res);
+}
+
+TEST(ButtonsSettingsTest, SameDifferentLockedIsFalse) {
+	const buttons_settings a = HAQuDA_ButtonsDefaults();
+	buttons_settings b = HAQuDA_ButtonsDefaults();
+	b.locked = true;
+
+	bool res;
+
+	res = HAQuDA_ButtonsSame(a, b);
+
+	EXPECT_FALSE(res);
+}
+
+TEST(ButtonsSettingsTest, SameDifferentActionIsFalse) {
+	const buttons_settings a = HAQuDA_ButtonsDefaults();
+	buttons_settings b = HAQuDA_ButtonsDefaults();
+	b.buttons[0].action = button_action::none;
+
+	bool res;
+
+	res = HAQuDA_ButtonsSame(a, b);
+
+	EXPECT_FALSE(res);
+}
+
+TEST(ButtonsSettingsTest, SameDifferentModeIsFalse) {
+	const buttons_settings a = HAQuDA_ButtonsDefaults();
+	buttons_settings b = HAQuDA_ButtonsDefaults();
+	b.buttons[0].mode = lamp_mode::multi;
+
+	bool res;
+
+	res = HAQuDA_ButtonsSame(a, b);
+
+	EXPECT_FALSE(res);
+}
+
+TEST(ButtonsSettingsTest, SameDifferentParamIsFalse) {
+	const buttons_settings a = HAQuDA_ButtonsDefaults();
+	buttons_settings b = HAQuDA_ButtonsDefaults();
+	b.buttons[0].param = lamp_param::eco2;
+
+	bool res;
+
+	res = HAQuDA_ButtonsSame(a, b);
+
+	EXPECT_FALSE(res);
+}
+
+TEST(ButtonsSettingsTest, SameDifferenceInTheLastButtonIsFalse) {
+	const buttons_settings a = HAQuDA_ButtonsDefaults();
+	buttons_settings b = HAQuDA_ButtonsDefaults();
+	b.buttons[TOUCH_BUTTONS_NUM - 1].action = button_action::none;
+
+	bool res;
+
+	res = HAQuDA_ButtonsSame(a, b);
+
+	EXPECT_FALSE(res);
+}
+
+TEST(ButtonsSettingsTest, JsonWorstCaseWithMaxSaveErrIsExactText) {
+	const char *const exp_json = "{\"locked\":false,\"buttons\":{\"2\":{\"a\":\"mode\",\"arg\":\"standard\"},\"6\":{\"a\":\"mode\",\"arg\":\"standard\"},\"8\":"
+								 "{\"a\":\"mode\",\"arg\":\"standard\"},\"9\":{\"a\":\"mode\",\"arg\":\"standard\"}},\"saveErr\":4294967295}";
+
+	buttons_settings s = HAQuDA_ButtonsDefaults();
+	s.buttons[0] = {button_action::mode, lamp_mode::standard, lamp_param::total};
+	s.buttons[1] = {button_action::mode, lamp_mode::standard, lamp_param::total};
+	s.buttons[2] = {button_action::mode, lamp_mode::standard, lamp_param::total};
+	s.buttons[3] = {button_action::mode, lamp_mode::standard, lamp_param::total};
+	char buf[BUTTONS_JSON_BUF_LEN];
+
+	size_t res;
+
+	res = HAQuDA_BuildButtonsJson(s, UINT32_MAX, buf, sizeof(buf));
+
+	EXPECT_STREQ(exp_json, buf);
+	EXPECT_EQ(strlen(exp_json), res);
+}
+
+TEST(ButtonsSettingsTest, JsonWorstCaseWithMaxSaveErrFitsInABufferOfLengthPlusOne) {
+	const char *const exp_json = "{\"locked\":false,\"buttons\":{\"2\":{\"a\":\"mode\",\"arg\":\"standard\"},\"6\":{\"a\":\"mode\",\"arg\":\"standard\"},\"8\":"
+								 "{\"a\":\"mode\",\"arg\":\"standard\"},\"9\":{\"a\":\"mode\",\"arg\":\"standard\"}},\"saveErr\":4294967295}";
+
+	buttons_settings s = HAQuDA_ButtonsDefaults();
+	s.buttons[0] = {button_action::mode, lamp_mode::standard, lamp_param::total};
+	s.buttons[1] = {button_action::mode, lamp_mode::standard, lamp_param::total};
+	s.buttons[2] = {button_action::mode, lamp_mode::standard, lamp_param::total};
+	s.buttons[3] = {button_action::mode, lamp_mode::standard, lamp_param::total};
+	char buf[BUTTONS_JSON_BUF_LEN];
+
+	size_t res;
+
+	res = HAQuDA_BuildButtonsJson(s, UINT32_MAX, buf, strlen(exp_json) + 1);
+
+	EXPECT_STREQ(exp_json, buf);
+	EXPECT_EQ(strlen(exp_json), res);
+}
+
+TEST(ButtonsSettingsTest, JsonWorstCaseWithMaxSaveErrInABufferOfExactLengthGivesZero) {
+	const char *const json = "{\"locked\":false,\"buttons\":{\"2\":{\"a\":\"mode\",\"arg\":\"standard\"},\"6\":{\"a\":\"mode\",\"arg\":\"standard\"},\"8\":{"
+							 "\"a\":\"mode\",\"arg\":\"standard\"},\"9\":{\"a\":\"mode\",\"arg\":\"standard\"}},\"saveErr\":4294967295}";
+	const size_t exp_res = 0;
+
+	buttons_settings s = HAQuDA_ButtonsDefaults();
+	s.buttons[0] = {button_action::mode, lamp_mode::standard, lamp_param::total};
+	s.buttons[1] = {button_action::mode, lamp_mode::standard, lamp_param::total};
+	s.buttons[2] = {button_action::mode, lamp_mode::standard, lamp_param::total};
+	s.buttons[3] = {button_action::mode, lamp_mode::standard, lamp_param::total};
+	char buf[BUTTONS_JSON_BUF_LEN];
+
+	size_t res;
+
+	res = HAQuDA_BuildButtonsJson(s, UINT32_MAX, buf, strlen(json));
+
+	EXPECT_EQ(exp_res, res);
 }

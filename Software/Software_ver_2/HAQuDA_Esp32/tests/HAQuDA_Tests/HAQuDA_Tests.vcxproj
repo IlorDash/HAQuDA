@@ -91,6 +91,8 @@
     <ClCompile Include="TestMeasShowPolicy.cpp" />
     <ClCompile Include="TestButtonsSettings.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_ButtonsSettings.cpp" />
+    <ClCompile Include="TestButtonsControl.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_ButtonsControl.cpp" />
     <ClCompile Include="TestLampSettings.cpp" />
     <ClCompile Include="TestLampControl.cpp" />
     <ClCompile Include="TestLampForm.cpp" />
@@ -142,6 +144,7 @@
     <ClInclude Include="..\..\sketches\HAQuDA_BrightnessApply.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_LampSettings.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_ButtonsSettings.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_ButtonsControl.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_RecordCodec.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_LampControl.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_IFileStorage.h" />

@@ -116,6 +116,18 @@ bool HAQuDA_SetButtonsField(buttons_request &request, const char *name, const ch
 	return false;
 }
 
+bool HAQuDA_ButtonsSame(const buttons_settings &a, const buttons_settings &b) {
+	if (a.locked != b.locked) {
+		return false;
+	}
+	for (size_t i = 0; i < TOUCH_BUTTONS_NUM; i++) {
+		if ((a.buttons[i].action != b.buttons[i].action) || (a.buttons[i].mode != b.buttons[i].mode) || (a.buttons[i].param != b.buttons[i].param)) {
+			return false;
+		}
+	}
+	return true;
+}
+
 buttons_settings HAQuDA_ButtonsDefaults() {
 	buttons_settings s{};
 	s.buttons[0] = binding(button_action::power);
@@ -231,7 +243,7 @@ const char *HAQuDA_ButtonsUpdateText(buttons_update_result result) {
 	}
 }
 
-size_t HAQuDA_BuildButtonsJson(const buttons_settings &s, char *buf, size_t size) {
+size_t HAQuDA_BuildButtonsJson(const buttons_settings &s, uint32_t saveErrors, char *buf, size_t size) {
 	if ((buf == nullptr) || (size == 0)) {
 		return 0;
 	}
@@ -265,7 +277,7 @@ size_t HAQuDA_BuildButtonsJson(const buttons_settings &s, char *buf, size_t size
 		}
 		len += static_cast<size_t>(written);
 	}
-	const int tail = snprintf(buf + len, size - len, "}}");
+	const int tail = snprintf(buf + len, size - len, "},\"saveErr\":%lu}", static_cast<unsigned long>(saveErrors));
 	if ((tail < 0) || (static_cast<size_t>(tail) >= size - len)) {
 		buf[0] = '\0';
 		return 0;
