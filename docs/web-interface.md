@@ -46,6 +46,7 @@ The header shows signal bars and one status line.
 | **Access point · no internet** | The lamp runs its own access point. |
 | **WiFi connection lost** | The lamp is in station mode and has no connection. |
 | **Lamp not responding · retry in 5 s** | The page gets no answer from the lamp. |
+| **Lamp is restarting…** | You pressed **Restart lamp** and the lamp accepted it; see [Restart the lamp](#restart-lamp). It replaces the line above. |
 
 A banner appears under the header when there is something to do.
 
@@ -130,7 +131,35 @@ responding**. How the modes look on the lamp is in [Display modes](display-modes
 | Link **WiFi networks** | Opens the [WiFi networks page](#wifi-networks-page). |
 | Link **Live log** | Opens the [log page](#log-page). |
 | Links **User guide ↗** and **GitHub ↗** | Open sites on the internet; the notes **needs internet** mark them. |
+| Red button **Restart lamp** | Restarts the lamp; see [Restart the lamp](#restart-lamp). |
 | **EN**, **RU** and the round theme button | Switch the language and the theme. |
+
+### Restart the lamp {#restart-lamp}
+
+The red button **Restart lamp** is the last item of the links. It restarts the lamp without
+unplugging it.
+
+1. The page asks **Restart the lamp? It will be unavailable for up to a minute.** Confirm, or
+   cancel to change nothing.
+2. The lamp accepts the request and restarts about 1 second later. A lamp setting you changed just
+   before is saved first. The button is locked while the request is out and while the restart is
+   under way.
+3. The status line reads **Lamp is restarting…**. The page asks the lamp every 2 seconds and
+   reloads itself as soon as the lamp is back.
+4. If the lamp does not answer for 90 seconds, a banner reads **The lamp has not answered for a
+   minute and a half. Open this page again in a moment. In access point mode your phone may need to
+   rejoin the lamp’s WiFi network first.**
+
+When the lamp refuses, the banner shows its reply for about 10 seconds. The replies are in English:
+
+| Reply | Cause |
+|-------|-------|
+| **The lamp is already restarting.** | A restart is already coming, for example after a passed WiFi check. |
+| **The lamp is checking a WiFi network. Try again when the check is over.** | The lamp checks or switches to a new network, and a restart would break it. |
+| **No answer from the lamp.** | The page got no answer to the request. |
+
+While a restart is coming, the lamp refuses a new network with **The lamp is restarting. ...**; see
+[Results of adding a network](#add-results).
 
 ---
 

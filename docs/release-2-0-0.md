@@ -45,6 +45,12 @@
   is full, the page names the oldest network that the new one removes; see
   [Saved networks](web-interface.md#saved-networks).
 
+- **Restart from the page.** The red button **Restart lamp** on the main page restarts the lamp
+  without unplugging it, after you confirm. The page shows **Lamp is restarting…** and reloads
+  itself when the lamp is back. The lamp refuses while it checks a new WiFi network. The log line
+  of a WiFi restart is now `Restart: WiFi network change`, and a restart from the page logs
+  `Restart: web page request`. See [Restart the lamp](web-interface.md#restart-lamp).
+
 ## Improvements
 
 - **Log time.** In your network, log lines carry the date and time, for example
