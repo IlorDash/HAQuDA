@@ -471,6 +471,450 @@ TEST(WiFiCredsTest, PlaceCredsFirstEmptyPasswordOfOpenNetworkIsKept) {
 	EXPECT_STREQ("", out[0].pass);
 }
 
+// ---------------------------------------------------------------- HAQuDA_RemoveCredsByName
+
+TEST(WiFiCredsTest, RemoveCredsByNameMiddleRecordIsDroppedOrderKept) {
+	const size_t exp_count = 2;
+
+	const TWiFiCreds stored[] = {{"A", "pa"}, {"B", "pb"}, {"C", "pc"}};
+	TWiFiCreds out[MAX_WIFI_CREDS_NUM];
+	bool found = false;
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(stored, 3, "B", out, MAX_WIFI_CREDS_NUM, &found);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_TRUE(found);
+	EXPECT_STREQ("A", out[0].ssid);
+	EXPECT_STREQ("pa", out[0].pass);
+	EXPECT_STREQ("C", out[1].ssid);
+	EXPECT_STREQ("pc", out[1].pass);
+}
+
+TEST(WiFiCredsTest, RemoveCredsByNameFirstRecordIsDropped) {
+	const size_t exp_count = 2;
+
+	const TWiFiCreds stored[] = {{"A", "pa"}, {"B", "pb"}, {"C", "pc"}};
+	TWiFiCreds out[MAX_WIFI_CREDS_NUM];
+	bool found = false;
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(stored, 3, "A", out, MAX_WIFI_CREDS_NUM, &found);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_TRUE(found);
+	EXPECT_STREQ("B", out[0].ssid);
+	EXPECT_STREQ("C", out[1].ssid);
+}
+
+TEST(WiFiCredsTest, RemoveCredsByNameLastRecordIsDropped) {
+	const size_t exp_count = 2;
+
+	const TWiFiCreds stored[] = {{"A", "pa"}, {"B", "pb"}, {"C", "pc"}};
+	TWiFiCreds out[MAX_WIFI_CREDS_NUM];
+	bool found = false;
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(stored, 3, "C", out, MAX_WIFI_CREDS_NUM, &found);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_TRUE(found);
+	EXPECT_STREQ("A", out[0].ssid);
+	EXPECT_STREQ("B", out[1].ssid);
+}
+
+TEST(WiFiCredsTest, RemoveCredsByNameOnlyRecordGivesZeroAndFound) {
+	const size_t exp_count = 0;
+
+	const TWiFiCreds stored[] = {{"A", "pa"}};
+	TWiFiCreds out[MAX_WIFI_CREDS_NUM];
+	bool found = false;
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(stored, 1, "A", out, MAX_WIFI_CREDS_NUM, &found);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_TRUE(found);
+}
+
+TEST(WiFiCredsTest, RemoveCredsByNameAbsentNameKeepsAllAndIsNotFound) {
+	const size_t exp_count = 3;
+
+	const TWiFiCreds stored[] = {{"A", "pa"}, {"B", "pb"}, {"C", "pc"}};
+	TWiFiCreds out[MAX_WIFI_CREDS_NUM];
+	bool found = true;
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(stored, 3, "Other", out, MAX_WIFI_CREDS_NUM, &found);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_FALSE(found);
+	EXPECT_STREQ("A", out[0].ssid);
+	EXPECT_STREQ("B", out[1].ssid);
+	EXPECT_STREQ("C", out[2].ssid);
+}
+
+TEST(WiFiCredsTest, RemoveCredsByNameNamesDifferingInCaseAreDifferentNetworks) {
+	const size_t exp_count = 1;
+
+	const TWiFiCreds stored[] = {{"home", "p1"}};
+	TWiFiCreds out[MAX_WIFI_CREDS_NUM];
+	bool found = true;
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(stored, 1, "Home", out, MAX_WIFI_CREDS_NUM, &found);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_FALSE(found);
+}
+
+TEST(WiFiCredsTest, RemoveCredsByNamePrefixOfAStoredNameIsNotAMatch) {
+	const size_t exp_count = 1;
+
+	const TWiFiCreds stored[] = {{"Home5G", "p1"}};
+	TWiFiCreds out[MAX_WIFI_CREDS_NUM];
+	bool found = true;
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(stored, 1, "Home", out, MAX_WIFI_CREDS_NUM, &found);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_FALSE(found);
+}
+
+TEST(WiFiCredsTest, RemoveCredsByNameEmptySsidMatchesNothingButDropsEmptyRecords) {
+	const size_t exp_count = 2;
+
+	const TWiFiCreds stored[] = {{"A", "pa"}, {"", "junk"}, {"B", "pb"}};
+	TWiFiCreds out[MAX_WIFI_CREDS_NUM];
+	bool found = true;
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(stored, 3, "", out, MAX_WIFI_CREDS_NUM, &found);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_FALSE(found);
+	EXPECT_STREQ("A", out[0].ssid);
+	EXPECT_STREQ("B", out[1].ssid);
+}
+
+TEST(WiFiCredsTest, RemoveCredsByNameNullSsidMatchesNothing) {
+	const size_t exp_count = 2;
+
+	const TWiFiCreds stored[] = {{"A", "pa"}, {"B", "pb"}};
+	TWiFiCreds out[MAX_WIFI_CREDS_NUM];
+	bool found = true;
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(stored, 2, nullptr, out, MAX_WIFI_CREDS_NUM, &found);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_FALSE(found);
+	EXPECT_STREQ("A", out[0].ssid);
+	EXPECT_STREQ("B", out[1].ssid);
+}
+
+TEST(WiFiCredsTest, RemoveCredsByNameSsidOf32BytesMatchesNothing) {
+	const size_t exp_count = 1;
+
+	TWiFiCreds stored[1] = {{"", "p1"}};
+	memset(stored[0].ssid, 'x', WIFI_SSID_LEN);
+	const char longSsid[] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxyyy";
+	TWiFiCreds out[MAX_WIFI_CREDS_NUM];
+	bool found = true;
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(stored, 1, longSsid, out, MAX_WIFI_CREDS_NUM, &found);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_FALSE(found);
+}
+
+TEST(WiFiCredsTest, RemoveCredsByNameSsidOfExactly32BytesMatchesNothing) {
+	const size_t exp_count = 1;
+
+	TWiFiCreds stored[1] = {{"", "p1"}};
+	memset(stored[0].ssid, 'x', WIFI_SSID_LEN);
+	const char exactSsid[] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+	TWiFiCreds out[MAX_WIFI_CREDS_NUM];
+	bool found = true;
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(stored, 1, exactSsid, out, MAX_WIFI_CREDS_NUM, &found);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_FALSE(found);
+}
+
+TEST(WiFiCredsTest, RemoveCredsByNameName31BytesIsFoundAndDropped) {
+	const size_t exp_count = 1;
+
+	const TWiFiCreds stored[] = {{"0123456789012345678901234567890", "p1"}, {"B", "pb"}};
+	TWiFiCreds out[MAX_WIFI_CREDS_NUM];
+	bool found = false;
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(stored, 2, "0123456789012345678901234567890", out, MAX_WIFI_CREDS_NUM, &found);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_TRUE(found);
+	EXPECT_STREQ("B", out[0].ssid);
+}
+
+TEST(WiFiCredsTest, RemoveCredsByNameUnterminatedStoredNameDoesNotReadPastTheField) {
+	const size_t exp_count = 2;
+
+	TWiFiCreds stored[2] = {{"", "p1"}, {"B", "pb"}};
+	memset(stored[0].ssid, 'y', WIFI_SSID_LEN);
+	TWiFiCreds out[MAX_WIFI_CREDS_NUM];
+	bool found = true;
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(stored, 2, "y", out, MAX_WIFI_CREDS_NUM, &found);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_FALSE(found);
+	EXPECT_EQ('y', out[0].ssid[WIFI_SSID_LEN - 1]);
+}
+
+TEST(WiFiCredsTest, RemoveCredsByNameEmptyNameRecordsAreDropped) {
+	const size_t exp_count = 2;
+
+	const TWiFiCreds stored[] = {{"", "junk"}, {"A", "pa"}, {"", ""}, {"B", "pb"}, {"C", "pc"}};
+	TWiFiCreds out[MAX_WIFI_CREDS_NUM];
+	bool found = false;
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(stored, 5, "C", out, MAX_WIFI_CREDS_NUM, &found);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_TRUE(found);
+	EXPECT_STREQ("A", out[0].ssid);
+	EXPECT_STREQ("B", out[1].ssid);
+}
+
+TEST(WiFiCredsTest, RemoveCredsByNameSameNameStoredTwiceDropsBoth) {
+	const size_t exp_count = 1;
+
+	const TWiFiCreds stored[] = {{"A", "p1"}, {"B", "pb"}, {"A", "p2"}};
+	TWiFiCreds out[MAX_WIFI_CREDS_NUM];
+	bool found = false;
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(stored, 3, "A", out, MAX_WIFI_CREDS_NUM, &found);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_TRUE(found);
+	EXPECT_STREQ("B", out[0].ssid);
+}
+
+TEST(WiFiCredsTest, RemoveCredsByNameKeptRecordsAreCopiedByteForByte) {
+	const size_t exp_count = 2;
+
+	TWiFiCreds stored[3] = {{"A", "pa"}, {"B", "pb"}, {"C", "pc"}};
+	memset(&stored[0].ssid[2], 0x5A, WIFI_SSID_LEN - 2);
+	memset(&stored[2].pass[3], 0x6B, WIFI_PASS_LEN - 3);
+	TWiFiCreds exp_out[2];
+	memcpy(&exp_out[0], &stored[0], sizeof(TWiFiCreds));
+	memcpy(&exp_out[1], &stored[2], sizeof(TWiFiCreds));
+	TWiFiCreds out[MAX_WIFI_CREDS_NUM];
+	bool found = false;
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(stored, 3, "B", out, MAX_WIFI_CREDS_NUM, &found);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_TRUE(found);
+	EXPECT_EQ(0, memcmp(exp_out, out, sizeof(exp_out)));
+}
+
+TEST(WiFiCredsTest, RemoveCredsByNameEmptyPasswordOfOpenNetworkIsKept) {
+	const size_t exp_count = 1;
+
+	const TWiFiCreds stored[] = {{"Open", ""}, {"B", "pb"}};
+	TWiFiCreds out[MAX_WIFI_CREDS_NUM];
+	bool found = false;
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(stored, 2, "B", out, MAX_WIFI_CREDS_NUM, &found);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_STREQ("Open", out[0].ssid);
+	EXPECT_STREQ("", out[0].pass);
+}
+
+TEST(WiFiCredsTest, RemoveCredsByNameSmallOutBufferCutsTheLastAndStaysInBounds) {
+	const size_t exp_count = 2;
+	const size_t out_capacity = 2;
+
+	const TWiFiCreds stored[] = {{"S1", "p"}, {"S2", "p"}, {"S3", "p"}, {"S4", "p"}};
+	TWiFiCreds out[3] = {};
+	memset(&out[2], 0xAB, sizeof(out[2]));
+	TWiFiCreds exp_untouched;
+	memset(&exp_untouched, 0xAB, sizeof(exp_untouched));
+	bool found = false;
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(stored, 4, "S2", out, out_capacity, &found);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_TRUE(found);
+	EXPECT_STREQ("S1", out[0].ssid);
+	EXPECT_STREQ("S3", out[1].ssid);
+	EXPECT_EQ(0, memcmp(&exp_untouched, &out[2], sizeof(exp_untouched)));
+}
+
+TEST(WiFiCredsTest, RemoveCredsByNameMatchBeyondTheCapacityIsStillFound) {
+	const size_t exp_count = 1;
+	const size_t out_capacity = 1;
+
+	const TWiFiCreds stored[] = {{"S1", "p"}, {"S2", "p"}, {"S3", "p"}};
+	TWiFiCreds out[1];
+	bool found = false;
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(stored, 3, "S3", out, out_capacity, &found);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_TRUE(found);
+	EXPECT_STREQ("S1", out[0].ssid);
+}
+
+TEST(WiFiCredsTest, RemoveCredsByNameLargeOutBufferIsNotWrittenPastTheMaximum) {
+	const size_t exp_count = 10;
+	const size_t out_capacity = 12;
+
+	const TWiFiCreds stored[] = {{"S1", "p"}, {"S2", "p"}, {"S3", "p"}, {"S4", "p"},  {"S5", "p"},	{"S6", "p"},
+								 {"S7", "p"}, {"S8", "p"}, {"S9", "p"}, {"S10", "p"}, {"S11", "p"}, {"S12", "p"}};
+	TWiFiCreds out[out_capacity] = {};
+	memset(&out[10], 0xAB, sizeof(out[10]));
+	memset(&out[11], 0xAB, sizeof(out[11]));
+	TWiFiCreds exp_untouched;
+	memset(&exp_untouched, 0xAB, sizeof(exp_untouched));
+	bool found = false;
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(stored, 12, "S1", out, out_capacity, &found);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_TRUE(found);
+	EXPECT_EQ(0, memcmp(&exp_untouched, &out[10], sizeof(exp_untouched)));
+	EXPECT_EQ(0, memcmp(&exp_untouched, &out[11], sizeof(exp_untouched)));
+}
+
+TEST(WiFiCredsTest, RemoveCredsByNameOutCapacityZeroWritesNothingButReportsFound) {
+	const size_t exp_count = 0;
+
+	const TWiFiCreds stored[] = {{"A", "pa"}, {"B", "pb"}};
+	TWiFiCreds out[1];
+	memset(&out[0], 0xAB, sizeof(out[0]));
+	TWiFiCreds exp_untouched;
+	memset(&exp_untouched, 0xAB, sizeof(exp_untouched));
+	bool found = false;
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(stored, 2, "A", out, 0, &found);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_TRUE(found);
+	EXPECT_EQ(0, memcmp(&exp_untouched, &out[0], sizeof(exp_untouched)));
+}
+
+TEST(WiFiCredsTest, RemoveCredsByNameNullOutReturnsZeroAndNotFound) {
+	const size_t exp_count = 0;
+
+	const TWiFiCreds stored[] = {{"A", "pa"}};
+	bool found = true;
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(stored, 1, "A", nullptr, MAX_WIFI_CREDS_NUM, &found);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_FALSE(found);
+}
+
+TEST(WiFiCredsTest, RemoveCredsByNameNullStoredWithZeroCountGivesZeroAndNotFound) {
+	const size_t exp_count = 0;
+
+	TWiFiCreds out[MAX_WIFI_CREDS_NUM];
+	bool found = true;
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(nullptr, 0, "A", out, MAX_WIFI_CREDS_NUM, &found);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_FALSE(found);
+}
+
+TEST(WiFiCredsTest, RemoveCredsByNameNullStoredWithCountIsTreatedAsEmpty) {
+	const size_t exp_count = 0;
+	const size_t claimed_stored_count = 3;
+
+	TWiFiCreds out[MAX_WIFI_CREDS_NUM];
+	bool found = true;
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(nullptr, claimed_stored_count, "A", out, MAX_WIFI_CREDS_NUM, &found);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_FALSE(found);
+}
+
+TEST(WiFiCredsTest, RemoveCredsByNameNullFoundIsAllowed) {
+	const size_t exp_count = 1;
+
+	const TWiFiCreds stored[] = {{"A", "pa"}, {"B", "pb"}};
+	TWiFiCreds out[MAX_WIFI_CREDS_NUM];
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(stored, 2, "A", out, MAX_WIFI_CREDS_NUM, nullptr);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_STREQ("B", out[0].ssid);
+}
+
+TEST(WiFiCredsTest, RemoveCredsByNameDoesNotModifyTheInput) {
+	const size_t exp_count = 1;
+
+	const TWiFiCreds stored[3] = {{"A", "pa"}, {"", "junk"}, {"B", "pb"}};
+	TWiFiCreds exp_stored[3];
+	memcpy(exp_stored, stored, sizeof(stored));
+	TWiFiCreds out[MAX_WIFI_CREDS_NUM];
+	bool found = false;
+
+	size_t res;
+
+	res = HAQuDA_RemoveCredsByName(stored, 3, "A", out, MAX_WIFI_CREDS_NUM, &found);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_EQ(0, memcmp(exp_stored, stored, sizeof(stored)));
+}
+
 // ---------------------------------------------------------------- HAQuDA_DecideCredsRecovery
 
 TEST(WiFiCredsTest, DecideCredsRecoveryNoTmpAndListPresentIsNone) {

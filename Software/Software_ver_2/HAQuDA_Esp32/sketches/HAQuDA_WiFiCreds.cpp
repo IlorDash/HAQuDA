@@ -34,6 +34,42 @@ size_t HAQuDA_PlaceCredsFirst(const TWiFiCreds *stored, size_t storedCount, cons
 	return count;
 }
 
+size_t HAQuDA_RemoveCredsByName(const TWiFiCreds *stored, size_t storedCount, const char *ssid, TWiFiCreds *out, size_t outCapacity, bool *found) {
+	if (found != nullptr) {
+		*found = false;
+	}
+	if (out == nullptr) {
+		return 0;
+	}
+	if ((stored == nullptr) && (storedCount > 0)) {
+		storedCount = 0;
+	}
+	size_t maxNum = static_cast<size_t>(MAX_WIFI_CREDS_NUM);
+	size_t limit = (outCapacity < maxNum) ? outCapacity : maxNum;
+	// A name of WIFI_SSID_LEN bytes or more cannot be a stored one: a record keeps at most WIFI_SSID_LEN - 1 plus the terminator
+	bool nameUsable = (ssid != nullptr) && (ssid[0] != '\0') && (strnlen(ssid, WIFI_SSID_LEN) < WIFI_SSID_LEN);
+
+	bool matched = false;
+	size_t count = 0;
+	for (size_t i = 0; i < storedCount; i++) {
+		if (stored[i].ssid[0] == '\0') {
+			continue;
+		}
+		if (nameUsable && (strncmp(stored[i].ssid, ssid, WIFI_SSID_LEN) == 0)) {
+			matched = true;
+			continue;
+		}
+		if (count < limit) {
+			memcpy(&out[count], &stored[i], sizeof(TWiFiCreds));
+			count++;
+		}
+	}
+	if (found != nullptr) {
+		*found = matched;
+	}
+	return count;
+}
+
 creds_recovery HAQuDA_DecideCredsRecovery(bool listExists, bool tmpExists, int tmpSize) {
 	if (!tmpExists) {
 		return creds_recovery::none;

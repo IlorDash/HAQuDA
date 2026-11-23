@@ -24,6 +24,16 @@ static_assert(sizeof(TWiFiCreds) == WIFI_SSID_LEN + WIFI_PASS_LEN, "a record is 
 // is nullptr. Any task.
 size_t HAQuDA_PlaceCredsFirst(const TWiFiCreds *stored, size_t storedCount, const TWiFiCreds &newCreds, TWiFiCreds *out, size_t outCapacity);
 
+// Builds the saved list without the network called ssid: the stored records in their order, those named ssid (compared
+// within WIFI_SSID_LEN) and those with an empty name are dropped; the passwords of the kept ones are copied as they are.
+// At most min(outCapacity, MAX_WIFI_CREDS_NUM) records are written; the ones after that are cut.
+// *found tells whether a stored record had that name (also one beyond the capacity); found may be nullptr. An empty or
+// nullptr ssid, or one that does not fit a stored name (WIFI_SSID_LEN bytes or more without a terminator), matches
+// nothing: *found is false and the cleaned list is returned. stored may be nullptr when storedCount is 0. Returns the
+// number of records written to out; 0 (out untouched, *found false) when out is nullptr. A result of 0 with *found true
+// means the deleted network was the last one. The caller writes the list only when *found is true. Any task.
+size_t HAQuDA_RemoveCredsByName(const TWiFiCreds *stored, size_t storedCount, const char *ssid, TWiFiCreds *out, size_t outCapacity, bool *found);
+
 // A save writes the whole list to a temporary file, deletes /WiFiNetworks and renames the temporary file over it. A power
 // loss between the delete and the rename leaves only the temporary file.
 enum class creds_recovery : uint8_t { none, restore_tmp, delete_tmp };
