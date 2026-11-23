@@ -3,6 +3,9 @@
 
 	var POLL_MS = 5000;
 	var FETCH_TIMEOUT_MS = 4000;
+	// after the lamp accepts a restart /api/boot is asked this often, and the page tells the user to reopen it when no answer came in this time
+	var RESTART_POLL_MS = 2000;
+	var RESTART_LATE_MS = 90000;
 	var KEYS = ['temp', 'humid', 'eco2', 'tvoc', 'pm1', 'pm25', 'pm10'];
 	// PM1.0 and PM10 are not in /api/status of the current firmware: their tiles appear only when the field is present
 	var OPTIONAL = { pm1: true, pm10: true };
@@ -85,6 +88,9 @@
 			modes: { standard: ['Standard', 'One reading'], multi: ['Multi', 'Three readings'], night: ['Night', 'Reading + night light'], light: ['Lamp light', 'Solid color'] },
 			colors: ['Warm white', 'Neutral', 'Cool white', 'Amber', 'Lavender', 'Teal'],
 			wifi: 'WiFi networks', log: 'Live log', guide: 'User guide ↗', offNote: 'needs internet',
+			restart: 'Restart lamp', rsConfirm: 'Restart the lamp? It will be unavailable for up to a minute.',
+			rsWait: 'Lamp is restarting…', rsNoAnswer: 'No answer from the lamp.',
+			rsLate: 'The lamp has not answered for a minute and a half. Open this page again in a moment. In access point mode your phone may need to rejoin the lamp’s WiFi network first.',
 			fw: 'Firmware', up: 'Uptime', d: 'd', h: 'h', m: 'm'
 		},
 		ru: {
@@ -127,6 +133,9 @@
 			modes: { standard: ['Стандартный', 'Один показатель'], multi: ['Мульти', 'Три показателя'], night: ['Ночной', 'Показатель + ночник'], light: ['Светильник', 'Один цвет'] },
 			colors: ['Тёплый белый', 'Нейтральный', 'Холодный', 'Янтарный', 'Лавандовый', 'Бирюзовый'],
 			wifi: 'WiFi-сети', log: 'Живой лог', guide: 'Руководство ↗', offNote: 'нужен интернет',
+			restart: 'Перезагрузить лампу', rsConfirm: 'Перезагрузить лампу? Она будет недоступна до минуты.',
+			rsWait: 'Лампа перезагружается…', rsNoAnswer: 'Лампа не ответила.',
+			rsLate: 'Лампа не отвечает уже полторы минуты. Откройте страницу снова чуть позже. В режиме точки доступа телефону может понадобиться заново подключиться к WiFi-сети лампы.',
 			fw: 'Прошивка', up: 'Работает', d: 'д', h: 'ч', m: 'мин'
 		}
 	};
@@ -149,6 +158,9 @@
 	// those edits as a partial lamp still to send, busy: a POST is out, live: the brightness while the slider is dragged, err: the lamp's reply to a refused POST
 	// gen: counts the confirmed POSTs, so a status answer that was asked before the last confirmation can be told from a current one
 	var lc = { conf: null, want: null, pend: null, busy: false, live: null, err: '', timer: 0, gen: 0 };
+	// the restart button. busy: the POST is out, on: the lamp accepted it and the page waits for it to come back, late: it did not come
+	// back in time, err: the lamp's refusal, seen: the last uptime the lamp reported, failed: /api/boot has not answered since the restart began
+	var rs = { busy: false, on: false, late: false, err: '', seen: null, failed: false, errTimer: 0 };
 
 	function byId(id) {
 		return document.getElementById(id);
@@ -263,7 +275,10 @@
 		var dot = '';
 		var text = T.connecting;
 		var level = 0;
-		if (down) {
+		if (rs.on) {
+			dot = 'warn';
+			text = T.rsWait;
+		} else if (down) {
 			dot = 'bad';
 			text = T.down;
 		} else if (d) {
@@ -290,7 +305,11 @@
 	function renderBanner(d, down) {
 		var text = '';
 		var cta = false;
-		if (down) {
+		if (rs.on) {
+			text = rs.late ? T.rsLate : '';
+		} else if (rs.err) {
+			text = rs.err;
+		} else if (down) {
 			// a non-2xx answer carries the lamp's own text, shown as it is
 			text = state.err || T.bDown;
 		} else if (d && d.mode === 'ap') {
@@ -1241,6 +1260,7 @@
 		byId('lamp').classList.toggle('dim', state.down);
 		byId('tiles').classList.toggle('dim', state.down);
 		document.body.classList.toggle('ap', !!d && d.mode === 'ap');
+		byId('rsBtn').disabled = rs.busy || rs.on;
 	}
 
 	function setLang(code) {
@@ -1386,6 +1406,78 @@
 		paintGrid((state.data && state.data.meas) || {}, state.down);
 	}
 
+	// the lamp restarts about a second after it accepts the request: until /api/boot reports a smaller uptime than before, or answers
+	// after a miss, the page is still the old one. /api/status and /api/disp keep running but their failures are not shown meanwhile
+	function watchRestart() {
+		fetchTimed('/api/boot', { cache: 'no-store' }, function (r) {
+			if (!r.ok) {
+				throw new Error(r.status);
+			}
+			return r.json();
+		})
+			.then(function (d) {
+				var up = d && d.uptime;
+				if (typeof up !== 'number' || !isFinite(up)) {
+					throw new Error('uptime');
+				}
+				if (rs.failed || (rs.seen !== null && up < rs.seen)) {
+					location.reload();
+					return;
+				}
+				rs.seen = up;
+			})
+			.catch(function () {
+				rs.failed = true;
+			})
+			.then(function () {
+				setTimeout(watchRestart, RESTART_POLL_MS);
+			});
+	}
+
+	function showRestartRefusal(text) {
+		rs.err = text;
+		clearTimeout(rs.errTimer);
+		rs.errTimer = setTimeout(function () {
+			rs.err = '';
+			render();
+		}, 10000);
+	}
+
+	function restartLamp() {
+		if (rs.busy || rs.on || !window.confirm(T.rsConfirm)) {
+			return;
+		}
+		rs.busy = true;
+		rs.err = '';
+		rs.seen = state.data && typeof state.data.uptime === 'number' ? state.data.uptime : null;
+		render();
+		fetchTimed('/api/restart', { method: 'POST', cache: 'no-store' }, function (r) {
+			return r.text().then(function (t) {
+				return { ok: r.status === 202, text: t };
+			});
+		})
+			.then(function (a) {
+				if (a.ok) {
+					rs.on = true;
+					rs.failed = false;
+					setTimeout(function () {
+						rs.late = true;
+						render();
+					}, RESTART_LATE_MS);
+					setTimeout(watchRestart, RESTART_POLL_MS);
+				} else {
+					showRestartRefusal(a.text || T.rsNoAnswer);
+				}
+			})
+			.catch(function () {
+				showRestartRefusal(T.rsNoAnswer);
+			})
+			.then(function () {
+				rs.busy = false;
+				render();
+			});
+	}
+
 	// one request at a time: the next poll is scheduled before the page is redrawn, so a drawing error cannot stop polling
 	function poll() {
 		var gen = lc.gen;
@@ -1433,6 +1525,7 @@
 	buildLamp();
 	byId('theme').addEventListener('click', toggleTheme);
 	byId('lastClose').addEventListener('click', dismissLast);
+	byId('rsBtn').addEventListener('click', restartLamp);
 	Array.prototype.forEach.call(document.querySelectorAll('[data-lang]'), function (b) {
 		b.addEventListener('click', function () {
 			setLang(b.getAttribute('data-lang'));

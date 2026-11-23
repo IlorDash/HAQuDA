@@ -19,6 +19,14 @@ class JsStringsTest(unittest.TestCase):
 
         self.assertEqual(exp_text, res)
 
+    def test_apostrophe_inside_line_comment_does_not_start_string(self):
+        src = "a = 1; // the lamp's refusal\nb = '…Ж';\n"
+        exp_text = "a = 1;\nb = '…Ж';\n"
+
+        res = gen.strip_js(src, "t.js")
+
+        self.assertEqual(exp_text, res)
+
     def test_escaped_double_quote_does_not_end_string(self):
         src = 'a = "say \\"hi\\" /* x */"; // c\nb'
         exp_text = 'a = "say \\"hi\\" /* x */";\nb'

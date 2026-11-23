@@ -4,7 +4,7 @@
 Run from any directory:  py -3 Software/Web_Pages/preview_server.py
                          [--scenario normal|bad-air|sensor-fail|ap|sta-offline|errors|join-ok|join-wrong-pass|join-no-network|
                                      sta-switch-ok|sta-switch-wrong-pass|sta-switch-no-network|
-                                     disp-effects|disp-errors|disp-night|lamp-refuses|no-lamp]
+                                     disp-effects|disp-errors|disp-night|lamp-refuses|no-lamp|restart-refuses]
                          [--host 127.0.0.1] [--port 8080] [--latency MS] [--no-browser]
 
 The page sources next to this script are read from disk on every request (Cache-Control: no-store), so saving a file
@@ -42,6 +42,10 @@ text and returns to the confirmed settings), no-lamp leaves the block out like a
 picture of /api/disp follows the settings: measurements for the standard, multi and night modes, a static colour for the lamp light
 and for power off. Scenario "errors" answers POST /api/lamp with the 500 reply.
 
+POST /api/restart (the Restart lamp button) answers 202 and, a second later, the server closes every connection without an
+answer for 5 s, then the uptime counts from zero again, so the page reloads itself. A second request while that runs gets the 409 "already
+restarting"; scenario restart-refuses answers every request with the 409 "checking a WiFi network".
+
 Not reproduced: gzip, the ?v= asset
 versions (the query is ignored), the restart after saving a network in the access point scenarios (the reply text is sent,
 nothing restarts) and the WebSerial page. Received passwords are neither printed nor stored.
@@ -71,7 +75,7 @@ ASSETS = {
 
 SCENARIOS = ["normal", "bad-air", "sensor-fail", "ap", "sta-offline", "errors", "join-ok", "join-wrong-pass", "join-no-network",
              "sta-switch-ok", "sta-switch-wrong-pass", "sta-switch-no-network", "disp-effects", "disp-errors", "disp-night",
-             "lamp-refuses", "no-lamp"]
+             "lamp-refuses", "no-lamp", "restart-refuses"]
 # Scenarios in which the lamp runs as an access point: a new network is checked before it is saved
 AP_SCENARIOS = {"ap", "join-ok", "join-wrong-pass", "join-no-network"}
 # How long the mock check runs before it reports its result (the lamp takes up to 20 s)
@@ -89,6 +93,12 @@ JOIN_HOST = "haquda.local"
 JOIN_IP = "127.0.0.1"
 JOIN_BUSY_TEXT = "The lamp is already checking a network. Wait for the result."
 JOIN_RESTARTING_TEXT = "The network is saved. The lamp is restarting."
+# POST /api/restart: the lamp answers, restarts about a second later and is away this long
+RESTART_ACCEPTED_TEXT = "The lamp is restarting."
+RESTART_BUSY_TEXT = "The lamp is already restarting."
+RESTART_CHECKING_TEXT = "The lamp is checking a WiFi network. Try again when the check is over."
+RESTART_DELAY_S = 1.0
+RESTART_OFFLINE_S = 5.0
 JOIN_ACCEPTED_TEXT = "The lamp is checking the network. Open this page again in 30 seconds."
 STA_ACCEPTED_TEXT = (
     "The lamp is checking the network. This page may be unreachable for about a minute while the lamp tries it. "
@@ -386,6 +396,8 @@ class MockLamp:
         self.switch = None
         self.last = None
         self.restarted_at = None
+        # The mock restart: the time the lamp goes away (None when none is pending); it is back RESTART_OFFLINE_S later
+        self.restart_at = None
         # What the user set on the lamp card
         self.lamp = json.loads(json.dumps(LAMP_DEFAULTS))
 
@@ -451,9 +463,35 @@ class MockLamp:
         self.restarted_at = time.monotonic()
         return "idle"
 
-    def is_offline(self):
-        """True while the mock lamp is away during a station switch: the server answers nothing."""
+    def restart_phase(self):
+        """Phase of the mock restart: idle, pending (accepted, still answering) or offline. The caller holds the lock."""
+        if self.restart_at is None:
+            return "idle"
+        now = time.monotonic()
+        if now < self.restart_at:
+            return "pending"
+        if now < self.restart_at + RESTART_OFFLINE_S:
+            return "offline"
+        # The lamp is back: its uptime counts from zero again
+        self.restarted_at = self.restart_at + RESTART_OFFLINE_S
+        self.restart_at = None
+        return "idle"
+
+    def request_restart(self):
+        """POST /api/restart. Returns (status code, reply text) like HAQuDA_WebServer."""
         with self.lock:
+            if self.restart_phase() != "idle":
+                return 409, RESTART_BUSY_TEXT
+            if self.scenario == "restart-refuses":
+                return 409, RESTART_CHECKING_TEXT
+            self.restart_at = time.monotonic() + RESTART_DELAY_S
+            return 202, RESTART_ACCEPTED_TEXT
+
+    def is_offline(self):
+        """True while the mock lamp is away (a station switch or a restart): the server answers nothing."""
+        with self.lock:
+            if self.restart_phase() == "offline":
+                return True
             return self.sta_flow() and self.sta_phase() == "offline"
 
     def dismiss_last(self):
@@ -796,6 +834,9 @@ class PreviewHandler(BaseHTTPRequestHandler):
         elif path == "/delete_wifi_creds":
             code, text = self.lamp.delete_networks()
             self.send_body(code, "text/plain", text)
+        elif path == "/api/restart":
+            code, text = self.lamp.request_restart()
+            self.send_body(code, "text/plain", text)
         elif path == "/api/lamp":
             form = self.read_form()
             if form is None:
@@ -824,7 +865,8 @@ def main():
                              "leaves its network for about 10 s and comes back with the outcome; no-network fails at the scan); "
                              "disp-effects, disp-errors, disp-night (the picture of /api/disp cycles through the effects, "
                              "the error effects, the night light); "
-                             "lamp-refuses (POST /api/lamp answers 400), no-lamp (no lamp block: the card is hidden)")
+                             "lamp-refuses (POST /api/lamp answers 400), no-lamp (no lamp block: the card is hidden), "
+                             "restart-refuses (POST /api/restart answers 409: a WiFi check is running)")
     parser.add_argument("--host", default="127.0.0.1", help="address to bind (default 127.0.0.1)")
     parser.add_argument("--port", type=int, default=8080, help="port to listen on (default 8080)")
     parser.add_argument("--latency", type=int, default=0, metavar="MS", help="delay every answer by MS milliseconds")

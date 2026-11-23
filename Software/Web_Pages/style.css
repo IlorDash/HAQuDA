@@ -14,6 +14,9 @@
 	--matrix-border: #d1d5db;
 	--led-off: #e5e7eb;
 	--ph: #9ca3af;
+	--danger: #dc2626;
+	--danger-hover: #b91c1c;
+	--danger-ink: #ffffff;
 	color-scheme: light;
 }
 
@@ -34,6 +37,8 @@
 		--matrix-border: #1f2937;
 		--led-off: #1f2937;
 		--ph: #6b7280;
+		--danger: #b91c1c;
+		--danger-hover: #dc2626;
 		color-scheme: dark;
 	}
 }
@@ -54,6 +59,8 @@
 	--matrix-border: #1f2937;
 	--led-off: #1f2937;
 	--ph: #6b7280;
+	--danger: #b91c1c;
+	--danger-hover: #dc2626;
 	color-scheme: dark;
 }
 
@@ -322,6 +329,29 @@ main.in {
 	font-size: 13px;
 	font-weight: 600;
 	text-decoration: none;
+}
+
+button.lk {
+	width: 100%;
+	text-align: left;
+	background: transparent;
+	cursor: pointer;
+}
+
+.lk.danger {
+	border-color: var(--danger);
+	background: var(--danger);
+	color: var(--danger-ink);
+}
+
+.lk.danger:hover:not(:disabled) {
+	background: var(--danger-hover);
+	border-color: var(--danger-hover);
+}
+
+.lk.danger:disabled {
+	opacity: 0.5;
+	cursor: default;
 }
 
 .lk .note {
