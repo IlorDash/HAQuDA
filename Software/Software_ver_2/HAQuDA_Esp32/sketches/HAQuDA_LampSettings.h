@@ -8,6 +8,8 @@ enum class lamp_mode : uint8_t { standard, multi, night, light };
 // In the order of the page's keys; total is for the standard mode only
 enum class lamp_param : uint8_t { total, temp, humid, eco2, tvoc, pm25 };
 
+constexpr size_t LAMP_MODE_NUM = 4;
+constexpr size_t LAMP_PARAM_NUM = 6;
 constexpr uint8_t LAMP_MULTI_NUM = 3;
 constexpr uint8_t LAMP_COLORS_NUM = 6;
 constexpr uint8_t LAMP_BRIGHT_MIN = 5;
@@ -61,6 +63,12 @@ enum class lamp_update_result : uint8_t {
 	night_window_empty,
 	night_needs_time
 };
+
+// The text keys of the web page and of /api/lamp. The parsers take the exact key only and leave `out` untouched on failure.
+const char *HAQuDA_LampModeName(lamp_mode mode);
+const char *HAQuDA_LampParamName(lamp_param param);
+bool HAQuDA_ParseLampMode(const char *text, lamp_mode &out);
+bool HAQuDA_ParseLampParam(const char *text, lamp_param &out);
 
 lamp_settings HAQuDA_LampDefaults();
 

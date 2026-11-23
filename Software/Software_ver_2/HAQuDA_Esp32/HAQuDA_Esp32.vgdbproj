@@ -58,6 +58,8 @@
         <string>sketches\HAQuDA_MeasShowPolicy.h</string>
         <string>sketches\HAQuDA_BrightnessApply.h</string>
         <string>sketches\HAQuDA_LampSettings.h</string>
+        <string>sketches\HAQuDA_ButtonsSettings.h</string>
+        <string>sketches\HAQuDA_RecordCodec.h</string>
         <string>sketches\HAQuDA_LampControl.h</string>
         <string>sketches\HAQuDA_IFileStorage.h</string>
         <string>sketches\HAQuDA_ILampDisplay.h</string>
