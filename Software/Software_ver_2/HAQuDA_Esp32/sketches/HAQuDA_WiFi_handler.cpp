@@ -141,6 +141,13 @@ void HAQuDA_WiFi_handler::HandleConnection() {
 	vTaskDelay(2000 / portTICK_PERIOD_MS);
 
 	while (!WiFiConnected) {
+		// A restart asked for just before the drop (deleting the current network, the web restart) must still happen, and no
+		// new pass over the list should delay it: it waits here, yielding, until HandleDeferredWork() restarts
+		HandleDeferredWork();
+		if (restartRequested.load() || restartPending.load()) {
+			vTaskDelay(pdMS_TO_TICKS(STORED_CREDS_RETRY_DELAY_MS));
+			continue;
+		}
 		connectToStoredWiFi();
 	}
 

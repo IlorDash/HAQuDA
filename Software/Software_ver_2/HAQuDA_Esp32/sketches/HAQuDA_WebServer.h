@@ -105,6 +105,14 @@ class HAQuDA_WebServer {
 	// temporary file renamed. A power loss between those two steps leaves only the temporary file; RecoverCredsFile() restores
 	// it at the next boot. Returns false on failure (logged through postLogError). Any task; takes the credentials lock.
 	bool SaveCredsFirst(const TWiFiCreds &newCreds);
+	// Reads the records of /WiFiNetworks (at most capacity, file order) into out. The caller holds the credentials lock. Returns
+	// their number, or -1 when one cannot be read (out is wiped then). Any task, does not log.
+	int readCredsRecords(TWiFiCreds *out, int capacity);
+	// Replaces /WiFiNetworks with num records (num > 0): temporary file, delete, rename, and a direct write when the rename
+	// fails. The caller holds the credentials lock. Failures go through postLogError. Any task.
+	bool writeCredsList(const TWiFiCreds *list, size_t num);
+	// queued means not busy: nothing is reserved, unlike queueJoinRequest(). Takes joinMux. Web server task.
+	join_queue_result peekJoinBusy();
 	// Finishes or drops what an interrupted SaveCredsFirst() left (see HAQuDA_DecideCredsRecovery). Call at boot before
 	// the stored networks are read, with no other task using the file. setup() (loop task) only; logs.
 	void RecoverCredsFile();
@@ -125,7 +133,9 @@ class HAQuDA_WebServer {
 	// The handlers below run in the async_tcp task and must not block
 	void handle_NewWiFiCreds(AsyncWebServerRequest *request);
 	static void handle_NotFound(AsyncWebServerRequest *request);
-	void delete_WiFiCreds(AsyncWebServerRequest *request);
+	// Changes the credentials file only under credsMutex, and only while no check or restart is under way. Deleting the
+	// joined network restarts the lamp, so the list and the live connection never disagree. Web server task.
+	void handleWiFiDelete(AsyncWebServerRequest *request);
 	void handleStatus(AsyncWebServerRequest *request);
 	// JSON of the picture the lamp shows (effect, error or measurement layout), polled by the page
 	void handleDisp(AsyncWebServerRequest *request);

@@ -10,7 +10,7 @@ Run from any directory:  py -3 Software/Web_Pages/preview_server.py
 The page sources next to this script are read from disk on every request (Cache-Control: no-store), so saving a file
 and refreshing the browser shows the change. The routes, JSON shapes, status codes, content types and reply texts of
 HAQuDA_WebServer.cpp are reproduced for the success paths and for these error paths: the 400 and 409 replies of
-/add_wifi_creds, the 500 replies of /api/status and /delete_wifi_creds (scenario "errors"), and the
+/add_wifi_creds, the 500 replies of /api/status and /api/wifi/delete (scenario "errors"), and the
 index page for unknown GET URLs in the access point scenarios (the captive portal). The access point scenarios ("ap"
 and join-*) answer like the AP-mode firmware: POST /add_wifi_creds answers 202, /api/join reports "checking" for about 4 s and then the result of the
 scenario ("ap" passes like join-ok; join-wrong-pass and join-no-network fail); a network that passed is added to the
@@ -648,7 +648,8 @@ class MockLamp:
             if self.sta_flow():
                 self.sta_phase()
             # Raw UTF-8 like the lamp; only quote, backslash and control characters are escaped
-            return json.dumps(self.networks, ensure_ascii=False, separators=(",", ":"))
+            current = self.current_ssid if self.sta_flow() and self.scenario != "sta-offline" else None
+            return json.dumps({"nets": self.networks, "current": current}, ensure_ascii=False, separators=(",", ":"))
 
     def add_network(self, ssid, password):
         """Returns (status code, reply text) like handle_NewWiFiCreds."""
@@ -718,14 +719,32 @@ class MockLamp:
             body["last"] = self.last
         return json.dumps(body, ensure_ascii=False, separators=(",", ":"))
 
-    def delete_networks(self):
+    def delete_networks(self, form):
+        """POST /api/wifi/delete. Returns (status code, reply text) like HAQuDA_WebServer::handleWiFiDelete."""
+        has_ssid, has_all = "ssid" in form, "all" in form
+        if has_ssid == has_all or (has_all and form["all"] != "1"):
+            return 400, "Choose one network or all networks to delete."
+        ssid = form.get("ssid", "")
+        if has_ssid and not 0 < len(ssid.encode("utf-8")) < WIFI_SSID_LEN:
+            return 400, "The network name must be 1 to 31 bytes."
         with self.lock:
-            if not self.networks:
-                return 200, "There are no saved networks."
+            if self.restart_phase() != "idle":
+                return 409, "The lamp is restarting. Try again in a minute."
+            if self.sta_flow() and self.sta_phase() != "idle":
+                return 409, "The lamp is checking a WiFi network. Try again when the check is over."
             if self.scenario == "errors":
                 return 500, DELETE_FAIL_TEXT
-            self.networks = []
-        return 200, "Deleted all saved networks."
+            if has_all and not self.networks:
+                return 200, "There are no saved networks."
+            if has_ssid and ssid not in self.networks:
+                return 404, "This network is not saved."
+            current = self.sta_flow() and self.scenario != "sta-offline"
+            restart = current and (has_all or ssid == self.current_ssid)
+            self.networks = [] if has_all else [name for name in self.networks if name != ssid]
+            if restart:
+                self.restart_at = time.monotonic() + RESTART_DELAY_S
+            what = "Deleted all saved networks." if has_all else "The network is deleted."
+        return 200, what + (" The lamp is restarting." if restart else "")
 
 
 class PreviewServer(ThreadingHTTPServer):
@@ -831,8 +850,12 @@ class PreviewHandler(BaseHTTPRequestHandler):
                 return
             code, text = self.lamp.add_network(form.get("ssid", ""), form.get("pass", ""))
             self.send_body(code, "text/plain", text)
-        elif path == "/delete_wifi_creds":
-            code, text = self.lamp.delete_networks()
+        elif path == "/api/wifi/delete":
+            form = self.read_form()
+            if form is None:
+                self.send_body(413, "text/plain", "The request is too large.")
+                return
+            code, text = self.lamp.delete_networks(form)
             self.send_body(code, "text/plain", text)
         elif path == "/api/restart":
             code, text = self.lamp.request_restart()

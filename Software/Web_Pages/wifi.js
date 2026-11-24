@@ -584,7 +584,8 @@
 			}
 			return r.json();
 		})
-			.then(function (list) {
+			.then(function (d) {
+				var list = d && d.nets;
 				nets = Array.isArray(list) ? list.filter(function (n) {
 					return typeof n === 'string';
 				}) : [];
@@ -907,7 +908,11 @@
 	function deleteAll() {
 		byId('delYes').disabled = true;
 		byId('delNo').disabled = true;
-		fetch('/delete_wifi_creds', { method: 'POST' })
+		fetch('/api/wifi/delete', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+			body: 'all=1'
+		})
 			.then(function (r) {
 				return r.text().then(function (t) {
 					showReply(byId('delReply'), byId('delReplyText'), t, !r.ok);
