@@ -5,13 +5,13 @@
 #include "HAQuDA_ColorScale.h"
 
 #define LED_PIN 26
-#define LED_NUM_PIXELS 109
 // Raw NeoPixel brightness (0..255) at 100 %: the LED current limit. Everything else counts brightness in percent.
 #define MAX_BRIGHTNESS 150
 // Brightness in percent (5..100 in steps of 5, the lamp page's scale) the lamp starts with
 #define DEFAULT_BRIGHTNESS 35
 #define LED_COLUMN_NUM 9
 #define LED_ROW_NUM 12
+#define LED_NUM_PIXELS (LED_COLUMN_NUM * LED_ROW_NUM)
 // Night bar grey as a percentage of the largest colour channel (COLOR_SCALE_MAX_CHANNEL)
 #define WHITE_BRIGHTNESS_COEFF 70
 

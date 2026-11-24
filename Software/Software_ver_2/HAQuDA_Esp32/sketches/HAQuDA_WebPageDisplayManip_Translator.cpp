@@ -3,15 +3,15 @@
 #include <cstdarg>
 #include <cstdio>
 
+#include "HAQuDA_LEDsParams.h"
 #include "HAQuDA_NightProgress.h"
 
 namespace {
 
-	// Lamp geometry and timing, mirrors HAQuDA_LEDsParams.h (LED_NUM_PIXELS, LED_ROW_NUM), the 100 ms pause
-	// HAQuDA_DisplayManip::Show adds after every draw and the 200 ms HAQuDA_LEDs::Show() blocks without an argument (so do
-	// Clear() and SetBright(), which call it). Not included from there: that header pulls in Arduino.h.
-	constexpr uint32_t LAMP_PIXELS = 109;
-	constexpr uint32_t LAMP_ROWS = 12;
+	// Lamp timing mirrors the 100 ms pause HAQuDA_DisplayManip::Show adds after every draw and the 200 ms
+	// HAQuDA_LEDs::Show() blocks without an argument (so do Clear() and SetBright(), which call it).
+	constexpr uint32_t LAMP_PIXELS = LED_NUM_PIXELS;
+	constexpr uint32_t LAMP_ROWS = LED_ROW_NUM;
 	constexpr uint32_t SHOW_PAUSE_MS = 100;
 	constexpr uint32_t LEDS_SHOW_MS = 200;
 	// Every effect starts with Clear(): the matrix is dark for LEDS_SHOW_MS before the first frame.

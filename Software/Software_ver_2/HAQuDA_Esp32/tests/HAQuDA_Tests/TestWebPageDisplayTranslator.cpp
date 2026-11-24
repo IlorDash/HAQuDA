@@ -11,9 +11,9 @@
 TEST(WebPageDisplayTranslatorTest, SnakeShape) {
 	const size_t buf_size = 256;
 
-	// lap 21900 ms / 24 cells = 912.5, rounded up; tail 5 * 24 / 109 = 1.1
+	// lap 21700 ms / 24 cells = 904.17; tail 5 * 24 / 108 = 1.1
 	const char *exp_json
-		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#99ff33\",\"dark\":200,\"step\":913,\"tail\":1}";
+		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#99ff33\",\"dark\":200,\"step\":904,\"tail\":1}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -36,9 +36,9 @@ TEST(WebPageDisplayTranslatorTest, SnakeShape) {
 TEST(WebPageDisplayTranslatorTest, SnakeStepRoundsDown) {
 	const size_t buf_size = 256;
 
-	// lap 11000 ms / 24 = 458.33
+	// lap 10900 ms / 24 = 454.17
 	const char *exp_json
-		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"dark\":200,\"step\":458,\"tail\":1}";
+		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"dark\":200,\"step\":454,\"tail\":1}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -61,7 +61,7 @@ TEST(WebPageDisplayTranslatorTest, SnakeStepRoundsDown) {
 TEST(WebPageDisplayTranslatorTest, SnakeStepRoundsUp) {
 	const size_t buf_size = 256;
 
-	// lap 209 ms / 24 = 8.71
+	// lap 208 ms / 24 = 8.67
 	const char *exp_json
 		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"dark\":200,\"step\":9,\"tail\":1}";
 	const size_t exp_len = std::strlen(exp_json);
@@ -111,9 +111,9 @@ TEST(WebPageDisplayTranslatorTest, SnakeZeroPauseStepIsShowPauseOnly) {
 TEST(WebPageDisplayTranslatorTest, SnakeMaxPauseDoesNotOverflow) {
 	const size_t buf_size = 256;
 
-	// lap 7143415 ms / 24 = 297642.3
+	// lap 7077880 ms / 24 = 294911.67
 	const char *exp_json
-		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"dark\":200,\"step\":297642,\"tail\":1}";
+		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"dark\":200,\"step\":294912,\"tail\":1}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -137,7 +137,7 @@ TEST(WebPageDisplayTranslatorTest, SnakeTailZeroClampsToOne) {
 	const size_t buf_size = 256;
 
 	const char *exp_json
-		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"dark\":200,\"step\":458,\"tail\":1}";
+		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"dark\":200,\"step\":454,\"tail\":1}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -160,9 +160,9 @@ TEST(WebPageDisplayTranslatorTest, SnakeTailZeroClampsToOne) {
 TEST(WebPageDisplayTranslatorTest, SnakeTailScalesToPageCells) {
 	const size_t buf_size = 256;
 
-	// tail 50 * 24 / 109 = 11.01
+	// tail 50 * 24 / 108 = 11.11
 	const char *exp_json
-		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"dark\":200,\"step\":458,\"tail\":11}";
+		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"dark\":200,\"step\":454,\"tail\":11}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -185,9 +185,9 @@ TEST(WebPageDisplayTranslatorTest, SnakeTailScalesToPageCells) {
 TEST(WebPageDisplayTranslatorTest, SnakeTailFullLampIsPageCells) {
 	const size_t buf_size = 256;
 
-	// tail 109 * 24 / 109 = 24 exactly, no cap needed
+	// tail 108 * 24 / 108 = 24 exactly, no cap needed
 	const char *exp_json
-		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"dark\":200,\"step\":458,\"tail\":24}";
+		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"dark\":200,\"step\":454,\"tail\":24}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -196,7 +196,7 @@ TEST(WebPageDisplayTranslatorTest, SnakeTailFullLampIsPageCells) {
 	state.source = web_source::effect;
 	state.brightPercent = 50;
 	state.effect = web_effect::snake;
-	state.snake = {0xFF0000, 100, 109};
+	state.snake = {0xFF0000, 100, 108};
 	char buf[buf_size];
 
 	size_t res;
@@ -210,9 +210,9 @@ TEST(WebPageDisplayTranslatorTest, SnakeTailFullLampIsPageCells) {
 TEST(WebPageDisplayTranslatorTest, SnakeTailCapsAtPageCells) {
 	const size_t buf_size = 256;
 
-	// 255 * 24 / 109 = 56 before the cap
+	// 255 * 24 / 108 = 57 before the cap
 	const char *exp_json
-		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"dark\":200,\"step\":458,\"tail\":24}";
+		= "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"dark\":200,\"step\":454,\"tail\":24}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -312,8 +312,8 @@ TEST(WebPageDisplayTranslatorTest, GrowingMaxPauseDoesNotOverflow) {
 TEST(WebPageDisplayTranslatorTest, RandomShape) {
 	const size_t buf_size = 256;
 
-	// 109 * 50 ms / 24 cells = 227.08; end 500 + 100 ms show pause
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"random\",\"dark\":200,\"step\":227,\"end\":600}";
+	// 108 * 50 ms / 24 cells = 225; end 500 + 100 ms show pause
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"random\",\"dark\":200,\"step\":225,\"end\":600}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -336,7 +336,7 @@ TEST(WebPageDisplayTranslatorTest, RandomShape) {
 TEST(WebPageDisplayTranslatorTest, RandomStepRoundsUp) {
 	const size_t buf_size = 256;
 
-	// 109 / 24 = 4.54
+	// 108 / 24 = 4.5, rounded up
 	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"random\",\"dark\":200,\"step\":5,\"end\":100}";
 	const size_t exp_len = std::strlen(exp_json);
 
@@ -383,8 +383,8 @@ TEST(WebPageDisplayTranslatorTest, RandomZeroPauseStepIsZero) {
 TEST(WebPageDisplayTranslatorTest, RandomMaxValuesDoNotOverflow) {
 	const size_t buf_size = 256;
 
-	// 109 * 65535 / 24 = 297638.6
-	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"random\",\"dark\":200,\"step\":297638,\"end\":65635}";
+	// 108 * 65535 / 24 = 294907.5, rounded up
+	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"effect\",\"bright\":50,\"fx\":\"random\",\"dark\":200,\"step\":294908,\"end\":65635}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1144,7 +1144,7 @@ TEST(WebPageDisplayTranslatorTest, ErrorSensorsRandomShape) {
 	const size_t buf_size = 256;
 
 	const char *exp_json
-		= "{\"seq\":17,\"age\":4200,\"src\":\"error\",\"err\":\"sensors\",\"bright\":50,\"fx\":\"random\",\"dark\":200,\"step\":227,\"end\":600}";
+		= "{\"seq\":17,\"age\":4200,\"src\":\"error\",\"err\":\"sensors\",\"bright\":50,\"fx\":\"random\",\"dark\":200,\"step\":225,\"end\":600}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};
@@ -1219,7 +1219,7 @@ TEST(WebPageDisplayTranslatorTest, ErrorApSnakeShape) {
 	const size_t buf_size = 256;
 
 	const char *exp_json = "{\"seq\":17,\"age\":4200,\"src\":\"error\",\"err\":\"ap\",\"bright\":50,\"fx\":\"snake\",\"color\":\"#ff0000\",\"dark\":200,"
-						   "\"step\":458,\"tail\":1}";
+						   "\"step\":454,\"tail\":1}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	web_display_state state{};

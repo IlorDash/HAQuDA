@@ -13,9 +13,9 @@
 
 #define MAX_SENS_REBOOT_ATTEMPTS 3
 
-// The animation layer repeats these values instead of including HAQuDA_LEDsParams.h (its LED_NUM_PIXELS is not the matrix size)
 static_assert(ANIM_COLUMNS == LED_COLUMN_NUM, "animation and LED geometry must agree");
 static_assert(ANIM_ROWS == LED_ROW_NUM, "animation and LED geometry must agree");
+static_assert(ANIM_PIXELS == LED_NUM_PIXELS, "animation and LED geometry must agree");
 static_assert(ANIM_COLOR_AQUA == COLOR_AQUA, "animation colours must agree with the LED colours");
 static_assert(ANIM_COLOR_LIME == COLOR_LIME, "animation colours must agree with the LED colours");
 static_assert(ANIM_COLOR_GREEN == COLOR_GREEN, "animation colours must agree with the LED colours");

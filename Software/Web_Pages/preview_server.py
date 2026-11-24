@@ -160,8 +160,8 @@ def scale_color(value, dots):
     return "#{0:02x}{1:02x}{2:02x}".format(*rgb)
 
 
-# The lamp's picture for the page (HAQuDA_TranslateDisplayToJson): the lamp is 109 pixels in 12 rows, the page grid 24 cells in 6 rows
-LAMP_PIXELS = 109
+# The lamp's picture for the page (HAQuDA_TranslateDisplayToJson): the lamp is 108 pixels in 12 rows, the page grid 24 cells in 6 rows
+LAMP_PIXELS = 108
 LAMP_ROWS = 12
 PAGE_CELLS = 24
 PAGE_ROWS = 6

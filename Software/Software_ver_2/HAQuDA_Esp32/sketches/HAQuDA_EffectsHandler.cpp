@@ -110,7 +110,7 @@ void HAQuDA_EffectsHandler::show_snake(const snake_params p) {
 				return;
 			}
 			pixelNum = j + i;
-			pixelNum = (pixelNum > LED_NUM_PIXELS) ? LED_NUM_PIXELS : pixelNum;
+			pixelNum = (pixelNum >= LED_NUM_PIXELS) ? (LED_NUM_PIXELS - 1) : pixelNum;
 			HAQuDA_LEDs::getInstance()->SetPixelColor(pixelNum, p.color);
 		}
 		HAQuDA_LEDs::getInstance()->Show(p.move_pause_ms);

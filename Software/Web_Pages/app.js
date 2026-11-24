@@ -27,7 +27,7 @@
 	// the page restarts a picture when its clock and the lamp's age differ by more than this (the lamp restarted, or the page slept)
 	var DISP_RESYNC_MS = 2000;
 	// the longest time in a picture the lamp can send: a snake or random step at the lamp's slowest pause (65535 ms) is
-	// (109 * 65535 + 100) / 24 = 297642 ms, a growing step 2 * 65535, a fading level 65935; all fit in 300 s
+	// (108 * 65535 + 100) / 24 = 294912 ms, a growing step 2 * 65535, a fading level 65935; all fit in 300 s
 	var DISP_MAX_MS = 300000;
 	var DISP_SOURCES = ['none', 'effect', 'meas', 'error', 'event'];
 	// the error words of /api/disp; index 0 means no error

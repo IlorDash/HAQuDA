@@ -5,7 +5,7 @@
 #include "HAQuDA_ColorScale.h"
 #include "HAQuDA_ILEDs.h"
 
-// Duplicated from HAQuDA_LEDsParams.h, whose LED_NUM_PIXELS 109 is one more than the matrix has
+// Duplicated from HAQuDA_LEDsParams.h to keep this layer free of it (static_assert in HAQuDA_MeasHandler.cpp)
 constexpr uint8_t ANIM_COLUMNS = 9;
 constexpr uint8_t ANIM_ROWS = 12;
 constexpr uint16_t ANIM_PIXELS = ANIM_COLUMNS * ANIM_ROWS;
