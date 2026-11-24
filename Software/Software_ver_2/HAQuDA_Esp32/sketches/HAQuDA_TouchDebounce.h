@@ -12,6 +12,8 @@ class HAQuDA_TouchDebounce {
 	// Returns true once per press, after the input has been stably active for TOUCH_DEBOUNCE_MS.
 	bool Update(bool rawLevel, uint32_t nowMs);
 
+	bool Active() const;
+
   private:
 	bool activeLevel;
 	bool started = false;

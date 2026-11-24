@@ -4,6 +4,59 @@
 
 #include "HAQuDA_TouchDebounce.h"
 
+TEST(TouchDebounceTest, ActiveIsFalseBeforeTheDebounceTime) {
+	const uint32_t idleAtMs = 1000;
+	const uint32_t touchAtMs = 1100;
+
+	const bool exp_active = false;
+
+	HAQuDA_TouchDebounce deb(true);
+	deb.Update(false, idleAtMs);
+	deb.Update(true, touchAtMs);
+	deb.Update(true, touchAtMs + TOUCH_DEBOUNCE_MS - 1);
+
+	bool res;
+
+	res = deb.Active();
+
+	EXPECT_EQ(exp_active, res);
+}
+
+TEST(TouchDebounceTest, ActiveStaysTrueWhileHeldAfterTheDebounceTime) {
+	const uint32_t idleAtMs = 1000;
+	const uint32_t touchAtMs = 1100;
+
+	const bool exp_active = true;
+
+	HAQuDA_TouchDebounce deb(true);
+	deb.Update(false, idleAtMs);
+	deb.Update(true, touchAtMs);
+	deb.Update(true, touchAtMs + TOUCH_DEBOUNCE_MS);
+	deb.Update(true, touchAtMs + 5 * TOUCH_DEBOUNCE_MS);
+
+	bool res;
+
+	res = deb.Active();
+
+	EXPECT_EQ(exp_active, res);
+}
+
+TEST(TouchDebounceTest, ActiveFollowsABootLevelAndItsRelease) {
+	const uint32_t bootMs = 1000;
+	const uint32_t releaseMs = 2000;
+
+	HAQuDA_TouchDebounce deb(true);
+	deb.Update(true, bootMs);
+	deb.Update(true, bootMs + TOUCH_DEBOUNCE_MS);
+	const bool res_held = deb.Active();
+	deb.Update(false, releaseMs);
+	deb.Update(false, releaseMs + TOUCH_DEBOUNCE_MS);
+	const bool res_released = deb.Active();
+
+	EXPECT_TRUE(res_held);
+	EXPECT_FALSE(res_released);
+}
+
 TEST(TouchDebounceTest, PressFiresAtExactlyDebounceTime) {
 	const uint32_t idleAtMs = 1000;
 	const uint32_t touchAtMs = 1100;

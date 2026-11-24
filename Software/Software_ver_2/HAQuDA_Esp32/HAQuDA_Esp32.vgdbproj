@@ -60,6 +60,7 @@
         <string>sketches\HAQuDA_LampSettings.h</string>
         <string>sketches\HAQuDA_ButtonsSettings.h</string>
         <string>sketches\HAQuDA_ButtonsControl.h</string>
+        <string>sketches\HAQuDA_ButtonActions.h</string>
         <string>sketches\HAQuDA_RecordCodec.h</string>
         <string>sketches\HAQuDA_LampControl.h</string>
         <string>sketches\HAQuDA_ILampActions.h</string>
@@ -71,7 +72,6 @@
         <string>sketches\HAQuDA_TotalColor.h</string>
         <string>sketches\HAQuDA_DisplayTypes.h</string>
         <string>sketches\HAQuDA_LampDisplayRules.h</string>
-        <string>sketches\HAQuDA_PressCounter.h</string>
         <string>sketches\HAQuDA_TouchDebounce.h</string>
         <string>sketches\HAQuDA_TouchGestures.h</string>
         <string>sketches\HAQuDA_TouchPoller.h</string>

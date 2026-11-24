@@ -67,7 +67,6 @@
     <ClCompile Include="TestColorScale.cpp" />
     <ClCompile Include="TestLogDedup.cpp" />
     <ClCompile Include="TestTouchDebounce.cpp" />
-    <ClCompile Include="TestPressCounter.cpp" />
     <ClCompile Include="TestTouchPoller.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_TouchDebounce.cpp" />
     <ClCompile Include="TestTouchGestures.cpp" />
@@ -93,6 +92,8 @@
     <ClCompile Include="..\..\sketches\HAQuDA_ButtonsSettings.cpp" />
     <ClCompile Include="TestButtonsControl.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_ButtonsControl.cpp" />
+    <ClCompile Include="TestButtonActions.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_ButtonActions.cpp" />
     <ClCompile Include="TestLampSettings.cpp" />
     <ClCompile Include="TestLampControl.cpp" />
     <ClCompile Include="TestLampForm.cpp" />
@@ -123,7 +124,6 @@
     <ClInclude Include="..\..\sketches\HAQuDA_LampDisplayRules.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_DateFormat.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_LogDedup.h" />
-    <ClInclude Include="..\..\sketches\HAQuDA_PressCounter.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_TouchDebounce.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_TouchGestures.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_TouchPoller.h" />
@@ -145,6 +145,7 @@
     <ClInclude Include="..\..\sketches\HAQuDA_LampSettings.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_ButtonsSettings.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_ButtonsControl.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_ButtonActions.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_RecordCodec.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_LampControl.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_ILampActions.h" />
@@ -158,6 +159,7 @@
     <ClInclude Include="..\mocks\MockFileStorage.h" />
     <ClInclude Include="..\mocks\MockLampDisplay.h" />
     <ClInclude Include="..\mocks\MockLogger.h" />
+    <ClInclude Include="..\mocks\MockLampActions.h" />
     <ClInclude Include="..\fakes\FakePMSerial.h" />
   </ItemGroup>
   <ItemGroup>

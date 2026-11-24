@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-#include "HAQuDA_TouchPoller.h"
+constexpr uint8_t TOUCH_BUTTONS_NUM = 4;
 
 constexpr uint32_t TOUCH_TAP_MAX_MS = 600;
 constexpr uint32_t TOUCH_REPEAT_START_MS = 600;

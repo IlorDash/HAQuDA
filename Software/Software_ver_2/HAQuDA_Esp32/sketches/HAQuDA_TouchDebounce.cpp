@@ -3,6 +3,10 @@
 HAQuDA_TouchDebounce::HAQuDA_TouchDebounce(bool activeLevel) : activeLevel(activeLevel) {
 }
 
+bool HAQuDA_TouchDebounce::Active() const {
+	return stableActive;
+}
+
 bool HAQuDA_TouchDebounce::Update(bool rawLevel, uint32_t nowMs) {
 	const bool active = (rawLevel == activeLevel);
 

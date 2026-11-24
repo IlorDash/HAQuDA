@@ -4,358 +4,928 @@
 
 #include "HAQuDA_TouchPoller.h"
 
-TEST(TouchPollerTest, TakeOnNewPollerIsZeroForButton0) {
+TEST(TouchPollerTest, IdleLevelsGiveNoEvents) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+
+	const uint8_t exp_quiet = 0;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	quiet += poller.Poll(idle, 2000, scratch, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+}
+
+TEST(TouchPollerTest, ShortTouchOnButton0GivesTapOfButton0) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad0[TOUCH_BUTTONS_NUM] = {true, false, false, false};
+
+	const uint8_t exp_quiet = 0;
+	const uint8_t exp_count_tap = 1;
+	const touch_gesture_kind exp_kind_tap = touch_gesture_kind::tap;
+	const uint8_t exp_button_tap = 0;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+	touch_gesture_event out_tap[1];
+	uint8_t res_tap;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	quiet += poller.Poll(pad0, 1100, scratch, 1);
+	quiet += poller.Poll(pad0, 1130, scratch, 1);
+	quiet += poller.Poll(idle, 1200, scratch, 1);
+	res_tap = poller.Poll(idle, 1230, out_tap, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+	EXPECT_EQ(exp_count_tap, res_tap);
+	EXPECT_EQ(exp_kind_tap, out_tap[0].kind);
+	EXPECT_EQ(exp_button_tap, out_tap[0].button);
+}
+
+TEST(TouchPollerTest, ShortTouchOnButton1GivesTapOfButton1) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad1[TOUCH_BUTTONS_NUM] = {false, true, false, false};
+
+	const uint8_t exp_quiet = 0;
+	const uint8_t exp_count_tap = 1;
+	const touch_gesture_kind exp_kind_tap = touch_gesture_kind::tap;
+	const uint8_t exp_button_tap = 1;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+	touch_gesture_event out_tap[1];
+	uint8_t res_tap;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	quiet += poller.Poll(pad1, 1100, scratch, 1);
+	quiet += poller.Poll(pad1, 1130, scratch, 1);
+	quiet += poller.Poll(idle, 1200, scratch, 1);
+	res_tap = poller.Poll(idle, 1230, out_tap, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+	EXPECT_EQ(exp_count_tap, res_tap);
+	EXPECT_EQ(exp_kind_tap, out_tap[0].kind);
+	EXPECT_EQ(exp_button_tap, out_tap[0].button);
+}
+
+TEST(TouchPollerTest, ShortTouchOnButton2GivesTapOfButton2) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad2[TOUCH_BUTTONS_NUM] = {false, false, true, false};
+
+	const uint8_t exp_quiet = 0;
+	const uint8_t exp_count_tap = 1;
+	const touch_gesture_kind exp_kind_tap = touch_gesture_kind::tap;
+	const uint8_t exp_button_tap = 2;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+	touch_gesture_event out_tap[1];
+	uint8_t res_tap;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	quiet += poller.Poll(pad2, 1100, scratch, 1);
+	quiet += poller.Poll(pad2, 1130, scratch, 1);
+	quiet += poller.Poll(idle, 1200, scratch, 1);
+	res_tap = poller.Poll(idle, 1230, out_tap, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+	EXPECT_EQ(exp_count_tap, res_tap);
+	EXPECT_EQ(exp_kind_tap, out_tap[0].kind);
+	EXPECT_EQ(exp_button_tap, out_tap[0].button);
+}
+
+TEST(TouchPollerTest, ShortTouchOnButton3GivesTapOfButton3) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad3[TOUCH_BUTTONS_NUM] = {false, false, false, true};
+
+	const uint8_t exp_quiet = 0;
+	const uint8_t exp_count_tap = 1;
+	const touch_gesture_kind exp_kind_tap = touch_gesture_kind::tap;
+	const uint8_t exp_button_tap = 3;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+	touch_gesture_event out_tap[1];
+	uint8_t res_tap;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	quiet += poller.Poll(pad3, 1100, scratch, 1);
+	quiet += poller.Poll(pad3, 1130, scratch, 1);
+	quiet += poller.Poll(idle, 1200, scratch, 1);
+	res_tap = poller.Poll(idle, 1230, out_tap, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+	EXPECT_EQ(exp_count_tap, res_tap);
+	EXPECT_EQ(exp_kind_tap, out_tap[0].kind);
+	EXPECT_EQ(exp_button_tap, out_tap[0].button);
+}
+
+TEST(TouchPollerTest, TouchShorterThanDebounceGivesNoEvent) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad0[TOUCH_BUTTONS_NUM] = {true, false, false, false};
+
+	const uint8_t exp_quiet = 0;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	quiet += poller.Poll(pad0, 1100, scratch, 1);
+	quiet += poller.Poll(idle, 1120, scratch, 1);
+	quiet += poller.Poll(idle, 1150, scratch, 1);
+	quiet += poller.Poll(idle, 1180, scratch, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+}
+
+TEST(TouchPollerTest, TapReleasedJustBeforeSixHundredMsIsATap) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad0[TOUCH_BUTTONS_NUM] = {true, false, false, false};
+
+	const uint8_t exp_quiet = 0;
+	const uint8_t exp_count_tap = 1;
+	const touch_gesture_kind exp_kind_tap = touch_gesture_kind::tap;
+	const uint8_t exp_button_tap = 0;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+	touch_gesture_event out_tap[1];
+	uint8_t res_tap;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	quiet += poller.Poll(pad0, 1100, scratch, 1);
+	quiet += poller.Poll(pad0, 1130, scratch, 1);
+	quiet += poller.Poll(idle, 1699, scratch, 1);
+	res_tap = poller.Poll(idle, 1729, out_tap, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+	EXPECT_EQ(exp_count_tap, res_tap);
+	EXPECT_EQ(exp_kind_tap, out_tap[0].kind);
+	EXPECT_EQ(exp_button_tap, out_tap[0].button);
+}
+
+TEST(TouchPollerTest, TouchReleasedAtSixHundredMsIsNotATap) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad0[TOUCH_BUTTONS_NUM] = {true, false, false, false};
+
+	const uint8_t exp_quiet = 0;
+	const uint8_t exp_count_tap = 0;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+	touch_gesture_event out_tap[1];
+	uint8_t res_tap;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	quiet += poller.Poll(pad0, 1100, scratch, 1);
+	quiet += poller.Poll(pad0, 1130, scratch, 1);
+	quiet += poller.Poll(idle, 1700, scratch, 1);
+	res_tap = poller.Poll(idle, 1730, out_tap, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+	EXPECT_EQ(exp_count_tap, res_tap);
+}
+
+TEST(TouchPollerTest, TwoButtonsTouchedBriefGiveNoTap) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad02[TOUCH_BUTTONS_NUM] = {true, false, true, false};
+
+	const uint8_t exp_quiet = 0;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	quiet += poller.Poll(pad02, 1100, scratch, 1);
+	quiet += poller.Poll(pad02, 1130, scratch, 1);
+	quiet += poller.Poll(idle, 1200, scratch, 1);
+	quiet += poller.Poll(idle, 1230, scratch, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+}
+
+TEST(TouchPollerTest, SecondTouchAfterATapGivesASecondTap) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad2[TOUCH_BUTTONS_NUM] = {false, false, true, false};
+
+	const uint8_t exp_quiet = 1;
+	const uint8_t exp_count_tap = 1;
+	const touch_gesture_kind exp_kind_tap = touch_gesture_kind::tap;
+	const uint8_t exp_button_tap = 2;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+	touch_gesture_event out_tap[1];
+	uint8_t res_tap;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	quiet += poller.Poll(pad2, 1100, scratch, 1);
+	quiet += poller.Poll(pad2, 1130, scratch, 1);
+	quiet += poller.Poll(idle, 1200, scratch, 1);
+	quiet += poller.Poll(idle, 1230, scratch, 1);
+	quiet += poller.Poll(pad2, 1300, scratch, 1);
+	quiet += poller.Poll(pad2, 1330, scratch, 1);
+	quiet += poller.Poll(idle, 1400, scratch, 1);
+	res_tap = poller.Poll(idle, 1430, out_tap, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+	EXPECT_EQ(exp_count_tap, res_tap);
+	EXPECT_EQ(exp_kind_tap, out_tap[0].kind);
+	EXPECT_EQ(exp_button_tap, out_tap[0].button);
+}
+
+TEST(TouchPollerTest, HeldRepeatableButtonGivesTheFirstRepeatAtSixHundredMs) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad1[TOUCH_BUTTONS_NUM] = {false, true, false, false};
+
+	const uint8_t exp_quiet = 0;
+	const uint8_t exp_count_repeat = 1;
+	const touch_gesture_kind exp_kind_repeat = touch_gesture_kind::repeat;
+	const uint8_t exp_button_repeat = 1;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+	touch_gesture_event out_repeat[1];
+	uint8_t res_repeat;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	poller.SetRepeatable(1, true);
+	quiet += poller.Poll(pad1, 1100, scratch, 1);
+	quiet += poller.Poll(pad1, 1130, scratch, 1);
+	quiet += poller.Poll(pad1, 1700, scratch, 1);
+	res_repeat = poller.Poll(pad1, 1730, out_repeat, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+	EXPECT_EQ(exp_count_repeat, res_repeat);
+	EXPECT_EQ(exp_kind_repeat, out_repeat[0].kind);
+	EXPECT_EQ(exp_button_repeat, out_repeat[0].button);
+}
+
+TEST(TouchPollerTest, HeldRepeatableButtonGivesTheSecondRepeatTwoHundredMsLater) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad1[TOUCH_BUTTONS_NUM] = {false, true, false, false};
+
+	const uint8_t exp_quiet = 1;
+	const uint8_t exp_count_repeat = 1;
+	const touch_gesture_kind exp_kind_repeat = touch_gesture_kind::repeat;
+	const uint8_t exp_button_repeat = 1;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+	touch_gesture_event out_repeat[1];
+	uint8_t res_repeat;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	poller.SetRepeatable(1, true);
+	quiet += poller.Poll(pad1, 1100, scratch, 1);
+	quiet += poller.Poll(pad1, 1130, scratch, 1);
+	quiet += poller.Poll(pad1, 1730, scratch, 1);
+	quiet += poller.Poll(pad1, 1900, scratch, 1);
+	res_repeat = poller.Poll(pad1, 1930, out_repeat, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+	EXPECT_EQ(exp_count_repeat, res_repeat);
+	EXPECT_EQ(exp_kind_repeat, out_repeat[0].kind);
+	EXPECT_EQ(exp_button_repeat, out_repeat[0].button);
+}
+
+TEST(TouchPollerTest, ReleaseAfterRepeatsGivesRepeatEndOfTheButton) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad1[TOUCH_BUTTONS_NUM] = {false, true, false, false};
+
+	const uint8_t exp_quiet = 2;
+	const uint8_t exp_count_end = 1;
+	const touch_gesture_kind exp_kind_end = touch_gesture_kind::repeat_end;
+	const uint8_t exp_button_end = 1;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+	touch_gesture_event out_end[1];
+	uint8_t res_end;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	poller.SetRepeatable(1, true);
+	quiet += poller.Poll(pad1, 1100, scratch, 1);
+	quiet += poller.Poll(pad1, 1130, scratch, 1);
+	quiet += poller.Poll(pad1, 1730, scratch, 1);
+	quiet += poller.Poll(pad1, 1930, scratch, 1);
+	quiet += poller.Poll(idle, 2000, scratch, 1);
+	res_end = poller.Poll(idle, 2030, out_end, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+	EXPECT_EQ(exp_count_end, res_end);
+	EXPECT_EQ(exp_kind_end, out_end[0].kind);
+	EXPECT_EQ(exp_button_end, out_end[0].button);
+}
+
+TEST(TouchPollerTest, HeldButtonWithoutRepeatGivesNoEvent) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad1[TOUCH_BUTTONS_NUM] = {false, true, false, false};
+
+	const uint8_t exp_quiet = 0;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	quiet += poller.Poll(pad1, 1100, scratch, 1);
+	quiet += poller.Poll(pad1, 1130, scratch, 1);
+	quiet += poller.Poll(pad1, 1730, scratch, 1);
+	quiet += poller.Poll(pad1, 3000, scratch, 1);
+	quiet += poller.Poll(idle, 3100, scratch, 1);
+	quiet += poller.Poll(idle, 3130, scratch, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+}
+
+TEST(TouchPollerTest, RepeatableFlagSetMidHoldRepeatsAtTheNextPoll) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad1[TOUCH_BUTTONS_NUM] = {false, true, false, false};
+
+	const uint8_t exp_quiet = 0;
+	const uint8_t exp_count_repeat = 1;
+	const touch_gesture_kind exp_kind_repeat = touch_gesture_kind::repeat;
+	const uint8_t exp_button_repeat = 1;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+	touch_gesture_event out_repeat[1];
+	uint8_t res_repeat;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	quiet += poller.Poll(pad1, 1100, scratch, 1);
+	quiet += poller.Poll(pad1, 1130, scratch, 1);
+	quiet += poller.Poll(pad1, 1900, scratch, 1);
+	poller.SetRepeatable(1, true);
+	res_repeat = poller.Poll(pad1, 1930, out_repeat, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+	EXPECT_EQ(exp_count_repeat, res_repeat);
+	EXPECT_EQ(exp_kind_repeat, out_repeat[0].kind);
+	EXPECT_EQ(exp_button_repeat, out_repeat[0].button);
+}
+
+TEST(TouchPollerTest, RepeatableFlagClearedMidHoldStopsRepeatsButStillEnds) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad1[TOUCH_BUTTONS_NUM] = {false, true, false, false};
+
+	const uint8_t exp_quiet = 1;
+	const uint8_t exp_count_end = 1;
+	const touch_gesture_kind exp_kind_end = touch_gesture_kind::repeat_end;
+	const uint8_t exp_button_end = 1;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+	touch_gesture_event out_end[1];
+	uint8_t res_end;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	poller.SetRepeatable(1, true);
+	quiet += poller.Poll(pad1, 1100, scratch, 1);
+	quiet += poller.Poll(pad1, 1130, scratch, 1);
+	quiet += poller.Poll(pad1, 1730, scratch, 1);
+	poller.SetRepeatable(1, false);
+	quiet += poller.Poll(pad1, 1930, scratch, 1);
+	quiet += poller.Poll(pad1, 2500, scratch, 1);
+	quiet += poller.Poll(idle, 2600, scratch, 1);
+	res_end = poller.Poll(idle, 2630, out_end, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+	EXPECT_EQ(exp_count_end, res_end);
+	EXPECT_EQ(exp_kind_end, out_end[0].kind);
+	EXPECT_EQ(exp_button_end, out_end[0].button);
+}
+
+TEST(TouchPollerTest, RepeatableFlagSetAfterAHoldAppliesToTheNextHold) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad3[TOUCH_BUTTONS_NUM] = {false, false, false, true};
+
+	const uint8_t exp_quiet = 0;
+	const uint8_t exp_count_repeat = 1;
+	const touch_gesture_kind exp_kind_repeat = touch_gesture_kind::repeat;
+	const uint8_t exp_button_repeat = 3;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+	touch_gesture_event out_repeat[1];
+	uint8_t res_repeat;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	quiet += poller.Poll(pad3, 1100, scratch, 1);
+	quiet += poller.Poll(pad3, 1130, scratch, 1);
+	quiet += poller.Poll(pad3, 1900, scratch, 1);
+	quiet += poller.Poll(idle, 2000, scratch, 1);
+	quiet += poller.Poll(idle, 2030, scratch, 1);
+	poller.SetRepeatable(3, true);
+	quiet += poller.Poll(pad3, 3000, scratch, 1);
+	quiet += poller.Poll(pad3, 3030, scratch, 1);
+	res_repeat = poller.Poll(pad3, 3630, out_repeat, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+	EXPECT_EQ(exp_count_repeat, res_repeat);
+	EXPECT_EQ(exp_kind_repeat, out_repeat[0].kind);
+	EXPECT_EQ(exp_button_repeat, out_repeat[0].button);
+}
+
+TEST(TouchPollerTest, RepeatableFlagOfAnotherButtonDoesNotRepeatTheHeldOne) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad1[TOUCH_BUTTONS_NUM] = {false, true, false, false};
+
+	const uint8_t exp_quiet = 0;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	poller.SetRepeatable(2, true);
+	quiet += poller.Poll(pad1, 1100, scratch, 1);
+	quiet += poller.Poll(pad1, 1130, scratch, 1);
+	quiet += poller.Poll(pad1, 1730, scratch, 1);
+	quiet += poller.Poll(pad1, 3000, scratch, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+}
+
+TEST(TouchPollerTest, RepeatableFlagOutOfRangeIsIgnored) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad0[TOUCH_BUTTONS_NUM] = {true, false, false, false};
+
+	const uint8_t exp_quiet = 0;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	poller.SetRepeatable(TOUCH_BUTTONS_NUM, true);
+	quiet += poller.Poll(pad0, 1100, scratch, 1);
+	quiet += poller.Poll(pad0, 1130, scratch, 1);
+	quiet += poller.Poll(pad0, 1730, scratch, 1);
+	quiet += poller.Poll(pad0, 3000, scratch, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+}
+
+TEST(TouchPollerTest, SecondButtonDuringRepeatGivesRepeatEnd) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad1[TOUCH_BUTTONS_NUM] = {false, true, false, false};
+	const bool pad01[TOUCH_BUTTONS_NUM] = {true, true, false, false};
+
+	const uint8_t exp_quiet = 1;
+	const uint8_t exp_count_end = 1;
+	const touch_gesture_kind exp_kind_end = touch_gesture_kind::repeat_end;
+	const uint8_t exp_button_end = 1;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+	touch_gesture_event out_end[1];
+	uint8_t res_end;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	poller.SetRepeatable(1, true);
+	quiet += poller.Poll(pad1, 1100, scratch, 1);
+	quiet += poller.Poll(pad1, 1130, scratch, 1);
+	quiet += poller.Poll(pad1, 1730, scratch, 1);
+	quiet += poller.Poll(pad01, 1800, scratch, 1);
+	res_end = poller.Poll(pad01, 1830, out_end, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+	EXPECT_EQ(exp_count_end, res_end);
+	EXPECT_EQ(exp_kind_end, out_end[0].kind);
+	EXPECT_EQ(exp_button_end, out_end[0].button);
+}
+
+TEST(TouchPollerTest, LockPairHeldJustShortOfThreeSecondsGivesNothing) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool lockPair[TOUCH_BUTTONS_NUM] = {false, true, true, false};
+
+	const uint8_t exp_quiet = 0;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	quiet += poller.Poll(lockPair, 1100, scratch, 1);
+	quiet += poller.Poll(lockPair, 1130, scratch, 1);
+	quiet += poller.Poll(lockPair, 4120, scratch, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+}
+
+TEST(TouchPollerTest, LockPairHeldThreeSecondsGivesLockChord) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool lockPair[TOUCH_BUTTONS_NUM] = {false, true, true, false};
+
+	const uint8_t exp_quiet = 0;
+	const uint8_t exp_count_chord = 1;
+	const touch_gesture_kind exp_kind_chord = touch_gesture_kind::lock_chord;
+	const uint8_t exp_button_chord = TOUCH_NO_BUTTON;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+	touch_gesture_event out_chord[1];
+	uint8_t res_chord;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	quiet += poller.Poll(lockPair, 1100, scratch, 1);
+	quiet += poller.Poll(lockPair, 1130, scratch, 1);
+	res_chord = poller.Poll(lockPair, 4130, out_chord, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+	EXPECT_EQ(exp_count_chord, res_chord);
+	EXPECT_EQ(exp_kind_chord, out_chord[0].kind);
+	EXPECT_EQ(exp_button_chord, out_chord[0].button);
+}
+
+TEST(TouchPollerTest, LockChordFiresOnlyOnce) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool lockPair[TOUCH_BUTTONS_NUM] = {false, true, true, false};
+
+	const uint8_t exp_quiet = 1;
+	const uint8_t exp_count_again = 0;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+	touch_gesture_event out_again[1];
+	uint8_t res_again;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	quiet += poller.Poll(lockPair, 1100, scratch, 1);
+	quiet += poller.Poll(lockPair, 1130, scratch, 1);
+	quiet += poller.Poll(lockPair, 4130, scratch, 1);
+	res_again = poller.Poll(lockPair, 8000, out_again, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+	EXPECT_EQ(exp_count_again, res_again);
+}
+
+TEST(TouchPollerTest, ReleaseAfterLockChordGivesNoEvent) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool lockPair[TOUCH_BUTTONS_NUM] = {false, true, true, false};
+
+	const uint8_t exp_quiet = 1;
+	const uint8_t exp_count_end = 0;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+	touch_gesture_event out_end[1];
+	uint8_t res_end;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	quiet += poller.Poll(lockPair, 1100, scratch, 1);
+	quiet += poller.Poll(lockPair, 1130, scratch, 1);
+	quiet += poller.Poll(lockPair, 4130, scratch, 1);
+	quiet += poller.Poll(idle, 4200, scratch, 1);
+	res_end = poller.Poll(idle, 4230, out_end, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+	EXPECT_EQ(exp_count_end, res_end);
+}
+
+TEST(TouchPollerTest, ApPairHeldThreeSecondsGivesNothing) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool apPair[TOUCH_BUTTONS_NUM] = {true, false, false, true};
+
+	const uint8_t exp_quiet = 0;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	quiet += poller.Poll(apPair, 1100, scratch, 1);
+	quiet += poller.Poll(apPair, 1130, scratch, 1);
+	quiet += poller.Poll(apPair, 4130, scratch, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+}
+
+TEST(TouchPollerTest, ApPairHeldJustShortOfTenSecondsGivesNothing) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool apPair[TOUCH_BUTTONS_NUM] = {true, false, false, true};
+
+	const uint8_t exp_quiet = 0;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	quiet += poller.Poll(apPair, 1100, scratch, 1);
+	quiet += poller.Poll(apPair, 1130, scratch, 1);
+	quiet += poller.Poll(apPair, 11120, scratch, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+}
+
+TEST(TouchPollerTest, ApPairHeldTenSecondsGivesApChord) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool apPair[TOUCH_BUTTONS_NUM] = {true, false, false, true};
+
+	const uint8_t exp_quiet = 0;
+	const uint8_t exp_count_chord = 1;
+	const touch_gesture_kind exp_kind_chord = touch_gesture_kind::ap_chord;
+	const uint8_t exp_button_chord = TOUCH_NO_BUTTON;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+	touch_gesture_event out_chord[1];
+	uint8_t res_chord;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	quiet += poller.Poll(apPair, 1100, scratch, 1);
+	quiet += poller.Poll(apPair, 1130, scratch, 1);
+	res_chord = poller.Poll(apPair, 11130, out_chord, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+	EXPECT_EQ(exp_count_chord, res_chord);
+	EXPECT_EQ(exp_kind_chord, out_chord[0].kind);
+	EXPECT_EQ(exp_button_chord, out_chord[0].button);
+}
+
+TEST(TouchPollerTest, PadHeldAtBootGivesNoEventWhileHeldOrOnRelease) {
+	const bool pad0[TOUCH_BUTTONS_NUM] = {true, false, false, false};
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+
+	const uint8_t exp_quiet = 0;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+
+	quiet += poller.Poll(pad0, 1000, scratch, 1);
+	quiet += poller.Poll(pad0, 1030, scratch, 1);
+	quiet += poller.Poll(pad0, 1100, scratch, 1);
+	quiet += poller.Poll(pad0, 2000, scratch, 1);
+	quiet += poller.Poll(idle, 2100, scratch, 1);
+	quiet += poller.Poll(idle, 2130, scratch, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+}
+
+TEST(TouchPollerTest, TapAfterReleaseOfBootHeldPadIsReported) {
+	const bool pad0[TOUCH_BUTTONS_NUM] = {true, false, false, false};
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+
+	const uint8_t exp_quiet = 0;
+	const uint8_t exp_count_tap = 1;
+	const touch_gesture_kind exp_kind_tap = touch_gesture_kind::tap;
+	const uint8_t exp_button_tap = 0;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+	touch_gesture_event out_tap[1];
+	uint8_t res_tap;
+
+	quiet += poller.Poll(pad0, 1000, scratch, 1);
+	quiet += poller.Poll(pad0, 1030, scratch, 1);
+	quiet += poller.Poll(idle, 1200, scratch, 1);
+	quiet += poller.Poll(idle, 1230, scratch, 1);
+	quiet += poller.Poll(pad0, 1300, scratch, 1);
+	quiet += poller.Poll(pad0, 1330, scratch, 1);
+	quiet += poller.Poll(idle, 1400, scratch, 1);
+	res_tap = poller.Poll(idle, 1430, out_tap, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+	EXPECT_EQ(exp_count_tap, res_tap);
+	EXPECT_EQ(exp_kind_tap, out_tap[0].kind);
+	EXPECT_EQ(exp_button_tap, out_tap[0].button);
+}
+
+TEST(TouchPollerTest, PressInsideTheBootGateIsATap) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad0[TOUCH_BUTTONS_NUM] = {true, false, false, false};
+
+	const uint8_t exp_quiet = 0;
+	const uint8_t exp_count_tap = 1;
+	const touch_gesture_kind exp_kind_tap = touch_gesture_kind::tap;
+	const uint8_t exp_button_tap = 0;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+	touch_gesture_event out_tap[1];
+	uint8_t res_tap;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(pad0, 1010, scratch, 1);
+	quiet += poller.Poll(pad0, 1030, scratch, 1);
+	quiet += poller.Poll(pad0, 1040, scratch, 1);
+	quiet += poller.Poll(idle, 1100, scratch, 1);
+	res_tap = poller.Poll(idle, 1130, out_tap, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+	EXPECT_EQ(exp_count_tap, res_tap);
+	EXPECT_EQ(exp_kind_tap, out_tap[0].kind);
+	EXPECT_EQ(exp_button_tap, out_tap[0].button);
+}
+
+TEST(TouchPollerTest, LockPairHeldAtBootGivesNoChord) {
+	const bool lockPair[TOUCH_BUTTONS_NUM] = {false, true, true, false};
+
+	const uint8_t exp_quiet = 0;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+
+	quiet += poller.Poll(lockPair, 1000, scratch, 1);
+	quiet += poller.Poll(lockPair, 1030, scratch, 1);
+	quiet += poller.Poll(lockPair, 4100, scratch, 1);
+	quiet += poller.Poll(lockPair, 5000, scratch, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+}
+
+TEST(TouchPollerTest, ApPairHeldAtBootGivesNoChord) {
+	const bool apPair[TOUCH_BUTTONS_NUM] = {true, false, false, true};
+
+	const uint8_t exp_quiet = 0;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+
+	quiet += poller.Poll(apPair, 1000, scratch, 1);
+	quiet += poller.Poll(apPair, 1030, scratch, 1);
+	quiet += poller.Poll(apPair, 12000, scratch, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+}
+
+TEST(TouchPollerTest, OtherPadPressedWhileAPadIsBootHeldIsATap) {
+	const bool pad0[TOUCH_BUTTONS_NUM] = {true, false, false, false};
+	const bool pad01[TOUCH_BUTTONS_NUM] = {true, true, false, false};
+
+	const uint8_t exp_quiet = 0;
+	const uint8_t exp_count_tap = 1;
+	const touch_gesture_kind exp_kind_tap = touch_gesture_kind::tap;
+	const uint8_t exp_button_tap = 1;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+	touch_gesture_event out_tap[1];
+	uint8_t res_tap;
+
+	quiet += poller.Poll(pad0, 1000, scratch, 1);
+	quiet += poller.Poll(pad0, 1030, scratch, 1);
+	quiet += poller.Poll(pad01, 1100, scratch, 1);
+	quiet += poller.Poll(pad01, 1130, scratch, 1);
+	quiet += poller.Poll(pad0, 1200, scratch, 1);
+	res_tap = poller.Poll(pad0, 1230, out_tap, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+	EXPECT_EQ(exp_count_tap, res_tap);
+	EXPECT_EQ(exp_kind_tap, out_tap[0].kind);
+	EXPECT_EQ(exp_button_tap, out_tap[0].button);
+}
+
+TEST(TouchPollerTest, PadHeldAtBootThenPairAfterReleaseGivesLockChord) {
+	const bool pad1[TOUCH_BUTTONS_NUM] = {false, true, false, false};
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool lockPair[TOUCH_BUTTONS_NUM] = {false, true, true, false};
+
+	const uint8_t exp_quiet = 0;
+	const uint8_t exp_count_chord = 1;
+	const touch_gesture_kind exp_kind_chord = touch_gesture_kind::lock_chord;
+	const uint8_t exp_button_chord = TOUCH_NO_BUTTON;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+	touch_gesture_event out_chord[1];
+	uint8_t res_chord;
+
+	quiet += poller.Poll(pad1, 1000, scratch, 1);
+	quiet += poller.Poll(pad1, 1030, scratch, 1);
+	quiet += poller.Poll(idle, 1100, scratch, 1);
+	quiet += poller.Poll(idle, 1130, scratch, 1);
+	quiet += poller.Poll(lockPair, 1200, scratch, 1);
+	quiet += poller.Poll(lockPair, 1230, scratch, 1);
+	res_chord = poller.Poll(lockPair, 4230, out_chord, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+	EXPECT_EQ(exp_count_chord, res_chord);
+	EXPECT_EQ(exp_kind_chord, out_chord[0].kind);
+	EXPECT_EQ(exp_button_chord, out_chord[0].button);
+}
+
+TEST(TouchPollerTest, FirstPollsInsideTheBootGateGiveNoEvent) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+
+	const uint8_t exp_quiet = 0;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1010, scratch, 1);
+	quiet += poller.Poll(idle, 1029, scratch, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+}
+
+TEST(TouchPollerTest, TapAcrossTheMillisWrapIsReported) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad2[TOUCH_BUTTONS_NUM] = {false, false, true, false};
+	const uint32_t start = UINT32_MAX - 49;
+
+	const uint8_t exp_quiet = 0;
+	const uint8_t exp_count_tap = 1;
+	const touch_gesture_kind exp_kind_tap = touch_gesture_kind::tap;
+	const uint8_t exp_button_tap = 2;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+	touch_gesture_event out_tap[1];
+	uint8_t res_tap;
+
+	quiet += poller.Poll(idle, start, scratch, 1);
+	quiet += poller.Poll(idle, start + 30, scratch, 1);
+	quiet += poller.Poll(pad2, start + 100, scratch, 1);
+	quiet += poller.Poll(pad2, start + 130, scratch, 1);
+	quiet += poller.Poll(idle, start + 200, scratch, 1);
+	res_tap = poller.Poll(idle, start + 230, out_tap, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+	EXPECT_EQ(exp_count_tap, res_tap);
+	EXPECT_EQ(exp_kind_tap, out_tap[0].kind);
+	EXPECT_EQ(exp_button_tap, out_tap[0].button);
+}
+
+TEST(TouchPollerTest, CapacityZeroWritesNothing) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad0[TOUCH_BUTTONS_NUM] = {true, false, false, false};
+
 	const uint8_t exp_count = 0;
 
 	HAQuDA_TouchPoller poller;
+	touch_gesture_event out[1];
+	uint8_t res = 0;
 
-	uint8_t res;
-
-	res = poller.Take(0);
-
-	EXPECT_EQ(exp_count, res);
-}
-
-TEST(TouchPollerTest, TakeOnNewPollerIsZeroForButton1) {
-	const uint8_t exp_count = 0;
-
-	HAQuDA_TouchPoller poller;
-
-	uint8_t res;
-
-	res = poller.Take(1);
+	res += poller.Poll(idle, 1000, out, 0);
+	res += poller.Poll(idle, 1030, out, 0);
+	res += poller.Poll(pad0, 1100, out, 0);
+	res += poller.Poll(pad0, 1130, out, 0);
+	res += poller.Poll(idle, 1200, out, 0);
+	res += poller.Poll(idle, 1230, out, 0);
 
 	EXPECT_EQ(exp_count, res);
-}
-
-TEST(TouchPollerTest, TakeOnNewPollerIsZeroForButton2) {
-	const uint8_t exp_count = 0;
-
-	HAQuDA_TouchPoller poller;
-
-	uint8_t res;
-
-	res = poller.Take(2);
-
-	EXPECT_EQ(exp_count, res);
-}
-
-TEST(TouchPollerTest, TakeOnNewPollerIsZeroForButton3) {
-	const uint8_t exp_count = 0;
-
-	HAQuDA_TouchPoller poller;
-
-	uint8_t res;
-
-	res = poller.Take(3);
-
-	EXPECT_EQ(exp_count, res);
-}
-
-TEST(TouchPollerTest, DebouncedPressOnButton0CountsOnlyForButton0) {
-	const uint32_t idleMs = 0;
-	const uint32_t pressMs = 10;
-	const uint32_t stableMs = pressMs + TOUCH_DEBOUNCE_MS;
-
-	const uint8_t exp_pressed = 1;
-	const uint8_t exp_others = 0;
-
-	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
-	const bool pressed[TOUCH_BUTTONS_NUM] = {true, false, false, false};
-
-	HAQuDA_TouchPoller poller;
-
-	uint8_t res_pressed;
-	uint8_t res_1;
-	uint8_t res_2;
-	uint8_t res_3;
-
-	poller.Poll(idle, idleMs);
-	poller.Poll(pressed, pressMs);
-	poller.Poll(pressed, stableMs);
-	res_pressed = poller.Take(0);
-	res_1 = poller.Take(1);
-	res_2 = poller.Take(2);
-	res_3 = poller.Take(3);
-
-	EXPECT_EQ(exp_pressed, res_pressed);
-	EXPECT_EQ(exp_others, res_1);
-	EXPECT_EQ(exp_others, res_2);
-	EXPECT_EQ(exp_others, res_3);
-}
-
-TEST(TouchPollerTest, DebouncedPressOnButton1CountsOnlyForButton1) {
-	const uint32_t idleMs = 0;
-	const uint32_t pressMs = 10;
-	const uint32_t stableMs = pressMs + TOUCH_DEBOUNCE_MS;
-
-	const uint8_t exp_pressed = 1;
-	const uint8_t exp_others = 0;
-
-	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
-	const bool pressed[TOUCH_BUTTONS_NUM] = {false, true, false, false};
-
-	HAQuDA_TouchPoller poller;
-
-	uint8_t res_0;
-	uint8_t res_pressed;
-	uint8_t res_2;
-	uint8_t res_3;
-
-	poller.Poll(idle, idleMs);
-	poller.Poll(pressed, pressMs);
-	poller.Poll(pressed, stableMs);
-	res_0 = poller.Take(0);
-	res_pressed = poller.Take(1);
-	res_2 = poller.Take(2);
-	res_3 = poller.Take(3);
-
-	EXPECT_EQ(exp_others, res_0);
-	EXPECT_EQ(exp_pressed, res_pressed);
-	EXPECT_EQ(exp_others, res_2);
-	EXPECT_EQ(exp_others, res_3);
-}
-
-TEST(TouchPollerTest, DebouncedPressOnButton2CountsOnlyForButton2) {
-	const uint32_t idleMs = 0;
-	const uint32_t pressMs = 10;
-	const uint32_t stableMs = pressMs + TOUCH_DEBOUNCE_MS;
-
-	const uint8_t exp_pressed = 1;
-	const uint8_t exp_others = 0;
-
-	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
-	const bool pressed[TOUCH_BUTTONS_NUM] = {false, false, true, false};
-
-	HAQuDA_TouchPoller poller;
-
-	uint8_t res_0;
-	uint8_t res_1;
-	uint8_t res_pressed;
-	uint8_t res_3;
-
-	poller.Poll(idle, idleMs);
-	poller.Poll(pressed, pressMs);
-	poller.Poll(pressed, stableMs);
-	res_0 = poller.Take(0);
-	res_1 = poller.Take(1);
-	res_pressed = poller.Take(2);
-	res_3 = poller.Take(3);
-
-	EXPECT_EQ(exp_others, res_0);
-	EXPECT_EQ(exp_others, res_1);
-	EXPECT_EQ(exp_pressed, res_pressed);
-	EXPECT_EQ(exp_others, res_3);
-}
-
-TEST(TouchPollerTest, DebouncedPressOnButton3CountsOnlyForButton3) {
-	const uint32_t idleMs = 0;
-	const uint32_t pressMs = 10;
-	const uint32_t stableMs = pressMs + TOUCH_DEBOUNCE_MS;
-
-	const uint8_t exp_pressed = 1;
-	const uint8_t exp_others = 0;
-
-	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
-	const bool pressed[TOUCH_BUTTONS_NUM] = {false, false, false, true};
-
-	HAQuDA_TouchPoller poller;
-
-	uint8_t res_0;
-	uint8_t res_1;
-	uint8_t res_2;
-	uint8_t res_pressed;
-
-	poller.Poll(idle, idleMs);
-	poller.Poll(pressed, pressMs);
-	poller.Poll(pressed, stableMs);
-	res_0 = poller.Take(0);
-	res_1 = poller.Take(1);
-	res_2 = poller.Take(2);
-	res_pressed = poller.Take(3);
-
-	EXPECT_EQ(exp_others, res_0);
-	EXPECT_EQ(exp_others, res_1);
-	EXPECT_EQ(exp_others, res_2);
-	EXPECT_EQ(exp_pressed, res_pressed);
-}
-
-TEST(TouchPollerTest, LevelShorterThanDebounceDoesNotCount) {
-	const uint32_t idleMs = 0;
-	const uint32_t pressMs = 10;
-	const uint32_t releaseMs = pressMs + TOUCH_DEBOUNCE_MS - 1;
-	const uint32_t laterMs = releaseMs + TOUCH_DEBOUNCE_MS;
-
-	const uint8_t exp_count = 0;
-
-	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
-	const bool pressed[TOUCH_BUTTONS_NUM] = {true, false, false, false};
-
-	HAQuDA_TouchPoller poller;
-
-	uint8_t res;
-
-	poller.Poll(idle, idleMs);
-	poller.Poll(pressed, pressMs);
-	poller.Poll(idle, releaseMs);
-	poller.Poll(idle, laterMs);
-	res = poller.Take(0);
-
-	EXPECT_EQ(exp_count, res);
-}
-
-TEST(TouchPollerTest, TwoButtonsPressedTogetherBothCount) {
-	const uint32_t idleMs = 0;
-	const uint32_t pressMs = 10;
-	const uint32_t stableMs = pressMs + TOUCH_DEBOUNCE_MS;
-
-	const uint8_t exp_pressed = 1;
-	const uint8_t exp_others = 0;
-
-	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
-	const bool pressed[TOUCH_BUTTONS_NUM] = {true, false, true, false};
-
-	HAQuDA_TouchPoller poller;
-
-	uint8_t res_0;
-	uint8_t res_1;
-	uint8_t res_2;
-	uint8_t res_3;
-
-	poller.Poll(idle, idleMs);
-	poller.Poll(pressed, pressMs);
-	poller.Poll(pressed, stableMs);
-	res_0 = poller.Take(0);
-	res_1 = poller.Take(1);
-	res_2 = poller.Take(2);
-	res_3 = poller.Take(3);
-
-	EXPECT_EQ(exp_pressed, res_0);
-	EXPECT_EQ(exp_others, res_1);
-	EXPECT_EQ(exp_pressed, res_2);
-	EXPECT_EQ(exp_others, res_3);
-}
-
-TEST(TouchPollerTest, LevelActiveAtBootIsNotCountedWhileHeld) {
-	const uint32_t bootMs = 0;
-	const uint32_t stableMs = bootMs + TOUCH_DEBOUNCE_MS;
-
-	const uint8_t exp_count = 0;
-
-	const bool held[TOUCH_BUTTONS_NUM] = {true, false, false, false};
-
-	HAQuDA_TouchPoller poller;
-
-	uint8_t res;
-
-	poller.Poll(held, bootMs);
-	poller.Poll(held, stableMs);
-	res = poller.Take(0);
-
-	EXPECT_EQ(exp_count, res);
-}
-
-TEST(TouchPollerTest, PressAfterStableReleaseOfBootLevelCounts) {
-	const uint32_t bootMs = 0;
-	const uint32_t heldStableMs = bootMs + TOUCH_DEBOUNCE_MS;
-	const uint32_t releaseMs = heldStableMs + 10;
-	const uint32_t releaseStableMs = releaseMs + TOUCH_DEBOUNCE_MS;
-	const uint32_t pressMs = releaseStableMs + 10;
-	const uint32_t pressStableMs = pressMs + TOUCH_DEBOUNCE_MS;
-
-	const uint8_t exp_count = 1;
-
-	const bool held[TOUCH_BUTTONS_NUM] = {true, false, false, false};
-	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
-
-	HAQuDA_TouchPoller poller;
-
-	uint8_t res;
-
-	poller.Poll(held, bootMs);
-	poller.Poll(held, heldStableMs);
-	poller.Poll(idle, releaseMs);
-	poller.Poll(idle, releaseStableMs);
-	poller.Poll(held, pressMs);
-	poller.Poll(held, pressStableMs);
-	res = poller.Take(0);
-
-	EXPECT_EQ(exp_count, res);
-}
-
-TEST(TouchPollerTest, TakeResetsTheCounter) {
-	const uint32_t idleMs = 0;
-	const uint32_t pressMs = 10;
-	const uint32_t stableMs = pressMs + TOUCH_DEBOUNCE_MS;
-
-	const uint8_t exp_count = 0;
-
-	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
-	const bool pressed[TOUCH_BUTTONS_NUM] = {true, false, false, false};
-
-	HAQuDA_TouchPoller poller;
-
-	uint8_t res;
-
-	poller.Poll(idle, idleMs);
-	poller.Poll(pressed, pressMs);
-	poller.Poll(pressed, stableMs);
-	poller.Take(0);
-	res = poller.Take(0);
-
-	EXPECT_EQ(exp_count, res);
-}
-
-TEST(TouchPollerTest, TakeAtButtonsNumReturnsZeroAndKeepsCounters) {
-	const uint32_t idleMs = 0;
-	const uint32_t pressMs = 10;
-	const uint32_t stableMs = pressMs + TOUCH_DEBOUNCE_MS;
-
-	const uint8_t exp_out_of_range = 0;
-	const uint8_t exp_pressed = 1;
-
-	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
-	const bool pressed[TOUCH_BUTTONS_NUM] = {false, false, false, true};
-
-	HAQuDA_TouchPoller poller;
-
-	uint8_t res_out_of_range;
-	uint8_t res_pressed;
-
-	poller.Poll(idle, idleMs);
-	poller.Poll(pressed, pressMs);
-	poller.Poll(pressed, stableMs);
-	res_out_of_range = poller.Take(TOUCH_BUTTONS_NUM);
-	res_pressed = poller.Take(3);
-
-	EXPECT_EQ(exp_out_of_range, res_out_of_range);
-	EXPECT_EQ(exp_pressed, res_pressed);
-}
-
-TEST(TouchPollerTest, TakeAtMaxIndexReturnsZeroAndKeepsCounters) {
-	const uint32_t idleMs = 0;
-	const uint32_t pressMs = 10;
-	const uint32_t stableMs = pressMs + TOUCH_DEBOUNCE_MS;
-
-	const uint8_t maxIndex = UINT8_MAX;
-
-	const uint8_t exp_out_of_range = 0;
-	const uint8_t exp_pressed = 1;
-
-	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
-	const bool pressed[TOUCH_BUTTONS_NUM] = {true, false, false, false};
-
-	HAQuDA_TouchPoller poller;
-
-	uint8_t res_out_of_range;
-	uint8_t res_pressed;
-
-	poller.Poll(idle, idleMs);
-	poller.Poll(pressed, pressMs);
-	poller.Poll(pressed, stableMs);
-	res_out_of_range = poller.Take(maxIndex);
-	res_pressed = poller.Take(0);
-
-	EXPECT_EQ(exp_out_of_range, res_out_of_range);
-	EXPECT_EQ(exp_pressed, res_pressed);
 }

@@ -4,7 +4,7 @@
 #include <cstdint>
 
 #include "HAQuDA_LampSettings.h"
-#include "HAQuDA_TouchPoller.h"
+#include "HAQuDA_TouchGestures.h"
 
 enum class button_action : uint8_t { none, power, up, down, next, mode, show };
 

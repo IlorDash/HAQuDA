@@ -15,6 +15,11 @@ bool HAQuDA_TouchButtons::Begin() {
 	for (uint8_t i = 0; i < TOUCH_BUTTONS_NUM; i++) {
 		pinMode(TOUCH_PINS[i], INPUT_PULLDOWN);
 	}
+	queue = xQueueCreateStatic(TOUCH_EVENT_QUEUE_LEN, sizeof(touch_gesture_event), queueStorage, &queueControl);
+	if (queue == nullptr) {
+		HAQuDA_Logger::LogError("Touch buttons: queue create failed");
+		return false;
+	}
 
 	esp_timer_create_args_t args = {};
 	args.callback = &HAQuDA_TouchButtons::pollCallback;
@@ -35,8 +40,26 @@ bool HAQuDA_TouchButtons::Begin() {
 	return true;
 }
 
-uint8_t HAQuDA_TouchButtons::TakePresses(uint8_t index) {
-	return poller.Take(index);
+void HAQuDA_TouchButtons::SetRepeatableMask(uint8_t mask) {
+	repeatableMask.store(mask);
+}
+
+bool HAQuDA_TouchButtons::TakeEvent(touch_gesture_event &event) {
+	if (queue == nullptr) {
+		return false;
+	}
+	return xQueueReceive(queue, &event, 0) == pdTRUE;
+}
+
+void HAQuDA_TouchButtons::DiscardEvents() {
+	if (queue != nullptr) {
+		xQueueReset(queue);
+	}
+	dropped.store(0);
+}
+
+uint32_t HAQuDA_TouchButtons::TakeDropped() {
+	return dropped.exchange(0);
 }
 
 void HAQuDA_TouchButtons::pollCallback(void *arg) {
@@ -48,5 +71,17 @@ void HAQuDA_TouchButtons::poll() {
 	for (uint8_t i = 0; i < TOUCH_BUTTONS_NUM; i++) {
 		levels[i] = (digitalRead(TOUCH_PINS[i]) == HIGH);
 	}
-	poller.Poll(levels, millis());
+	const uint8_t mask = repeatableMask.load();
+	for (uint8_t i = 0; i < TOUCH_BUTTONS_NUM; i++) {
+		poller.SetRepeatable(i, ((mask >> i) & 1) != 0);
+	}
+
+	touch_gesture_event events[TOUCH_GESTURE_MAX_EVENTS];
+	const uint8_t count = poller.Poll(levels, millis(), events, TOUCH_GESTURE_MAX_EVENTS);
+	for (uint8_t i = 0; i < count; i++) {
+		// Never block the esp_timer task: a full queue loses the event
+		if (xQueueSend(queue, &events[i], 0) != pdTRUE) {
+			dropped.fetch_add(1);
+		}
+	}
 }
