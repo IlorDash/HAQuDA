@@ -1,6 +1,7 @@
 #include "HAQuDA_ErrorHandler.h"
 #include "HAQuDA_DisplayService.h"
 #include "HAQuDA_Logger.h"
+#include "HAQuDA_TimeHelper.h"
 #include "HAQuDA_LEDsParams.h"
 
 namespace {
@@ -97,11 +98,38 @@ void HAQuDA_ErrorHandler::FailedToStartSensors() {
 	HAQuDA_Logger::LogError("Failed to start sensors");
 }
 
-// Not posted: while NTP has never synced every log line lands here, and a posted error would keep the lamp from showing the
-// measurements until the first sync. A recorded error never replaces another one, so the web page keeps the picture the lamp shows.
+// Not posted and not logged: while NTP has never synced every log line lands here. A recorded error never replaces another one,
+// so the web page keeps the picture the lamp shows.
 void HAQuDA_ErrorHandler::FailedToUpdateNTP() {
+	ntpSyncFailed.store(true);
 	if (currentError == noneError) {
 		currentError = failedToUpdateNTP;
+	}
+}
+
+void HAQuDA_ErrorHandler::UpdateNtpError(bool timeKnown) {
+	if (timeKnown) {
+		// After the first sync a lost server keeps the last time, which is not an error: the flag is cleared and nothing sets it again
+		ntpSyncFailed.store(false);
+		// A dropped end (full queue) is retried on the next pass, or the yellow would stay until a reboot
+		if (ntpErrorPosted && (display != nullptr) && display->End(display_end::ntpSynced)) {
+			ntpErrorPosted = false;
+		}
+		return;
+	}
+	if (ntpErrorPosted) {
+		DateTimeStruct retryTime = {};
+		HAQuDA_TimeService::GetDateTime(&retryTime);
+		return;
+	}
+	if (!ntpSyncFailed.load() || (display == nullptr)) {
+		return;
+	}
+	// A dropped post (full queue) is retried on the next pass
+	ntpErrorPosted = display->Post(display_error::ntpFailed);
+	if (ntpErrorPosted && !ntpErrorLogged) {
+		ntpErrorLogged = true;
+		HAQuDA_Logger::LogError("NTP not synced");
 	}
 }
 

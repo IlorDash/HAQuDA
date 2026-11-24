@@ -1,5 +1,7 @@
 #pragma once
 
+#include <atomic>
+
 #include "HAQuDA_DisplayTypes.h"
 #include "HAQuDA_EffectsHandler.h"
 
@@ -10,6 +12,13 @@ class HAQuDA_ErrorHandler : HAQuDA_EffectsHandler {
 
 	static error_type currentError;
 	HAQuDA_DisplayService *display = nullptr;
+
+	// Set by the logger's time stamp, read and cleared by UpdateNtpError(): both run in the loop task, atomic so a log call from
+	// another task could not break it
+	std::atomic<bool> ntpSyncFailed{false};
+	// Loop task only
+	bool ntpErrorPosted = false;
+	bool ntpErrorLogged = false;
 
 	static snake_params failedToCreateAPEffect;
 	static growing_params failedToConnectToWiFiEffect;
@@ -37,8 +46,10 @@ class HAQuDA_ErrorHandler : HAQuDA_EffectsHandler {
 	void FailedToStartFS();
 	// Posts the error, logs it, does not block. Loop task only.
 	void FailedToStartSensors();
-	// Only records the error for the web page and posts nothing yet, does not block. Called by the logger, so loop task only.
+	// Runs on every log time stamp: must neither post (floods the queue) nor log (recurses). Loop task only.
 	void FailedToUpdateNTP();
+	// Blocks up to ~1 s once per minute while the error shows: a quiet lamp writes no log lines, the only other NTP retry. Loop task only.
+	void UpdateNtpError(bool timeKnown);
 	void FailedToGetMeas(const char *msg);
 	// Ends the sensors error on the display
 	void ClearError();

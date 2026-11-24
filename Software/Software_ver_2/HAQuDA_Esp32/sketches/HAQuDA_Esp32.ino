@@ -191,6 +191,7 @@ void loop() {
 	const bool timeKnown = HAQuDA_TimeService::GetCachedMinuteOfDay(&minuteOfDay);
 	WebDisp.SetMinuteOfDay(timeKnown, minuteOfDay);
 	LampControl.Handle(timeKnown, minuteOfDay);
+	ErrHandler.UpdateNtpError(timeKnown);
 	HAQuDA_Logger::FlushExpiredRepeats();
 	if ((millis() - builtin_blink_start_time) > BUILTIN_LED_PERIOD) {
 		digitalWrite(BUILTIN_LED, !digitalRead(BUILTIN_LED));

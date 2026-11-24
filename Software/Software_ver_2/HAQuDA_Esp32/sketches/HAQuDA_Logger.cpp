@@ -42,8 +42,8 @@ void HAQuDA_Logger::fillTimestamp(char *timestamp, size_t timestampSize) {
 		if (HAQuDA_TimeService::GetDateTime(timestamp, timestampSize)) {
 			return;
 		}
-		// NTP runs but has never synced (server unreachable since boot): every line raises the error until the first answer; after that a
-		// lost server keeps the last synced time. The handler only sets the error effect (ShowTask draws it), so the log call stays fast.
+		// NTP runs but has never synced (server unreachable since boot); after the first answer a lost server keeps the last time. The
+		// handler only records the failed attempt: loop() posts it, since a post per log line would flood the queue and a log here would recurse.
 		if (errHandler != nullptr) {
 			errHandler->FailedToUpdateNTP();
 		}
