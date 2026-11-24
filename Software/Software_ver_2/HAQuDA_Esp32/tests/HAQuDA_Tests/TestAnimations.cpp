@@ -1,6 +1,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <limits>
 #include <set>
@@ -735,26 +736,23 @@ namespace {
 	}
 } // namespace
 
-TEST(MeasAnimTest, StandardShowsDarkFrameThenThePictureThenResendsIt) {
+TEST(MeasAnimTest, StandardDrawsThePictureAtOnceWithoutADarkFrameThenResendsIt) {
 	LedRecorder leds;
 	HAQuDA_MeasStandardAnim meas(leds.mock);
 	const meas_anim_data data = lampData();
 	ASSERT_TRUE(meas.Begin(HAQuDA_MeasParams(anim_id::measStandard), measContext(data, 100)));
 
-	const uint32_t darkWait = meas.Step(0);
 	const uint32_t drawWait = meas.Step(0);
 	const uint32_t holdWait = meas.Step(0);
 
-	EXPECT_EQ(300u, darkWait);
 	EXPECT_EQ(300u, drawWait);
 	EXPECT_EQ(300u, holdWait);
-	ASSERT_EQ(3u, leds.frames.size());
-	EXPECT_EQ(0u, leds.litCount(leds.frames[0]));
+	ASSERT_EQ(2u, leds.frames.size());
 	const uint32_t expected = packed(scaleColor(23, data.dots[0]));
-	for (uint32_t color : leds.frames[1]) {
+	for (uint32_t color : leds.frames[0]) {
 		EXPECT_EQ(expected, color);
 	}
-	EXPECT_EQ(leds.frames[1], leds.frames[2]);
+	EXPECT_EQ(leds.frames[0], leds.frames[1]);
 	EXPECT_EQ(0, leds.blockingCalls);
 }
 
@@ -791,26 +789,25 @@ TEST(MeasAnimTest, DrawnIsEmptyBeforeTheFirstPicture) {
 	LedRecorder leds;
 	HAQuDA_MeasStandardAnim meas(leds.mock);
 	ASSERT_TRUE(meas.Begin(HAQuDA_MeasParams(anim_id::measStandard), measContext(lampData(), 100)));
-	meas.Step(0);
 
 	EXPECT_EQ(0, meas.Drawn().colorCount);
 }
 
-TEST(MeasAnimTest, ABeginAgainShowsTheDarkFlashAndTheNewData) {
+TEST(MeasAnimTest, ABeginAgainRedrawsTheNewDataInPlaceWithoutADarkFrame) {
 	LedRecorder leds;
 	HAQuDA_MeasStandardAnim meas(leds.mock);
 	meas_anim_data data = lampData();
 	ASSERT_TRUE(meas.Begin(HAQuDA_MeasParams(anim_id::measStandard), measContext(data, 100)));
 	meas.Step(0);
-	meas.Step(0);
 	data.values[0] = 10;
 	ASSERT_TRUE(meas.Begin(HAQuDA_MeasParams(anim_id::measStandard), measContext(data, 100)));
 
 	meas.Step(0);
-	meas.Step(0);
 
-	EXPECT_EQ(0u, leds.litCount(leds.frames[2]));
-	EXPECT_EQ(packed(scaleColor(10, data.dots[0])), leds.frames[3][0]);
+	ASSERT_EQ(2u, leds.frames.size());
+	EXPECT_EQ(static_cast<size_t>(ANIM_PIXELS), leds.litCount(leds.frames[1]));
+	EXPECT_EQ(packed(scaleColor(10, data.dots[0])), leds.frames[1][0]);
+	EXPECT_EQ(packed(scaleColor(10, data.dots[0])), packed(meas.Drawn().colors[0]));
 }
 
 TEST(MeasAnimTest, NaNValueGivesADarkPicture) {
@@ -845,7 +842,7 @@ TEST(MeasAnimTest, BeginRejectsAnotherAnimation) {
 	EXPECT_FALSE(meas.Begin(HAQuDA_SnakeParams(ANIM_COLOR_LIME, 100, 5), measContext(lampData(), 100)));
 }
 
-TEST(MeasAnimTest, StopBetweenDarkFrameAndPictureDrawsNoPicture) {
+TEST(MeasAnimTest, StopDrawsNothingMore) {
 	LedRecorder leds;
 	HAQuDA_MeasStandardAnim meas(leds.mock);
 	ASSERT_TRUE(meas.Begin(HAQuDA_MeasParams(anim_id::measStandard), measContext(lampData(), 100)));
@@ -855,6 +852,40 @@ TEST(MeasAnimTest, StopBetweenDarkFrameAndPictureDrawsNoPicture) {
 
 	EXPECT_EQ(ANIM_IDLE_MS, meas.Step(0));
 	EXPECT_EQ(1u, leds.frames.size());
+}
+
+TEST(MeasAnimTest, MultiPaintsEveryPixelOverAPreviousPicture) {
+	LedRecorder leds;
+	HAQuDA_MeasMultiAnim meas(leds.mock);
+	std::fill(leds.pixels.begin(), leds.pixels.end(), 0xFFFFFFu);
+	ASSERT_TRUE(meas.Begin(HAQuDA_MeasParams(anim_id::measMulti), measContext(lampData(), 100)));
+
+	meas.Step(0);
+
+	ASSERT_EQ(1u, leds.frames.size());
+	for (uint8_t x = 0; x < ANIM_COLUMNS; x++) {
+		for (uint8_t row : {0, 4, 8}) {
+			EXPECT_NE(0xFFFFFFu, leds.frames[0][HAQuDA_PixelOf(x, row)]) << "column " << static_cast<int>(x) << " row " << static_cast<int>(row);
+		}
+	}
+}
+
+TEST(MeasAnimTest, NightPaintsEveryPixelOverAPreviousPicture) {
+	LedRecorder leds;
+	HAQuDA_MeasNightAnim meas(leds.mock);
+	std::fill(leds.pixels.begin(), leds.pixels.end(), 0xFFFFFFu);
+	meas_anim_data data = lampData();
+	data.nightLitCells = 4;
+	ASSERT_TRUE(meas.Begin(HAQuDA_MeasParams(anim_id::measNight), measContext(data, 100)));
+
+	meas.Step(0);
+
+	ASSERT_EQ(1u, leds.frames.size());
+	EXPECT_EQ(0u, leds.frames[0][HAQuDA_PixelOf(1, ANIM_ROWS - 1)]);
+	EXPECT_EQ(0u, leds.frames[0][HAQuDA_PixelOf(8, ANIM_ROWS - 1)]);
+	for (uint32_t color : leds.frames[0]) {
+		EXPECT_NE(0xFFFFFFu, color);
+	}
 }
 
 TEST(MeasAnimTest, MultiPutsTheThreeZonesInEveryColumn) {

@@ -1,5 +1,6 @@
 #include "Sensors.h"
 #include "Board.h"
+#include "HAQuDA_CCS811Sample.h"
 #include "HAQuDA_Logger.h"
 #include "HAQuDA_PMReader.h"
 #include "HAQuDA_SensorsPresence.h"
@@ -132,7 +133,12 @@ bool sensorsBegin() {
 bool getCCS811_meas() {
 	if (CCS811.available()) {
 		if (!CCS811.readData()) {
-			eCO2_meas.value += CCS811.geteCO2();
+			const uint16_t eCO2Ppm = CCS811.geteCO2();
+			if (!HAQuDA_IsCCS811Sample(eCO2Ppm)) {
+				// A warm-up read is the sensor answering "not ready", not a bus error, so the sums collected so far stay
+				return false;
+			}
+			eCO2_meas.value += eCO2Ppm;
 			eCO2_meas.measNum++;
 			eCO2_meas.newMeasDone = true;
 			TVOC_meas.value += CCS811.getTVOC();

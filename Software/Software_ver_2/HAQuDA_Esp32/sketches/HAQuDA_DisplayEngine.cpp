@@ -3,6 +3,10 @@
 namespace {
 	constexpr uint8_t MAX_PERCENT = 100;
 	constexpr uint32_t MIN_SLEEP_MS = 1;
+
+	bool isMeasAnim(anim_id id) {
+		return (id == anim_id::measStandard) || (id == anim_id::measMulti) || (id == anim_id::measNight) || (id == anim_id::measTotal);
+	}
 } // namespace
 
 HAQuDA_DisplayEngine::HAQuDA_DisplayEngine(HAQuDA_ILEDs &leds, HAQuDA_IMeasSource &measSource, uint8_t brightPercent)
@@ -194,16 +198,22 @@ void HAQuDA_DisplayEngine::stopActive() {
 	}
 }
 
-// The running animation is stopped first: a fade puts back the brightness it saw at Begin(), which must not undo this one
 void HAQuDA_DisplayEngine::setBrightness(uint8_t percent) {
 	const uint8_t limited = (percent > MAX_PERCENT) ? MAX_PERCENT : percent;
 	if (limited == brightPercent) {
 		return;
 	}
-	stopActive();
+	// Restarting a meas picture re-reads the averages, which a quick second change finds empty: the matrix would stay dark
+	const bool keepMeas = (active != nullptr) && isMeasAnim(active->Id());
+	if (!keepMeas) {
+		// A fade puts back the brightness it saw at Begin(), which must not undo this one
+		stopActive();
+	}
 	brightPercent = limited;
 	leds.SetBright(brightPercent);
-	switchPending = (wanted.source != display_source::none);
+	if (!keepMeas) {
+		switchPending = (wanted.source != display_source::none);
+	}
 }
 
 anim_context HAQuDA_DisplayEngine::makeContext(uint32_t nowMs) {

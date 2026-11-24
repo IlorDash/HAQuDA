@@ -340,6 +340,48 @@ TEST_F(DisplayEngineTest, AMissingSampleAtTheEndOfAPeriodKeepsThePictureAndResta
 	EXPECT_EQ(readsAfterPeriod, source.readCalls);
 }
 
+TEST_F(DisplayEngineTest, TheRefreshAtTheEndOfAPeriodRedrawsInPlaceWithoutADarkFrame) {
+	source.nextAnim = anim_id::measStandard;
+	startMeasurements(0);
+	source.ready = true;
+	engine.Run(5 * SECOND);
+	EXPECT_CALL(leds, FillColor(testing::Matcher<uint32_t>(0u))).Times(0);
+	EXPECT_CALL(leds, FillColor(testing::Matcher<uint8_t>(testing::_), testing::_, testing::_)).Times(1);
+
+	engine.Run(5 * SECOND + DISPLAY_MEAS_PERIOD_MS);
+
+	EXPECT_EQ(anim_id::measStandard, engine.ActiveAnim());
+}
+
+TEST_F(DisplayEngineTest, TwoQuickBrightnessChangesKeepTheMeasurementPicture) {
+	startMeasurements(0);
+	source.ready = true;
+	engine.Run(5 * SECOND);
+	source.ready = false;
+	const int restartsBefore = source.restartCalls;
+
+	engine.Apply(brightnessMsg(60));
+	engine.Run(5 * SECOND + 10);
+	engine.Apply(brightnessMsg(70));
+	engine.Run(5 * SECOND + 20);
+
+	EXPECT_EQ(anim_id::measMulti, engine.ActiveAnim());
+	EXPECT_EQ(restartsBefore, source.restartCalls);
+	EXPECT_EQ((std::vector<uint8_t>{60, 70}), brightCalls);
+}
+
+TEST_F(DisplayEngineTest, TheMeasurementPictureIsRedrawnAtTheNewBrightnessOnItsNextStep) {
+	startMeasurements(0);
+	source.ready = true;
+	engine.Run(5 * SECOND);
+	const int showsBefore = showCalls;
+	engine.Apply(brightnessMsg(60));
+
+	engine.Run(5 * SECOND + ANIM_LEDS_SHOW_MS + ANIM_PASS_PAUSE_MS);
+
+	EXPECT_EQ(showsBefore + 1, showCalls);
+}
+
 TEST_F(DisplayEngineTest, ANewMeasurementAnimationReplacesTheOldOneAtTheNextPeriod) {
 	startMeasurements(0);
 	source.ready = true;

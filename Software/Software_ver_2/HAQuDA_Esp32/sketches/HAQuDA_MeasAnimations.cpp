@@ -7,8 +7,6 @@
 static_assert(TOTAL_READING_NUM == MEAS_ANIM_MAX_PARAMS, "the overall rule takes one reading per animation parameter");
 
 namespace {
-	// Clear() blocked 200 ms, then the old showMeas_*() waited 100 ms
-	constexpr uint32_t MEAS_DARK_MS = ANIM_LEDS_SHOW_MS + 100;
 	constexpr uint32_t MEAS_HOLD_MS = ANIM_LEDS_SHOW_MS + ANIM_PASS_PAUSE_MS;
 
 	constexpr uint8_t MULTI_ZONES = 3;
@@ -28,7 +26,6 @@ bool HAQuDA_MeasAnim::Begin(const anim_params &params, const anim_context &conte
 	}
 	data = context.meas;
 	drawn = meas_drawn{};
-	drawPending = false;
 	running = true;
 	return true;
 }
@@ -36,12 +33,6 @@ bool HAQuDA_MeasAnim::Begin(const anim_params &params, const anim_context &conte
 uint32_t HAQuDA_MeasAnim::Step(uint32_t nowMs) {
 	if (!running) {
 		return ANIM_IDLE_MS;
-	}
-	if (!drawPending) {
-		leds.FillColor(ANIM_COLOR_OFF);
-		leds.Show(ANIM_NO_WAIT_MS);
-		drawPending = true;
-		return MEAS_DARK_MS;
 	}
 	draw();
 	leds.Show(ANIM_NO_WAIT_MS);
@@ -80,6 +71,8 @@ void HAQuDA_MeasMultiAnim::draw() {
 	for (uint8_t i = 0; i < MULTI_ZONES; i++) {
 		colors[i] = colorOf(i);
 	}
+	// Not every pixel is painted below, and there is no dark frame before the draw, so the previous picture must be cleared here
+	leds.FillColor(ANIM_COLOR_OFF);
 	for (uint8_t x = 0; x < ANIM_COLUMNS; x++) {
 		const bool reversed = (x % 2 != 0);
 		for (uint8_t zone = 0; zone < MULTI_ZONES; zone++) {
@@ -100,6 +93,7 @@ void HAQuDA_MeasNightAnim::draw() {
 	const rgb_color color = colorOf(0);
 	const uint8_t whiteBright = HAQuDA_NightGrey();
 
+	leds.FillColor(ANIM_COLOR_OFF);
 	for (uint8_t x = 0; x < ANIM_COLUMNS; x++) {
 		const bool colourColumn = HAQuDA_NightColumnIsColor(x);
 		const uint8_t pixelNum = colourColumn ? ANIM_ROWS : HAQuDA_NightLightRows(data.nightLitCells, x);

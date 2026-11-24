@@ -59,8 +59,8 @@ class HAQuDA_DisplayEngine {
 
 	HAQuDA_Animation *active = nullptr;
 	display_pick wanted = {false, display_source::none, DISPLAY_ITEM_NONE, anim_id::none, DISPLAY_NO_DEADLINE};
-	// The scheduler's choice is not shown yet: the measurements lost their sample when the averaging restarted (a brightness change
-	// right after a redraw), the previous animation plays meanwhile
+	// The scheduler's choice is not shown yet: the measurements have no sample since the averaging restarted, the previous animation
+	// plays meanwhile
 	bool switchPending = false;
 	bool measEnabled = false;
 	bool sampleSeen = false;

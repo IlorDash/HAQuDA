@@ -88,6 +88,7 @@
     <ClCompile Include="TestLampForm.cpp" />
     <ClCompile Include="TestLampDisplayRules.cpp" />
     <ClCompile Include="TestTotalColor.cpp" />
+    <ClCompile Include="TestCCS811Sample.cpp" />
     <ClCompile Include="TestLEDsParams.cpp" />
     <ClCompile Include="TestBrightnessApply.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_NightProgress.cpp" />
@@ -120,6 +121,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\sketches\HAQuDA_ColorScale.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_TotalColor.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_CCS811Sample.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_DisplayTypes.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_LampDisplayRules.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_DateFormat.h" />

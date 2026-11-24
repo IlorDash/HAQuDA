@@ -8,8 +8,7 @@ struct meas_drawn {
 	rgb_color white;
 };
 
-// The picture does not follow new data by itself: the caller restarts it with a fresh meas_anim_data, which shows the dark flash
-// like the old once-a-minute redraw
+// The picture does not follow new data by itself: the caller calls Begin() again with a fresh meas_anim_data, which redraws it in place
 class HAQuDA_MeasAnim : public HAQuDA_Animation {
   public:
 	bool Begin(const anim_params &params, const anim_context &context) override;
@@ -33,7 +32,6 @@ class HAQuDA_MeasAnim : public HAQuDA_Animation {
 	const anim_id id;
 	const uint8_t paramsNum;
 	bool running = false;
-	bool drawPending = false;
 };
 
 class HAQuDA_MeasStandardAnim : public HAQuDA_MeasAnim {
