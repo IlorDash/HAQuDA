@@ -17,6 +17,7 @@ constexpr uint32_t DROP_PICTURE_POLL_MS = 50;
 // lease in the lamp log (2026-11-11), and WiFi.reconnect() after a timeout aborts the attempt in progress
 // (it drops DHCP too), so the wait must outlast association + DHCP on a slow router.
 constexpr uint32_t CONNECT_WIFI_TIMEOUT_MS = 8000;
+constexpr uint32_t STORED_CREDS_RETRY_DELAY_MS = 100;
 
 std::atomic<bool> HAQuDA_WiFi_handler::WiFiConnected{false};
 
@@ -465,16 +466,19 @@ void HAQuDA_WiFi_handler::waitUntilWiFiConnected() {
 }
 
 bool HAQuDA_WiFi_handler::connectToStoredWiFi() {
-	int WiFiCredsNum = GetStored_WiFiCredsNum();
-	TWiFiCreds WiFiCreds;
+	// The list is copied under the credentials lock and the lock is released before the joins: they wait up to 8 s each, and
+	// a save replaces the file by delete + rename, so a reader outside the lock could see no file.
+	TWiFiCreds stored[MAX_WIFI_CREDS_NUM] = {};
+	int WiFiCredsNum = ReadStoredCreds(stored, MAX_WIFI_CREDS_NUM);
+	bool joinAttempted = false;
 
 	for (int i = 0; i < WiFiCredsNum; i++) {
-		WiFiCreds = GetStored_WiFi(i);
-		if (!strlen(WiFiCreds.ssid)) {
+		if (!strlen(stored[i].ssid)) {
 			continue;
 		}
+		joinAttempted = true;
 		int j = 0;
-		connectToWiFi(WiFiCreds.ssid, WiFiCreds.pass);
+		connectToWiFi(stored[i].ssid, stored[i].pass);
 		while ((j < reconnectAttempts) && !WiFiConnected) {
 			WiFi.reconnect();
 
@@ -483,11 +487,16 @@ bool HAQuDA_WiFi_handler::connectToStoredWiFi() {
 			j++;
 		}
 		if (WiFiConnected) {
-			HAQuDA_WipeBytes(&WiFiCreds, sizeof(WiFiCreds));
+			HAQuDA_WipeBytes(stored, sizeof(stored));
 			return true;
 		}
 	}
-	HAQuDA_WipeBytes(&WiFiCreds, sizeof(WiFiCreds));
+	HAQuDA_WipeBytes(stored, sizeof(stored));
+	if (!joinAttempted) {
+		// The caller loops until connected; a pass without a join (read failed, no records, all names empty) returns at once
+		// and must not spin without yielding
+		vTaskDelay(pdMS_TO_TICKS(STORED_CREDS_RETRY_DELAY_MS));
+	}
 	return WiFiConnected;
 }
 

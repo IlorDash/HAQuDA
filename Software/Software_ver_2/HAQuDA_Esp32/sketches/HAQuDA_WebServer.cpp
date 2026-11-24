@@ -696,13 +696,29 @@ void HAQuDA_WebServer::RecoverCredsFile() {
 	}
 }
 
-TWiFiCreds HAQuDA_WebServer::GetStored_WiFi(int num) {
-	TWiFiCreds WiFiCreds;
+int HAQuDA_WebServer::ReadStoredCreds(TWiFiCreds *out, int capacity) {
+	if ((out == nullptr) || (capacity <= 0)) {
+		HAQuDA_Logger::LogError("ReadStoredCreds: bad args");
+		return -1;
+	}
+	CredsLock lock(credsMutex);
+	if (!lock.Held()) {
+		HAQuDA_Logger::LogError((credsMutex == nullptr) ? "Read creds: creds lock missing" : "Read creds: creds file busy");
+		return -1;
+	}
 
-	int pos = num * sizeof(TWiFiCreds);
-
-	HAQuDA_FileStorage::ReadFile(FILE_NAME_WIFI_NET, pos, (uint8_t *)&WiFiCreds, sizeof(TWiFiCreds));
-	return WiFiCreds;
+	int storedNum = GetStored_WiFiCredsNum();
+	if (storedNum > capacity) {
+		storedNum = capacity;
+	}
+	for (int i = 0; i < storedNum; i++) {
+		if (!HAQuDA_FileStorage::ReadFile(FILE_NAME_WIFI_NET, i * (int)sizeof(TWiFiCreds), (uint8_t *)&out[i], sizeof(TWiFiCreds))) {
+			HAQuDA_WipeBytes(out, capacity * sizeof(TWiFiCreds));
+			HAQuDA_Logger::LogError("Read creds: cannot read a saved network");
+			return -1;
+		}
+	}
+	return storedNum;
 }
 
 int HAQuDA_WebServer::GetStored_WiFiCredsNum() {

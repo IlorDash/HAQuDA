@@ -115,7 +115,10 @@ class HAQuDA_WebServer {
 		: _myFS(curr_FS), measSnapshot(snapshot), webDisp(webDispIn), lampControl(lampControlIn) {};
 	~HAQuDA_WebServer();
 
-	TWiFiCreds GetStored_WiFi(int num);
+	// Copies the saved networks (at most capacity, file order) into out under the credentials lock and returns their number;
+	// -1 when the lock is not obtained in time or a record cannot be read (out is wiped then). The caller wipes out after use.
+	// loop() only: logs.
+	int ReadStoredCreds(TWiFiCreds *out, int capacity);
 	static int GetStored_WiFiCredsNum();
 
 	void WebServerResponds_init();
