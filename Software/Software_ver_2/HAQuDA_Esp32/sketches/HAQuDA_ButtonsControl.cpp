@@ -1,22 +1,9 @@
 #include "HAQuDA_ButtonsControl.h"
 
+#include "HAQuDA_CriticalLock.h"
+
 namespace {
 	constexpr char FILE_NAME_BUTTONS[] = "/buttons";
-
-	class CriticalLock {
-	  public:
-		explicit CriticalLock(portMUX_TYPE &muxToLock) : mux(muxToLock) {
-			portENTER_CRITICAL(&mux);
-		}
-		~CriticalLock() {
-			portEXIT_CRITICAL(&mux);
-		}
-		CriticalLock(const CriticalLock &) = delete;
-		CriticalLock &operator=(const CriticalLock &) = delete;
-
-	  private:
-		portMUX_TYPE &mux;
-	};
 } // namespace
 
 HAQuDA_ButtonsControl::HAQuDA_ButtonsControl(HAQuDA_IFileStorage &fileStorage, HAQuDA_ILogger &buttonsLogger)
@@ -24,7 +11,7 @@ HAQuDA_ButtonsControl::HAQuDA_ButtonsControl(HAQuDA_IFileStorage &fileStorage, H
 }
 
 buttons_settings HAQuDA_ButtonsControl::CopySettings() const {
-	CriticalLock lock(mux);
+	HAQuDA_CriticalLock lock(mux);
 	return settings;
 }
 
@@ -42,7 +29,7 @@ void HAQuDA_ButtonsControl::Load() {
 	}
 	// After an unreadable existing file `saved` is the defaults, so re-selecting the defaults writes nothing and the old file content
 	// comes back after a reboot: accepted
-	CriticalLock lock(mux);
+	HAQuDA_CriticalLock lock(mux);
 	settings = loaded;
 	saved = loaded;
 }
@@ -55,7 +42,7 @@ void HAQuDA_ButtonsControl::Handle() {
 	buttons_settings s = HAQuDA_ButtonsDefaults();
 	buttons_settings stored = s;
 	{
-		CriticalLock lock(mux);
+		HAQuDA_CriticalLock lock(mux);
 		s = settings;
 		stored = saved;
 	}
@@ -65,13 +52,13 @@ void HAQuDA_ButtonsControl::Handle() {
 	}
 	uint8_t record[BUTTONS_RECORD_LEN];
 	if (HAQuDA_EncodeButtonsRecord(s, record, sizeof(record)) && files.WriteFile(FILE_NAME_BUTTONS, record, sizeof(record))) {
-		CriticalLock lock(mux);
+		HAQuDA_CriticalLock lock(mux);
 		saved = s;
 		return;
 	}
 	// A failed write is never retried: the settings go back to the stored ones, also the change that arrived during the write
 	{
-		CriticalLock lock(mux);
+		HAQuDA_CriticalLock lock(mux);
 		settings = saved;
 	}
 	saveErrors.fetch_add(1);
@@ -81,7 +68,7 @@ void HAQuDA_ButtonsControl::Handle() {
 buttons_update_result HAQuDA_ButtonsControl::Submit(const buttons_request &request) {
 	buttons_update_result result = buttons_update_result::nothing;
 	{
-		CriticalLock lock(mux);
+		HAQuDA_CriticalLock lock(mux);
 		buttons_settings next = settings;
 		result = HAQuDA_ButtonsUpdate(next, request);
 		if (result == buttons_update_result::ok) {
@@ -97,7 +84,7 @@ buttons_update_result HAQuDA_ButtonsControl::Submit(const buttons_request &reque
 
 bool HAQuDA_ButtonsControl::SetLocked(bool locked) {
 	{
-		CriticalLock lock(mux);
+		HAQuDA_CriticalLock lock(mux);
 		if (settings.locked == locked) {
 			return locked;
 		}
@@ -110,7 +97,7 @@ bool HAQuDA_ButtonsControl::SetLocked(bool locked) {
 bool HAQuDA_ButtonsControl::ToggleLocked() {
 	bool locked = false;
 	{
-		CriticalLock lock(mux);
+		HAQuDA_CriticalLock lock(mux);
 		locked = !settings.locked;
 		settings.locked = locked;
 	}

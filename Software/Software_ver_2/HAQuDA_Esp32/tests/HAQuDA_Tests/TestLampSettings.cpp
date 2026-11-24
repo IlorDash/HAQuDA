@@ -2463,7 +2463,7 @@ TEST(LampSettingsTest, UpdateTextOkIsTheDocumentedMessage) {
 
 TEST(LampSettingsTest, JsonOfDefaultsWithoutTime) {
 	const char *exp_json = "{\"on\":true,\"bright\":35,\"mode\":\"multi\",\"multi\":[\"pm25\",\"eco2\",\"temp\"],\"std\":\"total\","
-						   "\"night\":{\"param\":\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":false}";
+						   "\"night\":{\"param\":\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":false,\"saveErr\":0}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	const lamp_settings settings = HAQuDA_LampDefaults();
@@ -2471,7 +2471,7 @@ TEST(LampSettingsTest, JsonOfDefaultsWithoutTime) {
 
 	size_t res;
 
-	res = HAQuDA_BuildLampJson(settings, false, 0, buf, sizeof(buf));
+	res = HAQuDA_BuildLampJson(settings, false, 0, 0, buf, sizeof(buf));
 
 	EXPECT_EQ(exp_len, res);
 	EXPECT_STREQ(exp_json, buf);
@@ -2479,7 +2479,7 @@ TEST(LampSettingsTest, JsonOfDefaultsWithoutTime) {
 
 TEST(LampSettingsTest, JsonWithTimeCarriesTheClock) {
 	const char *exp_json = "{\"on\":false,\"bright\":5,\"mode\":\"night\",\"multi\":[\"temp\",\"humid\",\"tvoc\"],\"std\":\"pm25\","
-						   "\"night\":{\"param\":\"humid\",\"from\":\"07:05\",\"to\":\"23:59\"},\"color\":4,\"time\":true,\"now\":\"22:15\"}";
+						   "\"night\":{\"param\":\"humid\",\"from\":\"07:05\",\"to\":\"23:59\"},\"color\":4,\"time\":true,\"now\":\"22:15\",\"saveErr\":0}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	lamp_settings settings = HAQuDA_LampDefaults();
@@ -2498,7 +2498,7 @@ TEST(LampSettingsTest, JsonWithTimeCarriesTheClock) {
 
 	size_t res;
 
-	res = HAQuDA_BuildLampJson(settings, true, 22 * 60 + 15, buf, sizeof(buf));
+	res = HAQuDA_BuildLampJson(settings, true, 22 * 60 + 15, 0, buf, sizeof(buf));
 
 	EXPECT_EQ(exp_len, res);
 	EXPECT_STREQ(exp_json, buf);
@@ -2519,7 +2519,7 @@ TEST(LampSettingsTest, JsonLongestFitsTheBuffer) {
 
 	size_t res;
 
-	res = HAQuDA_BuildLampJson(settings, true, 23 * 60 + 59, buf, sizeof(buf));
+	res = HAQuDA_BuildLampJson(settings, true, 23 * 60 + 59, 0, buf, sizeof(buf));
 
 	EXPECT_GT(res, 0u);
 	EXPECT_EQ(std::strlen(buf), res);
@@ -2534,7 +2534,7 @@ TEST(LampSettingsTest, JsonBufferTooSmallGivesZeroAndEmptyText) {
 
 	size_t res;
 
-	res = HAQuDA_BuildLampJson(settings, true, 100, buf, sizeof(buf));
+	res = HAQuDA_BuildLampJson(settings, true, 100, 0, buf, sizeof(buf));
 
 	EXPECT_EQ(exp_len, res);
 	EXPECT_EQ('\0', buf[0]);
@@ -2547,14 +2547,14 @@ TEST(LampSettingsTest, JsonNullBufferGivesZero) {
 
 	size_t res;
 
-	res = HAQuDA_BuildLampJson(settings, false, 0, nullptr, 100);
+	res = HAQuDA_BuildLampJson(settings, false, 0, 0, nullptr, 100);
 
 	EXPECT_EQ(exp_len, res);
 }
 
 TEST(LampSettingsTest, JsonWithoutTimeHasNoClockWhateverTheMinute) {
 	const char *exp_json = "{\"on\":true,\"bright\":35,\"mode\":\"multi\",\"multi\":[\"pm25\",\"eco2\",\"temp\"],\"std\":\"total\",\"night\":{\"param\":"
-						   "\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":false}";
+						   "\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":false,\"saveErr\":0}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	lamp_settings settings = HAQuDA_LampDefaults();
@@ -2562,7 +2562,7 @@ TEST(LampSettingsTest, JsonWithoutTimeHasNoClockWhateverTheMinute) {
 
 	size_t res;
 
-	res = HAQuDA_BuildLampJson(settings, false, 600, buf, sizeof(buf));
+	res = HAQuDA_BuildLampJson(settings, false, 600, 0, buf, sizeof(buf));
 
 	EXPECT_EQ(exp_len, res);
 	EXPECT_STREQ(exp_json, buf);
@@ -2570,7 +2570,7 @@ TEST(LampSettingsTest, JsonWithoutTimeHasNoClockWhateverTheMinute) {
 
 TEST(LampSettingsTest, JsonClockAtMidnightIsZeroZero) {
 	const char *exp_json = "{\"on\":true,\"bright\":35,\"mode\":\"multi\",\"multi\":[\"pm25\",\"eco2\",\"temp\"],\"std\":\"total\",\"night\":{\"param\":"
-						   "\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":true,\"now\":\"00:00\"}";
+						   "\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":true,\"now\":\"00:00\",\"saveErr\":0}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	lamp_settings settings = HAQuDA_LampDefaults();
@@ -2578,7 +2578,7 @@ TEST(LampSettingsTest, JsonClockAtMidnightIsZeroZero) {
 
 	size_t res;
 
-	res = HAQuDA_BuildLampJson(settings, true, 0, buf, sizeof(buf));
+	res = HAQuDA_BuildLampJson(settings, true, 0, 0, buf, sizeof(buf));
 
 	EXPECT_EQ(exp_len, res);
 	EXPECT_STREQ(exp_json, buf);
@@ -2586,7 +2586,7 @@ TEST(LampSettingsTest, JsonClockAtMidnightIsZeroZero) {
 
 TEST(LampSettingsTest, JsonClockAtLastMinuteOfTheDay) {
 	const char *exp_json = "{\"on\":true,\"bright\":35,\"mode\":\"multi\",\"multi\":[\"pm25\",\"eco2\",\"temp\"],\"std\":\"total\",\"night\":{\"param\":"
-						   "\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":true,\"now\":\"23:59\"}";
+						   "\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":true,\"now\":\"23:59\",\"saveErr\":0}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	lamp_settings settings = HAQuDA_LampDefaults();
@@ -2594,7 +2594,7 @@ TEST(LampSettingsTest, JsonClockAtLastMinuteOfTheDay) {
 
 	size_t res;
 
-	res = HAQuDA_BuildLampJson(settings, true, 1439, buf, sizeof(buf));
+	res = HAQuDA_BuildLampJson(settings, true, 1439, 0, buf, sizeof(buf));
 
 	EXPECT_EQ(exp_len, res);
 	EXPECT_STREQ(exp_json, buf);
@@ -2604,7 +2604,7 @@ TEST(LampSettingsTest, JsonClockMinuteAboveADayWrapsTheHour) {
 	// 25:00 is not a time of day; the hour wraps instead of printing 25
 
 	const char *exp_json = "{\"on\":true,\"bright\":35,\"mode\":\"multi\",\"multi\":[\"pm25\",\"eco2\",\"temp\"],\"std\":\"total\",\"night\":{\"param\":"
-						   "\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":true,\"now\":\"01:00\"}";
+						   "\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":true,\"now\":\"01:00\",\"saveErr\":0}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	lamp_settings settings = HAQuDA_LampDefaults();
@@ -2612,7 +2612,7 @@ TEST(LampSettingsTest, JsonClockMinuteAboveADayWrapsTheHour) {
 
 	size_t res;
 
-	res = HAQuDA_BuildLampJson(settings, true, 1500, buf, sizeof(buf));
+	res = HAQuDA_BuildLampJson(settings, true, 1500, 0, buf, sizeof(buf));
 
 	EXPECT_EQ(exp_len, res);
 	EXPECT_STREQ(exp_json, buf);
@@ -2620,7 +2620,7 @@ TEST(LampSettingsTest, JsonClockMinuteAboveADayWrapsTheHour) {
 
 TEST(LampSettingsTest, JsonModeLightWithLastColor) {
 	const char *exp_json = "{\"on\":true,\"bright\":35,\"mode\":\"light\",\"multi\":[\"pm25\",\"eco2\",\"temp\"],\"std\":\"total\",\"night\":{\"param\":"
-						   "\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":5,\"time\":false}";
+						   "\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":5,\"time\":false,\"saveErr\":0}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	lamp_settings settings = HAQuDA_LampDefaults();
@@ -2630,7 +2630,7 @@ TEST(LampSettingsTest, JsonModeLightWithLastColor) {
 
 	size_t res;
 
-	res = HAQuDA_BuildLampJson(settings, false, 0, buf, sizeof(buf));
+	res = HAQuDA_BuildLampJson(settings, false, 0, 0, buf, sizeof(buf));
 
 	EXPECT_EQ(exp_len, res);
 	EXPECT_STREQ(exp_json, buf);
@@ -2638,7 +2638,7 @@ TEST(LampSettingsTest, JsonModeLightWithLastColor) {
 
 TEST(LampSettingsTest, JsonModeStandardWithTvocReading) {
 	const char *exp_json = "{\"on\":true,\"bright\":35,\"mode\":\"standard\",\"multi\":[\"pm25\",\"eco2\",\"temp\"],\"std\":\"tvoc\",\"night\":{\"param\":"
-						   "\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":false}";
+						   "\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":false,\"saveErr\":0}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	lamp_settings settings = HAQuDA_LampDefaults();
@@ -2648,7 +2648,7 @@ TEST(LampSettingsTest, JsonModeStandardWithTvocReading) {
 
 	size_t res;
 
-	res = HAQuDA_BuildLampJson(settings, false, 0, buf, sizeof(buf));
+	res = HAQuDA_BuildLampJson(settings, false, 0, 0, buf, sizeof(buf));
 
 	EXPECT_EQ(exp_len, res);
 	EXPECT_STREQ(exp_json, buf);
@@ -2656,7 +2656,7 @@ TEST(LampSettingsTest, JsonModeStandardWithTvocReading) {
 
 TEST(LampSettingsTest, JsonPowerOffAtFullBrightness) {
 	const char *exp_json = "{\"on\":false,\"bright\":100,\"mode\":\"multi\",\"multi\":[\"pm25\",\"eco2\",\"temp\"],\"std\":\"total\",\"night\":{\"param\":"
-						   "\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":false}";
+						   "\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":false,\"saveErr\":0}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	lamp_settings settings = HAQuDA_LampDefaults();
@@ -2666,7 +2666,7 @@ TEST(LampSettingsTest, JsonPowerOffAtFullBrightness) {
 
 	size_t res;
 
-	res = HAQuDA_BuildLampJson(settings, false, 0, buf, sizeof(buf));
+	res = HAQuDA_BuildLampJson(settings, false, 0, 0, buf, sizeof(buf));
 
 	EXPECT_EQ(exp_len, res);
 	EXPECT_STREQ(exp_json, buf);
@@ -2674,7 +2674,7 @@ TEST(LampSettingsTest, JsonPowerOffAtFullBrightness) {
 
 TEST(LampSettingsTest, JsonModeOutOfRangeFallsBackToStandard) {
 	const char *exp_json = "{\"on\":true,\"bright\":35,\"mode\":\"standard\",\"multi\":[\"pm25\",\"eco2\",\"temp\"],\"std\":\"total\",\"night\":{\"param\":"
-						   "\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":false}";
+						   "\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":false,\"saveErr\":0}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	lamp_settings settings = HAQuDA_LampDefaults();
@@ -2683,7 +2683,7 @@ TEST(LampSettingsTest, JsonModeOutOfRangeFallsBackToStandard) {
 
 	size_t res;
 
-	res = HAQuDA_BuildLampJson(settings, false, 0, buf, sizeof(buf));
+	res = HAQuDA_BuildLampJson(settings, false, 0, 0, buf, sizeof(buf));
 
 	EXPECT_EQ(exp_len, res);
 	EXPECT_STREQ(exp_json, buf);
@@ -2691,7 +2691,7 @@ TEST(LampSettingsTest, JsonModeOutOfRangeFallsBackToStandard) {
 
 TEST(LampSettingsTest, JsonParamOutOfRangeFallsBackToTotal) {
 	const char *exp_json = "{\"on\":true,\"bright\":35,\"mode\":\"multi\",\"multi\":[\"pm25\",\"eco2\",\"temp\"],\"std\":\"total\",\"night\":{\"param\":"
-						   "\"total\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":false}";
+						   "\"total\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":false,\"saveErr\":0}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	lamp_settings settings = HAQuDA_LampDefaults();
@@ -2700,7 +2700,7 @@ TEST(LampSettingsTest, JsonParamOutOfRangeFallsBackToTotal) {
 
 	size_t res;
 
-	res = HAQuDA_BuildLampJson(settings, false, 0, buf, sizeof(buf));
+	res = HAQuDA_BuildLampJson(settings, false, 0, 0, buf, sizeof(buf));
 
 	EXPECT_EQ(exp_len, res);
 	EXPECT_STREQ(exp_json, buf);
@@ -2708,7 +2708,7 @@ TEST(LampSettingsTest, JsonParamOutOfRangeFallsBackToTotal) {
 
 TEST(LampSettingsTest, JsonBufferOfExactlyTheTextPlusTerminatorFits) {
 	const char *exp_json = "{\"on\":true,\"bright\":35,\"mode\":\"multi\",\"multi\":[\"pm25\",\"eco2\",\"temp\"],\"std\":\"total\",\"night\":{\"param\":"
-						   "\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":true,\"now\":\"00:00\"}";
+						   "\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":true,\"now\":\"00:00\",\"saveErr\":0}";
 	const size_t exp_len = std::strlen(exp_json);
 
 	const lamp_settings settings = HAQuDA_LampDefaults();
@@ -2716,17 +2716,17 @@ TEST(LampSettingsTest, JsonBufferOfExactlyTheTextPlusTerminatorFits) {
 
 	size_t res;
 
-	res = HAQuDA_BuildLampJson(settings, true, 0, buf, exp_len + 1);
+	res = HAQuDA_BuildLampJson(settings, true, 0, 0, buf, exp_len + 1);
 
 	EXPECT_EQ(exp_len, res);
 	EXPECT_STREQ(exp_json, buf);
 }
 
 TEST(LampSettingsTest, JsonBufferWithoutRoomForTheTerminatorGivesZero) {
-	// the text is 172 characters; a buffer of that size has no room for the NUL
+	// a buffer of the text's length has no room for the NUL
 
 	const char *exp_full = "{\"on\":true,\"bright\":35,\"mode\":\"multi\",\"multi\":[\"pm25\",\"eco2\",\"temp\"],\"std\":\"total\",\"night\":{\"param\":"
-						   "\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":true,\"now\":\"00:00\"}";
+						   "\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":true,\"now\":\"00:00\",\"saveErr\":0}";
 	const size_t exp_len = 0;
 
 	const size_t fullLen = std::strlen(exp_full);
@@ -2736,20 +2736,59 @@ TEST(LampSettingsTest, JsonBufferWithoutRoomForTheTerminatorGivesZero) {
 
 	size_t res;
 
-	res = HAQuDA_BuildLampJson(settings, true, 0, buf, fullLen);
+	res = HAQuDA_BuildLampJson(settings, true, 0, 0, buf, fullLen);
 
 	EXPECT_EQ(exp_len, res);
 	EXPECT_EQ('\0', buf[0]);
 }
 
 TEST(LampSettingsTest, JsonBufferCutInsideTheClockGivesZero) {
-	// the cut lands in ","now":"00:00"}", after the whole head
+	// the cut lands in ","now":"00:00", after the whole head
 
 	const char *exp_full = "{\"on\":true,\"bright\":35,\"mode\":\"multi\",\"multi\":[\"pm25\",\"eco2\",\"temp\"],\"std\":\"total\",\"night\":{\"param\":"
-						   "\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":true,\"now\":\"00:00\"}";
+						   "\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":true,\"now\":\"00:00\",\"saveErr\":0}";
 	const size_t exp_len = 0;
 
 	const size_t fullLen = std::strlen(exp_full);
+	const size_t cut = 20;
+	const lamp_settings settings = HAQuDA_LampDefaults();
+	char buf[LAMP_JSON_BUF_LEN];
+	std::memset(buf, 'x', sizeof(buf));
+
+	size_t res;
+
+	res = HAQuDA_BuildLampJson(settings, true, 0, 0, buf, fullLen - cut);
+
+	EXPECT_EQ(exp_len, res);
+	EXPECT_EQ('\0', buf[0]);
+}
+
+TEST(LampSettingsTest, JsonBufferEndingRightAfterTheHeadGivesZero) {
+	// no clock: the head ends with false and only the error counter with the closing brace is missing
+
+	const char *exp_full = "{\"on\":true,\"bright\":35,\"mode\":\"multi\",\"multi\":[\"pm25\",\"eco2\",\"temp\"],\"std\":\"total\",\"night\":{\"param\":"
+						   "\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":false,\"saveErr\":0}";
+	const size_t exp_len = 0;
+
+	const size_t headLen = std::strlen(exp_full) - std::strlen(",\"saveErr\":0}");
+	const lamp_settings settings = HAQuDA_LampDefaults();
+	char buf[LAMP_JSON_BUF_LEN];
+	std::memset(buf, 'x', sizeof(buf));
+
+	size_t res;
+
+	res = HAQuDA_BuildLampJson(settings, false, 0, 0, buf, headLen + 1);
+
+	EXPECT_EQ(exp_len, res);
+	EXPECT_EQ('\0', buf[0]);
+}
+
+TEST(LampSettingsTest, JsonBufferCutInsideTheErrorCounterGivesZero) {
+	const size_t exp_len = 0;
+
+	const size_t fullLen
+		= std::strlen("{\"on\":true,\"bright\":35,\"mode\":\"multi\",\"multi\":[\"pm25\",\"eco2\",\"temp\"],\"std\":\"total\",\"night\":{\"param\":"
+					  "\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":true,\"now\":\"00:00\",\"saveErr\":0}");
 	const size_t cut = 5;
 	const lamp_settings settings = HAQuDA_LampDefaults();
 	char buf[LAMP_JSON_BUF_LEN];
@@ -2757,30 +2796,405 @@ TEST(LampSettingsTest, JsonBufferCutInsideTheClockGivesZero) {
 
 	size_t res;
 
-	res = HAQuDA_BuildLampJson(settings, true, 0, buf, fullLen - cut);
+	res = HAQuDA_BuildLampJson(settings, true, 0, 0, buf, fullLen - cut);
 
 	EXPECT_EQ(exp_len, res);
 	EXPECT_EQ('\0', buf[0]);
 }
 
-TEST(LampSettingsTest, JsonBufferEndingRightAfterTheHeadGivesZero) {
-	// no clock: the head ends with true and only the closing brace is missing
+TEST(LampSettingsTest, JsonCarriesTheErrorCounter) {
+	const char *exp_tail = "\"time\":false,\"saveErr\":7}";
 
-	const char *exp_full = "{\"on\":true,\"bright\":35,\"mode\":\"multi\",\"multi\":[\"pm25\",\"eco2\",\"temp\"],\"std\":\"total\",\"night\":{\"param\":"
-						   "\"eco2\",\"from\":\"21:00\",\"to\":\"09:00\"},\"color\":0,\"time\":false}";
-	const size_t exp_len = 0;
-
-	const size_t fullLen = std::strlen(exp_full);
 	const lamp_settings settings = HAQuDA_LampDefaults();
+	const uint32_t saveErrors = 7;
 	char buf[LAMP_JSON_BUF_LEN];
-	std::memset(buf, 'x', sizeof(buf));
 
 	size_t res;
 
-	res = HAQuDA_BuildLampJson(settings, false, 0, buf, fullLen);
+	res = HAQuDA_BuildLampJson(settings, false, 0, saveErrors, buf, sizeof(buf));
 
-	EXPECT_EQ(exp_len, res);
-	EXPECT_EQ('\0', buf[0]);
+	EXPECT_GT(res, 0u);
+	EXPECT_EQ(std::strlen(buf), res);
+	EXPECT_STREQ(exp_tail, buf + res - std::strlen(exp_tail));
+}
+
+TEST(LampSettingsTest, JsonCarriesTheErrorCounterAfterTheClock) {
+	const char *exp_tail = "\"now\":\"10:05\",\"saveErr\":3}";
+
+	const lamp_settings settings = HAQuDA_LampDefaults();
+	const uint32_t saveErrors = 3;
+	char buf[LAMP_JSON_BUF_LEN];
+
+	size_t res;
+
+	res = HAQuDA_BuildLampJson(settings, true, 10 * 60 + 5, saveErrors, buf, sizeof(buf));
+
+	EXPECT_GT(res, 0u);
+	EXPECT_STREQ(exp_tail, buf + res - std::strlen(exp_tail));
+}
+
+TEST(LampSettingsTest, JsonLongestWithTheLargestErrorCounterFitsTheBuffer) {
+	lamp_settings settings = HAQuDA_LampDefaults();
+	settings.brightPercent = 100;
+	settings.mode = lamp_mode::standard;
+	settings.multi[0] = lamp_param::humid;
+	settings.multi[1] = lamp_param::humid;
+	settings.multi[2] = lamp_param::humid;
+	settings.nightParam = lamp_param::humid;
+	settings.nightFromMin = 23 * 60 + 59;
+	settings.nightToMin = 23 * 60 + 58;
+	settings.color = 5;
+	const uint32_t saveErrors = 4294967295u;
+	char buf[LAMP_JSON_BUF_LEN];
+
+	size_t res;
+
+	res = HAQuDA_BuildLampJson(settings, true, 23 * 60 + 59, saveErrors, buf, sizeof(buf));
+
+	EXPECT_GT(res, 0u);
+	EXPECT_LT(res, 220u);
+	EXPECT_EQ(std::strlen(buf), res);
+}
+
+TEST(LampSettingsTest, SameOfEqualSettingsIsTrue) {
+	const bool exp_same = true;
+
+	const lamp_settings a = HAQuDA_LampDefaults();
+	const lamp_settings b = HAQuDA_LampDefaults();
+
+	bool res;
+
+	res = HAQuDA_LampSame(a, b);
+
+	EXPECT_EQ(exp_same, res);
+}
+
+TEST(LampSettingsTest, SameSeesOn) {
+	const bool exp_same = false;
+
+	const lamp_settings base = HAQuDA_LampDefaults();
+	lamp_settings changed = base;
+	changed.on = false;
+
+	bool res;
+
+	res = HAQuDA_LampSame(base, changed);
+
+	EXPECT_EQ(exp_same, res);
+}
+
+TEST(LampSettingsTest, SameSeesBrightness) {
+	const bool exp_same = false;
+
+	const lamp_settings base = HAQuDA_LampDefaults();
+	lamp_settings changed = base;
+	changed.brightPercent = 40;
+
+	bool res;
+
+	res = HAQuDA_LampSame(base, changed);
+
+	EXPECT_EQ(exp_same, res);
+}
+
+TEST(LampSettingsTest, SameSeesMode) {
+	const bool exp_same = false;
+
+	const lamp_settings base = HAQuDA_LampDefaults();
+	lamp_settings changed = base;
+	changed.mode = lamp_mode::light;
+
+	bool res;
+
+	res = HAQuDA_LampSame(base, changed);
+
+	EXPECT_EQ(exp_same, res);
+}
+
+TEST(LampSettingsTest, SameSeesStandardParam) {
+	const bool exp_same = false;
+
+	const lamp_settings base = HAQuDA_LampDefaults();
+	lamp_settings changed = base;
+	changed.standardParam = lamp_param::pm25;
+
+	bool res;
+
+	res = HAQuDA_LampSame(base, changed);
+
+	EXPECT_EQ(exp_same, res);
+}
+
+TEST(LampSettingsTest, SameSeesFirstMultiBand) {
+	const bool exp_same = false;
+
+	const lamp_settings base = HAQuDA_LampDefaults();
+	lamp_settings changed = base;
+	changed.multi[0] = lamp_param::tvoc;
+
+	bool res;
+
+	res = HAQuDA_LampSame(base, changed);
+
+	EXPECT_EQ(exp_same, res);
+}
+
+TEST(LampSettingsTest, SameSeesSecondMultiBand) {
+	const bool exp_same = false;
+
+	const lamp_settings base = HAQuDA_LampDefaults();
+	lamp_settings changed = base;
+	changed.multi[1] = lamp_param::tvoc;
+
+	bool res;
+
+	res = HAQuDA_LampSame(base, changed);
+
+	EXPECT_EQ(exp_same, res);
+}
+
+TEST(LampSettingsTest, SameSeesThirdMultiBand) {
+	const bool exp_same = false;
+
+	const lamp_settings base = HAQuDA_LampDefaults();
+	lamp_settings changed = base;
+	changed.multi[2] = lamp_param::tvoc;
+
+	bool res;
+
+	res = HAQuDA_LampSame(base, changed);
+
+	EXPECT_EQ(exp_same, res);
+}
+
+TEST(LampSettingsTest, SameSeesNightParam) {
+	const bool exp_same = false;
+
+	const lamp_settings base = HAQuDA_LampDefaults();
+	lamp_settings changed = base;
+	changed.nightParam = lamp_param::tvoc;
+
+	bool res;
+
+	res = HAQuDA_LampSame(base, changed);
+
+	EXPECT_EQ(exp_same, res);
+}
+
+TEST(LampSettingsTest, SameSeesNightFrom) {
+	const bool exp_same = false;
+
+	const lamp_settings base = HAQuDA_LampDefaults();
+	lamp_settings changed = base;
+	changed.nightFromMin = 22 * 60;
+
+	bool res;
+
+	res = HAQuDA_LampSame(base, changed);
+
+	EXPECT_EQ(exp_same, res);
+}
+
+TEST(LampSettingsTest, SameSeesNightTo) {
+	const bool exp_same = false;
+
+	const lamp_settings base = HAQuDA_LampDefaults();
+	lamp_settings changed = base;
+	changed.nightToMin = 8 * 60;
+
+	bool res;
+
+	res = HAQuDA_LampSame(base, changed);
+
+	EXPECT_EQ(exp_same, res);
+}
+
+TEST(LampSettingsTest, SameSeesColor) {
+	const bool exp_same = false;
+
+	const lamp_settings base = HAQuDA_LampDefaults();
+	lamp_settings changed = base;
+	changed.color = 2;
+
+	bool res;
+
+	res = HAQuDA_LampSame(base, changed);
+
+	EXPECT_EQ(exp_same, res);
+}
+
+TEST(LampSettingsTest, StepBrightnessUpAddsOneStep) {
+	const bool exp_changed = true;
+	const uint8_t exp_bright = 40;
+
+	uint8_t bright = 35;
+
+	bool res;
+
+	res = HAQuDA_StepLampBrightness(bright, true);
+
+	EXPECT_EQ(exp_changed, res);
+	EXPECT_EQ(exp_bright, bright);
+}
+
+TEST(LampSettingsTest, StepBrightnessDownSubtractsOneStep) {
+	const bool exp_changed = true;
+	const uint8_t exp_bright = 30;
+
+	uint8_t bright = 35;
+
+	bool res;
+
+	res = HAQuDA_StepLampBrightness(bright, false);
+
+	EXPECT_EQ(exp_changed, res);
+	EXPECT_EQ(exp_bright, bright);
+}
+
+TEST(LampSettingsTest, StepBrightnessUpToTheMaximumChanges) {
+	const bool exp_changed = true;
+	const uint8_t exp_bright = LAMP_BRIGHT_MAX;
+
+	uint8_t bright = LAMP_BRIGHT_MAX - LAMP_BRIGHT_STEP;
+
+	bool res;
+
+	res = HAQuDA_StepLampBrightness(bright, true);
+
+	EXPECT_EQ(exp_changed, res);
+	EXPECT_EQ(exp_bright, bright);
+}
+
+TEST(LampSettingsTest, StepBrightnessUpAtTheMaximumReportsNoChange) {
+	const bool exp_changed = false;
+	const uint8_t exp_bright = LAMP_BRIGHT_MAX;
+
+	uint8_t bright = LAMP_BRIGHT_MAX;
+
+	bool res;
+
+	res = HAQuDA_StepLampBrightness(bright, true);
+
+	EXPECT_EQ(exp_changed, res);
+	EXPECT_EQ(exp_bright, bright);
+}
+
+TEST(LampSettingsTest, StepBrightnessDownToTheMinimumChanges) {
+	const bool exp_changed = true;
+	const uint8_t exp_bright = LAMP_BRIGHT_MIN;
+
+	uint8_t bright = LAMP_BRIGHT_MIN + LAMP_BRIGHT_STEP;
+
+	bool res;
+
+	res = HAQuDA_StepLampBrightness(bright, false);
+
+	EXPECT_EQ(exp_changed, res);
+	EXPECT_EQ(exp_bright, bright);
+}
+
+TEST(LampSettingsTest, StepBrightnessDownAtTheMinimumReportsNoChange) {
+	const bool exp_changed = false;
+	const uint8_t exp_bright = LAMP_BRIGHT_MIN;
+
+	uint8_t bright = LAMP_BRIGHT_MIN;
+
+	bool res;
+
+	res = HAQuDA_StepLampBrightness(bright, false);
+
+	EXPECT_EQ(exp_changed, res);
+	EXPECT_EQ(exp_bright, bright);
+}
+
+TEST(LampSettingsTest, StepBrightnessUpOffTheScaleIsClampedToTheMaximum) {
+	const uint8_t exp_bright = LAMP_BRIGHT_MAX;
+
+	uint8_t bright = LAMP_BRIGHT_MAX - 2;
+
+	HAQuDA_StepLampBrightness(bright, true);
+
+	EXPECT_EQ(exp_bright, bright);
+}
+
+TEST(LampSettingsTest, StepBrightnessDownOffTheScaleIsClampedToTheMinimum) {
+	const uint8_t exp_bright = LAMP_BRIGHT_MIN;
+
+	uint8_t bright = LAMP_BRIGHT_MIN + 2;
+
+	HAQuDA_StepLampBrightness(bright, false);
+
+	EXPECT_EQ(exp_bright, bright);
+}
+
+TEST(LampSettingsTest, NextModeAfterStandardIsMulti) {
+	const lamp_mode exp_mode = lamp_mode::multi;
+
+	lamp_mode res;
+
+	res = HAQuDA_NextLampMode(lamp_mode::standard, true);
+
+	EXPECT_EQ(exp_mode, res);
+}
+
+TEST(LampSettingsTest, NextModeAfterMultiWithTimeIsNight) {
+	const lamp_mode exp_mode = lamp_mode::night;
+
+	lamp_mode res;
+
+	res = HAQuDA_NextLampMode(lamp_mode::multi, true);
+
+	EXPECT_EQ(exp_mode, res);
+}
+
+TEST(LampSettingsTest, NextModeAfterMultiWithoutTimeSkipsNight) {
+	const lamp_mode exp_mode = lamp_mode::light;
+
+	lamp_mode res;
+
+	res = HAQuDA_NextLampMode(lamp_mode::multi, false);
+
+	EXPECT_EQ(exp_mode, res);
+}
+
+TEST(LampSettingsTest, NextModeAfterNightIsLight) {
+	const lamp_mode exp_mode = lamp_mode::light;
+
+	lamp_mode res;
+
+	res = HAQuDA_NextLampMode(lamp_mode::night, true);
+
+	EXPECT_EQ(exp_mode, res);
+}
+
+TEST(LampSettingsTest, NextModeLeavesNightWhenTheTimeIsLost) {
+	const lamp_mode exp_mode = lamp_mode::light;
+
+	lamp_mode res;
+
+	res = HAQuDA_NextLampMode(lamp_mode::night, false);
+
+	EXPECT_EQ(exp_mode, res);
+}
+
+TEST(LampSettingsTest, NextModeAfterLightWrapsToStandard) {
+	const lamp_mode exp_mode = lamp_mode::standard;
+
+	lamp_mode res;
+
+	res = HAQuDA_NextLampMode(lamp_mode::light, true);
+
+	EXPECT_EQ(exp_mode, res);
+}
+
+TEST(LampSettingsTest, NextModeOutOfRangeFallsBackToStandard) {
+	const lamp_mode exp_mode = lamp_mode::standard;
+
+	lamp_mode res;
+
+	res = HAQuDA_NextLampMode(static_cast<lamp_mode>(9), true);
+
+	EXPECT_EQ(exp_mode, res);
 }
 
 TEST(LampSettingsTest, JsonBufferOfOneByteGivesZeroAndEmptyText) {
@@ -2792,7 +3206,7 @@ TEST(LampSettingsTest, JsonBufferOfOneByteGivesZeroAndEmptyText) {
 
 	size_t res;
 
-	res = HAQuDA_BuildLampJson(settings, true, 0, buf, sizeof(buf));
+	res = HAQuDA_BuildLampJson(settings, true, 0, 0, buf, sizeof(buf));
 
 	EXPECT_EQ(exp_len, res);
 	EXPECT_EQ('\0', buf[0]);
@@ -2808,7 +3222,7 @@ TEST(LampSettingsTest, JsonBufferOfSizeZeroGivesZeroAndIsNotTouched) {
 
 	size_t res;
 
-	res = HAQuDA_BuildLampJson(settings, true, 0, buf, 0);
+	res = HAQuDA_BuildLampJson(settings, true, 0, 0, buf, 0);
 
 	EXPECT_EQ(exp_len, res);
 	EXPECT_EQ(exp_first, buf[0]);
@@ -2825,7 +3239,7 @@ TEST(LampSettingsTest, JsonBufferShorterThanTheFirstFieldGivesZero) {
 
 	size_t res;
 
-	res = HAQuDA_BuildLampJson(settings, true, 0, buf, size);
+	res = HAQuDA_BuildLampJson(settings, true, 0, 0, buf, size);
 
 	EXPECT_EQ(exp_len, res);
 	EXPECT_EQ('\0', buf[0]);
@@ -2838,7 +3252,7 @@ TEST(LampSettingsTest, JsonBufferOfSizeZeroAndNullGivesZero) {
 
 	size_t res;
 
-	res = HAQuDA_BuildLampJson(settings, true, 0, nullptr, 0);
+	res = HAQuDA_BuildLampJson(settings, true, 0, 0, nullptr, 0);
 
 	EXPECT_EQ(exp_len, res);
 }

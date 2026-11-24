@@ -173,7 +173,7 @@ void loop() {
 	uint16_t minuteOfDay = 0;
 	const bool timeKnown = HAQuDA_TimeService::GetCachedMinuteOfDay(&minuteOfDay);
 	WebDisp.SetMinuteOfDay(timeKnown, minuteOfDay);
-	LampControl.Handle(timeKnown, minuteOfDay);
+	LampControl.Handle(millis(), timeKnown, minuteOfDay);
 	HAQuDA_Logger::FlushExpiredRepeats();
 	for (uint8_t i = 0; i < TOUCH_BUTTONS_NUM; i++) {
 		if (TouchButtons.TakePresses(i) > 0) {

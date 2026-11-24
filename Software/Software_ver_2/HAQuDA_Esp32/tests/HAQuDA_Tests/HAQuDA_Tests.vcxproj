@@ -147,6 +147,8 @@
     <ClInclude Include="..\..\sketches\HAQuDA_ButtonsControl.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_RecordCodec.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_LampControl.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_ILampActions.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_CriticalLock.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_IFileStorage.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_ILampDisplay.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_ILogger.h" />

@@ -192,6 +192,49 @@ lamp_settings HAQuDA_LampDefaults() {
 	return s;
 }
 
+bool HAQuDA_LampSame(const lamp_settings &a, const lamp_settings &b) {
+	if ((a.on != b.on) || (a.brightPercent != b.brightPercent) || (a.mode != b.mode) || (a.standardParam != b.standardParam) || (a.nightParam != b.nightParam)
+		|| (a.nightFromMin != b.nightFromMin) || (a.nightToMin != b.nightToMin) || (a.color != b.color)) {
+		return false;
+	}
+	for (size_t i = 0; i < LAMP_MULTI_NUM; i++) {
+		if (a.multi[i] != b.multi[i]) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool HAQuDA_StepLampBrightness(uint8_t &brightPercent, bool up) {
+	if (up) {
+		if (brightPercent >= LAMP_BRIGHT_MAX) {
+			return false;
+		}
+		const unsigned next = static_cast<unsigned>(brightPercent) + LAMP_BRIGHT_STEP;
+		brightPercent = static_cast<uint8_t>((next > LAMP_BRIGHT_MAX) ? LAMP_BRIGHT_MAX : next);
+		return true;
+	}
+	if (brightPercent <= LAMP_BRIGHT_MIN) {
+		return false;
+	}
+	brightPercent = (brightPercent < LAMP_BRIGHT_MIN + LAMP_BRIGHT_STEP) ? LAMP_BRIGHT_MIN : static_cast<uint8_t>(brightPercent - LAMP_BRIGHT_STEP);
+	return true;
+}
+
+lamp_mode HAQuDA_NextLampMode(lamp_mode current, bool timeKnown) {
+	switch (current) {
+		case lamp_mode::standard:
+			return lamp_mode::multi;
+		case lamp_mode::multi:
+			return timeKnown ? lamp_mode::night : lamp_mode::light;
+		case lamp_mode::night:
+			return lamp_mode::light;
+		case lamp_mode::light:
+		default:
+			return lamp_mode::standard;
+	}
+}
+
 bool HAQuDA_LampSettingsValid(const lamp_settings &s) {
 	if ((s.brightPercent < LAMP_BRIGHT_MIN) || (s.brightPercent > LAMP_BRIGHT_MAX) || ((s.brightPercent % LAMP_BRIGHT_STEP) != 0)) {
 		return false;
@@ -310,7 +353,7 @@ const char *HAQuDA_LampUpdateText(lamp_update_result result) {
 	}
 }
 
-size_t HAQuDA_BuildLampJson(const lamp_settings &s, bool timeKnown, uint16_t minuteOfDay, char *buf, size_t size) {
+size_t HAQuDA_BuildLampJson(const lamp_settings &s, bool timeKnown, uint16_t minuteOfDay, uint32_t saveErrors, char *buf, size_t size) {
 	if ((buf == nullptr) || (size == 0)) {
 		return 0;
 	}
@@ -327,9 +370,16 @@ size_t HAQuDA_BuildLampJson(const lamp_settings &s, bool timeKnown, uint16_t min
 		return 0;
 	}
 	size_t len = static_cast<size_t>(head);
-	const int tail = timeKnown ? snprintf(buf + len, size - len, ",\"now\":\"%02u:%02u\"}", static_cast<unsigned>((minuteOfDay / 60) % 24),
-										  static_cast<unsigned>(minuteOfDay % 60))
-							   : snprintf(buf + len, size - len, "}");
+	if (timeKnown) {
+		const int now = snprintf(buf + len, size - len, ",\"now\":\"%02u:%02u\"", static_cast<unsigned>((minuteOfDay / 60) % 24),
+								 static_cast<unsigned>(minuteOfDay % 60));
+		if ((now < 0) || (static_cast<size_t>(now) >= size - len)) {
+			buf[0] = '\0';
+			return 0;
+		}
+		len += static_cast<size_t>(now);
+	}
+	const int tail = snprintf(buf + len, size - len, ",\"saveErr\":%lu}", static_cast<unsigned long>(saveErrors));
 	if ((tail < 0) || (static_cast<size_t>(tail) >= size - len)) {
 		buf[0] = '\0';
 		return 0;

@@ -16,4 +16,5 @@ class MockLampDisplay : public HAQuDA_ILampDisplay {
 	MOCK_METHOD(void, ShowStandard, (lamp_param param), (override));
 	MOCK_METHOD(void, ShowMulti, (lamp_multi_ref bottomToTop), (override));
 	MOCK_METHOD(void, ShowNight, (lamp_param param, uint16_t fromMin, uint16_t toMin), (override));
+	MOCK_METHOD(void, ShowFlash, (lamp_flash kind), (override));
 };

@@ -18,4 +18,5 @@ class HAQuDA_ILampDisplay {
 	virtual void ShowStandard(lamp_param param) = 0;
 	virtual void ShowMulti(const lamp_param (&bottomToTop)[LAMP_MULTI_NUM]) = 0;
 	virtual void ShowNight(lamp_param param, uint16_t fromMin, uint16_t toMin) = 0;
+	virtual void ShowFlash(lamp_flash kind) = 0;
 };

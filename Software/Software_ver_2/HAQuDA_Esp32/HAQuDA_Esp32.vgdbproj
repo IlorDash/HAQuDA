@@ -62,6 +62,8 @@
         <string>sketches\HAQuDA_ButtonsControl.h</string>
         <string>sketches\HAQuDA_RecordCodec.h</string>
         <string>sketches\HAQuDA_LampControl.h</string>
+        <string>sketches\HAQuDA_ILampActions.h</string>
+        <string>sketches\HAQuDA_CriticalLock.h</string>
         <string>sketches\HAQuDA_IFileStorage.h</string>
         <string>sketches\HAQuDA_ILampDisplay.h</string>
         <string>sketches\HAQuDA_ILogger.h</string>
