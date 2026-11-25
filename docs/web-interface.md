@@ -240,11 +240,25 @@ that one.
 
 | Control | Action |
 |---------|--------------|
-| **Delete all networks** | Asks **Delete all N networks? After its next restart the lamp starts its own access point.** **Cancel** closes the question; **Delete all** deletes every saved network. The lamp stays connected until the next start; after it, it opens its access point. |
+| **×** next to a network (**Delete “network”**) | Opens a question in that row: **Delete “network”?** **Cancel** closes it; **Delete** deletes this network. Only one question is open at a time. |
+| **Delete all networks** | In your network the question reads **Delete all N networks? The lamp restarts and starts its own access point.** In access point mode it reads **Delete all N networks? After its next restart the lamp starts its own access point.** **Cancel** closes the question; **Delete all** deletes every saved network. |
 
-The lamp answers **Deleted all saved networks.**, or **There are no saved networks.** when the list
-is empty. **Error deleting the saved networks.** means the lamp could not delete the file: try
-again. The page cannot delete a single network.
+If you delete the network the lamp is in, the question says so: **The lamp is connected to this
+network. After deleting it the lamp restarts and tries: other networks; if none joins it starts its
+own access point.** With no other network it ends **...restarts and starts its own access point.**
+The lamp restarts about 1 second after the reply, then tries the remaining networks in their order
+and starts its access point if none joins. Deleting all networks in your network restarts the lamp
+the same way. In access point mode a delete never restarts the lamp, and deleting another network
+than the one the lamp is in does not restart it either.
+
+The page shows the result in its own language, for example **The network “network” is deleted.** or
+**All saved networks are deleted.**, and **There are no saved networks.** when the list is empty.
+After a restart it adds **The lamp is restarting. This page loses the lamp for about a minute. Open
+it again then.** The page then reloads the list by itself once the lamp answers again. Other
+results: **This network is not saved.**; **The lamp is restarting. Try again in a minute.** and
+**The lamp is checking a WiFi network. Try again when the check is over.** when the lamp is busy;
+**The lamp could not delete the saved networks.** means the lamp could not write its file: try
+again.
 
 ---
 

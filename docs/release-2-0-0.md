@@ -44,6 +44,12 @@
 - **Up to 10 networks.** The newest network goes first and the lamp tries it first. When the list
   is full, the page names the oldest network that the new one removes; see
   [Saved networks](web-interface.md#saved-networks).
+- **Delete one network.** Every saved network has a **×** button with a confirmation in its row.
+  Deleting the network the lamp is in, or all networks while the lamp is in your network, restarts
+  the lamp after about 1 second; it then tries the remaining networks in order and starts its
+  access point if none joins. Before, deleting all networks left the lamp in a network that was no
+  longer saved. The page shows the results in its language. See
+  [Saved networks](web-interface.md#saved-networks).
 
 - **Restart from the page.** The red button **Restart lamp** on the main page restarts the lamp
   without unplugging it, after you confirm. The page shows **Lamp is restarting…** and reloads
