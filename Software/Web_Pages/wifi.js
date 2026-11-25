@@ -52,10 +52,32 @@
 				return '10 networks saved: adding this one removes “' + oldest + '”.';
 			},
 			saved: 'Saved networks', empty: 'No saved networks yet.', upd: 'will update', listFail: 'Cannot read the saved networks.',
-			delAll: 'Delete all networks', cancel: 'Cancel', delYes: 'Delete all',
-			confirm: function (n) {
+			delAll: 'Delete all networks', cancel: 'Cancel', delYes: 'Delete all', delRowYes: 'Delete',
+			confirm: function (n, restarts) {
+				if (restarts) {
+					return 'Delete all ' + n + ' networks? The lamp restarts and starts its own access point.';
+				}
 				return 'Delete all ' + n + ' networks? After its next restart the lamp starts its own access point.';
 			},
+			delRow: function (n) {
+				return 'Delete “' + n + '”';
+			},
+			delOne: function (n) {
+				return 'Delete “' + n + '”?';
+			},
+			delCur: function (rest) {
+				return 'The lamp is connected to this network. After deleting it the lamp restarts and tries: ' + rest + '; if none joins it starts its own access point.';
+			},
+			delCurLast: 'The lamp is connected to this network. After deleting it the lamp restarts and starts its own access point.',
+			delRestart: 'This page loses the lamp for about a minute. Open it again then.',
+			delOkOne: function (n) {
+				return 'The network “' + n + '” is deleted.';
+			},
+			delOkAll: 'All saved networks are deleted.', delNone: 'There are no saved networks.',
+			delLampRestart: 'The lamp is restarting.', delBad: 'The lamp did not accept the request.',
+			delNotSaved: 'This network is not saved.', delBusyRestart: 'The lamp is restarting. Try again in a minute.',
+			delBusyCheck: 'The lamp is checking a WiFi network. Try again when the check is over.',
+			delFail: 'The lamp could not delete the saved networks.',
 			bAp: 'You’re on the lamp’s own network. Add your home WiFi — the lamp will restart and join it.',
 			main: 'Main page', log: 'Live log', fw: 'Firmware',
 			checking: function (n) {
@@ -134,10 +156,32 @@
 				return 'Сохранено 10 сетей: при добавлении этой будет удалена «' + oldest + '».';
 			},
 			saved: 'Сохранённые сети', empty: 'Сохранённых сетей пока нет.', upd: 'обновится', listFail: 'Не удалось прочитать сохранённые сети.',
-			delAll: 'Удалить все сети', cancel: 'Отмена', delYes: 'Удалить все',
-			confirm: function (n) {
+			delAll: 'Удалить все сети', cancel: 'Отмена', delYes: 'Удалить все', delRowYes: 'Удалить',
+			confirm: function (n, restarts) {
+				if (restarts) {
+					return 'Удалить все сети (' + n + ')? Лампа перезагрузится и включит свою точку доступа.';
+				}
 				return 'Удалить все сети (' + n + ')? После следующей перезагрузки лампа включит свою точку доступа.';
 			},
+			delRow: function (n) {
+				return 'Удалить сеть «' + n + '»';
+			},
+			delOne: function (n) {
+				return 'Удалить «' + n + '»?';
+			},
+			delCur: function (rest) {
+				return 'Лампа подключена к этой сети. После удаления она перезагрузится и попробует: ' + rest + '; если ни одна не подключится, включит свою точку доступа.';
+			},
+			delCurLast: 'Лампа подключена к этой сети. После удаления она перезагрузится и включит свою точку доступа.',
+			delRestart: 'Эта страница потеряет лампу примерно на минуту. Откройте её снова позже.',
+			delOkOne: function (n) {
+				return 'Сеть «' + n + '» удалена.';
+			},
+			delOkAll: 'Все сохранённые сети удалены.', delNone: 'Сохранённых сетей нет.',
+			delLampRestart: 'Лампа перезагружается.', delBad: 'Лампа не приняла запрос.',
+			delNotSaved: 'Эта сеть не сохранена.', delBusyRestart: 'Лампа перезагружается. Попробуйте через минуту.',
+			delBusyCheck: 'Лампа проверяет WiFi-сеть. Попробуйте, когда проверка закончится.',
+			delFail: 'Лампе не удалось удалить сохранённые сети.',
 			bAp: 'Вы подключены к сети лампы. Добавьте домашний WiFi — лампа перезагрузится и подключится к нему.',
 			main: 'Главная', log: 'Живой лог', fw: 'Прошивка',
 			checking: function (n) {
@@ -202,10 +246,23 @@
 	var root = document.documentElement;
 	var T = TEXT.en;
 	var state = { data: null, down: false };
+	var wasDown = false;
 	var nets = [];
 	var tagEls = [];
+	var delEls = [];
 	var busy = false;
+	// the network the lamp is joined to (station mode), or null; deleting it restarts the lamp
+	var current = null;
+	// the confirmation of "delete all" is open
 	var confirming = false;
+	// the name whose row confirmation is open, or null; at most one of this and confirming is set
+	var asking = null;
+	// a delete request is out
+	var delBusy = false;
+	// the last reply to a delete, { status, text, name } (name: the network asked for, null for all; status 0: no answer), or null
+	var delReply = null;
+	// the lamp came back while a confirmation was open: the list is reloaded when it closes, not under the user
+	var reloadPending = false;
 	// the lamp checks a network before it saves it (access point mode):
 	// join: a check is running, { ssid, lostSinceMs: when the lamp stopped answering, 0 while it answers, sta: station mode (the
 	// lamp leaves this page's network for the check), fromSsid: the network it leaves, switching: the lamp has announced the leave }
@@ -386,7 +443,8 @@
 		var box = byId('nets');
 		box.textContent = '';
 		tagEls = [];
-		nets.forEach(function (name) {
+		delEls = [];
+		nets.forEach(function (name, i) {
 			var row = el('div', 'row');
 			var mini = el('span', 'mini');
 			var tag = el('span', 'tag');
@@ -397,8 +455,24 @@
 			// network names come from the lamp: text only
 			row.appendChild(el('span', 'nm', name));
 			row.appendChild(tag);
+			var del = el('button', 'rowdel', '×');
+			del.type = 'button';
+			del.setAttribute('aria-label', T.delRow(name));
+			del.setAttribute('aria-expanded', asking === name ? 'true' : 'false');
+			if (asking === name) {
+				del.setAttribute('aria-controls', 'rowconf-' + i);
+			}
+			del.disabled = delBusy;
+			del.addEventListener('click', function () {
+				askRow(name);
+			});
+			row.appendChild(del);
 			box.appendChild(row);
 			tagEls.push(tag);
+			delEls.push(del);
+			if (asking === name) {
+				box.appendChild(rowConfirm(name, i));
+			}
 		});
 		byId('netCnt').textContent = nets.length + ' / ' + MAX_NETS;
 		byId('netCnt').className = 'cnt' + (nets.length >= MAX_NETS ? ' bad' : '');
@@ -408,10 +482,86 @@
 		renderForm();
 	}
 
+	function rowConfirmText(name) {
+		if (name !== current) {
+			return T.delOne(name);
+		}
+		var rest = nets.filter(function (n) {
+			return n !== name;
+		});
+		return rest.length ? T.delCur(rest.join(', ')) : T.delCurLast;
+	}
+
+	// the names come from the lamp: text only
+	function rowConfirm(name, i) {
+		var box = el('div', 'confirm rowconf');
+		var no = el('button', '', T.cancel);
+		var yes = el('button', 'yes', T.delRowYes);
+		var btns = el('div', 'btns');
+		var text = el('p', '', rowConfirmText(name));
+		box.id = 'rowconf-' + i;
+		text.id = 'rowconf-t-' + i;
+		box.setAttribute('role', 'alertdialog');
+		box.setAttribute('aria-labelledby', text.id);
+		box.appendChild(text);
+		no.type = 'button';
+		yes.type = 'button';
+		no.disabled = delBusy;
+		yes.disabled = delBusy;
+		no.addEventListener('click', function () {
+			asking = null;
+			renderNets();
+			focusRowDel(name);
+			reloadIfPending(function () {
+				focusRowDel(name);
+			});
+		});
+		yes.addEventListener('click', function () {
+			deleteOne(name);
+		});
+		btns.appendChild(no);
+		btns.appendChild(yes);
+		box.appendChild(btns);
+		return box;
+	}
+
+	// the rows are rebuilt on every render, so focus is set again by the network name (text compare)
+	function focusRowDel(name) {
+		var at = nets.indexOf(name);
+		if (at >= 0 && delEls[at]) {
+			delEls[at].focus();
+			return true;
+		}
+		return false;
+	}
+
+	function focusHeading() {
+		var h = document.querySelector('[data-i="saved"]');
+		if (h) {
+			h.tabIndex = -1;
+			h.focus();
+		}
+	}
+
+	function askRow(name) {
+		asking = name;
+		confirming = false;
+		setDelReply(null);
+		renderNets();
+		var cancel = document.querySelector('#nets .rowconf button');
+		if (cancel) {
+			cancel.focus();
+		}
+	}
+
 	function renderConfirm() {
 		byId('confirm').hidden = !confirming;
 		byId('delAsk').hidden = confirming;
-		byId('confirmText').textContent = T.confirm(nets.length);
+		byId('delAsk').disabled = delBusy;
+		byId('delAsk').setAttribute('aria-expanded', confirming ? 'true' : 'false');
+		byId('delYes').disabled = delBusy;
+		byId('delNo').disabled = delBusy;
+		byId('confirmText').textContent = T.confirm(nets.length, current !== null);
 	}
 
 	// the check status goes into the form's reply box: the form stays visible with its values
@@ -543,10 +693,56 @@
 		byId('edit').hidden = !!joined;
 	}
 
+	// the lamp's replies are English only: the page owns the language and maps the status and the text to its own texts, so the
+	// reply follows setLang(). A reply it does not know is shown as the lamp sent it
+	function delReplyText(rep) {
+		var restarts = /restarting/i.test(rep.text);
+		if (rep.status === 0) {
+			return T.noAnswer;
+		}
+		if (rep.status === 200) {
+			if (rep.text === 'There are no saved networks.') {
+				return T.delNone;
+			}
+			var done = rep.name === null ? T.delOkAll : T.delOkOne(rep.name);
+			return restarts ? done + ' ' + T.delLampRestart + ' ' + T.delRestart : done;
+		}
+		if (rep.status === 400) {
+			return T.delBad;
+		}
+		if (rep.status === 404) {
+			return T.delNotSaved;
+		}
+		if (rep.status === 409 && restarts) {
+			return T.delBusyRestart;
+		}
+		if (rep.status === 409 && /checking/i.test(rep.text)) {
+			return T.delBusyCheck;
+		}
+		if (rep.status === 500) {
+			return T.delFail;
+		}
+		return rep.text;
+	}
+
+	function renderDelReply() {
+		var box = byId('delReply');
+		if (!delReply) {
+			showReply(box, byId('delReplyText'), '', false);
+			return;
+		}
+		showReply(box, byId('delReplyText'), delReplyText(delReply), delReply.status !== 200);
+	}
+
+	function setDelReply(rep) {
+		delReply = rep;
+		renderDelReply();
+	}
+
 	function renderAll() {
 		renderHeader();
-		renderForm();
-		renderConfirm();
+		renderNets();
+		renderDelReply();
 		renderEdit();
 		renderJoin();
 		renderJoined();
@@ -577,8 +773,16 @@
 		store('theme', next);
 	}
 
+	// a reload that came while a confirmation was open runs when it closes; refocus runs after the list is redrawn
+	function reloadIfPending(refocus) {
+		if (reloadPending) {
+			loadNets().then(refocus);
+		}
+	}
+
 	function loadNets() {
-		fetchTimed('/api/wifi', { cache: 'no-store' }, function (r) {
+		reloadPending = false;
+		return fetchTimed('/api/wifi', { cache: 'no-store' }, function (r) {
 			if (!r.ok) {
 				throw new Error(r.status);
 			}
@@ -589,6 +793,10 @@
 				nets = Array.isArray(list) ? list.filter(function (n) {
 					return typeof n === 'string';
 				}) : [];
+				current = d && typeof d.current === 'string' && d.current ? d.current : null;
+				if (asking !== null && nets.indexOf(asking) < 0) {
+					asking = null;
+				}
 				byId('listErr').hidden = true;
 				renderNets();
 			})
@@ -614,6 +822,15 @@
 			.then(function () {
 				setTimeout(poll, POLL_MS);
 				renderHeader();
+				// the lamp is back (after a restart it may be in another mode): the list and the current network may differ
+				if (wasDown && !state.down && !delBusy) {
+					if (confirming || asking !== null) {
+						reloadPending = true;
+					} else {
+						loadNets();
+					}
+				}
+				wasDown = state.down;
 			});
 	}
 
@@ -905,29 +1122,88 @@
 		});
 	}
 
-	function deleteAll() {
-		byId('delYes').disabled = true;
-		byId('delNo').disabled = true;
+	// after the list is reloaded: the deleted row's "×" if the row is still there, else the next row's, the previous row's,
+	// the "Delete all" button, the list heading. name is null after "delete all"
+	function focusAfterDelete(name, nextName, prevName) {
+		if (name !== null && focusRowDel(name)) {
+			return;
+		}
+		if (nextName !== null && focusRowDel(nextName)) {
+			return;
+		}
+		if (prevName !== null && focusRowDel(prevName)) {
+			return;
+		}
+		if (nets.length > 0 && !byId('delBox').hidden && !byId('delAsk').disabled) {
+			byId('delAsk').focus();
+			return;
+		}
+		focusHeading();
+	}
+
+	// name: the row being deleted, null for "delete all"
+	function sendDelete(body, name) {
+		var at = name === null ? -1 : nets.indexOf(name);
+		var nextName = at >= 0 && at + 1 < nets.length ? nets[at + 1] : null;
+		var prevName = at > 0 ? nets[at - 1] : null;
+		// the reply says the lamp restarts: the list is not asked for now (the lamp is going away, the request would fail and
+		// show a stale list); the status poll reloads it when the lamp is back
+		var restarts = false;
+		var deleted = false;
+		delBusy = true;
+		renderNets();
 		fetch('/api/wifi/delete', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-			body: 'all=1'
+			body: body
 		})
 			.then(function (r) {
 				return r.text().then(function (t) {
-					showReply(byId('delReply'), byId('delReplyText'), t, !r.ok);
+					// the lamp decides: this page's "current" can be stale, so the note follows the reply, not the page's guess
+					restarts = /restarting/i.test(t);
+					deleted = r.status === 200;
+					setDelReply({ status: r.status, text: t, name: name });
 				});
 			})
 			.catch(function () {
-				showReply(byId('delReply'), byId('delReplyText'), T.noAnswer, true);
+				setDelReply({ status: 0, text: '', name: name });
 			})
 			.then(function () {
-				byId('delYes').disabled = false;
-				byId('delNo').disabled = false;
+				delBusy = false;
 				confirming = false;
-				renderConfirm();
-				loadNets();
+				asking = null;
+				if (restarts) {
+					reloadPending = false;
+					if (deleted) {
+						nets = name === null ? [] : nets.filter(function (n) {
+							return n !== name;
+						});
+						current = null;
+					}
+					renderNets();
+					focusAfterDelete(name, nextName, prevName);
+					return;
+				}
+				renderNets();
+				loadNets().then(function () {
+					focusAfterDelete(name, nextName, prevName);
+				});
 			});
+	}
+
+	function deleteAll() {
+		sendDelete('all=1', null);
+	}
+
+	function deleteOne(name) {
+		var body = '';
+		try {
+			body = 'ssid=' + encodeURIComponent(name);
+		} catch (err) {
+			showReply(byId('delReply'), byId('delReplyText'), T.badChars, true);
+			return;
+		}
+		sendDelete(body, name);
 	}
 
 	var saved = load('lang');
@@ -950,13 +1226,26 @@
 	form.addEventListener('submit', submit);
 	byId('delAsk').addEventListener('click', function () {
 		confirming = true;
-		showReply(byId('delReply'), byId('delReplyText'), '', false);
-		renderConfirm();
+		asking = null;
+		setDelReply(null);
+		renderNets();
+		byId('delNo').focus();
 	});
 	byId('delNo').addEventListener('click', function () {
 		confirming = false;
 		renderConfirm();
+		byId('delAsk').focus();
+		reloadIfPending(function () {
+			if (!byId('delBox').hidden) {
+				byId('delAsk').focus();
+			} else {
+				focusHeading();
+			}
+		});
 	});
+	byId('confirm').setAttribute('role', 'alertdialog');
+	byId('confirm').setAttribute('aria-labelledby', 'confirmText');
+	byId('delAsk').setAttribute('aria-controls', 'confirm');
 	byId('delYes').addEventListener('click', deleteAll);
 	byId('lastClose').addEventListener('click', dismissLast);
 	byId('jokIpCopy').addEventListener('click', function () {

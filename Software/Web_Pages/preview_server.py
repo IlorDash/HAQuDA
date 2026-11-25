@@ -398,6 +398,9 @@ class MockLamp:
         self.restarted_at = None
         # The mock restart: the time the lamp goes away (None when none is pending); it is back RESTART_OFFLINE_S later
         self.restart_at = None
+        # After a restart that followed a delete of the current network the lamp joins the first remaining one; with none
+        # left the real lamp starts its access point, which this scenario cannot show, so it keeps the old name
+        self.rejoin_after_restart = False
         # What the user set on the lamp card
         self.lamp = json.loads(json.dumps(LAMP_DEFAULTS))
 
@@ -475,6 +478,9 @@ class MockLamp:
         # The lamp is back: its uptime counts from zero again
         self.restarted_at = self.restart_at + RESTART_OFFLINE_S
         self.restart_at = None
+        if self.rejoin_after_restart and self.networks:
+            self.current_ssid = self.networks[0]
+        self.rejoin_after_restart = False
         return "idle"
 
     def request_restart(self):
@@ -743,6 +749,7 @@ class MockLamp:
             self.networks = [] if has_all else [name for name in self.networks if name != ssid]
             if restart:
                 self.restart_at = time.monotonic() + RESTART_DELAY_S
+                self.rejoin_after_restart = True
             what = "Deleted all saved networks." if has_all else "The network is deleted."
         return 200, what + (" The lamp is restarting." if restart else "")
 
