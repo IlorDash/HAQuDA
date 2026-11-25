@@ -113,12 +113,17 @@ bool HAQuDA_RandomPixelsAnim::Begin(const anim_params &params, const anim_contex
 	pixelPauseMs = params.pauseMs;
 	endPauseMs = params.endPauseMs;
 	seed = (context.seed != 0) ? context.seed : 1;
+	passesStarted = false;
 	darkPending = true;
 	running = true;
 	return true;
 }
 
 void HAQuDA_RandomPixelsAnim::startPass() {
+	if (passesStarted) {
+		HAQuDA_XorShift32(seed);
+	}
+	passesStarted = true;
 	rngState = seed;
 	for (uint16_t i = 0; i < ANIM_PIXELS; i++) {
 		order[i] = static_cast<uint8_t>(i);

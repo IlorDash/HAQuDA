@@ -29,11 +29,11 @@ HAQuDA_LogDedup LogDedup;
 HAQuDA_EffectsHandler EffectsHandler;
 HAQuDA_MeasSnapshot MeasSnapshot;
 HAQuDA_WebPageDisplayManip WebDisp;
-HAQuDA_MeasHandler MeasHandler(&ErrHandler, MeasSnapshot, WebDisp);
-HAQuDA_DisplayService Display(*HAQuDA_LEDs::getInstance(), MeasHandler, DEFAULT_BRIGHTNESS);
-HAQuDA_DisplayManip DispManip(&MeasHandler, &EffectsHandler, &ErrHandler, &WebDisp, &Display);
+HAQuDA_MeasHandler MeasHandler(&ErrHandler, MeasSnapshot);
+HAQuDA_DisplayService Display(*HAQuDA_LEDs::getInstance(), MeasHandler, WebDisp, DEFAULT_BRIGHTNESS);
+HAQuDA_DisplayManip DispManip(&MeasHandler, &EffectsHandler, &ErrHandler, &Display);
 HAQuDA_FileStorageAdapter LampFiles;
-HAQuDA_LampDisplayAdapter LampDisplay(ErrHandler);
+HAQuDA_LampDisplayAdapter LampDisplay(ErrHandler, Display);
 HAQuDA_LoggerAdapter LampLogger;
 HAQuDA_LampControl LampControl(LampFiles, LampDisplay, LampLogger);
 HAQuDA_WiFi_handler WiFiHandler(&FileStorage, Display, MeasSnapshot, WebDisp, LampControl);
@@ -184,12 +184,10 @@ void loop() {
 	logShowTaskStack();
 	retrySensorsStart();
 	MeasHandler.UpdateMeas(&meas_start_time);
-	// One read of the time service feeds both consumers. loop task only: the time client is written without a lock by the logger
-	// (loop task) and by the night mode redraw (ShowTask) and is created lazily, so the async_tcp task must not read it; the
-	// consumers hand the minute to that task through an atomic
+	// loop task only: the time client is written without a lock by the logger (loop task) and by the night mode redraw (ShowTask)
+	// and is created lazily, so the async_tcp task must not read it; LampControl hands the minute to that task through an atomic
 	uint16_t minuteOfDay = 0;
 	const bool timeKnown = HAQuDA_TimeService::GetCachedMinuteOfDay(&minuteOfDay);
-	WebDisp.SetMinuteOfDay(timeKnown, minuteOfDay);
 	LampControl.Handle(timeKnown, minuteOfDay);
 	ErrHandler.UpdateNtpError(timeKnown);
 	HAQuDA_Logger::FlushExpiredRepeats();

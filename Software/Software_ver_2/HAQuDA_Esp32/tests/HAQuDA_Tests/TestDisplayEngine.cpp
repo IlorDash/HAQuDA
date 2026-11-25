@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "HAQuDA_DisplayEngine.h"
+#include "HAQuDA_LEDsParams.h"
 #include "MockLEDs.h"
 
 namespace {
@@ -553,4 +554,424 @@ TEST_F(DisplayEngineTest, UntilEventErrorAppliedWithItsOwnEndSignalInOneBatchIsR
 	engine.Run(0);
 
 	EXPECT_EQ(anim_id::none, engine.ActiveAnim());
+}
+
+TEST(SensorsErrorActiveTest, ThePostMakesItActiveBeforeAnythingIsShown) {
+	const bool exp_active = true;
+
+	bool res;
+
+	res = HAQuDA_SensorsErrorActiveAfter(false, errorMsg(display_error::sensorsFailed));
+
+	EXPECT_EQ(exp_active, res);
+}
+
+TEST(SensorsErrorActiveTest, TheEndSignalMakesItInactive) {
+	const bool exp_active = false;
+
+	bool res;
+
+	res = HAQuDA_SensorsErrorActiveAfter(true, endMsg(display_end::sensorsRecovered));
+
+	EXPECT_EQ(exp_active, res);
+}
+
+TEST(SensorsErrorActiveTest, OtherErrorsEventsAndEndsLeaveItAsItWas) {
+	const display_message others[] = {errorMsg(display_error::ntpFailed), errorMsg(display_error::wifiLost), eventMsg(display_event::wifiJoined),
+									  endMsg(display_end::ntpSynced), endMsg(display_end::wifiJoined)};
+	for (const display_message &message : others) {
+		EXPECT_TRUE(HAQuDA_SensorsErrorActiveAfter(true, message));
+		EXPECT_FALSE(HAQuDA_SensorsErrorActiveAfter(false, message));
+	}
+}
+
+TEST_F(DisplayEngineTest, TheSensorsErrorStaysActiveWhileAnotherErrorOrEventHasTheMatrix) {
+	const display_message posts[] = {errorMsg(display_error::sensorsFailed), errorMsg(display_error::ntpFailed), eventMsg(display_event::apRunning)};
+	bool active = false;
+	for (const display_message &message : posts) {
+		engine.Apply(message);
+		active = HAQuDA_SensorsErrorActiveAfter(active, message);
+	}
+
+	engine.Run(0);
+	engine.Run(10 * SECOND);
+	EXPECT_EQ(HAQuDA_ItemOf(display_error::ntpFailed), engine.Shown().item);
+	EXPECT_TRUE(active);
+
+	engine.Apply(endMsg(display_end::sensorsRecovered));
+	active = HAQuDA_SensorsErrorActiveAfter(active, endMsg(display_end::sensorsRecovered));
+	engine.Run(20 * SECOND);
+
+	EXPECT_FALSE(active);
+	EXPECT_NE(HAQuDA_ItemOf(display_error::sensorsFailed), engine.Shown().item);
+}
+
+TEST_F(DisplayEngineTest, NothingShownYetHasASilentStartingPicture) {
+	engine.Run(0);
+
+	EXPECT_EQ(0u, engine.Shown().seq);
+	EXPECT_EQ(display_source::none, engine.Shown().source);
+	EXPECT_EQ(DISPLAY_ITEM_NONE, engine.Shown().item);
+}
+
+TEST_F(DisplayEngineTest, AnItemStartRaisesTheCounterAndRecordsWhatPlays) {
+	engine.Apply(eventMsg(display_event::wifiReconnecting));
+
+	engine.Run(100);
+
+	const display_shown &shown = engine.Shown();
+	EXPECT_EQ(1u, shown.seq);
+	EXPECT_EQ(100u, shown.startMs);
+	EXPECT_EQ(display_source::event, shown.source);
+	EXPECT_EQ(HAQuDA_ItemOf(display_event::wifiReconnecting), shown.item);
+	EXPECT_EQ(anim_id::snake, shown.anim.anim);
+	EXPECT_EQ(ANIM_COLOR_LIME, shown.anim.color);
+}
+
+TEST_F(DisplayEngineTest, StepsOfTheShownItemKeepTheCounter) {
+	engine.Apply(eventMsg(display_event::wifiReconnecting));
+	engine.Run(0);
+
+	engine.Run(ANIM_LEDS_SHOW_MS);
+	engine.Run(2 * ANIM_LEDS_SHOW_MS);
+
+	EXPECT_EQ(1u, engine.Shown().seq);
+}
+
+TEST_F(DisplayEngineTest, ARotationBetweenTwoErrorsRaisesTheCounterAtEverySwitch) {
+	engine.Apply(errorMsg(display_error::sensorsFailed));
+	engine.Apply(errorMsg(display_error::ntpFailed));
+	engine.Run(0);
+	ASSERT_EQ(HAQuDA_ItemOf(display_error::sensorsFailed), engine.Shown().item);
+	const uint32_t firstSeq = engine.Shown().seq;
+
+	engine.Run(10 * SECOND - 1);
+	EXPECT_EQ(firstSeq, engine.Shown().seq);
+	engine.Run(10 * SECOND);
+
+	EXPECT_EQ(firstSeq + 1, engine.Shown().seq);
+	EXPECT_EQ(display_source::error, engine.Shown().source);
+	EXPECT_EQ(HAQuDA_ItemOf(display_error::ntpFailed), engine.Shown().item);
+	EXPECT_EQ(10 * SECOND, engine.Shown().startMs);
+
+	engine.Run(20 * SECOND);
+
+	EXPECT_EQ(firstSeq + 2, engine.Shown().seq);
+	EXPECT_EQ(HAQuDA_ItemOf(display_error::sensorsFailed), engine.Shown().item);
+}
+
+TEST_F(DisplayEngineTest, AnInterruptionAndTheReturnOfTheEventRaiseTheCounter) {
+	engine.Apply(eventMsg(display_event::wifiReconnecting));
+	engine.Run(0);
+	engine.Apply(errorMsg(display_error::wifiLost));
+
+	engine.Run(100);
+
+	EXPECT_EQ(2u, engine.Shown().seq);
+	EXPECT_EQ(display_source::error, engine.Shown().source);
+	EXPECT_EQ(HAQuDA_ItemOf(display_error::wifiLost), engine.Shown().item);
+	EXPECT_EQ(ANIM_COLOR_RED, engine.Shown().anim.color);
+
+	engine.Run(10 * SECOND + 100);
+
+	EXPECT_EQ(3u, engine.Shown().seq);
+	EXPECT_EQ(display_source::event, engine.Shown().source);
+	EXPECT_EQ(HAQuDA_ItemOf(display_event::wifiReconnecting), engine.Shown().item);
+}
+
+TEST_F(DisplayEngineTest, WhenNothingIsLeftToShowTheCounterRisesOnceWithSourceNone) {
+	engine.Apply(eventMsg(display_event::wifiJoined));
+	engine.Run(0);
+
+	engine.Run(5 * SECOND);
+
+	EXPECT_EQ(2u, engine.Shown().seq);
+	EXPECT_EQ(display_source::none, engine.Shown().source);
+	EXPECT_EQ(DISPLAY_ITEM_NONE, engine.Shown().item);
+
+	engine.Run(6 * SECOND);
+
+	EXPECT_EQ(2u, engine.Shown().seq);
+}
+
+TEST_F(DisplayEngineTest, TheWaitingPictureIsRecordedAsWaiting) {
+	engine.Apply(backgroundMsg(anim_id::measMulti, AP_ITEM));
+	engine.Apply(measEnabledMsg(true));
+
+	engine.Run(0);
+
+	EXPECT_EQ(1u, engine.Shown().seq);
+	EXPECT_EQ(display_source::waiting, engine.Shown().source);
+	EXPECT_EQ(AP_ITEM, engine.Shown().item);
+	EXPECT_EQ(anim_id::fading, engine.Shown().anim.anim);
+}
+
+TEST_F(DisplayEngineTest, TheFirstSampleRaisesTheCounterWithTheMeasurementPicture) {
+	engine.Apply(backgroundMsg(anim_id::measMulti, AP_ITEM));
+	engine.Apply(measEnabledMsg(true));
+	engine.Run(0);
+	const uint32_t waitingSeq = engine.Shown().seq;
+	source.ready = true;
+
+	engine.Run(100);
+
+	const display_shown &shown = engine.Shown();
+	EXPECT_GT(shown.seq, waitingSeq);
+	EXPECT_EQ(display_source::meas, shown.source);
+	EXPECT_EQ(anim_id::measMulti, shown.anim.anim);
+	EXPECT_EQ(DISPLAY_ITEM_NONE, shown.item);
+	EXPECT_TRUE(shown.measDrawn);
+}
+
+TEST_F(DisplayEngineTest, LampLightAndOffAreSolidPicturesThatRaiseTheCounter) {
+	engine.Apply(display_message{display_msg::lampLight, 0, 0, 0xFFB46B});
+	engine.Run(0);
+
+	EXPECT_EQ(1u, engine.Shown().seq);
+	EXPECT_EQ(display_source::solid, engine.Shown().source);
+	EXPECT_EQ(anim_id::staticColor, engine.Shown().anim.anim);
+	EXPECT_EQ(0xFFB46Bu, engine.Shown().anim.color);
+
+	engine.Apply(display_message{display_msg::lampLight, 0, 0, 0x112233});
+	engine.Run(100);
+
+	EXPECT_EQ(2u, engine.Shown().seq);
+	EXPECT_EQ(0x112233u, engine.Shown().anim.color);
+
+	engine.Apply(display_message{display_msg::lampOff, 0, 0, 0});
+	engine.Run(200);
+
+	EXPECT_EQ(3u, engine.Shown().seq);
+	EXPECT_EQ(display_source::solid, engine.Shown().source);
+	EXPECT_EQ(0u, engine.Shown().anim.color);
+}
+
+TEST_F(DisplayEngineTest, TheSameLampLightStepsKeepTheCounter) {
+	engine.Apply(display_message{display_msg::lampLight, 0, 0, 0xFFB46B});
+	engine.Run(0);
+
+	engine.Run(ANIM_LEDS_SHOW_MS + ANIM_PASS_PAUSE_MS);
+	engine.Run(2 * (ANIM_LEDS_SHOW_MS + ANIM_PASS_PAUSE_MS));
+
+	EXPECT_EQ(1u, engine.Shown().seq);
+}
+
+TEST_F(DisplayEngineTest, ALampLightOverTheMeasurementsAndBackShowsTheMeasurementColoursAgain) {
+	source.ready = true;
+	engine.Apply(display_message{display_msg::lampLight, 0, 0, 0xFFB46B});
+	engine.Run(0);
+	engine.Apply(backgroundMsg(anim_id::measMulti));
+	engine.Apply(measEnabledMsg(true));
+
+	engine.Run(100);
+
+	rgb_color expected = {0, 0, 0};
+	HAQuDA_GetMeasRGB(22, div_dots{20, 26, 30}, expected);
+	const display_shown &shown = engine.Shown();
+	EXPECT_EQ(display_source::meas, shown.source);
+	EXPECT_TRUE(shown.measDrawn);
+	EXPECT_EQ(3, shown.colorCount);
+	for (uint8_t i = 0; i < 3; i++) {
+		EXPECT_EQ(expected.r, shown.colors[i].r);
+		EXPECT_EQ(expected.g, shown.colors[i].g);
+		EXPECT_EQ(expected.b, shown.colors[i].b);
+	}
+}
+
+TEST_F(DisplayEngineTest, TheMeasurementKeysAreRecordedWithTheColours) {
+	source.data.keys[0] = temp;
+	source.data.keys[1] = eCO2;
+	source.data.keys[2] = PM2_5;
+	startMeasurements(0);
+	source.ready = true;
+
+	engine.Run(5 * SECOND);
+
+	EXPECT_EQ(temp, engine.Shown().keys[0]);
+	EXPECT_EQ(eCO2, engine.Shown().keys[1]);
+	EXPECT_EQ(PM2_5, engine.Shown().keys[2]);
+}
+
+TEST_F(DisplayEngineTest, TheStandardPictureHasOneColourAndTheTotalOneToo) {
+	source.nextAnim = anim_id::measStandard;
+	startMeasurements(0);
+	source.ready = true;
+	engine.Run(5 * SECOND);
+	EXPECT_EQ(1, engine.Shown().colorCount);
+
+	source.nextAnim = anim_id::measTotal;
+	for (uint8_t i = 0; i < MEAS_ANIM_MAX_PARAMS; i++) {
+		source.data.values[i] = 22;
+		source.data.dots[i] = div_dots{20, 26, 30};
+	}
+	engine.Run(5 * SECOND + DISPLAY_MEAS_PERIOD_MS);
+
+	EXPECT_EQ(anim_id::measTotal, engine.Shown().anim.anim);
+	EXPECT_EQ(1, engine.Shown().colorCount);
+}
+
+TEST_F(DisplayEngineTest, ARedrawWithNewColoursRaisesTheCounter) {
+	startMeasurements(0);
+	source.ready = true;
+	engine.Run(5 * SECOND);
+	const uint32_t seqBefore = engine.Shown().seq;
+	const rgb_color before = engine.Shown().colors[0];
+	for (uint8_t i = 0; i < 3; i++) {
+		source.data.values[i] = 33;
+	}
+
+	engine.Run(5 * SECOND + DISPLAY_MEAS_PERIOD_MS);
+
+	EXPECT_EQ(seqBefore + 1, engine.Shown().seq);
+	EXPECT_EQ(5 * SECOND + DISPLAY_MEAS_PERIOD_MS, engine.Shown().startMs);
+	EXPECT_FALSE((before.r == engine.Shown().colors[0].r) && (before.g == engine.Shown().colors[0].g) && (before.b == engine.Shown().colors[0].b));
+}
+
+TEST_F(DisplayEngineTest, ARedrawWithTheSameColoursKeepsTheCounter) {
+	startMeasurements(0);
+	source.ready = true;
+	engine.Run(5 * SECOND);
+	const uint32_t seqBefore = engine.Shown().seq;
+
+	engine.Run(5 * SECOND + DISPLAY_MEAS_PERIOD_MS);
+	engine.Run(5 * SECOND + DISPLAY_MEAS_PERIOD_MS + ANIM_LEDS_SHOW_MS + ANIM_PASS_PAUSE_MS);
+	engine.Run(5 * SECOND + 2 * DISPLAY_MEAS_PERIOD_MS);
+
+	EXPECT_EQ(seqBefore, engine.Shown().seq);
+}
+
+TEST_F(DisplayEngineTest, AChangedKeyWithTheSameColoursRaisesTheCounter) {
+	startMeasurements(0);
+	source.ready = true;
+	engine.Run(5 * SECOND);
+	const uint32_t seqBefore = engine.Shown().seq;
+	source.data.keys[0] = PM2_5;
+
+	engine.Run(5 * SECOND + DISPLAY_MEAS_PERIOD_MS);
+
+	EXPECT_EQ(seqBefore + 1, engine.Shown().seq);
+	EXPECT_EQ(PM2_5, engine.Shown().keys[0]);
+}
+
+TEST_F(DisplayEngineTest, TheNightPictureRecordsTheLitCellsAndTheGreyOfTheBar) {
+	source.nextAnim = anim_id::measNight;
+	source.data.nightLitCells = 3;
+	startMeasurements(0);
+	source.ready = true;
+	engine.Run(5 * SECOND);
+	const display_shown first = engine.Shown();
+	EXPECT_EQ(3, first.nightLitCells);
+	const uint8_t grey = HAQuDA_NightGrey();
+	EXPECT_EQ(grey, first.white.r);
+	EXPECT_EQ(grey, first.white.g);
+	EXPECT_EQ(grey, first.white.b);
+	source.data.nightLitCells = 4;
+
+	engine.Run(5 * SECOND + DISPLAY_MEAS_PERIOD_MS);
+
+	EXPECT_EQ(first.seq + 1, engine.Shown().seq);
+	EXPECT_EQ(4, engine.Shown().nightLitCells);
+}
+
+TEST_F(DisplayEngineTest, AMeasurementPictureThatIsNotDrawnYetIsMarkedSo) {
+	engine.Apply(backgroundMsg(anim_id::measMulti, BOOT_ITEM));
+	engine.Apply(measEnabledMsg(true));
+	engine.Run(0);
+
+	EXPECT_FALSE(engine.Shown().measDrawn);
+	EXPECT_EQ(display_source::waiting, engine.Shown().source);
+}
+
+TEST_F(DisplayEngineTest, ABrightnessChangeRestartsTheItemAndRaisesTheCounter) {
+	engine.Apply(eventMsg(display_event::bootSnake));
+	engine.Run(0);
+	engine.Apply(brightnessMsg(80));
+
+	engine.Run(100);
+
+	EXPECT_EQ(2u, engine.Shown().seq);
+	EXPECT_EQ(100u, engine.Shown().startMs);
+}
+
+TEST_F(DisplayEngineTest, ABrightnessChangeOverTheMeasurementsKeepsTheCounter) {
+	startMeasurements(0);
+	source.ready = true;
+	engine.Run(5 * SECOND);
+	const uint32_t seqBefore = engine.Shown().seq;
+
+	engine.Apply(brightnessMsg(60));
+	engine.Run(5 * SECOND + 10);
+
+	EXPECT_EQ(seqBefore, engine.Shown().seq);
+}
+
+TEST_F(DisplayEngineTest, ASettingChangeRedrawsTheMeasurementAtOnceWithTheCurrentAverages) {
+	startMeasurements(0);
+	source.ready = true;
+	engine.Run(5 * SECOND);
+	const uint32_t seqBefore = engine.Shown().seq;
+	const int restartsBefore = source.restartCalls;
+	source.data.keys[0] = PM2_5;
+	for (uint8_t i = 0; i < 3; i++) {
+		source.data.values[i] = 33;
+	}
+
+	engine.Apply(backgroundMsg(anim_id::measMulti));
+	engine.Apply(measEnabledMsg(true));
+	engine.Run(5 * SECOND + 100);
+
+	EXPECT_EQ(seqBefore + 1, engine.Shown().seq);
+	EXPECT_EQ(PM2_5, engine.Shown().keys[0]);
+	EXPECT_EQ(150, engine.Shown().colors[0].r);
+	EXPECT_EQ(restartsBefore + 1, source.restartCalls);
+	EXPECT_EQ(anim_id::measMulti, engine.ActiveAnim());
+}
+
+TEST_F(DisplayEngineTest, ASettingChangeWithoutASampleKeepsTheRunningPictureUntilOneArrives) {
+	startMeasurements(0);
+	source.ready = true;
+	engine.Run(5 * SECOND);
+	const uint32_t seqBefore = engine.Shown().seq;
+	source.ready = false;
+	source.data.keys[0] = PM2_5;
+
+	engine.Apply(backgroundMsg(anim_id::measMulti));
+	engine.Apply(measEnabledMsg(true));
+	engine.Run(5 * SECOND + 100);
+
+	EXPECT_EQ(anim_id::measMulti, engine.ActiveAnim());
+	EXPECT_EQ(display_source::meas, engine.Shown().source);
+	EXPECT_EQ(seqBefore, engine.Shown().seq);
+
+	source.ready = true;
+	engine.Run(5 * SECOND + 200);
+
+	EXPECT_EQ(seqBefore + 1, engine.Shown().seq);
+	EXPECT_EQ(PM2_5, engine.Shown().keys[0]);
+}
+
+TEST_F(DisplayEngineTest, EnablingTheMeasurementsAgainDoesNotSendTheShownPictureBackToTheWaitingOne) {
+	engine.Apply(backgroundMsg(anim_id::measMulti, BOOT_ITEM));
+	engine.Apply(measEnabledMsg(true));
+	source.ready = true;
+	engine.Run(0);
+	source.ready = false;
+
+	engine.Apply(measEnabledMsg(true));
+	engine.Run(100);
+
+	EXPECT_EQ(display_source::meas, engine.Shown().source);
+}
+
+TEST_F(DisplayEngineTest, EveryStartOfTheRandomPixelsGetsItsOwnSeed) {
+	engine.Apply(errorMsg(display_error::sensorsFailed));
+	engine.Run(0);
+	const uint32_t firstSeed = engine.Shown().seed;
+	EXPECT_NE(0u, firstSeed);
+	engine.Apply(brightnessMsg(80));
+
+	engine.Run(100);
+
+	EXPECT_NE(0u, engine.Shown().seed);
+	EXPECT_NE(firstSeed, engine.Shown().seed);
 }

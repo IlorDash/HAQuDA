@@ -12,6 +12,8 @@ namespace {
 	constexpr uint8_t MULTI_ZONES = 3;
 	constexpr uint8_t MULTI_ZONE_ROWS = 3;
 	constexpr uint8_t MULTI_ZONE_STRIDE = 4;
+
+	static_assert(MULTI_ZONES == MEAS_ANIM_KEYS, "the multi picture has one colour and one key per zone");
 } // namespace
 
 bool HAQuDA_MeasAnim::Begin(const anim_params &params, const anim_context &context) {
@@ -35,6 +37,10 @@ uint32_t HAQuDA_MeasAnim::Step(uint32_t nowMs) {
 		return ANIM_IDLE_MS;
 	}
 	draw();
+	for (uint8_t i = 0; i < MEAS_ANIM_KEYS; i++) {
+		drawn.keys[i] = data.keys[i];
+	}
+	drawn.nightLitCells = data.nightLitCells;
 	leds.Show(ANIM_NO_WAIT_MS);
 	return MEAS_HOLD_MS;
 }

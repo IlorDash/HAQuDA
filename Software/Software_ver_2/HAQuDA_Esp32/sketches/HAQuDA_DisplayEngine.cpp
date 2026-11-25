@@ -7,10 +7,26 @@ namespace {
 	bool isMeasAnim(anim_id id) {
 		return (id == anim_id::measStandard) || (id == anim_id::measMulti) || (id == anim_id::measNight) || (id == anim_id::measTotal);
 	}
+
+	bool sameColor(const rgb_color &a, const rgb_color &b) {
+		return (a.r == b.r) && (a.g == b.g) && (a.b == b.b);
+	}
 } // namespace
 
 HAQuDA_DisplayEngine::HAQuDA_DisplayEngine(HAQuDA_ILEDs &leds, HAQuDA_IMeasSource &measSource, uint8_t brightPercent)
 	: leds(leds), measSource(measSource), animations(leds), brightPercent((brightPercent > MAX_PERCENT) ? MAX_PERCENT : brightPercent) {
+	shown.item = DISPLAY_ITEM_NONE;
+	shown.anim = HAQuDA_MeasParams(anim_id::none);
+}
+
+bool HAQuDA_SensorsErrorActiveAfter(bool active, const display_message &message) {
+	if ((message.kind == display_msg::error) && (message.value == static_cast<uint8_t>(display_error::sensorsFailed))) {
+		return true;
+	}
+	if ((message.kind == display_msg::end) && (message.value == static_cast<uint8_t>(display_end::sensorsRecovered))) {
+		return false;
+	}
+	return active;
 }
 
 void HAQuDA_DisplayEngine::Begin() {
@@ -33,12 +49,16 @@ void HAQuDA_DisplayEngine::Apply(const display_message &message) {
 		case display_msg::background:
 			if (message.value <= ANIM_COUNT) {
 				scheduler.SetBackground(static_cast<anim_id>(message.value), message.extra);
+				measRedrawPending = true;
 			}
 			break;
 		case display_msg::measEnabled:
-			measEnabled = (message.value != 0);
-			sampleSeen = false;
-			scheduler.MeasReady(false);
+			// Enabling what is already enabled must not send a shown picture back to the waiting one
+			if ((message.value != 0) != measEnabled) {
+				measEnabled = (message.value != 0);
+				sampleSeen = false;
+				scheduler.MeasReady(false);
+			}
 			break;
 		case display_msg::brightness:
 			setBrightness(message.value);
@@ -75,6 +95,9 @@ uint32_t HAQuDA_DisplayEngine::Run(uint32_t nowMs) {
 		// A post wakes ShowTask before the step is due, and stepping early would run the animation faster
 		if (static_cast<int32_t>(nowMs - nextStepMs) >= 0) {
 			nextStepMs = nowMs + active->Step(nowMs);
+			if (isMeasAnim(active->Id())) {
+				recordMeasDrawn(static_cast<HAQuDA_MeasAnim *>(active)->Drawn(), nowMs);
+			}
 		}
 		sleepMs = nextStepMs - nowMs;
 	}
@@ -101,6 +124,10 @@ uint8_t HAQuDA_DisplayEngine::BrightPercent() const {
 	return brightPercent;
 }
 
+const display_shown &HAQuDA_DisplayEngine::Shown() const {
+	return shown;
+}
+
 void HAQuDA_DisplayEngine::probeSample() {
 	anim_id anim = anim_id::none;
 	meas_anim_data data = {};
@@ -125,16 +152,24 @@ void HAQuDA_DisplayEngine::applyWanted(uint32_t nowMs) {
 	switchPending = false;
 	if (wanted.source == display_source::solid) {
 		startSolid(nowMs);
+	} else if (wanted.source == display_source::none) {
+		// The matrix keeps its last frame
+		beginPicture(display_source::none, DISPLAY_ITEM_NONE, HAQuDA_MeasParams(anim_id::none), 0);
+		markChanged(nowMs);
 	} else {
 		startItem(nowMs);
 	}
 }
 
 void HAQuDA_DisplayEngine::startSolid(uint32_t nowMs) {
+	const anim_params params = HAQuDA_StaticColorParams(solidColor);
+	const anim_context context = makeContext(nowMs);
 	HAQuDA_Animation *next = animations.Get(anim_id::staticColor);
-	if ((next != nullptr) && next->Begin(HAQuDA_StaticColorParams(solidColor), makeContext(nowMs))) {
+	if ((next != nullptr) && next->Begin(params, context)) {
 		active = next;
 		nextStepMs = nowMs;
+		beginPicture(display_source::solid, DISPLAY_ITEM_NONE, params, context.seed);
+		markChanged(nowMs);
 	}
 }
 
@@ -143,10 +178,13 @@ void HAQuDA_DisplayEngine::startItem(uint32_t nowMs) {
 	if (entry == nullptr) {
 		return;
 	}
+	const anim_context context = makeContext(nowMs);
 	HAQuDA_Animation *next = animations.Get(entry->anim.anim);
-	if ((next != nullptr) && next->Begin(entry->anim, makeContext(nowMs))) {
+	if ((next != nullptr) && next->Begin(entry->anim, context)) {
 		active = next;
 		nextStepMs = nowMs;
+		beginPicture(wanted.source, wanted.item, entry->anim, context.seed);
+		markChanged(nowMs);
 	}
 }
 
@@ -172,12 +210,21 @@ bool HAQuDA_DisplayEngine::startMeas(uint32_t nowMs) {
 	}
 	active = next;
 	nextStepMs = nowMs;
+	if ((shown.source != display_source::meas) || (shown.anim.anim != anim)) {
+		// Not marked: the draw that follows in this Run() raises seq, and a redraw of the same animation must not
+		beginPicture(display_source::meas, DISPLAY_ITEM_NONE, HAQuDA_MeasParams(anim), 0);
+	}
 	measSource.RestartAveraging();
 	measPeriodStartMs = nowMs;
+	measRedrawPending = false;
 	return true;
 }
 
 void HAQuDA_DisplayEngine::refreshMeas(uint32_t nowMs) {
+	// A changed setting redraws at once; without a sample the running picture stays until one arrives
+	if (measRedrawPending && startMeas(nowMs)) {
+		return;
+	}
 	if (!measPeriodOver(nowMs)) {
 		return;
 	}
@@ -225,4 +272,41 @@ anim_context HAQuDA_DisplayEngine::makeContext(uint32_t nowMs) {
 	context.lampBrightPercent = brightPercent;
 	context.seed = HAQuDA_XorShift32(seedState);
 	return context;
+}
+
+void HAQuDA_DisplayEngine::beginPicture(display_source source, display_item item, const anim_params &anim, uint32_t seed) {
+	shown.source = source;
+	shown.item = item;
+	shown.anim = anim;
+	shown.seed = seed;
+	shown.measDrawn = false;
+	shown.colorCount = 0;
+	shown.nightLitCells = 0;
+	shown.white = rgb_color{0, 0, 0};
+	for (uint8_t i = 0; i < MEAS_ANIM_KEYS; i++) {
+		shown.keys[i] = total;
+		shown.colors[i] = rgb_color{0, 0, 0};
+	}
+}
+
+void HAQuDA_DisplayEngine::markChanged(uint32_t nowMs) {
+	shown.seq++;
+	shown.startMs = nowMs;
+}
+
+void HAQuDA_DisplayEngine::recordMeasDrawn(const meas_drawn &drawn, uint32_t nowMs) {
+	bool changed
+		= !shown.measDrawn || (shown.colorCount != drawn.colorCount) || (shown.nightLitCells != drawn.nightLitCells) || !sameColor(shown.white, drawn.white);
+	for (uint8_t i = 0; i < MEAS_ANIM_KEYS; i++) {
+		changed = changed || !sameColor(shown.colors[i], drawn.colors[i]) || (shown.keys[i] != drawn.keys[i]);
+		shown.colors[i] = drawn.colors[i];
+		shown.keys[i] = drawn.keys[i];
+	}
+	shown.colorCount = drawn.colorCount;
+	shown.nightLitCells = drawn.nightLitCells;
+	shown.white = drawn.white;
+	shown.measDrawn = true;
+	if (changed) {
+		markChanged(nowMs);
+	}
 }

@@ -8,8 +8,6 @@
 class HAQuDA_DisplayService;
 
 class HAQuDA_ErrorHandler : HAQuDA_EffectsHandler {
-	friend class HAQuDA_WebPageDisplayManip;
-
 	static error_type currentError;
 	HAQuDA_DisplayService *display = nullptr;
 

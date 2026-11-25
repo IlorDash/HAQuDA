@@ -1,5 +1,6 @@
 #pragma once
 
+#include "HAQuDA_DisplayService.h"
 #include "HAQuDA_ErrorHandler.h"
 #include "HAQuDA_IFileStorage.h"
 #include "HAQuDA_ILampDisplay.h"
@@ -22,7 +23,7 @@ class HAQuDA_LoggerAdapter : public HAQuDA_ILogger {
 
 class HAQuDA_LampDisplayAdapter : public HAQuDA_ILampDisplay {
   public:
-	explicit HAQuDA_LampDisplayAdapter(HAQuDA_ErrorHandler &errorHandler);
+	HAQuDA_LampDisplayAdapter(HAQuDA_ErrorHandler &errorHandler, HAQuDA_DisplayService &displayService);
 
 	bool ErrorShown() override;
 	void ClearError() override;
@@ -36,4 +37,5 @@ class HAQuDA_LampDisplayAdapter : public HAQuDA_ILampDisplay {
 
   private:
 	HAQuDA_ErrorHandler &errHandler;
+	HAQuDA_DisplayService &display;
 };

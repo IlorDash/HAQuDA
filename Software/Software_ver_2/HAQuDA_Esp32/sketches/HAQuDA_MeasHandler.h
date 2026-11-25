@@ -37,9 +37,6 @@ typedef struct {
 	div_dots PM2_5;
 } meas_div_dots;
 
-// Declared, not included: HAQuDA_WebPageDisplayManip.h includes HAQuDA_DisplayManip.h, which includes this header.
-class HAQuDA_WebPageDisplayManip;
-
 class HAQuDA_MeasHandler : public HAQuDA_IMeasSource {
 
 	HAQuDA_MeasSnapshot &measSnapshot;
@@ -74,8 +71,8 @@ class HAQuDA_MeasHandler : public HAQuDA_IMeasSource {
 	static div_dots dotsOf(meas_type type);
 
   public:
-	// snapshot receives the latest averages for the web page and webDisp the colours the lamp draws; both must outlive the handler.
-	HAQuDA_MeasHandler(HAQuDA_ErrorHandler *_err_handler, HAQuDA_MeasSnapshot &snapshot, HAQuDA_WebPageDisplayManip &webDisp);
+	// snapshot receives the latest averages for the web page and must outlive the handler.
+	HAQuDA_MeasHandler(HAQuDA_ErrorHandler *_err_handler, HAQuDA_MeasSnapshot &snapshot);
 
 	// Starts the sensors once. loop task only (setup or loop), never from ShowTask.
 	bool SensorsBegin();

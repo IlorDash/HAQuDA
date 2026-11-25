@@ -1,7 +1,8 @@
 #include "HAQuDA_DisplayService.h"
 
-HAQuDA_DisplayService::HAQuDA_DisplayService(HAQuDA_ILEDs &leds, HAQuDA_IMeasSource &measSource, uint8_t brightPercent)
-	: engine(leds, measSource, brightPercent) {
+HAQuDA_DisplayService::HAQuDA_DisplayService(HAQuDA_ILEDs &leds, HAQuDA_IMeasSource &measSource, HAQuDA_WebPageDisplayManip &webDisp, uint8_t brightPercent)
+	: engine(leds, measSource, brightPercent), webDisp(webDisp) {
+	webDisp.SetBrightness(engine.BrightPercent());
 }
 
 void HAQuDA_DisplayService::Begin() {
@@ -30,6 +31,7 @@ bool HAQuDA_DisplayService::SetMeasEnabled(bool enabled) {
 }
 
 bool HAQuDA_DisplayService::SetBrightness(uint8_t percent) {
+	webDisp.SetBrightness(percent);
 	return send(display_message{display_msg::brightness, percent, 0});
 }
 
@@ -45,17 +47,37 @@ uint16_t HAQuDA_DisplayService::DroppedPostCount() const {
 	return droppedPosts.load();
 }
 
+bool HAQuDA_DisplayService::SensorsErrorActive() const {
+	return sensorsErrorActive.load();
+}
+
 bool HAQuDA_DisplayService::send(const display_message &message) {
 	if ((queue == nullptr) || (xQueueSend(queue, &message, 0) != pdTRUE)) {
 		droppedPosts++;
 		return false;
 	}
+	// Written only when the value changes, so a message from another task cannot overwrite a newer value with a stale one
+	const bool current = sensorsErrorActive.load();
+	const bool next = HAQuDA_SensorsErrorActiveAfter(current, message);
+	if (next != current) {
+		sensorsErrorActive.store(next);
+	}
 	return true;
+}
+
+void HAQuDA_DisplayService::publishShown() {
+	const display_shown &shown = engine.Shown();
+	if (shown.seq == publishedSeq) {
+		return;
+	}
+	publishedSeq = shown.seq;
+	webDisp.Publish(shown);
 }
 
 void HAQuDA_DisplayService::RunTask() {
 	while (true) {
 		const uint32_t sleepMs = engine.Run(millis());
+		publishShown();
 		// A post wakes the task at once, so an error interrupts the running animation without waiting for its next step
 		display_message message;
 		if (xQueueReceive(queue, &message, pdMS_TO_TICKS(sleepMs)) == pdTRUE) {

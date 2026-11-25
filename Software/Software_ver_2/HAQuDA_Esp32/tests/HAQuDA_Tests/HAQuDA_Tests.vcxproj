@@ -139,6 +139,7 @@
     <ClInclude Include="..\..\sketches\HAQuDA_PMReader.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_SensorsPresence.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_Animation.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_DisplayShown.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_EffectAnimations.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_MeasAnimations.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_AnimationSet.h" />

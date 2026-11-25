@@ -17,7 +17,3 @@ meas_type HAQuDA_ToMeasType(lamp_param param) {
 			return total;
 	}
 }
-
-bool HAQuDA_ErrorShown(display_modes mode, error_type currentError) {
-	return (mode == error) && (currentError != noneError);
-}

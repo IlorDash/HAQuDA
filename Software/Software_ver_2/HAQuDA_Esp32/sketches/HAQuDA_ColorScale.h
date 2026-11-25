@@ -23,3 +23,7 @@ struct rgb_color {
 // outgoing channel exactly to 0 there.
 // color is left untouched when no range matches (data is NaN). Any task.
 void HAQuDA_GetMeasRGB(float data, div_dots dots, rgb_color &color);
+
+// The colour as 0xRRGGBB on the web scale: each channel 0..COLOR_SCALE_MAX_CHANNEL stretched to 0..255, a larger one is clamped.
+// Used for /api/status and for the pictures /api/disp reports. Any task.
+uint32_t HAQuDA_ToWebColor(const rgb_color &color);

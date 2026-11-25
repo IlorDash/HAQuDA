@@ -32,3 +32,13 @@ void HAQuDA_GetMeasRGB(float data, div_dots dots, rgb_color &color) {
 		color.r = COLOR_SCALE_MAX_CHANNEL;
 	}
 }
+
+uint32_t HAQuDA_ToWebColor(const rgb_color &color) {
+	const uint8_t channels[3] = {color.r, color.g, color.b};
+	uint32_t packed = 0;
+	for (const uint8_t channel : channels) {
+		const uint32_t limited = (channel > COLOR_SCALE_MAX_CHANNEL) ? COLOR_SCALE_MAX_CHANNEL : channel;
+		packed = (packed << 8) | (limited * 255 / COLOR_SCALE_MAX_CHANNEL);
+	}
+	return packed;
+}

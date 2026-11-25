@@ -5,7 +5,6 @@
 #include "HAQuDA_EffectsHandler.h"
 #include "HAQuDA_ErrorHandler.h"
 
-class HAQuDA_WebPageDisplayManip;
 class HAQuDA_DisplayService;
 
 // Callers that are not converted to display posts yet go through these setters: each one also posts what the lamp must show
@@ -17,12 +16,10 @@ class HAQuDA_DisplayManip {
 	static void selectLampColor(const uint32_t rgb);
 
   public:
-	// webDisp gets a copy of every setter call, for the web page; it must outlive this object.
 	HAQuDA_DisplayManip(HAQuDA_MeasHandler *_meas_handler, HAQuDA_EffectsHandler *_effects_handler, HAQuDA_ErrorHandler *_err_handler,
-						HAQuDA_WebPageDisplayManip *_web_disp, HAQuDA_DisplayService *_display);
+						HAQuDA_DisplayService *_display);
 
-	// Posts the user's brightness in percent (0..100) to the display service, which puts it on the LEDs in ShowTask, and updates the
-	// web mirror at once. loop task only.
+	// Posts the user's brightness in percent (0..100) to the display service, which puts it on the LEDs in ShowTask. loop task only.
 	static void SetBrightness(const uint8_t new_brightness);
 
 	// The lamp's own pictures are backgrounds like the measurements: events and errors show over the light, only errors over off.

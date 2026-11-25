@@ -37,8 +37,9 @@ class HAQuDA_GrowingAnim : public HAQuDA_Animation {
 	uint8_t row = 0;
 };
 
-// The web page replays the pass from the seed, so the sequence must stay exactly:
-//   state = seed (0 becomes 1); order = 0..ANIM_PIXELS-1
+// The web page replays every pass from the seed of the start, so the sequence must stay exactly:
+//   seed of pass 0 = the seed of Begin() (0 becomes 1); seed of pass n + 1 = xorshift32(seed of pass n)
+//   state = seed of the pass; order = 0..ANIM_PIXELS-1
 //   for i = ANIM_PIXELS-1 down to 1: j = xorshift32(state) % (i + 1); swap order[i], order[j]
 //   step k lights order[k] with r = xorshift32(state) % 255, g = xorshift32(state) % 255, b = xorshift32(state) % 255
 class HAQuDA_RandomPixelsAnim : public HAQuDA_Animation {
@@ -57,6 +58,7 @@ class HAQuDA_RandomPixelsAnim : public HAQuDA_Animation {
 
 	bool running = false;
 	bool darkPending = false;
+	bool passesStarted = false;
 	uint32_t seed = 1;
 	uint32_t rngState = 1;
 	uint16_t pixelPauseMs = 0;

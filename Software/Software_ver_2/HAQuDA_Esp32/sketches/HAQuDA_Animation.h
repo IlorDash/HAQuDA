@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "HAQuDA_ColorScale.h"
+#include "HAQuDA_DisplayTypes.h"
 #include "HAQuDA_ILEDs.h"
 
 // Duplicated from HAQuDA_LEDsParams.h to keep this layer free of it (static_assert in HAQuDA_MeasHandler.cpp)
@@ -67,6 +68,7 @@ constexpr anim_params HAQuDA_MeasParams(anim_id measAnim) {
 }
 
 constexpr uint8_t MEAS_ANIM_MAX_PARAMS = 5;
+constexpr uint8_t MEAS_ANIM_KEYS = 3;
 
 // Every used dots entry must have last > first: the colour scale divides by the difference
 struct meas_anim_data {
@@ -74,6 +76,8 @@ struct meas_anim_data {
 	div_dots dots[MEAS_ANIM_MAX_PARAMS];
 	// Only the total animation skips a reading without a sample; zero-initialised data means every reading has one
 	bool noSample[MEAS_ANIM_MAX_PARAMS];
+	// The readings the values belong to, for the web page: one for standard and night, three for multi, unused for total
+	meas_type keys[MEAS_ANIM_KEYS];
 	// Night light cells on (HAQuDA_NightLitCells()), 0 when the time is unknown
 	uint8_t nightLitCells;
 };

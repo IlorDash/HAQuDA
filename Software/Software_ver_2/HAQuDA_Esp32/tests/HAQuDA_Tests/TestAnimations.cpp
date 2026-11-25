@@ -468,18 +468,76 @@ TEST(RandomPixelsAnimTest, StopMidPassDrawsNothingMore) {
 	EXPECT_EQ(framesBefore, leds.frames.size());
 }
 
-TEST(RandomPixelsAnimTest, EachPassRepeatsTheSamePicture) {
+TEST(RandomPixelsAnimTest, EachPassUsesTheNextSeedOfTheXorShiftChain) {
+	// The web page replays pass n from xorshift32 applied n times to the seed of the start
+	const uint32_t startSeed = 5;
+	std::vector<uint32_t> passSeeds = {startSeed};
+	for (int pass = 1; pass < 3; pass++) {
+		uint32_t next = passSeeds.back();
+		HAQuDA_XorShift32(next);
+		passSeeds.push_back(next);
+	}
+
+	testing::NiceMock<MockLEDs> mock;
+	std::vector<std::vector<uint16_t>> passPixels(1);
+	ON_CALL(mock, SetPixelColor(testing::_, testing::_)).WillByDefault(testing::Invoke([&passPixels](uint16_t pixel, uint32_t) {
+		if (passPixels.back().size() == ANIM_PIXELS) {
+			passPixels.emplace_back();
+		}
+		passPixels.back().push_back(pixel);
+	}));
+	HAQuDA_RandomPixelsAnim random(mock);
+	anim_context context = {};
+	context.seed = startSeed;
+	ASSERT_TRUE(random.Begin(HAQuDA_RandomPixelsParams(50, 500), context));
+	stepsUntilTotal(random, 3 * (1 + ANIM_PIXELS));
+
+	ASSERT_EQ(3u, passPixels.size());
+	for (size_t pass = 0; pass < 3; pass++) {
+		uint32_t state = passSeeds[pass];
+		std::vector<uint8_t> order(ANIM_PIXELS);
+		for (uint16_t i = 0; i < ANIM_PIXELS; i++) {
+			order[i] = static_cast<uint8_t>(i);
+		}
+		for (uint16_t i = ANIM_PIXELS - 1; i >= 1; i--) {
+			std::swap(order[i], order[HAQuDA_XorShift32(state) % (i + 1)]);
+		}
+		for (size_t step = 0; step < ANIM_PIXELS; step++) {
+			EXPECT_EQ(order[step], passPixels[pass][step]) << "pass " << pass << " step " << step;
+		}
+	}
+	EXPECT_NE(passPixels[0], passPixels[1]);
+	EXPECT_NE(passPixels[1], passPixels[2]);
+}
+
+TEST(RandomPixelsAnimTest, SeedFollowsThePassInProgress) {
 	LedRecorder leds;
 	HAQuDA_RandomPixelsAnim random(leds.mock);
 	anim_context context = {};
 	context.seed = 5;
 	ASSERT_TRUE(random.Begin(HAQuDA_RandomPixelsParams(50, 500), context));
 	stepsUntilTotal(random, 1 + ANIM_PIXELS);
-	const std::vector<uint32_t> firstPassEnd = leds.frames.back();
+	EXPECT_EQ(5u, random.Seed());
+	uint32_t second = 5;
+	HAQuDA_XorShift32(second);
 
 	stepsUntilTotal(random, 1 + ANIM_PIXELS);
 
-	EXPECT_EQ(firstPassEnd, leds.frames.back());
+	EXPECT_EQ(second, random.Seed());
+}
+
+TEST(RandomPixelsAnimTest, ABeginAgainStartsTheChainOverFromTheNewSeed) {
+	LedRecorder leds;
+	HAQuDA_RandomPixelsAnim random(leds.mock);
+	anim_context context = {};
+	context.seed = 5;
+	ASSERT_TRUE(random.Begin(HAQuDA_RandomPixelsParams(50, 500), context));
+	stepsUntilTotal(random, 2 * (1 + ANIM_PIXELS));
+
+	ASSERT_TRUE(random.Begin(HAQuDA_RandomPixelsParams(50, 500), context));
+	stepsUntilTotal(random, 1 + ANIM_PIXELS);
+
+	EXPECT_EQ(5u, random.Seed());
 }
 
 TEST(FadingAnimTest, CountingDownPassTimingMatchesTheOldEffect) {
@@ -791,6 +849,24 @@ TEST(MeasAnimTest, DrawnIsEmptyBeforeTheFirstPicture) {
 	ASSERT_TRUE(meas.Begin(HAQuDA_MeasParams(anim_id::measStandard), measContext(lampData(), 100)));
 
 	EXPECT_EQ(0, meas.Drawn().colorCount);
+}
+
+TEST(MeasAnimTest, DrawnCarriesTheKeysAndTheLitCellsOfTheData) {
+	LedRecorder leds;
+	HAQuDA_MeasNightAnim meas(leds.mock);
+	meas_anim_data data = lampData();
+	data.keys[0] = PM2_5;
+	data.keys[1] = humid;
+	data.keys[2] = eCO2;
+	data.nightLitCells = 7;
+	ASSERT_TRUE(meas.Begin(HAQuDA_MeasParams(anim_id::measNight), measContext(data, 100)));
+
+	meas.Step(0);
+
+	EXPECT_EQ(PM2_5, meas.Drawn().keys[0]);
+	EXPECT_EQ(humid, meas.Drawn().keys[1]);
+	EXPECT_EQ(eCO2, meas.Drawn().keys[2]);
+	EXPECT_EQ(7, meas.Drawn().nightLitCells);
 }
 
 TEST(MeasAnimTest, ABeginAgainRedrawsTheNewDataInPlaceWithoutADarkFrame) {

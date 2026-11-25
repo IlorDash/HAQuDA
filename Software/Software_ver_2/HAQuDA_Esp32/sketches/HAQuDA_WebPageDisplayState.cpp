@@ -1,246 +1,144 @@
 #include "HAQuDA_WebPageDisplayState.h"
-#include "HAQuDA_NightProgress.h"
 
 namespace {
-	constexpr size_t MULTI_KEYS_NUM = 3;
+	constexpr size_t MULTI_KEYS_NUM = MEAS_ANIM_KEYS;
 
-	bool same(const web_snake_params &a, const web_snake_params &b) {
-		return (a.color == b.color) && (a.movePauseMs == b.movePauseMs) && (a.tailLen == b.tailLen);
-	}
+	static_assert(sizeof(web_display_state::keys) / sizeof(web_meas_key) == MEAS_ANIM_KEYS, "the page and the engine count the same keys");
+	static_assert(sizeof(web_display_state::measColors) / sizeof(uint32_t) == MEAS_ANIM_KEYS, "the page and the engine count the same colours");
 
-	bool same(const web_growing_params &a, const web_growing_params &b) {
-		return (a.color == b.color) && (a.growPauseMs == b.growPauseMs);
-	}
-
-	bool same(const web_random_params &a, const web_random_params &b) {
-		return (a.pauseMs == b.pauseMs) && (a.endPauseMs == b.endPauseMs);
-	}
-
-	bool same(const web_fading_params &a, const web_fading_params &b) {
-		return (a.color == b.color) && (a.fadePauseMs == b.fadePauseMs) && (a.startBright == b.startBright) && (a.stopBright == b.stopBright)
-			   && (a.step == b.step);
-	}
-
-	// A missing key equals another missing key whatever its stored value is.
-	bool same(const web_key &a, const web_key &b) {
-		return (a.valid == b.valid) && (!a.valid || (a.key == b.key));
-	}
-
-	void markChanged(web_picture_state &state, uint32_t nowMs) {
-		state.seq++;
-		state.startMs = nowMs;
-	}
-
-	bool isMeas(const web_picture_state &state) {
-		return state.source == web_source::meas;
-	}
-
-	// Stores `params` into `field`; true when it differs and the picture draws it now.
-	template <typename T> bool storeEffectParam(web_picture_state &state, T &field, const T &params, web_effect kind, uint32_t nowMs) {
-		const bool changed = !same(field, params);
-		field = params;
-		if (changed && (state.source == web_source::effect) && (state.effect == kind)) {
-			markChanged(state, nowMs);
-			return true;
+	web_error errorWord(display_item item) {
+		switch (item) {
+			case HAQuDA_ItemOf(display_error::wifiConnectFailed):
+				return web_error::wifi;
+			case HAQuDA_ItemOf(display_error::apFailed):
+				return web_error::ap;
+			case HAQuDA_ItemOf(display_error::fsFailed):
+				return web_error::fs;
+			case HAQuDA_ItemOf(display_error::sensorsFailed):
+				return web_error::sensors;
+			case HAQuDA_ItemOf(display_error::ntpFailed):
+				return web_error::ntp;
+			default:
+				return web_error::none;
 		}
-		return false;
 	}
-} // namespace
 
-void HAQuDA_WebPictureInit(web_picture_state &state, uint8_t brightPercent) {
-	state = web_picture_state{};
-	// The starting values of HAQuDA_EffectsHandler, HAQuDA_MeasHandler and HAQuDA_DisplayManip, whose members are private there
-	state.source = web_source::none;
-	state.seenError = web_error::none;
-	state.effect = web_effect::none;
-	state.snake = {0x99FF33, 200, 5};
-	state.growing = {0x00FFFF, 200};
-	state.randomLed = {200, 1000};
-	state.fading = {0x00FFFF, 10, 100, 0, 5};
-	state.staticColor = 0x01FF00;
-	state.layout = web_meas_layout::none;
-	state.standardKey = {web_meas_key::total, false};
-	state.multiKeys[0] = {web_meas_key::temp, true};
-	state.multiKeys[1] = {web_meas_key::eco2, true};
-	state.multiKeys[2] = {web_meas_key::pm25, true};
-	state.nightStart = NIGHT_DEFAULT_FROM_MIN;
-	state.nightFinish = NIGHT_DEFAULT_TO_MIN;
-	state.brightPercent = brightPercent;
-}
-
-bool HAQuDA_WebPictureSetSource(web_picture_state &state, web_source source, web_error currentError, uint32_t nowMs) {
-	if (state.source == source) {
-		return false;
+	bool toKey(meas_type type, web_meas_key &key) {
+		switch (type) {
+			case total:
+				key = web_meas_key::total;
+				return true;
+			case eCO2:
+				key = web_meas_key::eco2;
+				return true;
+			case TVOC:
+				key = web_meas_key::tvoc;
+				return true;
+			case PM2_5:
+				key = web_meas_key::pm25;
+				return true;
+			case temp:
+				key = web_meas_key::temp;
+				return true;
+			case humid:
+				key = web_meas_key::humid;
+				return true;
+			default:
+				return false;
+		}
 	}
-	state.source = source;
-	state.measDrawn = false;
-	if (source == web_source::error) {
-		state.seenError = currentError;
-	}
-	// The display manipulator stops the effect in every mode but effect
-	if (source != web_source::effect) {
-		state.effect = web_effect::none;
-	}
-	markChanged(state, nowMs);
-	return true;
-}
 
-void HAQuDA_WebPictureSetBrightness(web_picture_state &state, uint8_t brightPercent) {
-	state.brightPercent = brightPercent;
-}
-
-bool HAQuDA_WebPictureSetEffect(web_picture_state &state, web_effect effect, uint32_t nowMs) {
-	if (state.effect == effect) {
-		return false;
+	void fillEffect(const anim_params &anim, uint32_t seed, web_display_state &out) {
+		switch (anim.anim) {
+			case anim_id::snake:
+				out.effect = web_effect::snake;
+				out.snake = {anim.color, anim.pauseMs, anim.tailLen};
+				break;
+			case anim_id::growing:
+				out.effect = web_effect::growing;
+				out.growing = {anim.color, anim.pauseMs};
+				break;
+			case anim_id::randomPixels:
+				out.effect = web_effect::random_led;
+				out.randomLed = {anim.pauseMs, anim.endPauseMs};
+				out.seed = seed;
+				break;
+			case anim_id::fading:
+				out.effect = web_effect::fading;
+				out.fading = {anim.color, anim.pauseMs, anim.fromPercent, anim.toPercent, anim.stepPercent};
+				break;
+			case anim_id::staticColor:
+				out.effect = web_effect::static_color;
+				out.staticColor = anim.color;
+				break;
+			default:
+				out.effect = web_effect::none;
+				break;
+		}
 	}
-	state.effect = effect;
-	if (state.source == web_source::effect) {
-		markChanged(state, nowMs);
-		return true;
-	}
-	return false;
-}
 
-bool HAQuDA_WebPictureSetEffectParam(web_picture_state &state, const web_snake_params &params, uint32_t nowMs) {
-	return storeEffectParam(state, state.snake, params, web_effect::snake, nowMs);
-}
-
-bool HAQuDA_WebPictureSetEffectParam(web_picture_state &state, const web_growing_params &params, uint32_t nowMs) {
-	return storeEffectParam(state, state.growing, params, web_effect::growing, nowMs);
-}
-
-bool HAQuDA_WebPictureSetEffectParam(web_picture_state &state, const web_random_params &params, uint32_t nowMs) {
-	return storeEffectParam(state, state.randomLed, params, web_effect::random_led, nowMs);
-}
-
-bool HAQuDA_WebPictureSetEffectParam(web_picture_state &state, const web_fading_params &params, uint32_t nowMs) {
-	return storeEffectParam(state, state.fading, params, web_effect::fading, nowMs);
-}
-
-bool HAQuDA_WebPictureSetStaticColor(web_picture_state &state, uint32_t color, uint32_t nowMs) {
-	const bool changed = (state.staticColor != color);
-	state.staticColor = color;
-	if (changed && (state.source == web_source::effect) && (state.effect == web_effect::static_color)) {
-		markChanged(state, nowMs);
-		return true;
-	}
-	return false;
-}
-
-bool HAQuDA_WebPictureSetLayout(web_picture_state &state, web_meas_layout layout, uint32_t nowMs) {
-	if ((layout == web_meas_layout::none) || (state.layout == layout)) {
-		return false;
-	}
-	state.layout = layout;
-	state.measDrawn = false;
-	if (isMeas(state)) {
-		markChanged(state, nowMs);
-		return true;
-	}
-	return false;
-}
-
-bool HAQuDA_WebPictureSetStandardKey(web_picture_state &state, web_key key, uint32_t nowMs) {
-	const bool changed = !same(state.standardKey, key);
-	state.standardKey = key;
-	if (changed && isMeas(state) && ((state.layout == web_meas_layout::standard) || (state.layout == web_meas_layout::night))) {
-		state.measDrawn = false;
-		markChanged(state, nowMs);
-		return true;
-	}
-	return false;
-}
-
-bool HAQuDA_WebPictureSetMultiKeys(web_picture_state &state, const web_key keys[3], uint32_t nowMs) {
-	bool changed = false;
-	for (size_t i = 0; i < MULTI_KEYS_NUM; i++) {
-		changed = changed || !same(state.multiKeys[i], keys[i]);
-		state.multiKeys[i] = keys[i];
-	}
-	if (changed && isMeas(state) && (state.layout == web_meas_layout::multi)) {
-		state.measDrawn = false;
-		markChanged(state, nowMs);
-		return true;
-	}
-	return false;
-}
-
-bool HAQuDA_WebPictureSetNightWindow(web_picture_state &state, uint16_t start, uint16_t finish, uint32_t nowMs) {
-	const bool changed = (state.nightStart != start) || (state.nightFinish != finish);
-	state.nightStart = start;
-	state.nightFinish = finish;
-	if (changed && isMeas(state) && (state.layout == web_meas_layout::night)) {
-		markChanged(state, nowMs);
-		return true;
-	}
-	return false;
-}
-
-bool HAQuDA_WebPictureSetMeasDrawn(web_picture_state &state, web_meas_layout layout, const uint32_t colors[3], uint32_t whiteColor, uint32_t nowMs) {
-	if ((colors == nullptr) || !isMeas(state) || (state.layout != layout)) {
-		return false;
-	}
-	bool changed = !state.measDrawn || (state.measWhiteColor != whiteColor);
-	for (size_t i = 0; i < MULTI_KEYS_NUM; i++) {
-		changed = changed || (state.measColors[i] != colors[i]);
-		state.measColors[i] = colors[i];
-	}
-	state.measWhiteColor = whiteColor;
-	state.measDrawn = true;
-	if (changed) {
-		markChanged(state, nowMs);
-	}
-	return changed;
-}
-
-bool HAQuDA_WebPictureCheckError(web_picture_state &state, web_error currentError, uint32_t nowMs) {
-	if ((state.source != web_source::error) || (state.seenError == currentError)) {
-		return false;
-	}
-	state.seenError = currentError;
-	markChanged(state, nowMs);
-	return true;
-}
-
-void HAQuDA_WebPictureBuild(const web_picture_state &state, web_error currentError, bool timeKnown, uint16_t minuteOfDay, uint32_t nowMs,
-							web_display_state &out) {
-	out = web_display_state{};
-	out.seq = state.seq;
-	out.ageMs = nowMs - state.startMs;
-	out.source = state.source;
-	out.brightPercent = state.brightPercent;
-
-	if (state.source == web_source::effect) {
-		out.effect = state.effect;
-		out.snake = state.snake;
-		out.growing = state.growing;
-		out.randomLed = state.randomLed;
-		out.fading = state.fading;
-		out.staticColor = state.staticColor;
-	} else if (state.source == web_source::error) {
-		out.error = currentError;
-	} else if (state.source == web_source::meas) {
-		out.layout = state.layout;
-		if ((state.layout == web_meas_layout::standard) || (state.layout == web_meas_layout::night)) {
-			if (state.standardKey.valid) {
-				out.keys[0] = state.standardKey.key;
-			} else {
-				out.layout = web_meas_layout::none;
-			}
-		} else if (state.layout == web_meas_layout::multi) {
-			for (size_t i = 0; i < MULTI_KEYS_NUM; i++) {
-				if (state.multiKeys[i].valid) {
-					out.keys[i] = state.multiKeys[i].key;
-				} else {
+	void fillMeas(const display_shown &shown, web_display_state &out) {
+		size_t keysNum = 1;
+		switch (shown.anim.anim) {
+			case anim_id::measStandard:
+				out.layout = web_meas_layout::standard;
+				break;
+			case anim_id::measTotal:
+				out.layout = web_meas_layout::standard;
+				out.keys[0] = web_meas_key::total;
+				break;
+			case anim_id::measNight:
+				out.layout = web_meas_layout::night;
+				break;
+			case anim_id::measMulti:
+				out.layout = web_meas_layout::multi;
+				keysNum = MULTI_KEYS_NUM;
+				break;
+			default:
+				return;
+		}
+		if (shown.anim.anim != anim_id::measTotal) {
+			for (size_t i = 0; i < keysNum; i++) {
+				if (!toKey(shown.keys[i], out.keys[i])) {
 					out.layout = web_meas_layout::none;
 				}
 			}
 		}
-		out.nightLit = timeKnown ? HAQuDA_NightLitCells(state.nightStart, state.nightFinish, minuteOfDay) : 0;
-		out.measDrawn = state.measDrawn;
-		for (size_t i = 0; i < MULTI_KEYS_NUM; i++) {
-			out.measColors[i] = state.measColors[i];
+		out.nightLit = shown.nightLitCells;
+		out.measDrawn = shown.measDrawn;
+		for (size_t i = 0; (i < MULTI_KEYS_NUM) && (i < shown.colorCount); i++) {
+			out.measColors[i] = HAQuDA_ToWebColor(shown.colors[i]);
 		}
-		out.measWhiteColor = state.measWhiteColor;
+		if (shown.anim.anim == anim_id::measNight) {
+			out.measWhiteColor = HAQuDA_ToWebColor(shown.white);
+		}
+	}
+} // namespace
+
+void HAQuDA_WebPictureBuild(const display_shown &shown, uint8_t brightPercent, uint32_t nowMs, web_display_state &out) {
+	out = web_display_state{};
+	out.seq = shown.seq;
+	out.ageMs = nowMs - shown.startMs;
+	out.brightPercent = brightPercent;
+
+	switch (shown.source) {
+		case display_source::event:
+		case display_source::waiting:
+		case display_source::solid:
+			out.source = web_source::effect;
+			fillEffect(shown.anim, shown.seed, out);
+			break;
+		case display_source::error:
+			out.error = errorWord(shown.item);
+			out.source = (out.error == web_error::none) ? web_source::effect : web_source::error;
+			fillEffect(shown.anim, shown.seed, out);
+			break;
+		case display_source::meas:
+			out.source = web_source::meas;
+			fillMeas(shown, out);
+			break;
+		default:
+			out.source = web_source::none;
+			break;
 	}
 }

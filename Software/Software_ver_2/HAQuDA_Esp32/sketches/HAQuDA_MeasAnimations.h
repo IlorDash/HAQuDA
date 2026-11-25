@@ -4,8 +4,10 @@
 
 struct meas_drawn {
 	uint8_t colorCount;
-	rgb_color colors[3];
+	rgb_color colors[MEAS_ANIM_KEYS];
 	rgb_color white;
+	meas_type keys[MEAS_ANIM_KEYS];
+	uint8_t nightLitCells;
 };
 
 // The picture does not follow new data by itself: the caller calls Begin() again with a fresh meas_anim_data, which redraws it in place

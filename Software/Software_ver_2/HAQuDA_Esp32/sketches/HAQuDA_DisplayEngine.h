@@ -4,6 +4,7 @@
 
 #include "HAQuDA_AnimationSet.h"
 #include "HAQuDA_DisplayScheduler.h"
+#include "HAQuDA_DisplayShown.h"
 #include "HAQuDA_IMeasSource.h"
 
 constexpr uint32_t DISPLAY_MEAS_PERIOD_MS = 60 * 1000;
@@ -20,6 +21,10 @@ struct display_message {
 	uint32_t color;
 };
 
+// The sensors error is active from its post until the end signal for it, wherever it stands in the rotation. Evaluated on the posting
+// side, so a read right after a post already sees it.
+bool HAQuDA_SensorsErrorActiveAfter(bool active, const display_message &message);
+
 // ShowTask only: not thread-safe. The FreeRTOS queue and the task loop live in HAQuDA_DisplayService; time comes in as nowMs
 class HAQuDA_DisplayEngine {
   public:
@@ -35,6 +40,7 @@ class HAQuDA_DisplayEngine {
 
 	anim_id ActiveAnim() const;
 	uint8_t BrightPercent() const;
+	const display_shown &Shown() const;
 
   private:
 	void probeSample();
@@ -47,6 +53,9 @@ class HAQuDA_DisplayEngine {
 	void stopActive();
 	void setBrightness(uint8_t percent);
 	anim_context makeContext(uint32_t nowMs);
+	void beginPicture(display_source source, display_item item, const anim_params &anim, uint32_t seed);
+	void markChanged(uint32_t nowMs);
+	void recordMeasDrawn(const meas_drawn &drawn, uint32_t nowMs);
 
 	HAQuDA_ILEDs &leds;
 	HAQuDA_IMeasSource &measSource;
@@ -64,6 +73,8 @@ class HAQuDA_DisplayEngine {
 	bool switchPending = false;
 	bool measEnabled = false;
 	bool sampleSeen = false;
+	bool measRedrawPending = false;
 	uint32_t measPeriodStartMs = 0;
 	uint32_t nextStepMs = 0;
+	display_shown shown = {};
 };

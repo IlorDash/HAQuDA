@@ -1,6 +1,7 @@
 #include "HAQuDA_LampAdapters.h"
 
 #include "HAQuDA_DisplayManip.h"
+#include "HAQuDA_DisplayService.h"
 #include "HAQuDA_FileStorage.h"
 #include "HAQuDA_LampDisplayRules.h"
 #include "HAQuDA_LEDsParams.h"
@@ -32,11 +33,12 @@ void HAQuDA_LoggerAdapter::LogError(const char *msg) {
 	HAQuDA_Logger::LogError(msg);
 }
 
-HAQuDA_LampDisplayAdapter::HAQuDA_LampDisplayAdapter(HAQuDA_ErrorHandler &errorHandler) : errHandler(errorHandler) {
+HAQuDA_LampDisplayAdapter::HAQuDA_LampDisplayAdapter(HAQuDA_ErrorHandler &errorHandler, HAQuDA_DisplayService &displayService)
+	: errHandler(errorHandler), display(displayService) {
 }
 
 bool HAQuDA_LampDisplayAdapter::ErrorShown() {
-	return HAQuDA_ErrorShown(HAQuDA_DisplayManip::GetMode(), HAQuDA_ErrorHandler::GetCurrentError());
+	return display.SensorsErrorActive();
 }
 
 void HAQuDA_LampDisplayAdapter::ClearError() {

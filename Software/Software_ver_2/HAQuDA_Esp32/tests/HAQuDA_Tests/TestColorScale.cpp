@@ -302,6 +302,37 @@ TEST(ColorScaleTest, DISABLED_GetMeasRGBNaNInputWritesDefinedColor) {
 // Reproducer: first == last makes (COLOR_SCALE_MAX_CHANNEL * 2) / (last - first) an integer division by zero
 // (hardware exception on the ESP32 and on the host). The call must return; with the single dot hit
 // exactly, both distances are 0, so green and red are full and blue is 0.
+TEST(ColorScaleTest, ToWebColorStretchesTheFullChannelTo255) {
+	const uint32_t exp_color = 0xFF00FFu;
+
+	uint32_t res;
+
+	res = HAQuDA_ToWebColor(rgb_color{COLOR_SCALE_MAX_CHANNEL, 0, COLOR_SCALE_MAX_CHANNEL});
+
+	EXPECT_EQ(exp_color, res);
+}
+
+TEST(ColorScaleTest, ToWebColorScalesAMidChannelDown) {
+	// 105 * 255 / 150 = 178, 75 * 255 / 150 = 127
+	const uint32_t exp_color = 0xB27F00u;
+
+	uint32_t res;
+
+	res = HAQuDA_ToWebColor(rgb_color{105, 75, 0});
+
+	EXPECT_EQ(exp_color, res);
+}
+
+TEST(ColorScaleTest, ToWebColorClampsAChannelAboveTheMaximum) {
+	const uint32_t exp_color = 0x00FF00u;
+
+	uint32_t res;
+
+	res = HAQuDA_ToWebColor(rgb_color{0, 255, 0});
+
+	EXPECT_EQ(exp_color, res);
+}
+
 TEST(ColorScaleTest, DISABLED_GetMeasRGBEqualFirstAndLastDoesNotDivideByZero) {
 	const div_dots dots = {20, 20, 20};
 

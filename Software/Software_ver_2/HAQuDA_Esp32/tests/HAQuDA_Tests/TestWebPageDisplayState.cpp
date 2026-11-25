@@ -1,3646 +1,401 @@
 #include <gtest/gtest.h>
 
-#include <cstddef>
 #include <cstdint>
-#include <cstring>
+#include <string>
 
 #include "HAQuDA_WebPageDisplayState.h"
 
-// ---------------------------------------------------------------- Init
+namespace {
 
-TEST(WebPageDisplayStateTest, InitSnakeDefaults) {
-	const uint8_t brightness = 50;
+	constexpr uint32_t START_MS = 1000;
+	constexpr uint32_t NOW_MS = 5000;
+	constexpr uint8_t BRIGHT_PERCENT = 35;
 
-	const web_snake_params exp_snake = {0x99FF33, 200, 5};
+	display_shown itemPicture(display_source source, display_item item, uint32_t seed = 0) {
+		display_shown shown = {};
+		shown.seq = 7;
+		shown.startMs = START_MS;
+		shown.source = source;
+		shown.item = item;
+		shown.anim = HAQuDA_GetDisplayEntry(item)->anim;
+		shown.seed = seed;
+		return shown;
+	}
 
-	web_picture_state state{};
+	display_shown solidPicture(uint32_t color) {
+		display_shown shown = {};
+		shown.seq = 7;
+		shown.startMs = START_MS;
+		shown.source = display_source::solid;
+		shown.item = DISPLAY_ITEM_NONE;
+		shown.anim = HAQuDA_StaticColorParams(color);
+		return shown;
+	}
 
-	HAQuDA_WebPictureInit(state, brightness);
+	display_shown measPicture(anim_id anim, bool drawn) {
+		display_shown shown = {};
+		shown.seq = 7;
+		shown.startMs = START_MS;
+		shown.source = display_source::meas;
+		shown.item = DISPLAY_ITEM_NONE;
+		shown.anim = HAQuDA_MeasParams(anim);
+		shown.measDrawn = drawn;
+		return shown;
+	}
 
-	EXPECT_EQ(exp_snake.color, state.snake.color);
-	EXPECT_EQ(exp_snake.movePauseMs, state.snake.movePauseMs);
-	EXPECT_EQ(exp_snake.tailLen, state.snake.tailLen);
-}
-
-TEST(WebPageDisplayStateTest, InitGrowingDefaults) {
-	const uint8_t brightness = 50;
-
-	const web_growing_params exp_growing = {0x00FFFF, 200};
-
-	web_picture_state state{};
-
-	HAQuDA_WebPictureInit(state, brightness);
-
-	EXPECT_EQ(exp_growing.color, state.growing.color);
-	EXPECT_EQ(exp_growing.growPauseMs, state.growing.growPauseMs);
-}
-
-TEST(WebPageDisplayStateTest, InitRandomDefaults) {
-	const uint8_t brightness = 50;
-
-	const web_random_params exp_random = {200, 1000};
-
-	web_picture_state state{};
-
-	HAQuDA_WebPictureInit(state, brightness);
-
-	EXPECT_EQ(exp_random.pauseMs, state.randomLed.pauseMs);
-	EXPECT_EQ(exp_random.endPauseMs, state.randomLed.endPauseMs);
-}
-
-TEST(WebPageDisplayStateTest, InitFadingDefaults) {
-	const uint8_t brightness = 50;
-
-	const web_fading_params exp_fading = {0x00FFFF, 10, 100, 0, 5};
-
-	web_picture_state state{};
-
-	HAQuDA_WebPictureInit(state, brightness);
-
-	EXPECT_EQ(exp_fading.color, state.fading.color);
-	EXPECT_EQ(exp_fading.fadePauseMs, state.fading.fadePauseMs);
-	EXPECT_EQ(exp_fading.startBright, state.fading.startBright);
-	EXPECT_EQ(exp_fading.stopBright, state.fading.stopBright);
-	EXPECT_EQ(exp_fading.step, state.fading.step);
-}
-
-TEST(WebPageDisplayStateTest, InitStaticColorDefault) {
-	const uint8_t brightness = 50;
-
-	const uint32_t exp_color = 0x01FF00;
-
-	web_picture_state state{};
-
-	HAQuDA_WebPictureInit(state, brightness);
-
-	EXPECT_EQ(exp_color, state.staticColor);
-}
-
-TEST(WebPageDisplayStateTest, InitMultiKeysDefaultToTempEco2Pm25) {
-	const uint8_t brightness = 50;
-
-	const web_meas_key exp_keys[3] = {web_meas_key::temp, web_meas_key::eco2, web_meas_key::pm25};
-
-	web_picture_state state{};
-
-	HAQuDA_WebPictureInit(state, brightness);
-
-	EXPECT_EQ(exp_keys[0], state.multiKeys[0].key);
-	EXPECT_EQ(exp_keys[1], state.multiKeys[1].key);
-	EXPECT_EQ(exp_keys[2], state.multiKeys[2].key);
-	EXPECT_TRUE(state.multiKeys[0].valid);
-	EXPECT_TRUE(state.multiKeys[1].valid);
-	EXPECT_TRUE(state.multiKeys[2].valid);
-}
-
-TEST(WebPageDisplayStateTest, InitStandardKeyIsInvalid) {
-	const uint8_t brightness = 50;
-
-	web_picture_state state{};
-
-	HAQuDA_WebPictureInit(state, brightness);
-
-	EXPECT_FALSE(state.standardKey.valid);
-}
-
-TEST(WebPageDisplayStateTest, InitNightWindowIs21To9) {
-	const uint8_t brightness = 50;
-
-	const uint16_t exp_start = 21 * 60;
-	const uint16_t exp_finish = 9 * 60;
-
-	web_picture_state state{};
-
-	HAQuDA_WebPictureInit(state, brightness);
-
-	EXPECT_EQ(exp_start, state.nightStart);
-	EXPECT_EQ(exp_finish, state.nightFinish);
-}
-
-TEST(WebPageDisplayStateTest, InitSourceEffectLayoutAndErrorAreNone) {
-	const uint8_t brightness = 50;
-
-	const web_source exp_source = web_source::none;
-	const web_effect exp_effect = web_effect::none;
-	const web_meas_layout exp_layout = web_meas_layout::none;
-	const web_error exp_error = web_error::none;
-
-	web_picture_state state{};
-
-	HAQuDA_WebPictureInit(state, brightness);
-
-	EXPECT_EQ(exp_source, state.source);
-	EXPECT_EQ(exp_effect, state.effect);
-	EXPECT_EQ(exp_layout, state.layout);
-	EXPECT_EQ(exp_error, state.seenError);
-}
-
-TEST(WebPageDisplayStateTest, InitSeqAndStartAreZero) {
-	const uint8_t brightness = 50;
-
-	const uint32_t exp_zero = 0;
-
-	web_picture_state state{};
-
-	HAQuDA_WebPictureInit(state, brightness);
-
-	EXPECT_EQ(exp_zero, state.seq);
-	EXPECT_EQ(exp_zero, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, InitStoresBrightness) {
-	const uint8_t brightness = 50;
-
-	const uint8_t exp_brightness = 50;
-
-	web_picture_state state{};
-
-	HAQuDA_WebPictureInit(state, brightness);
-
-	EXPECT_EQ(exp_brightness, state.brightPercent);
-}
-
-TEST(WebPageDisplayStateTest, InitResetsDirtyState) {
-	const uint8_t brightness = 50;
-	const uint8_t dirty_byte = 0xFF;
-
-	const uint32_t exp_zero = 0;
-	const web_source exp_source = web_source::none;
-	const web_error exp_error = web_error::none;
-	const web_effect exp_effect = web_effect::none;
-	const web_meas_layout exp_layout = web_meas_layout::none;
-	const uint16_t exp_night_start = 21 * 60;
-
-	web_picture_state state;
-	std::memset(&state, dirty_byte, sizeof(state));
-
-	HAQuDA_WebPictureInit(state, brightness);
-
-	EXPECT_EQ(exp_zero, state.seq);
-	EXPECT_EQ(exp_zero, state.startMs);
-	EXPECT_EQ(exp_source, state.source);
-	EXPECT_EQ(exp_error, state.seenError);
-	EXPECT_EQ(exp_effect, state.effect);
-	EXPECT_EQ(exp_layout, state.layout);
-	EXPECT_FALSE(state.standardKey.valid);
-	EXPECT_EQ(exp_night_start, state.nightStart);
-	EXPECT_EQ(brightness, state.brightPercent);
-}
-
-// ---------------------------------------------------------------- SetSource
-
-TEST(WebPageDisplayStateTest, SetSourceSameSourceReturnsFalseAndChangesNothing) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_error current_error = web_error::ntp;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetSource(state, web_source::meas, current_error, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetSourceSameErrorSourceKeepsSeenError) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_error exp_seen = web_error::wifi;
-
-	const web_error current_error = web_error::ntp;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::error;
-	state.seenError = web_error::wifi;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetSource(state, web_source::error, current_error, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_EQ(exp_seen, state.seenError);
-}
-
-TEST(WebPageDisplayStateTest, SetSourceDifferentSourceBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_error current_error = web_error::ntp;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetSource(state, web_source::effect, current_error, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetSourceFromNoneToEventBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_error current_error = web_error::ntp;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetSource(state, web_source::event, current_error, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetSourceToMeasStopsEffect) {
-	const uint8_t brightness = 50;
-	const uint32_t now_ms = 7000;
-
-	const web_effect exp_effect = web_effect::none;
-
-	const web_error current_error = web_error::ntp;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::snake;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetSource(state, web_source::meas, current_error, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_effect, state.effect);
-}
-
-TEST(WebPageDisplayStateTest, SetSourceToNoneStopsEffect) {
-	const uint8_t brightness = 50;
-	const uint32_t now_ms = 7000;
-
-	const web_effect exp_effect = web_effect::none;
-
-	const web_error current_error = web_error::ntp;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::fading;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetSource(state, web_source::none, current_error, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_effect, state.effect);
-}
-
-TEST(WebPageDisplayStateTest, SetSourceToErrorStopsEffect) {
-	const uint8_t brightness = 50;
-	const uint32_t now_ms = 7000;
-
-	const web_effect exp_effect = web_effect::none;
-
-	const web_error current_error = web_error::ntp;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::growing;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetSource(state, web_source::error, current_error, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_effect, state.effect);
-}
-
-TEST(WebPageDisplayStateTest, SetSourceToEventStopsEffect) {
-	const uint8_t brightness = 50;
-	const uint32_t now_ms = 7000;
-
-	const web_effect exp_effect = web_effect::none;
-
-	const web_error current_error = web_error::ntp;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::random_led;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetSource(state, web_source::event, current_error, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_effect, state.effect);
-}
-
-TEST(WebPageDisplayStateTest, SetSourceToEffectKeepsEffect) {
-	const uint8_t brightness = 50;
-	const uint32_t now_ms = 7000;
-
-	const web_effect exp_effect = web_effect::growing;
-
-	const web_error current_error = web_error::ntp;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.effect = web_effect::growing;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetSource(state, web_source::effect, current_error, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_effect, state.effect);
-}
-
-TEST(WebPageDisplayStateTest, SetSourceToErrorStoresSeenError) {
-	const uint8_t brightness = 50;
-	const uint32_t now_ms = 7000;
-
-	const web_error exp_seen = web_error::ntp;
-
-	const web_error current_error = web_error::ntp;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.effect = web_effect::none;
-	state.seenError = web_error::wifi;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetSource(state, web_source::error, current_error, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seen, state.seenError);
-}
-
-TEST(WebPageDisplayStateTest, SetSourceToMeasDoesNotTouchSeenError) {
-	const uint8_t brightness = 50;
-	const uint32_t now_ms = 7000;
-
-	const web_error exp_seen = web_error::wifi;
-
-	const web_error current_error = web_error::ntp;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::none;
-	state.seenError = web_error::wifi;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetSource(state, web_source::meas, current_error, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seen, state.seenError);
-}
-
-TEST(WebPageDisplayStateTest, SetSourceToEffectDoesNotTouchSeenError) {
-	const uint8_t brightness = 50;
-	const uint32_t now_ms = 7000;
-
-	const web_error exp_seen = web_error::wifi;
-
-	const web_error current_error = web_error::ntp;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.effect = web_effect::none;
-	state.seenError = web_error::wifi;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetSource(state, web_source::effect, current_error, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seen, state.seenError);
-}
-
-// ---------------------------------------------------------------- SetEffect
-
-TEST(WebPageDisplayStateTest, SetEffectInEffectSourceBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffect(state, web_effect::snake, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectToNoneInEffectSourceBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::snake;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffect(state, web_effect::none, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectSameEffectReturnsFalse) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::snake;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffect(state, web_effect::snake, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectInMeasSourceStoresWithoutBump) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_effect exp_effect = web_effect::snake;
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffect(state, web_effect::snake, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_EQ(exp_effect, state.effect);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectInErrorSourceStoresWithoutBump) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_effect exp_effect = web_effect::snake;
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::error;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffect(state, web_effect::snake, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_EQ(exp_effect, state.effect);
-}
-
-// ---------------------------------------------------------------- SetEffectParam and SetStaticColor
-
-TEST(WebPageDisplayStateTest, SetEffectParamSnakeColorChangeBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_snake_params params = {0x112233, 200, 5};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::snake;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffectParam(state, params, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectParamSnakeMovePauseChangeBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_snake_params params = {0x99FF33, 300, 5};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::snake;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffectParam(state, params, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectParamSnakeTailLenChangeBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_snake_params params = {0x99FF33, 200, 6};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::snake;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffectParam(state, params, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectParamSnakeIdenticalReturnsFalse) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_snake_params params = {0x99FF33, 200, 5};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::snake;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffectParam(state, params, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectParamSnakeOtherEffectSelectedStoresWithoutBump) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_snake_params params = {0x112233, 200, 5};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::growing;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffectParam(state, params, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_EQ(params.color, state.snake.color);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectParamSnakeOtherSourceStoresWithoutBump) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_snake_params params = {0x112233, 200, 5};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.effect = web_effect::snake;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffectParam(state, params, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_EQ(params.color, state.snake.color);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectParamGrowingColorChangeBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_growing_params params = {0x112233, 200};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::growing;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffectParam(state, params, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectParamGrowingGrowPauseChangeBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_growing_params params = {0x00FFFF, 300};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::growing;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffectParam(state, params, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectParamGrowingIdenticalReturnsFalse) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_growing_params params = {0x00FFFF, 200};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::growing;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffectParam(state, params, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectParamGrowingOtherEffectSelectedStoresWithoutBump) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_growing_params params = {0x112233, 200};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::snake;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffectParam(state, params, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_EQ(params.color, state.growing.color);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectParamGrowingOtherSourceStoresWithoutBump) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_growing_params params = {0x112233, 200};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.effect = web_effect::growing;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffectParam(state, params, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_EQ(params.color, state.growing.color);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectParamRandomPauseChangeBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_random_params params = {300, 1000};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::random_led;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffectParam(state, params, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectParamRandomEndPauseChangeBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_random_params params = {200, 2000};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::random_led;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffectParam(state, params, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectParamRandomIdenticalReturnsFalse) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_random_params params = {200, 1000};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::random_led;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffectParam(state, params, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectParamRandomOtherEffectSelectedStoresWithoutBump) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_random_params params = {300, 1000};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::snake;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffectParam(state, params, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_EQ(params.pauseMs, state.randomLed.pauseMs);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectParamRandomOtherSourceStoresWithoutBump) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_random_params params = {300, 1000};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.effect = web_effect::random_led;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffectParam(state, params, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_EQ(params.pauseMs, state.randomLed.pauseMs);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectParamFadingColorChangeBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_fading_params params = {0x112233, 10, 100, 0, 5};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::fading;
-	state.seq = seq_before;
-	state.startMs = start_before;
+	std::string jsonOf(const display_shown &shown) {
+		web_display_state state;
+		HAQuDA_WebPictureBuild(shown, BRIGHT_PERCENT, NOW_MS, state);
+		char buf[WEB_DISPLAY_JSON_BUF_LEN];
+		if (HAQuDA_TranslateDisplayToJson(state, buf, sizeof(buf)) == 0) {
+			return "";
+		}
+		return buf;
+	}
 
-	bool res;
+	const std::string EFFECT_PREFIX = "{\"seq\":7,\"age\":4000,\"src\":\"effect\",\"bright\":35,";
+	const std::string MEAS_PREFIX = "{\"seq\":7,\"age\":4000,\"src\":\"meas\",\"bright\":35,";
 
-	res = HAQuDA_WebPictureSetEffectParam(state, params, now_ms);
+	std::string errorPrefix(const char *word) {
+		return std::string("{\"seq\":7,\"age\":4000,\"src\":\"error\",\"err\":\"") + word + "\",\"bright\":35,";
+	}
 
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectParamFadingFadePauseChangeBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_fading_params params = {0x00FFFF, 20, 100, 0, 5};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::fading;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffectParam(state, params, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectParamFadingStartBrightChangeBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_fading_params params = {0x00FFFF, 10, 90, 0, 5};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::fading;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffectParam(state, params, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectParamFadingStopBrightChangeBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_fading_params params = {0x00FFFF, 10, 100, 10, 5};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::fading;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffectParam(state, params, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectParamFadingStepChangeBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_fading_params params = {0x00FFFF, 10, 100, 0, 6};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::fading;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffectParam(state, params, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectParamFadingIdenticalReturnsFalse) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_fading_params params = {0x00FFFF, 10, 100, 0, 5};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::fading;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffectParam(state, params, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectParamFadingOtherEffectSelectedStoresWithoutBump) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_fading_params params = {0x112233, 10, 100, 0, 5};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::snake;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffectParam(state, params, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_EQ(params.color, state.fading.color);
-}
-
-TEST(WebPageDisplayStateTest, SetEffectParamFadingOtherSourceStoresWithoutBump) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_fading_params params = {0x112233, 10, 100, 0, 5};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.effect = web_effect::fading;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetEffectParam(state, params, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_EQ(params.color, state.fading.color);
-}
-
-TEST(WebPageDisplayStateTest, SetStaticColorChangeBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const uint32_t color = 0x112233;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::static_color;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetStaticColor(state, color, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetStaticColorIdenticalReturnsFalse) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t color = 0x01FF00;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::static_color;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetStaticColor(state, color, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetStaticColorOtherEffectSelectedStoresWithoutBump) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t color = 0x112233;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = web_effect::snake;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetStaticColor(state, color, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_EQ(color, state.staticColor);
-}
-
-TEST(WebPageDisplayStateTest, SetStaticColorOtherSourceStoresWithoutBump) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t color = 0x112233;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.effect = web_effect::static_color;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetStaticColor(state, color, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_EQ(color, state.staticColor);
-}
-
-// ---------------------------------------------------------------- SetLayout
-
-TEST(WebPageDisplayStateTest, SetLayoutNoneIsIgnored) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_meas_layout exp_layout = web_meas_layout::standard;
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::standard;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetLayout(state, web_meas_layout::none, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_EQ(exp_layout, state.layout);
-}
-
-TEST(WebPageDisplayStateTest, SetLayoutSameLayoutReturnsFalse) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::multi;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetLayout(state, web_meas_layout::multi, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetLayoutChangeInMeasSourceBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::standard;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetLayout(state, web_meas_layout::multi, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetLayoutFromNoneInMeasSourceBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetLayout(state, web_meas_layout::night, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetLayoutChangeInEffectSourceStoresWithoutBump) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_meas_layout exp_layout = web_meas_layout::night;
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.layout = web_meas_layout::standard;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetLayout(state, web_meas_layout::night, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_EQ(exp_layout, state.layout);
-}
-
-// ---------------------------------------------------------------- SetStandardKey
-
-TEST(WebPageDisplayStateTest, SetStandardKeyChangeInMeasStandardBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_key key = {web_meas_key::eco2, true};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::standard;
-	state.standardKey = {web_meas_key::temp, true};
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetStandardKey(state, key, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetStandardKeyChangeInMeasNightBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_key key = {web_meas_key::eco2, true};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::night;
-	state.standardKey = {web_meas_key::temp, true};
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetStandardKey(state, key, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetStandardKeyValidToInvalidBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_key key = {web_meas_key::temp, false};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::standard;
-	state.standardKey = {web_meas_key::temp, true};
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetStandardKey(state, key, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetStandardKeyInvalidToValidBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_key key = {web_meas_key::temp, true};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::standard;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetStandardKey(state, key, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetStandardKeyIdenticalReturnsFalse) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_key key = {web_meas_key::temp, true};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::standard;
-	state.standardKey = {web_meas_key::temp, true};
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetStandardKey(state, key, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetStandardKeyTwoInvalidKeysAreEqual) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_key key = {web_meas_key::humid, false};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::standard;
-	state.standardKey = {web_meas_key::total, false};
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetStandardKey(state, key, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetStandardKeyInMeasMultiStoresWithoutBump) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_meas_key exp_key = web_meas_key::eco2;
-
-	const web_key key = {web_meas_key::eco2, true};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::multi;
-	state.standardKey = {web_meas_key::temp, true};
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetStandardKey(state, key, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_EQ(exp_key, state.standardKey.key);
-}
-
-TEST(WebPageDisplayStateTest, SetStandardKeyInMeasLayoutNoneStoresWithoutBump) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_meas_key exp_key = web_meas_key::eco2;
-
-	const web_key key = {web_meas_key::eco2, true};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.standardKey = {web_meas_key::temp, true};
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetStandardKey(state, key, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_EQ(exp_key, state.standardKey.key);
-}
-
-TEST(WebPageDisplayStateTest, SetStandardKeyOutsideMeasStoresWithoutBump) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_meas_key exp_key = web_meas_key::eco2;
-
-	const web_key key = {web_meas_key::eco2, true};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.layout = web_meas_layout::standard;
-	state.standardKey = {web_meas_key::temp, true};
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetStandardKey(state, key, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_EQ(exp_key, state.standardKey.key);
-}
-
-// ---------------------------------------------------------------- SetMultiKeys
-
-TEST(WebPageDisplayStateTest, SetMultiKeysFirstKeyChangeBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_key keys[3] = {{web_meas_key::humid, true}, {web_meas_key::eco2, true}, {web_meas_key::pm25, true}};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::multi;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetMultiKeys(state, keys, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetMultiKeysSecondKeyChangeBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_key keys[3] = {{web_meas_key::temp, true}, {web_meas_key::tvoc, true}, {web_meas_key::pm25, true}};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::multi;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetMultiKeys(state, keys, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetMultiKeysThirdKeyChangeBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_key keys[3] = {{web_meas_key::temp, true}, {web_meas_key::eco2, true}, {web_meas_key::total, true}};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::multi;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetMultiKeys(state, keys, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetMultiKeysSecondKeyBecomesMissingBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_key keys[3] = {{web_meas_key::temp, true}, {web_meas_key::eco2, false}, {web_meas_key::pm25, true}};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::multi;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetMultiKeys(state, keys, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetMultiKeysIdenticalReturnsFalse) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_key keys[3] = {{web_meas_key::temp, true}, {web_meas_key::eco2, true}, {web_meas_key::pm25, true}};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::multi;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetMultiKeys(state, keys, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetMultiKeysInMeasStandardStoresWithoutBump) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_meas_key exp_first = web_meas_key::humid;
-	const web_meas_key exp_second = web_meas_key::tvoc;
-	const web_meas_key exp_third = web_meas_key::total;
-
-	const web_key keys[3] = {{web_meas_key::humid, true}, {web_meas_key::tvoc, true}, {web_meas_key::total, true}};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::standard;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetMultiKeys(state, keys, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_EQ(exp_first, state.multiKeys[0].key);
-	EXPECT_EQ(exp_second, state.multiKeys[1].key);
-	EXPECT_EQ(exp_third, state.multiKeys[2].key);
-}
-
-TEST(WebPageDisplayStateTest, SetMultiKeysOutsideMeasStoresWithoutBump) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_meas_key exp_first = web_meas_key::humid;
-	const web_meas_key exp_second = web_meas_key::tvoc;
-	const web_meas_key exp_third = web_meas_key::total;
-
-	const web_key keys[3] = {{web_meas_key::humid, true}, {web_meas_key::tvoc, true}, {web_meas_key::total, true}};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.layout = web_meas_layout::multi;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetMultiKeys(state, keys, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_EQ(exp_first, state.multiKeys[0].key);
-	EXPECT_EQ(exp_second, state.multiKeys[1].key);
-	EXPECT_EQ(exp_third, state.multiKeys[2].key);
-}
-
-// ---------------------------------------------------------------- SetNightWindow
-
-TEST(WebPageDisplayStateTest, SetNightWindowStartChangeBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const uint16_t start = 22 * 60 + 15;
-	const uint16_t finish = 9 * 60;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::night;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetNightWindow(state, start, finish, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetNightWindowFinishChangeBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const uint16_t start = 21 * 60;
-	const uint16_t finish = 8 * 60 + 45;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::night;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetNightWindow(state, start, finish, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetNightWindowIdenticalReturnsFalse) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint16_t start = 21 * 60;
-	const uint16_t finish = 9 * 60;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::night;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetNightWindow(state, start, finish, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, SetNightWindowInMeasStandardStoresWithoutBump) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint16_t start = 22 * 60;
-	const uint16_t finish = 8 * 60 + 30;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::standard;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetNightWindow(state, start, finish, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_EQ(start, state.nightStart);
-	EXPECT_EQ(finish, state.nightFinish);
-}
-
-TEST(WebPageDisplayStateTest, SetNightWindowOutsideMeasStoresWithoutBump) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint16_t start = 22 * 60;
-	const uint16_t finish = 8 * 60 + 30;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.layout = web_meas_layout::night;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetNightWindow(state, start, finish, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_EQ(start, state.nightStart);
-	EXPECT_EQ(finish, state.nightFinish);
-}
-
-// ---------------------------------------------------------------- CheckError
-
-TEST(WebPageDisplayStateTest, CheckErrorDifferentKindInErrorSourceBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_error current_error = web_error::ntp;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::error;
-	state.seenError = web_error::wifi;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureCheckError(state, current_error, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
+} // namespace
 
-TEST(WebPageDisplayStateTest, CheckErrorKindClearedInErrorSourceBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
+// ---------------------------------------------------------------- WiFi and start pictures
 
-	const uint32_t exp_seq = 5;
+TEST(WebPageDisplayStateTest, WifiJoinedIsAGreenStaticEffect) {
+	const std::string exp_json = EFFECT_PREFIX + "\"fx\":\"static\",\"color\":\"#01ff00\"}";
 
-	const web_error current_error = web_error::none;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::error;
-	state.seenError = web_error::wifi;
-	state.seq = seq_before;
-	state.startMs = start_before;
+	std::string res;
 
-	bool res;
+	res = jsonOf(itemPicture(display_source::event, HAQuDA_ItemOf(display_event::wifiJoined)));
 
-	res = HAQuDA_WebPictureCheckError(state, current_error, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, CheckErrorSameKindReturnsFalse) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_error current_error = web_error::ntp;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::error;
-	state.seenError = web_error::ntp;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureCheckError(state, current_error, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-}
-
-TEST(WebPageDisplayStateTest, CheckErrorOutsideErrorSourceReturnsFalseAndKeepsSeenError) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_error exp_seen = web_error::wifi;
-
-	const web_error current_error = web_error::ntp;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.seenError = web_error::wifi;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureCheckError(state, current_error, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_EQ(exp_seen, state.seenError);
-}
-
-TEST(WebPageDisplayStateTest, CheckErrorDifferentKindUpdatesSeenError) {
-	const uint8_t brightness = 50;
-	const uint32_t now_ms = 7000;
-
-	const web_error exp_seen = web_error::ntp;
-
-	const web_error current_error = web_error::ntp;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::error;
-	state.seenError = web_error::wifi;
-
-	bool res;
-
-	res = HAQuDA_WebPictureCheckError(state, current_error, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seen, state.seenError);
+	EXPECT_EQ(exp_json, res);
 }
 
-// ---------------------------------------------------------------- SetBrightness
+TEST(WebPageDisplayStateTest, WifiLostIsARedStaticEffectWithoutAnErrorWord) {
+	const std::string exp_json = EFFECT_PREFIX + "\"fx\":\"static\",\"color\":\"#ff0000\"}";
 
-TEST(WebPageDisplayStateTest, SetBrightnessStoresValue) {
-	const uint8_t start_brightness = 50;
-	const uint8_t new_brightness = 80;
+	std::string res;
 
-	const uint8_t exp_brightness = 80;
+	res = jsonOf(itemPicture(display_source::error, HAQuDA_ItemOf(display_error::wifiLost)));
 
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, start_brightness);
-
-	HAQuDA_WebPictureSetBrightness(state, new_brightness);
-
-	EXPECT_EQ(exp_brightness, state.brightPercent);
+	EXPECT_EQ(exp_json, res);
 }
 
-TEST(WebPageDisplayStateTest, SetBrightnessDoesNotTouchSeqOrStart) {
-	const uint8_t start_brightness = 50;
-	const uint8_t new_brightness = 80;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
+TEST(WebPageDisplayStateTest, WifiReconnectingIsALimeSnake) {
+	const std::string exp_json = EFFECT_PREFIX + "\"fx\":\"snake\",\"color\":\"#99ff33\",\"dark\":200,\"step\":904,\"tail\":1}";
 
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, start_brightness);
-	state.seq = seq_before;
-	state.startMs = start_before;
+	std::string res;
 
-	HAQuDA_WebPictureSetBrightness(state, new_brightness);
+	res = jsonOf(itemPicture(display_source::event, HAQuDA_ItemOf(display_event::wifiReconnecting)));
 
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
+	EXPECT_EQ(exp_json, res);
 }
-
-// ---------------------------------------------------------------- Build
-
-TEST(WebPageDisplayStateTest, BuildAgeIsNowMinusStart) {
-	const uint8_t brightness = 50;
-	const web_error current_error = web_error::none;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	const uint32_t now_ms = 1500;
-	const uint32_t start_ms = 1000;
 
-	const uint32_t exp_age = 500;
+TEST(WebPageDisplayStateTest, ApRunningIsAnAquaFade) {
+	const std::string exp_json
+		= EFFECT_PREFIX + "\"fx\":\"fading\",\"color\":\"#00ffff\",\"from\":100,\"to\":0,\"steps\":20,\"dark\":400,\"first\":410,\"step\":210,\"end\":100}";
 
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.startMs = start_ms;
-	web_display_state out{};
+	std::string res;
 
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
+	res = jsonOf(itemPicture(display_source::event, HAQuDA_ItemOf(display_event::apRunning)));
 
-	EXPECT_EQ(exp_age, out.ageMs);
+	EXPECT_EQ(exp_json, res);
 }
 
-TEST(WebPageDisplayStateTest, BuildAgeSurvivesMillisWrap) {
-	const uint8_t brightness = 50;
-	const web_error current_error = web_error::none;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	const uint32_t now_ms = 100;
-	const uint32_t start_ms = UINT32_MAX - 99;
+TEST(WebPageDisplayStateTest, TheBootSnakeIsAnEffect) {
+	const std::string exp_json = EFFECT_PREFIX + "\"fx\":\"snake\",\"color\":\"#99ff33\",\"dark\":200,\"step\":904,\"tail\":1}";
 
-	const uint32_t exp_age = 200;
+	std::string res;
 
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.startMs = start_ms;
-	web_display_state out{};
+	res = jsonOf(itemPicture(display_source::event, HAQuDA_ItemOf(display_event::bootSnake)));
 
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
-
-	EXPECT_EQ(exp_age, out.ageMs);
+	EXPECT_EQ(exp_json, res);
 }
-
-TEST(WebPageDisplayStateTest, BuildAgeIsZeroAtStartTime) {
-	const uint8_t brightness = 50;
-	const web_error current_error = web_error::none;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	const uint32_t now_ms = 1000;
-	const uint32_t start_ms = 1000;
-
-	const uint32_t exp_age = 0;
 
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.startMs = start_ms;
-	web_display_state out{};
+TEST(WebPageDisplayStateTest, TheWaitingPictureIsAnEffectLikeItsItem) {
+	const std::string exp_json
+		= EFFECT_PREFIX + "\"fx\":\"fading\",\"color\":\"#00ffff\",\"from\":100,\"to\":0,\"steps\":20,\"dark\":400,\"first\":410,\"step\":210,\"end\":100}";
 
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
-
-	EXPECT_EQ(exp_age, out.ageMs);
-}
-
-TEST(WebPageDisplayStateTest, BuildCopiesSeqSourceAndBrightness) {
-	const uint8_t brightness = 50;
-	const web_error current_error = web_error::none;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 42;
-	const web_source exp_source = web_source::meas;
-	const uint8_t exp_brightness = 50;
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.seq = exp_seq;
-	state.source = web_source::meas;
-	web_display_state out{};
-
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
-
-	EXPECT_EQ(exp_seq, out.seq);
-	EXPECT_EQ(exp_source, out.source);
-	EXPECT_EQ(exp_brightness, out.brightPercent);
-}
+	std::string res;
 
-TEST(WebPageDisplayStateTest, BuildEffectSourceCopiesEffectAndAllParams) {
-	const uint8_t brightness = 50;
-	const web_error current_error = web_error::none;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	const uint32_t now_ms = 7000;
-
-	const web_effect exp_effect = web_effect::fading;
-	const web_snake_params exp_snake = {0x111111, 301, 7};
-	const web_growing_params exp_growing = {0x222222, 302};
-	const web_random_params exp_random = {303, 304};
-	const web_fading_params exp_fading = {0x333333, 305, 90, 10, 3};
-	const uint32_t exp_static = 0x444444;
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.effect = exp_effect;
-	state.snake = exp_snake;
-	state.growing = exp_growing;
-	state.randomLed = exp_random;
-	state.fading = exp_fading;
-	state.staticColor = exp_static;
-	web_display_state out{};
-
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
-
-	EXPECT_EQ(exp_effect, out.effect);
-	EXPECT_EQ(exp_snake.color, out.snake.color);
-	EXPECT_EQ(exp_snake.movePauseMs, out.snake.movePauseMs);
-	EXPECT_EQ(exp_snake.tailLen, out.snake.tailLen);
-	EXPECT_EQ(exp_growing.color, out.growing.color);
-	EXPECT_EQ(exp_growing.growPauseMs, out.growing.growPauseMs);
-	EXPECT_EQ(exp_random.pauseMs, out.randomLed.pauseMs);
-	EXPECT_EQ(exp_random.endPauseMs, out.randomLed.endPauseMs);
-	EXPECT_EQ(exp_fading.color, out.fading.color);
-	EXPECT_EQ(exp_fading.fadePauseMs, out.fading.fadePauseMs);
-	EXPECT_EQ(exp_fading.startBright, out.fading.startBright);
-	EXPECT_EQ(exp_fading.stopBright, out.fading.stopBright);
-	EXPECT_EQ(exp_fading.step, out.fading.step);
-	EXPECT_EQ(exp_static, out.staticColor);
-}
+	res = jsonOf(itemPicture(display_source::waiting, HAQuDA_ItemOf(display_event::apRunning)));
 
-TEST(WebPageDisplayStateTest, BuildEffectSourceHasNoErrorOrLayout) {
-	const uint8_t brightness = 50;
-	const web_error current_error = web_error::wifi;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	const uint32_t now_ms = 7000;
-
-	const web_error exp_error = web_error::none;
-	const web_meas_layout exp_layout = web_meas_layout::none;
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.layout = web_meas_layout::multi;
-	web_display_state out{};
-
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
-
-	EXPECT_EQ(exp_error, out.error);
-	EXPECT_EQ(exp_layout, out.layout);
+	EXPECT_EQ(exp_json, res);
 }
 
-TEST(WebPageDisplayStateTest, BuildErrorSourceTakesCurrentErrorNotSeenError) {
-	const uint8_t brightness = 50;
-	const web_error current_error = web_error::ntp;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	const uint32_t now_ms = 7000;
+// ---------------------------------------------------------------- error pictures
 
-	const web_error exp_error = web_error::ntp;
+TEST(WebPageDisplayStateTest, WifiConnectFailedIsARedGrowingWithItsWord) {
+	const std::string exp_json = errorPrefix("wifi") + "\"fx\":\"growing\",\"color\":\"#ff0000\",\"dark\":200,\"step\":200,\"end\":100}";
 
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::error;
-	state.seenError = web_error::wifi;
-	web_display_state out{};
+	std::string res;
 
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
+	res = jsonOf(itemPicture(display_source::error, HAQuDA_ItemOf(display_error::wifiConnectFailed)));
 
-	EXPECT_EQ(exp_error, out.error);
+	EXPECT_EQ(exp_json, res);
 }
-
-TEST(WebPageDisplayStateTest, BuildErrorSourceHasNoEffect) {
-	const uint8_t brightness = 50;
-	const web_error current_error = web_error::ntp;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	const uint32_t now_ms = 7000;
-
-	const web_effect exp_effect = web_effect::none;
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::error;
-	state.effect = web_effect::snake;
-	web_display_state out{};
 
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
+TEST(WebPageDisplayStateTest, ApFailedIsARedSnakeWithItsWord) {
+	const std::string exp_json = errorPrefix("ap") + "\"fx\":\"snake\",\"color\":\"#ff0000\",\"dark\":200,\"step\":454,\"tail\":1}";
 
-	EXPECT_EQ(exp_effect, out.effect);
-}
-
-TEST(WebPageDisplayStateTest, BuildEventSourceIsBare) {
-	const uint8_t brightness = 50;
-	const web_error current_error = web_error::ntp;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	const uint32_t now_ms = 7000;
-
-	const web_effect exp_effect = web_effect::none;
-	const web_error exp_error = web_error::none;
-	const web_meas_layout exp_layout = web_meas_layout::none;
-	const uint8_t exp_night_lit = 0;
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::event;
-	state.effect = web_effect::snake;
-	state.layout = web_meas_layout::multi;
-	web_display_state out{};
-
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
-
-	EXPECT_EQ(exp_effect, out.effect);
-	EXPECT_EQ(exp_error, out.error);
-	EXPECT_EQ(exp_layout, out.layout);
-	EXPECT_EQ(exp_night_lit, out.nightLit);
-}
+	std::string res;
 
-TEST(WebPageDisplayStateTest, BuildNoneSourceIsBare) {
-	const uint8_t brightness = 50;
-	const web_error current_error = web_error::ntp;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	const uint32_t now_ms = 7000;
-
-	const web_effect exp_effect = web_effect::none;
-	const web_error exp_error = web_error::none;
-	const web_meas_layout exp_layout = web_meas_layout::none;
-	const uint8_t exp_night_lit = 0;
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::none;
-	state.effect = web_effect::snake;
-	state.layout = web_meas_layout::multi;
-	web_display_state out{};
-
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
-
-	EXPECT_EQ(exp_effect, out.effect);
-	EXPECT_EQ(exp_error, out.error);
-	EXPECT_EQ(exp_layout, out.layout);
-	EXPECT_EQ(exp_night_lit, out.nightLit);
-}
+	res = jsonOf(itemPicture(display_source::error, HAQuDA_ItemOf(display_error::apFailed)));
 
-TEST(WebPageDisplayStateTest, BuildMeasStandardUsesStandardKey) {
-	const uint8_t brightness = 50;
-	const web_error current_error = web_error::none;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	const uint32_t now_ms = 7000;
-
-	const web_meas_layout exp_layout = web_meas_layout::standard;
-	const web_meas_key exp_key = web_meas_key::pm25;
-	const web_meas_key exp_unused = web_meas_key::total;
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::standard;
-	state.standardKey = {web_meas_key::pm25, true};
-	state.multiKeys[1] = {web_meas_key::humid, true};
-	web_display_state out{};
-
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
-
-	EXPECT_EQ(exp_layout, out.layout);
-	EXPECT_EQ(exp_key, out.keys[0]);
-	EXPECT_EQ(exp_unused, out.keys[1]);
-	EXPECT_EQ(exp_unused, out.keys[2]);
+	EXPECT_EQ(exp_json, res);
 }
 
-TEST(WebPageDisplayStateTest, BuildMeasStandardMissingKeyMakesLayoutNone) {
-	const uint8_t brightness = 50;
-	const web_error current_error = web_error::none;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	const uint32_t now_ms = 7000;
+TEST(WebPageDisplayStateTest, FsFailedIsARedFadeWithItsWord) {
+	const std::string exp_json
+		= errorPrefix("fs") + "\"fx\":\"fading\",\"color\":\"#ff0000\",\"from\":100,\"to\":0,\"steps\":20,\"dark\":400,\"first\":410,\"step\":210,\"end\":100}";
 
-	const web_meas_layout exp_layout = web_meas_layout::none;
+	std::string res;
 
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::standard;
-	state.standardKey = {web_meas_key::pm25, false};
-	web_display_state out{};
+	res = jsonOf(itemPicture(display_source::error, HAQuDA_ItemOf(display_error::fsFailed)));
 
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
-
-	EXPECT_EQ(exp_layout, out.layout);
-}
-
-TEST(WebPageDisplayStateTest, BuildMeasNightUsesStandardKey) {
-	const uint8_t brightness = 50;
-	const web_error current_error = web_error::none;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	const uint32_t now_ms = 7000;
-
-	const web_meas_layout exp_layout = web_meas_layout::night;
-	const web_meas_key exp_key = web_meas_key::pm25;
-	const web_meas_key exp_unused = web_meas_key::total;
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::night;
-	state.standardKey = {web_meas_key::pm25, true};
-	state.multiKeys[1] = {web_meas_key::humid, true};
-	web_display_state out{};
-
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
-
-	EXPECT_EQ(exp_layout, out.layout);
-	EXPECT_EQ(exp_key, out.keys[0]);
-	EXPECT_EQ(exp_unused, out.keys[1]);
-	EXPECT_EQ(exp_unused, out.keys[2]);
+	EXPECT_EQ(exp_json, res);
 }
 
-TEST(WebPageDisplayStateTest, BuildMeasNightMissingKeyMakesLayoutNone) {
-	const uint8_t brightness = 50;
-	const web_error current_error = web_error::none;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	const uint32_t now_ms = 7000;
+TEST(WebPageDisplayStateTest, SensorsFailedIsRandomPixelsWithItsSeed) {
+	const std::string exp_json = errorPrefix("sensors") + "\"fx\":\"random\",\"dark\":200,\"step\":225,\"end\":600,\"seed\":123456}";
 
-	const web_meas_layout exp_layout = web_meas_layout::none;
+	std::string res;
 
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::night;
-	state.standardKey = {web_meas_key::pm25, false};
-	web_display_state out{};
+	res = jsonOf(itemPicture(display_source::error, HAQuDA_ItemOf(display_error::sensorsFailed), 123456));
 
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
-
-	EXPECT_EQ(exp_layout, out.layout);
-}
-
-TEST(WebPageDisplayStateTest, BuildMeasMultiCopiesAllThreeKeys) {
-	const uint8_t brightness = 50;
-	const web_error current_error = web_error::none;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	const uint32_t now_ms = 7000;
-
-	const web_meas_layout exp_layout = web_meas_layout::multi;
-	const web_meas_key exp_keys[3] = {web_meas_key::humid, web_meas_key::tvoc, web_meas_key::total};
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::multi;
-	state.multiKeys[0] = {exp_keys[0], true};
-	state.multiKeys[1] = {exp_keys[1], true};
-	state.multiKeys[2] = {exp_keys[2], true};
-	web_display_state out{};
-
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
-
-	EXPECT_EQ(exp_layout, out.layout);
-	EXPECT_EQ(exp_keys[0], out.keys[0]);
-	EXPECT_EQ(exp_keys[1], out.keys[1]);
-	EXPECT_EQ(exp_keys[2], out.keys[2]);
+	EXPECT_EQ(exp_json, res);
 }
-
-TEST(WebPageDisplayStateTest, BuildMeasMultiFirstKeyMissingMakesLayoutNone) {
-	const uint8_t brightness = 50;
-	const web_error current_error = web_error::none;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	const uint32_t now_ms = 7000;
 
-	const web_meas_layout exp_layout = web_meas_layout::none;
+TEST(WebPageDisplayStateTest, NtpFailedIsAYellowFadeUp) {
+	const std::string exp_json
+		= errorPrefix("ntp")
+		  + "\"fx\":\"fading\",\"color\":\"#ffff00\",\"from\":0,\"to\":100,\"steps\":10,\"dark\":400,\"first\":410,\"step\":210,\"end\":100}";
 
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::multi;
-	state.multiKeys[0].valid = false;
-	web_display_state out{};
+	std::string res;
 
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
+	res = jsonOf(itemPicture(display_source::error, HAQuDA_ItemOf(display_error::ntpFailed)));
 
-	EXPECT_EQ(exp_layout, out.layout);
+	EXPECT_EQ(exp_json, res);
 }
 
-TEST(WebPageDisplayStateTest, BuildMeasMultiSecondKeyMissingMakesLayoutNone) {
-	const uint8_t brightness = 50;
-	const web_error current_error = web_error::none;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	const uint32_t now_ms = 7000;
+TEST(WebPageDisplayStateTest, ARotationOfTwoErrorsReportsEachWordInTurn) {
+	display_shown sensors = itemPicture(display_source::error, HAQuDA_ItemOf(display_error::sensorsFailed), 5);
+	display_shown ntp = itemPicture(display_source::error, HAQuDA_ItemOf(display_error::ntpFailed));
+	ntp.seq = 8;
+	ntp.startMs = 4000;
+	const std::string exp_sensors = errorPrefix("sensors") + "\"fx\":\"random\",\"dark\":200,\"step\":225,\"end\":600,\"seed\":5}";
+	const std::string exp_ntp
+		= "{\"seq\":8,\"age\":1000,\"src\":\"error\",\"err\":\"ntp\",\"bright\":35,\"fx\":\"fading\",\"color\":\"#ffff00\",\"from\":0,\"to\":100,\"steps\":10,"
+		  "\"dark\":400,\"first\":410,\"step\":210,\"end\":100}";
 
-	const web_meas_layout exp_layout = web_meas_layout::none;
+	std::string resSensors = jsonOf(sensors);
+	std::string resNtp = jsonOf(ntp);
 
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::multi;
-	state.multiKeys[1].valid = false;
-	web_display_state out{};
-
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
-
-	EXPECT_EQ(exp_layout, out.layout);
+	EXPECT_EQ(exp_sensors, resSensors);
+	EXPECT_EQ(exp_ntp, resNtp);
 }
-
-TEST(WebPageDisplayStateTest, BuildMeasMultiThirdKeyMissingMakesLayoutNone) {
-	const uint8_t brightness = 50;
-	const web_error current_error = web_error::none;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	const uint32_t now_ms = 7000;
-
-	const web_meas_layout exp_layout = web_meas_layout::none;
 
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::multi;
-	state.multiKeys[2].valid = false;
-	web_display_state out{};
+TEST(WebPageDisplayStateTest, EveryCatalogItemIsAPictureNotAHold) {
+	for (display_item item = 0; item < DISPLAY_ITEM_COUNT; item++) {
+		const display_class cls = HAQuDA_GetDisplayEntry(item)->cls;
+		const display_source source = (cls == display_class::event) ? display_source::event : display_source::error;
 
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
+		const std::string res = jsonOf(itemPicture(source, item));
 
-	EXPECT_EQ(exp_layout, out.layout);
+		EXPECT_FALSE(res.empty()) << HAQuDA_DisplayItemName(item);
+		EXPECT_EQ(std::string::npos, res.find("hold")) << HAQuDA_DisplayItemName(item);
+	}
 }
 
-TEST(WebPageDisplayStateTest, BuildMeasLayoutNoneStaysNone) {
-	const uint8_t brightness = 50;
-	const web_error current_error = web_error::none;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	const uint32_t now_ms = 7000;
+// ---------------------------------------------------------------- solid light and off, nothing shown
 
-	const web_meas_layout exp_layout = web_meas_layout::none;
+TEST(WebPageDisplayStateTest, SolidLightIsAStaticEffectOfItsColour) {
+	const std::string exp_json = EFFECT_PREFIX + "\"fx\":\"static\",\"color\":\"#ffb46b\"}";
 
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	web_display_state out{};
+	std::string res;
 
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
+	res = jsonOf(solidPicture(0xFFB46B));
 
-	EXPECT_EQ(exp_layout, out.layout);
+	EXPECT_EQ(exp_json, res);
 }
 
-TEST(WebPageDisplayStateTest, BuildMeasSourceHasNoEffectOrError) {
-	const uint8_t brightness = 50;
-	const web_error current_error = web_error::ntp;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	const uint32_t now_ms = 7000;
-
-	const web_effect exp_effect = web_effect::none;
-	const web_error exp_error = web_error::none;
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::standard;
-	state.effect = web_effect::snake;
-	web_display_state out{};
-
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
-
-	EXPECT_EQ(exp_effect, out.effect);
-	EXPECT_EQ(exp_error, out.error);
-}
-
-TEST(WebPageDisplayStateTest, BuildMeasTimeUnknownGivesNoLitCells) {
-	const uint8_t brightness = 50;
-	const web_error current_error = web_error::none;
-	const bool time_known = false;
-	const uint16_t minute_of_day = 23 * 60;
-	const uint32_t now_ms = 7000;
+TEST(WebPageDisplayStateTest, SolidOffIsABlackStaticEffect) {
+	const std::string exp_json = EFFECT_PREFIX + "\"fx\":\"static\",\"color\":\"#000000\"}";
 
-	const uint8_t exp_night_lit = 0;
+	std::string res;
 
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::night;
-	state.standardKey = {web_meas_key::pm25, true};
-	web_display_state out{};
+	res = jsonOf(solidPicture(0));
 
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
-
-	EXPECT_EQ(exp_night_lit, out.nightLit);
+	EXPECT_EQ(exp_json, res);
 }
-
-TEST(WebPageDisplayStateTest, BuildMeasTimeKnownUsesDefaultNightWindow) {
-	const uint8_t brightness = 50;
-	const web_error current_error = web_error::none;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60; // 2 h into the 12 h window 21:00..09:00
-	const uint32_t now_ms = 7000;
 
-	const uint8_t exp_night_lit = 3;
+TEST(WebPageDisplayStateTest, NothingShownYetHoldsTheLastFrame) {
+	const std::string exp_json = "{\"seq\":0,\"age\":4000,\"src\":\"none\",\"bright\":35,\"fx\":\"hold\"}";
+	display_shown shown = {};
+	shown.startMs = START_MS;
+	shown.item = DISPLAY_ITEM_NONE;
 
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::night;
-	state.standardKey = {web_meas_key::pm25, true};
-	web_display_state out{};
+	std::string res;
 
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
+	res = jsonOf(shown);
 
-	EXPECT_EQ(exp_night_lit, out.nightLit);
+	EXPECT_EQ(exp_json, res);
 }
 
-TEST(WebPageDisplayStateTest, BuildMeasTimeKnownUsesStoredNightWindow) {
-	const uint8_t brightness = 50;
-	const web_error current_error = web_error::none;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 5 * 60; // 240 of the 300 minutes of 01:00..06:00
-	const uint32_t now_ms = 7000;
-
-	const uint8_t exp_night_lit = 15;
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::night;
-	state.standardKey = {web_meas_key::pm25, true};
-	state.nightStart = 1 * 60;
-	state.nightFinish = 6 * 60;
-	web_display_state out{};
-
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
-
-	EXPECT_EQ(exp_night_lit, out.nightLit);
-}
-
-TEST(WebPageDisplayStateTest, BuildMeasTimeOutsideWindowLightsAllCells) {
-	const uint8_t brightness = 50;
-	const web_error current_error = web_error::none;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 15 * 60;
-	const uint32_t now_ms = 7000;
-
-	const uint8_t exp_night_lit = 18;
+// ---------------------------------------------------------------- measurement pictures
 
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::night;
-	state.standardKey = {web_meas_key::pm25, true};
-	web_display_state out{};
+TEST(WebPageDisplayStateTest, StandardMeasShowsItsKeyAndColour) {
+	const std::string exp_json = MEAS_PREFIX + "\"fx\":\"meas\",\"layout\":\"standard\",\"keys\":[\"temp\"],\"colors\":[\"#00ff00\"]}";
+	display_shown shown = measPicture(anim_id::measStandard, true);
+	shown.keys[0] = temp;
+	shown.colorCount = 1;
+	shown.colors[0] = rgb_color{0, 150, 0};
 
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
+	std::string res;
 
-	EXPECT_EQ(exp_night_lit, out.nightLit);
-}
+	res = jsonOf(shown);
 
-TEST(WebPageDisplayStateTest, BuildResetsStaleOutput) {
-	const uint8_t brightness = 50;
-	const web_error current_error = web_error::none;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	const uint32_t now_ms = 7000;
-	const uint8_t dirty_byte = 0xFF;
-
-	const uint32_t exp_zero = 0;
-	const web_error exp_error = web_error::none;
-	const web_effect exp_effect = web_effect::none;
-	const web_meas_layout exp_layout = web_meas_layout::none;
-	const web_meas_key exp_key = web_meas_key::total;
-	const uint8_t exp_night_lit = 0;
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::event;
-	web_display_state out;
-	std::memset(&out, dirty_byte, sizeof(out));
-
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
-
-	EXPECT_EQ(exp_error, out.error);
-	EXPECT_EQ(exp_effect, out.effect);
-	EXPECT_EQ(exp_layout, out.layout);
-	EXPECT_EQ(exp_key, out.keys[0]);
-	EXPECT_EQ(exp_key, out.keys[1]);
-	EXPECT_EQ(exp_key, out.keys[2]);
-	EXPECT_EQ(exp_night_lit, out.nightLit);
-	EXPECT_EQ(exp_zero, out.snake.color);
-	EXPECT_EQ(exp_zero, out.growing.color);
-	EXPECT_EQ(exp_zero, out.fading.color);
-	EXPECT_EQ(exp_zero, out.staticColor);
+	EXPECT_EQ(exp_json, res);
 }
 
-// ---------------------------------------------------------------- SetMeasDrawn
-
-TEST(WebPageDisplayStateTest, SetMeasDrawnIgnoredForEffectSource) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_meas_layout layout = web_meas_layout::standard;
-	const uint32_t colors[3] = {0x112233, 0x445566, 0x778899};
-	const uint32_t white_color = 0x808080;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.layout = web_meas_layout::standard;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetMeasDrawn(state, layout, colors, white_color, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_FALSE(state.measDrawn);
-	EXPECT_EQ(0u, state.measColors[0]);
-	EXPECT_EQ(0u, state.measWhiteColor);
-}
+TEST(WebPageDisplayStateTest, TotalMeasIsTheStandardLayoutWithTheTotalKey) {
+	const std::string exp_json = MEAS_PREFIX + "\"fx\":\"meas\",\"layout\":\"standard\",\"keys\":[\"total\"],\"colors\":[\"#ff0000\"]}";
+	display_shown shown = measPicture(anim_id::measTotal, true);
+	shown.keys[0] = humid;
+	shown.colorCount = 1;
+	shown.colors[0] = rgb_color{150, 0, 0};
 
-TEST(WebPageDisplayStateTest, SetMeasDrawnIgnoredForErrorSource) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_meas_layout layout = web_meas_layout::standard;
-	const uint32_t colors[3] = {0x112233, 0x445566, 0x778899};
-	const uint32_t white_color = 0x808080;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::error;
-	state.layout = web_meas_layout::standard;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetMeasDrawn(state, layout, colors, white_color, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_FALSE(state.measDrawn);
-	EXPECT_EQ(0u, state.measColors[0]);
-	EXPECT_EQ(0u, state.measWhiteColor);
-}
+	std::string res;
 
-TEST(WebPageDisplayStateTest, SetMeasDrawnIgnoredForNoneSource) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_meas_layout layout = web_meas_layout::standard;
-	const uint32_t colors[3] = {0x112233, 0x445566, 0x778899};
-	const uint32_t white_color = 0x808080;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::none;
-	state.layout = web_meas_layout::standard;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetMeasDrawn(state, layout, colors, white_color, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_FALSE(state.measDrawn);
-	EXPECT_EQ(0u, state.measColors[0]);
-	EXPECT_EQ(0u, state.measWhiteColor);
-}
+	res = jsonOf(shown);
 
-TEST(WebPageDisplayStateTest, SetMeasDrawnIgnoredForLayoutMismatch) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_meas_layout layout = web_meas_layout::multi;
-	const uint32_t colors[3] = {0x112233, 0x445566, 0x778899};
-	const uint32_t white_color = 0x808080;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::standard;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetMeasDrawn(state, layout, colors, white_color, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_FALSE(state.measDrawn);
-	EXPECT_EQ(0u, state.measColors[0]);
-	EXPECT_EQ(0u, state.measWhiteColor);
+	EXPECT_EQ(exp_json, res);
 }
 
-TEST(WebPageDisplayStateTest, SetMeasDrawnIgnoredForNullColors) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_meas_layout layout = web_meas_layout::standard;
-	const uint32_t *colors = nullptr;
-	const uint32_t white_color = 0x808080;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::standard;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetMeasDrawn(state, layout, colors, white_color, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_FALSE(state.measDrawn);
-	EXPECT_EQ(0u, state.measWhiteColor);
-}
+TEST(WebPageDisplayStateTest, MultiMeasShowsThreeKeysAndColoursInOrder) {
+	const std::string exp_json
+		= MEAS_PREFIX + "\"fx\":\"meas\",\"layout\":\"multi\",\"keys\":[\"temp\",\"eco2\",\"pm25\"],\"colors\":[\"#ff0000\",\"#00ff00\",\"#0000ff\"]}";
+	display_shown shown = measPicture(anim_id::measMulti, true);
+	shown.keys[0] = temp;
+	shown.keys[1] = eCO2;
+	shown.keys[2] = PM2_5;
+	shown.colorCount = 3;
+	shown.colors[0] = rgb_color{150, 0, 0};
+	shown.colors[1] = rgb_color{0, 150, 0};
+	shown.colors[2] = rgb_color{0, 0, 150};
 
-TEST(WebPageDisplayStateTest, SetMeasDrawnMismatchKeepsEarlierDrawnColors) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_color = 0xAAAAAA;
-
-	const web_meas_layout layout = web_meas_layout::multi;
-	const uint32_t colors[3] = {0x112233, 0x445566, 0x778899};
-	const uint32_t white_color = 0x808080;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::standard;
-	state.measDrawn = true;
-	state.measColors[0] = 0xAAAAAA;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetMeasDrawn(state, layout, colors, white_color, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-	EXPECT_TRUE(state.measDrawn);
-	EXPECT_EQ(exp_color, state.measColors[0]);
-}
+	std::string res;
 
-TEST(WebPageDisplayStateTest, SetMeasDrawnFirstDrawBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_meas_layout layout = web_meas_layout::multi;
-	const uint32_t colors[3] = {0x112233, 0x445566, 0x778899};
-	const uint32_t white_color = 0x808080;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::multi;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetMeasDrawn(state, layout, colors, white_color, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-}
+	res = jsonOf(shown);
 
-TEST(WebPageDisplayStateTest, SetMeasDrawnFirstDrawStoresColorsAndWhite) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_meas_layout layout = web_meas_layout::multi;
-	const uint32_t colors[3] = {0x112233, 0x445566, 0x778899};
-	const uint32_t white_color = 0x808080;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::multi;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetMeasDrawn(state, layout, colors, white_color, now_ms);
-
-	EXPECT_TRUE(state.measDrawn);
-	EXPECT_EQ(colors[0], state.measColors[0]);
-	EXPECT_EQ(colors[1], state.measColors[1]);
-	EXPECT_EQ(colors[2], state.measColors[2]);
-	EXPECT_EQ(white_color, state.measWhiteColor);
+	EXPECT_EQ(exp_json, res);
 }
 
-TEST(WebPageDisplayStateTest, SetMeasDrawnFirstDrawOfAllBlackColorsStillBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_meas_layout layout = web_meas_layout::multi;
-	const uint32_t colors[3] = {0, 0, 0};
-	const uint32_t white_color = 0;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::multi;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetMeasDrawn(state, layout, colors, white_color, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_TRUE(state.measDrawn);
-}
+TEST(WebPageDisplayStateTest, NightMeasShowsTheLitCellsAndTheGreyOfTheBar) {
+	// 105 of 150 on the lamp is 178 of 255 on the page
+	const std::string exp_json
+		= MEAS_PREFIX + "\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"eco2\"],\"colors\":[\"#0000ff\"],\"lit\":7,\"whiteColor\":\"#b2b2b2\"}";
+	display_shown shown = measPicture(anim_id::measNight, true);
+	shown.keys[0] = eCO2;
+	shown.colorCount = 1;
+	shown.colors[0] = rgb_color{0, 0, 150};
+	shown.white = rgb_color{105, 105, 105};
+	shown.nightLitCells = 7;
 
-TEST(WebPageDisplayStateTest, SetMeasDrawnSameColorsAgainIsFalse) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_meas_layout layout = web_meas_layout::multi;
-	const uint32_t colors[3] = {0x112233, 0x445566, 0x778899};
-	const uint32_t white_color = 0x808080;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::multi;
-	state.measDrawn = true;
-	state.measColors[0] = 0x112233;
-	state.measColors[1] = 0x445566;
-	state.measColors[2] = 0x778899;
-	state.measWhiteColor = 0x808080;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetMeasDrawn(state, layout, colors, white_color, now_ms);
-
-	EXPECT_FALSE(res);
-	EXPECT_EQ(seq_before, state.seq);
-	EXPECT_EQ(start_before, state.startMs);
-}
+	std::string res;
 
-TEST(WebPageDisplayStateTest, SetMeasDrawnSameColorsAgainKeepsDrawnFlag) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_meas_layout layout = web_meas_layout::multi;
-	const uint32_t colors[3] = {0x112233, 0x445566, 0x778899};
-	const uint32_t white_color = 0x808080;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::multi;
-	state.measDrawn = true;
-	state.measColors[0] = 0x112233;
-	state.measColors[1] = 0x445566;
-	state.measColors[2] = 0x778899;
-	state.measWhiteColor = 0x808080;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetMeasDrawn(state, layout, colors, white_color, now_ms);
-
-	EXPECT_TRUE(state.measDrawn);
-}
+	res = jsonOf(shown);
 
-TEST(WebPageDisplayStateTest, SetMeasDrawnChangeOfFirstColorBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_meas_layout layout = web_meas_layout::multi;
-	const uint32_t colors[3] = {0x112233, 0x445566, 0x778899};
-	const uint32_t white_color = 0x808080;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::multi;
-	state.measDrawn = true;
-	state.measColors[0] = 0x000001;
-	state.measColors[1] = 0x445566;
-	state.measColors[2] = 0x778899;
-	state.measWhiteColor = 0x808080;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetMeasDrawn(state, layout, colors, white_color, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-	EXPECT_EQ(colors[0], state.measColors[0]);
+	EXPECT_EQ(exp_json, res);
 }
 
-TEST(WebPageDisplayStateTest, SetMeasDrawnChangeOfSecondColorBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_meas_layout layout = web_meas_layout::multi;
-	const uint32_t colors[3] = {0x112233, 0x445566, 0x778899};
-	const uint32_t white_color = 0x808080;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::multi;
-	state.measDrawn = true;
-	state.measColors[0] = 0x112233;
-	state.measColors[1] = 0x000001;
-	state.measColors[2] = 0x778899;
-	state.measWhiteColor = 0x808080;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetMeasDrawn(state, layout, colors, white_color, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-	EXPECT_EQ(colors[1], state.measColors[1]);
-}
+TEST(WebPageDisplayStateTest, NightMeasWithoutLitCellsReportsZero) {
+	const std::string exp_json
+		= MEAS_PREFIX + "\"fx\":\"meas\",\"layout\":\"night\",\"keys\":[\"tvoc\"],\"colors\":[\"#00ff00\"],\"lit\":0,\"whiteColor\":\"#b2b2b2\"}";
+	display_shown shown = measPicture(anim_id::measNight, true);
+	shown.keys[0] = TVOC;
+	shown.colorCount = 1;
+	shown.colors[0] = rgb_color{0, 150, 0};
+	shown.white = rgb_color{105, 105, 105};
 
-TEST(WebPageDisplayStateTest, SetMeasDrawnChangeOfThirdColorBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_meas_layout layout = web_meas_layout::multi;
-	const uint32_t colors[3] = {0x112233, 0x445566, 0x778899};
-	const uint32_t white_color = 0x808080;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::multi;
-	state.measDrawn = true;
-	state.measColors[0] = 0x112233;
-	state.measColors[1] = 0x445566;
-	state.measColors[2] = 0x000001;
-	state.measWhiteColor = 0x808080;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetMeasDrawn(state, layout, colors, white_color, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-	EXPECT_EQ(colors[2], state.measColors[2]);
-}
+	std::string res;
 
-TEST(WebPageDisplayStateTest, SetMeasDrawnWhiteColorChangeBumps) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_seq = 5;
-
-	const web_meas_layout layout = web_meas_layout::multi;
-	const uint32_t colors[3] = {0x112233, 0x445566, 0x778899};
-	const uint32_t white_color = 0x808080;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::multi;
-	state.measDrawn = true;
-	state.measColors[0] = 0x112233;
-	state.measColors[1] = 0x445566;
-	state.measColors[2] = 0x778899;
-	state.measWhiteColor = 0x000001;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	bool res;
-
-	res = HAQuDA_WebPictureSetMeasDrawn(state, layout, colors, white_color, now_ms);
-
-	EXPECT_TRUE(res);
-	EXPECT_EQ(exp_seq, state.seq);
-	EXPECT_EQ(now_ms, state.startMs);
-	EXPECT_EQ(white_color, state.measWhiteColor);
-}
+	res = jsonOf(shown);
 
-TEST(WebPageDisplayStateTest, SetSourceChangeClearsMeasDrawn) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_error current_error = web_error::none;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::standard;
-	state.measDrawn = true;
-	state.measColors[0] = 0x112233;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	HAQuDA_WebPictureSetSource(state, web_source::effect, current_error, now_ms);
-
-	EXPECT_FALSE(state.measDrawn);
+	EXPECT_EQ(exp_json, res);
 }
 
-TEST(WebPageDisplayStateTest, SetSourceSameSourceKeepsMeasDrawn) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_error current_error = web_error::none;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::standard;
-	state.measDrawn = true;
-	state.measColors[0] = 0x112233;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	HAQuDA_WebPictureSetSource(state, web_source::meas, current_error, now_ms);
-
-	EXPECT_TRUE(state.measDrawn);
-}
+TEST(WebPageDisplayStateTest, AMeasPictureBeforeItsFirstDrawIsAHold) {
+	const std::string exp_json = MEAS_PREFIX + "\"fx\":\"hold\"}";
+	display_shown shown = measPicture(anim_id::measMulti, false);
+	shown.keys[0] = temp;
+	shown.keys[1] = eCO2;
+	shown.keys[2] = PM2_5;
 
-TEST(WebPageDisplayStateTest, SetLayoutChangeClearsMeasDrawn) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::standard;
-	state.measDrawn = true;
-	state.measColors[0] = 0x112233;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	HAQuDA_WebPictureSetLayout(state, web_meas_layout::multi, now_ms);
-
-	EXPECT_FALSE(state.measDrawn);
-}
+	std::string res;
 
-TEST(WebPageDisplayStateTest, SetLayoutChangeOutsideMeasAlsoClearsMeasDrawn) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.layout = web_meas_layout::standard;
-	state.measDrawn = true;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	HAQuDA_WebPictureSetLayout(state, web_meas_layout::multi, now_ms);
-
-	EXPECT_FALSE(state.measDrawn);
-}
+	res = jsonOf(shown);
 
-TEST(WebPageDisplayStateTest, SetLayoutSameLayoutKeepsMeasDrawn) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::standard;
-	state.measDrawn = true;
-	state.measColors[0] = 0x112233;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	HAQuDA_WebPictureSetLayout(state, web_meas_layout::standard, now_ms);
-
-	EXPECT_TRUE(state.measDrawn);
+	EXPECT_EQ(exp_json, res);
 }
 
-TEST(WebPageDisplayStateTest, SetLayoutNoneKeepsMeasDrawn) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::standard;
-	state.measDrawn = true;
-	state.measColors[0] = 0x112233;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	HAQuDA_WebPictureSetLayout(state, web_meas_layout::none, now_ms);
-
-	EXPECT_TRUE(state.measDrawn);
-}
+TEST(WebPageDisplayStateTest, AMeasKeyWithoutAReadingIsAHold) {
+	const std::string exp_json = MEAS_PREFIX + "\"fx\":\"hold\"}";
+	display_shown shown = measPicture(anim_id::measStandard, true);
+	shown.keys[0] = noneType;
+	shown.colorCount = 1;
 
-TEST(WebPageDisplayStateTest, SetStandardKeyChangeInStandardClearsMeasDrawn) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_key key = {web_meas_key::eco2, true};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::standard;
-	state.measDrawn = true;
-	state.measColors[0] = 0x112233;
-	state.standardKey = {web_meas_key::temp, true};
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	HAQuDA_WebPictureSetStandardKey(state, key, now_ms);
-
-	EXPECT_FALSE(state.measDrawn);
-}
+	std::string res;
 
-TEST(WebPageDisplayStateTest, SetStandardKeyChangeInNightClearsMeasDrawn) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_key key = {web_meas_key::eco2, true};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::night;
-	state.measDrawn = true;
-	state.measColors[0] = 0x112233;
-	state.standardKey = {web_meas_key::temp, true};
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	HAQuDA_WebPictureSetStandardKey(state, key, now_ms);
-
-	EXPECT_FALSE(state.measDrawn);
-}
+	res = jsonOf(shown);
 
-TEST(WebPageDisplayStateTest, SetStandardKeyIdenticalKeepsMeasDrawn) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_key key = {web_meas_key::eco2, true};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::standard;
-	state.measDrawn = true;
-	state.measColors[0] = 0x112233;
-	state.standardKey = {web_meas_key::eco2, true};
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	HAQuDA_WebPictureSetStandardKey(state, key, now_ms);
-
-	EXPECT_TRUE(state.measDrawn);
+	EXPECT_EQ(exp_json, res);
 }
 
-TEST(WebPageDisplayStateTest, SetStandardKeyChangeInMultiKeepsMeasDrawn) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_key key = {web_meas_key::eco2, true};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::multi;
-	state.measDrawn = true;
-	state.measColors[0] = 0x112233;
-	state.standardKey = {web_meas_key::temp, true};
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	HAQuDA_WebPictureSetStandardKey(state, key, now_ms);
-
-	EXPECT_TRUE(state.measDrawn);
-}
+TEST(WebPageDisplayStateTest, EveryMeasKeyHasItsWord) {
+	const meas_type types[] = {total, eCO2, TVOC, PM2_5, temp, humid};
+	const char *words[] = {"total", "eco2", "tvoc", "pm25", "temp", "humid"};
+	for (size_t i = 0; i < 6; i++) {
+		display_shown shown = measPicture(anim_id::measStandard, true);
+		shown.keys[0] = types[i];
+		shown.colorCount = 1;
 
-TEST(WebPageDisplayStateTest, SetStandardKeyChangeOutsideMeasKeepsMeasDrawn) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_key key = {web_meas_key::eco2, true};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.layout = web_meas_layout::standard;
-	state.measDrawn = true;
-	state.standardKey = {web_meas_key::temp, true};
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	HAQuDA_WebPictureSetStandardKey(state, key, now_ms);
-
-	EXPECT_TRUE(state.measDrawn);
-}
+		const std::string res = jsonOf(shown);
 
-TEST(WebPageDisplayStateTest, SetMultiKeysChangeInMultiClearsMeasDrawn) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_key keys[3] = {{web_meas_key::temp, true}, {web_meas_key::eco2, true}, {web_meas_key::tvoc, true}};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::multi;
-	state.measDrawn = true;
-	state.measColors[0] = 0x112233;
-	state.multiKeys[0] = {web_meas_key::temp, true};
-	state.multiKeys[1] = {web_meas_key::eco2, true};
-	state.multiKeys[2] = {web_meas_key::pm25, true};
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	HAQuDA_WebPictureSetMultiKeys(state, keys, now_ms);
-
-	EXPECT_FALSE(state.measDrawn);
+		EXPECT_NE(std::string::npos, res.find(std::string("\"keys\":[\"") + words[i] + "\"]")) << words[i];
+	}
 }
 
-TEST(WebPageDisplayStateTest, SetMultiKeysIdenticalKeepsMeasDrawn) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_key keys[3] = {{web_meas_key::temp, true}, {web_meas_key::eco2, true}, {web_meas_key::tvoc, true}};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::multi;
-	state.measDrawn = true;
-	state.measColors[0] = 0x112233;
-	state.multiKeys[0] = {web_meas_key::temp, true};
-	state.multiKeys[1] = {web_meas_key::eco2, true};
-	state.multiKeys[2] = {web_meas_key::tvoc, true};
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	HAQuDA_WebPictureSetMultiKeys(state, keys, now_ms);
-
-	EXPECT_TRUE(state.measDrawn);
-}
+// ---------------------------------------------------------------- counters and clock
 
-TEST(WebPageDisplayStateTest, SetMultiKeysChangeInStandardKeepsMeasDrawn) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_key keys[3] = {{web_meas_key::temp, true}, {web_meas_key::eco2, true}, {web_meas_key::tvoc, true}};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::standard;
-	state.measDrawn = true;
-	state.measColors[0] = 0x112233;
-	state.multiKeys[0] = {web_meas_key::temp, true};
-	state.multiKeys[1] = {web_meas_key::eco2, true};
-	state.multiKeys[2] = {web_meas_key::pm25, true};
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	HAQuDA_WebPictureSetMultiKeys(state, keys, now_ms);
-
-	EXPECT_TRUE(state.measDrawn);
-}
+TEST(WebPageDisplayStateTest, SeqAndBrightnessPassThrough) {
+	display_shown shown = solidPicture(0xFFB46B);
+	shown.seq = 4000000000u;
+	web_display_state state;
 
-TEST(WebPageDisplayStateTest, SetMultiKeysChangeInNightKeepsMeasDrawn) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_key keys[3] = {{web_meas_key::temp, true}, {web_meas_key::eco2, true}, {web_meas_key::tvoc, true}};
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::night;
-	state.measDrawn = true;
-	state.measColors[0] = 0x112233;
-	state.multiKeys[0] = {web_meas_key::temp, true};
-	state.multiKeys[1] = {web_meas_key::eco2, true};
-	state.multiKeys[2] = {web_meas_key::pm25, true};
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	HAQuDA_WebPictureSetMultiKeys(state, keys, now_ms);
-
-	EXPECT_TRUE(state.measDrawn);
-}
+	HAQuDA_WebPictureBuild(shown, 80, NOW_MS, state);
 
-TEST(WebPageDisplayStateTest, SetNightWindowChangeInNightKeepsMeasDrawn) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint16_t start = 22 * 60;
-	const uint16_t finish = 6 * 60;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::night;
-	state.measDrawn = true;
-	state.measColors[0] = 0x112233;
-	state.seq = seq_before;
-	state.startMs = start_before;
-
-	HAQuDA_WebPictureSetNightWindow(state, start, finish, now_ms);
-
-	EXPECT_TRUE(state.measDrawn);
+	EXPECT_EQ(4000000000u, state.seq);
+	EXPECT_EQ(80, state.brightPercent);
 }
 
-// ---------------------------------------------------------------- Build: measurement colours
-
-TEST(WebPageDisplayStateTest, BuildMeasCopiesDrawnFlagColorsAndWhite) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_colors[3] = {0x112233, 0x445566, 0x778899};
-	const uint32_t exp_white = 0x808080;
-
-	const web_error current_error = web_error::none;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::night;
-	state.measDrawn = true;
-	state.measColors[0] = 0x112233;
-	state.measColors[1] = 0x445566;
-	state.measColors[2] = 0x778899;
-	state.measWhiteColor = 0x808080;
-	state.standardKey = {web_meas_key::pm25, true};
-	state.seq = seq_before;
-	state.startMs = start_before;
-	web_display_state out{};
-
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
-
-	EXPECT_TRUE(out.measDrawn);
-	EXPECT_EQ(exp_colors[0], out.measColors[0]);
-	EXPECT_EQ(exp_colors[1], out.measColors[1]);
-	EXPECT_EQ(exp_colors[2], out.measColors[2]);
-	EXPECT_EQ(exp_white, out.measWhiteColor);
-}
+TEST(WebPageDisplayStateTest, AgeSurvivesTheMillisWrap) {
+	display_shown shown = solidPicture(0xFFB46B);
+	shown.startMs = 0xFFFFFF00u;
+	web_display_state state;
 
-TEST(WebPageDisplayStateTest, BuildMeasNotDrawnKeepsFlagFalse) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const web_error current_error = web_error::none;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::meas;
-	state.layout = web_meas_layout::standard;
-	state.standardKey = {web_meas_key::pm25, true};
-	state.seq = seq_before;
-	state.startMs = start_before;
-	web_display_state out{};
-
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
-
-	EXPECT_FALSE(out.measDrawn);
-}
+	HAQuDA_WebPictureBuild(shown, BRIGHT_PERCENT, 100, state);
 
-TEST(WebPageDisplayStateTest, BuildNonMeasEffectSourceDoesNotCopyMeasDrawn) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_zero = 0;
-
-	const web_error current_error = web_error::none;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::effect;
-	state.measDrawn = true;
-	state.measColors[0] = 0x112233;
-	state.measColors[1] = 0x445566;
-	state.measColors[2] = 0x778899;
-	state.measWhiteColor = 0x808080;
-	state.seq = seq_before;
-	state.startMs = start_before;
-	web_display_state out{};
-
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
-
-	EXPECT_FALSE(out.measDrawn);
-	EXPECT_EQ(exp_zero, out.measColors[0]);
-	EXPECT_EQ(exp_zero, out.measColors[1]);
-	EXPECT_EQ(exp_zero, out.measColors[2]);
-	EXPECT_EQ(exp_zero, out.measWhiteColor);
+	EXPECT_EQ(356u, state.ageMs);
 }
 
-TEST(WebPageDisplayStateTest, BuildNonMeasErrorSourceDoesNotCopyMeasDrawn) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_zero = 0;
-
-	const web_error current_error = web_error::none;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::error;
-	state.measDrawn = true;
-	state.measColors[0] = 0x112233;
-	state.measColors[1] = 0x445566;
-	state.measColors[2] = 0x778899;
-	state.measWhiteColor = 0x808080;
-	state.seq = seq_before;
-	state.startMs = start_before;
-	web_display_state out{};
-
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
-
-	EXPECT_FALSE(out.measDrawn);
-	EXPECT_EQ(exp_zero, out.measColors[0]);
-	EXPECT_EQ(exp_zero, out.measColors[1]);
-	EXPECT_EQ(exp_zero, out.measColors[2]);
-	EXPECT_EQ(exp_zero, out.measWhiteColor);
-}
+TEST(WebPageDisplayStateTest, TheSeedIsReportedOnlyForRandomPixels) {
+	web_display_state state;
 
-TEST(WebPageDisplayStateTest, BuildNonMeasNoneSourceDoesNotCopyMeasDrawn) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_zero = 0;
-
-	const web_error current_error = web_error::none;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::none;
-	state.measDrawn = true;
-	state.measColors[0] = 0x112233;
-	state.measColors[1] = 0x445566;
-	state.measColors[2] = 0x778899;
-	state.measWhiteColor = 0x808080;
-	state.seq = seq_before;
-	state.startMs = start_before;
-	web_display_state out{};
-
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
-
-	EXPECT_FALSE(out.measDrawn);
-	EXPECT_EQ(exp_zero, out.measColors[0]);
-	EXPECT_EQ(exp_zero, out.measColors[1]);
-	EXPECT_EQ(exp_zero, out.measColors[2]);
-	EXPECT_EQ(exp_zero, out.measWhiteColor);
-}
+	HAQuDA_WebPictureBuild(itemPicture(display_source::event, HAQuDA_ItemOf(display_event::bootSnake), 99), BRIGHT_PERCENT, NOW_MS, state);
 
-TEST(WebPageDisplayStateTest, BuildNonMeasEventSourceDoesNotCopyMeasDrawn) {
-	const uint8_t brightness = 50;
-	const uint32_t seq_before = 4;
-	const uint32_t start_before = 1000;
-	const uint32_t now_ms = 7000;
-
-	const uint32_t exp_zero = 0;
-
-	const web_error current_error = web_error::none;
-	const bool time_known = true;
-	const uint16_t minute_of_day = 23 * 60;
-	web_picture_state state{};
-	HAQuDA_WebPictureInit(state, brightness);
-	state.source = web_source::event;
-	state.measDrawn = true;
-	state.measColors[0] = 0x112233;
-	state.measColors[1] = 0x445566;
-	state.measColors[2] = 0x778899;
-	state.measWhiteColor = 0x808080;
-	state.seq = seq_before;
-	state.startMs = start_before;
-	web_display_state out{};
-
-	HAQuDA_WebPictureBuild(state, current_error, time_known, minute_of_day, now_ms, out);
-
-	EXPECT_FALSE(out.measDrawn);
-	EXPECT_EQ(exp_zero, out.measColors[0]);
-	EXPECT_EQ(exp_zero, out.measColors[1]);
-	EXPECT_EQ(exp_zero, out.measColors[2]);
-	EXPECT_EQ(exp_zero, out.measWhiteColor);
+	EXPECT_EQ(0u, state.seed);
 }

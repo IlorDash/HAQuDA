@@ -8,8 +8,7 @@
 
 namespace {
 
-	// Lamp timing mirrors the 100 ms pause HAQuDA_DisplayManip::Show adds after every draw and the 200 ms
-	// HAQuDA_LEDs::Show() blocks without an argument (so do Clear() and SetBright(), which call it).
+	// Lamp timing mirrors the 100 ms pause between passes (ANIM_PASS_PAUSE_MS) and the 200 ms a frame takes (ANIM_LEDS_SHOW_MS).
 	constexpr uint32_t LAMP_PIXELS = LED_NUM_PIXELS;
 	constexpr uint32_t LAMP_ROWS = LED_ROW_NUM;
 	constexpr uint32_t SHOW_PAUSE_MS = 100;
@@ -26,7 +25,7 @@ namespace {
 	constexpr uint32_t MAX_PERCENT = 100;
 	constexpr uint32_t MULTI_KEYS_NUM = 3;
 
-	const char *const SOURCE_NAMES[] = {"none", "effect", "meas", "error", "event"};
+	const char *const SOURCE_NAMES[] = {"none", "effect", "meas", "error"};
 	const char *const ERROR_NAMES[] = {"none", "wifi", "ap", "fs", "sensors", "ntp"};
 	const char *const KEY_NAMES[] = {"total", "eco2", "tvoc", "pm25", "temp", "humid"};
 
@@ -131,31 +130,32 @@ namespace {
 
 	// Lamp: Clear() (dark), LAMP_PIXELS pixels, one per pauseMs, then endPauseMs and the 100 ms pause. Page: "dark" ms, then
 	// PAGE_CELLS cells over the same time.
-	void appendRandom(JsonWriter &w, const web_random_params &p) {
+	void appendRandom(JsonWriter &w, const web_random_params &p, uint32_t seed) {
 		const uint32_t stepMs = divRound(LAMP_PIXELS * p.pauseMs, PAGE_CELLS);
 		const uint32_t endMs = static_cast<uint32_t>(p.endPauseMs) + SHOW_PAUSE_MS;
-		w.Append(",\"fx\":\"random\",\"dark\":%lu,\"step\":%lu,\"end\":%lu", static_cast<unsigned long>(CLEAR_DARK_MS), static_cast<unsigned long>(stepMs),
-				 static_cast<unsigned long>(endMs));
+		w.Append(",\"fx\":\"random\",\"dark\":%lu,\"step\":%lu,\"end\":%lu,\"seed\":%lu", static_cast<unsigned long>(CLEAR_DARK_MS),
+				 static_cast<unsigned long>(stepMs), static_cast<unsigned long>(endMs), static_cast<unsigned long>(seed));
 	}
 
-	// Lamp: Clear() and SetBright(start) are dark (2 x 200 ms), the fill shows startBright for 200 ms, then brightness counts down
-	// from startBright to stopBright in `step` decrements: every one is SetBright() = 200 ms plus fadePauseMs, the first is
-	// startBright again. The last level stays for the 100 ms pause, then the cycle restarts. So the page gets: "dark" ms, the
-	// first level for "first" ms, every further level for "step" ms (steps levels in all), the last level "end" ms longer.
-	// When startBright <= stopBright the countdown never runs: the lamp is dark for 400 ms, lit at startBright for 200 ms plus the
-	// 100 ms pause, and starts over, so it flashes. The page gets one level (steps 1, from = to = startBright, first 200 ms),
-	// a cycle of 700 ms; with startBright 0 the lamp stays dark for the whole cycle and so does the page. Only step == 0 with
-	// startBright > stopBright is steady: the lamp loops at startBright until the effect is stopped, the page shows a static colour.
+	// Lamp: Clear() and SetBright(start) are dark (2 x 200 ms), the fill shows startBright for 200 ms, then brightness moves
+	// from startBright towards stopBright (down or up) in `step` changes: every one is SetBright() = 200 ms plus fadePauseMs, the
+	// first is startBright again and stopBright itself is never shown. The last level stays for the 100 ms pause, then the cycle
+	// restarts. So the page gets: "dark" ms, the first level for "first" ms, every further level for "step" ms (steps levels in
+	// all), the last level "end" ms longer; the page moves from "from" to "to" linearly over the levels.
+	// When startBright == stopBright the lamp is dark for 400 ms, lit at startBright for 200 ms plus the 100 ms pause, and starts
+	// over, so it flashes. The page gets one level (steps 1, from = to = startBright, first 200 ms), a cycle of 700 ms; with
+	// startBright 0 the lamp stays dark for the whole cycle and so does the page. A step of 0 between different levels is not
+	// played by the lamp; the page shows a static colour at startBright.
 	void appendFading(JsonWriter &w, const web_fading_params &p) {
 		const uint32_t from = clampU32(p.startBright, 0, MAX_PERCENT);
 		const uint32_t to = clampU32(p.stopBright, 0, MAX_PERCENT);
-		const bool counts = from > to;
+		const bool counts = from != to;
 		if (counts && (p.step == 0)) {
 			w.Append(",\"fx\":\"static\"");
 			appendColor(w, scaleColor(p.color, from));
 			return;
 		}
-		const uint32_t steps = counts ? divCeil(from - to, p.step) : 1;
+		const uint32_t steps = counts ? divCeil((from > to) ? (from - to) : (to - from), p.step) : 1;
 		const uint32_t stepMs = LEDS_SHOW_MS + p.fadePauseMs;
 		const uint32_t firstMs = counts ? (LEDS_SHOW_MS + stepMs) : LEDS_SHOW_MS;
 		w.Append(",\"fx\":\"fading\"");
@@ -174,7 +174,7 @@ namespace {
 				appendGrowing(w, s.growing);
 				break;
 			case web_effect::random_led:
-				appendRandom(w, s.randomLed);
+				appendRandom(w, s.randomLed, s.seed);
 				break;
 			case web_effect::fading:
 				appendFading(w, s.fading);

@@ -10,24 +10,25 @@
 // "step" the time of one page step, "end" the extra time the last frame stays at the end of the cycle; a fading effect also has
 // "first", the time of its first level (the lamp shows the start level twice). A fading cycle is exactly
 // dark + first + (steps - 1) x step + end, and equals the lamp's cycle.
-// Hardware-free: the firmware fills web_display_state from its own enums, this module only does arithmetic and text.
+// Hardware-free: the firmware fills web_display_state from what the display engine shows, this module only does arithmetic and text.
+// The random effect also carries "seed", the seed of its first pass. Pass n (0 is the pass that starts with the picture) uses the seed
+// s(n): s(0) = seed, s(n + 1) = xorshift32(s(n)) with the shifts 13, 17, 5 on 32 bits. From a pass seed the page derives the order and
+// the colours as HAQuDA_RandomPixelsAnim documents.
 
-// What the lamp is drawing (mirrors display_modes). Mode event and none draw nothing, the LEDs keep their last frame.
-enum class web_source : uint8_t { none, effect, meas, error, event };
+// What the lamp is drawing. none draws nothing, the LEDs keep their last frame. effect is every picture without an error word: the
+// start and WiFi pictures, the lamp light and off. error is an error picture with its word.
+enum class web_source : uint8_t { none, effect, meas, error };
 
-// Active error (mirrors error_type), meaningful only for web_source::error.
+// Active error, meaningful only for web_source::error.
 enum class web_error : uint8_t { none, wifi, ap, fs, sensors, ntp };
 
-// Effect kind (mirrors effect_type).
 enum class web_effect : uint8_t { none, snake, growing, random_led, fading, static_color };
 
-// Measurement layout (mirrors meas_mode).
 enum class web_meas_layout : uint8_t { none, standard, multi, night };
 
-// Measured quantity (mirrors meas_type).
 enum class web_meas_key : uint8_t { total, eco2, tvoc, pm25, temp, humid };
 
-// Parameters mirror the firmware effect structs (snake_params, growing_params, random_led_params, fading_params).
+// Parameters of the catalog animations (HAQuDA_Animation.h).
 struct web_snake_params {
 	uint32_t color;
 	uint16_t movePauseMs;
@@ -61,6 +62,7 @@ struct web_display_state {
 	web_snake_params snake;
 	web_growing_params growing;
 	web_random_params randomLed;
+	uint32_t seed;
 	web_fading_params fading;
 	uint32_t staticColor;
 	web_meas_layout layout;
