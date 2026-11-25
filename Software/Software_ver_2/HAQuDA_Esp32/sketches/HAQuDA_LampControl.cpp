@@ -261,7 +261,7 @@ bool HAQuDA_LampControl::ShowReading(lamp_param param) {
 }
 
 void HAQuDA_LampControl::Flash(lamp_flash kind) {
-	if ((static_cast<size_t>(kind) > static_cast<size_t>(lamp_flash::refused)) || display.ErrorShown()) {
+	if ((static_cast<size_t>(kind) > static_cast<size_t>(lamp_flash::access_point)) || display.ErrorShown()) {
 		return;
 	}
 	display.SetBrightnessPercent(copySettings().brightPercent);

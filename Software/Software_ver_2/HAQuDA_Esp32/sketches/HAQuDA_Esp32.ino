@@ -39,7 +39,26 @@ HAQuDA_LoggerAdapter LampLogger;
 HAQuDA_LampControl LampControl(LampFiles, LampDisplay, LampLogger);
 HAQuDA_WiFi_handler WiFiHandler(&FileStorage, &DispManip, MeasSnapshot, WebDisp, LampControl);
 HAQuDA_ButtonsControl ButtonsControl(LampFiles, LampLogger);
-HAQuDA_ButtonActions ButtonActions(LampControl, ButtonsControl, LampLogger);
+
+// Must live in RTC memory that the start-up code leaves alone (RTC_NOINIT_ATTR): it carries "start in access point mode" over the
+// software restart. It holds noise after a power-on, hence the magic value and the reset reason check. Loop task only.
+static RTC_NOINIT_ATTR uint32_t rtcApRequest;
+constexpr uint32_t AP_REQUEST_MAGIC = 0x41505251;
+
+class HAQuDA_ApRequestAdapter : public HAQuDA_IApRequest {
+  public:
+	bool RequestAccessPoint() override {
+		if (WiFiHandler.RequestUserRestart() != restart_request_result::accepted) {
+			return false;
+		}
+		// The restart itself comes later from loop(), so the flag is set before it can happen
+		rtcApRequest = AP_REQUEST_MAGIC;
+		return true;
+	}
+};
+
+HAQuDA_ApRequestAdapter ApRequest;
+HAQuDA_ButtonActions ButtonActions(LampControl, ButtonsControl, LampLogger, ApRequest);
 HAQuDA_TouchButtons TouchButtons;
 
 int meas_start_time = 0;
@@ -61,8 +80,17 @@ uint32_t sensorsStartRetryMs = 0;
 void enableMeasurements();
 void leaveSensorsError();
 
+// Read and cleared before anything else, so the restart after the access point session is a normal one and a crash or brown-out
+// during it cannot loop into the access point again
+bool takeApRequest() {
+	const bool requested = (esp_reset_reason() == ESP_RST_SW) && (rtcApRequest == AP_REQUEST_MAGIC);
+	rtcApRequest = 0;
+	return requested;
+}
+
 void setup() {
 
+	const bool apRequested = takeApRequest();
 	Serial.begin(115200);
 	// Serial, not the logger: the file system is not mounted yet, so a log record could not be stored.
 	Serial.printf("HAQuDA firmware v%s\r\n", FW_VERSION);
@@ -91,12 +119,18 @@ void setup() {
 	// The buttons are optional: a failed start is only logged and the lamp runs without them
 	TouchButtons.Begin();
 
-	if (!WiFiHandler.Connect()) {
-		DispManip.SetMode(error);
-		ErrHandler.FailedToConnectToWiFi();
-		// CreateAP() replaces the red growing effect with the access point effect, so without this pause the user
-		// never sees that the WiFi connection failed. Blocks the loop task only; ShowTask draws on the other core.
-		vTaskDelay(pdMS_TO_TICKS(WIFI_ERROR_DISPLAY_MS));
+	if (apRequested || !WiFiHandler.Connect()) {
+		if (apRequested) {
+			// Connect() does it on the normal path, before the stored networks are read
+			WiFiHandler.RecoverCredsFile();
+			WiFiHandler.SetApByButtons();
+		} else {
+			DispManip.SetMode(error);
+			ErrHandler.FailedToConnectToWiFi();
+			// CreateAP() replaces the red growing effect with the access point effect, so without this pause the user
+			// never sees that the WiFi connection failed. Blocks the loop task only; ShowTask draws on the other core.
+			vTaskDelay(pdMS_TO_TICKS(WIFI_ERROR_DISPLAY_MS));
+		}
 
 		if (!WiFiHandler.CreateAP()) {
 			DispManip.SetMode(error);

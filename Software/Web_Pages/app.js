@@ -57,6 +57,7 @@
 			},
 			ap: 'Access point · no internet', off: 'WiFi connection lost', down: 'Lamp not responding · retry in 5 s',
 			bAp: 'The lamp couldn’t find a saved network and started its own. Add your home WiFi.',
+			bApBtn: 'You opened the lamp’s own network with the touch buttons. Your saved networks are kept — restart the lamp to return to them.',
 			bDown: 'No response from the lamp. It may be rebooting, switched off, or your phone changed networks. Showing the last values; data returns on its own once the lamp answers.',
 			fxEffect: 'The lamp is showing an effect, not readings', fxError: 'The lamp is signalling a problem, not showing readings',
 			fxConnecting: 'Starting or connecting to WiFi…', fxConnected: 'Connected to WiFi', fxLost: 'WiFi connection lost',
@@ -102,6 +103,7 @@
 			},
 			ap: 'Точка доступа · без интернета', off: 'Нет связи с WiFi', down: 'Лампа не отвечает · повтор через 5 с',
 			bAp: 'Лампа не нашла сохранённую сеть и создала свою. Добавьте домашнюю сеть.',
+			bApBtn: 'Вы открыли сеть лампы сенсорными кнопками. Сохранённые сети никуда не делись — перезагрузите лампу, и она снова подключится к ним.',
 			bDown: 'Нет ответа от лампы. Возможно, она перезагружается, выключена или телефон сменил сеть. Показаны последние значения; данные вернутся сами, как только лампа ответит.',
 			fxEffect: 'Лампа показывает эффект, а не показания', fxError: 'Лампа сигнализирует о проблеме, а не показывает показания',
 			fxConnecting: 'Запуск или подключение к WiFi…', fxConnected: 'Подключена к WiFi', fxLost: 'Связь с WiFi потеряна',
@@ -313,7 +315,7 @@
 			// a non-2xx answer carries the lamp's own text, shown as it is
 			text = state.err || T.bDown;
 		} else if (d && d.mode === 'ap') {
-			text = T.bAp;
+			text = d.apWhy === 'button' ? T.bApBtn : T.bAp;
 			cta = true;
 		}
 		byId('banner').hidden = !text;

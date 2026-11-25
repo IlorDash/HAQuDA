@@ -90,6 +90,8 @@ void HAQuDA_LampDisplayAdapter::ShowFlash(lamp_flash kind) {
 		rgb = COLOR_FLASH_AMBER;
 	} else if (kind == lamp_flash::unlocked) {
 		rgb = COLOR_GREEN;
+	} else if (kind == lamp_flash::access_point) {
+		rgb = COLOR_AQUA;
 	}
 	ShowColor(rgb);
 }

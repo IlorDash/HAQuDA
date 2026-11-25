@@ -4,7 +4,7 @@
 Run from any directory:  py -3 Software/Web_Pages/preview_server.py
                          [--scenario normal|bad-air|sensor-fail|ap|sta-offline|errors|join-ok|join-wrong-pass|join-no-network|
                                      sta-switch-ok|sta-switch-wrong-pass|sta-switch-no-network|
-                                     disp-effects|disp-errors|disp-night|lamp-refuses|no-lamp|restart-refuses]
+                                     disp-effects|disp-errors|disp-night|lamp-refuses|no-lamp|restart-refuses|ap-button]
                          [--host 127.0.0.1] [--port 8080] [--latency MS] [--no-browser]
 
 The page sources next to this script are read from disk on every request (Cache-Control: no-store), so saving a file
@@ -75,13 +75,13 @@ ASSETS = {
 
 SCENARIOS = ["normal", "bad-air", "sensor-fail", "ap", "sta-offline", "errors", "join-ok", "join-wrong-pass", "join-no-network",
              "sta-switch-ok", "sta-switch-wrong-pass", "sta-switch-no-network", "disp-effects", "disp-errors", "disp-night",
-             "lamp-refuses", "no-lamp", "restart-refuses"]
+             "lamp-refuses", "no-lamp", "restart-refuses", "ap-button"]
 # Scenarios in which the lamp runs as an access point: a new network is checked before it is saved
-AP_SCENARIOS = {"ap", "join-ok", "join-wrong-pass", "join-no-network"}
+AP_SCENARIOS = {"ap", "join-ok", "join-wrong-pass", "join-no-network", "ap-button"}
 # How long the mock check runs before it reports its result (the lamp takes up to 20 s)
 JOIN_CHECK_S = 4.0
 # What the mock check reports in each scenario: None = the network works, else the reason
-JOIN_FAIL_REASON = {"ap": None, "join-ok": None, "join-wrong-pass": "wrong_password", "join-no-network": "no_network"}
+JOIN_FAIL_REASON = {"ap": None, "ap-button": None, "join-ok": None, "join-wrong-pass": "wrong_password", "join-no-network": "no_network"}
 # The lamp holds access point and station together this long after a passed check, then restarts
 JOIN_OK_HOLD_S = 20.0
 # Network the mock lamp is joined to in station mode
@@ -552,8 +552,10 @@ class MockLamp:
             # The lamp sends the joined network's name in station mode and null otherwise
             ssid = json.dumps(self.current_ssid, ensure_ascii=False) if station and connected else "null"
             lamp = "" if self.scenario == "no-lamp" else ',"lamp":' + self.lamp_block()
-            return 200, '{{"fw":"{0}","mode":"{1}","ssid":{2},"ip":"{3}","uptime":{4},"rssi":{5},"meas":{{{6}}}{7}}}'.format(
-                FW_VERSION, "sta" if station else "ap", ssid, ip, uptime, rssi, ",".join(parts), lamp
+            # The lamp adds it in access point mode only, when the touch buttons opened the access point
+            ap_why = ',"apWhy":"button"' if self.scenario == "ap-button" else ""
+            return 200, '{{"fw":"{0}","mode":"{1}","ssid":{2},"ip":"{3}","uptime":{4},"rssi":{5}{8},"meas":{{{6}}}{7}}}'.format(
+                FW_VERSION, "sta" if station else "ap", ssid, ip, uptime, rssi, ",".join(parts), lamp, ap_why
             )
 
     def drawn_colors(self, keys):

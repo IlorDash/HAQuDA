@@ -22,7 +22,7 @@ struct touch_gesture_event {
 // emits one repeat or one chord, never both); callers size their array from this.
 constexpr uint8_t TOUCH_GESTURE_MAX_EVENTS = 1;
 
-// Buttons 0..3 are pads 2, 6, 8, 9; lock chord is buttons 1 + 2, AP chord is buttons 0 + 3.
+// Buttons 0..3 are pads 2, 6, 8, 9; lock chord is buttons 1 + 2, AP chord is buttons 0 + 2.
 // Update and SetRepeatable run in the same task (the esp_timer task); no locking inside.
 class HAQuDA_TouchGestures {
   public:
@@ -34,7 +34,7 @@ class HAQuDA_TouchGestures {
 	bool finishSolo(uint32_t nowMs, touch_gesture_kind &kind) const;
 
 	static constexpr uint8_t LOCK_MASK = (1 << 1) | (1 << 2);
-	static constexpr uint8_t AP_MASK = (1 << 0) | (1 << 3);
+	static constexpr uint8_t AP_MASK = (1 << 0) | (1 << 2);
 
 	bool started = false;
 	// An input already touched at power-up is ignored until it is released once.

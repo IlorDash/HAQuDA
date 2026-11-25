@@ -38,8 +38,9 @@ uint8_t HAQuDA_RepeatableMask(const buttons_settings &settings) {
 	return mask;
 }
 
-HAQuDA_ButtonActions::HAQuDA_ButtonActions(HAQuDA_ILampActions &lampActions, HAQuDA_ButtonsControl &buttonsControl, HAQuDA_ILogger &actionsLogger)
-	: lamp(lampActions), buttons(buttonsControl), logger(actionsLogger) {
+HAQuDA_ButtonActions::HAQuDA_ButtonActions(HAQuDA_ILampActions &lampActions, HAQuDA_ButtonsControl &buttonsControl, HAQuDA_ILogger &actionsLogger,
+										   HAQuDA_IApRequest &accessPoint)
+	: lamp(lampActions), buttons(buttonsControl), logger(actionsLogger), apRequest(accessPoint) {
 }
 
 void HAQuDA_ButtonActions::Handle(const touch_gesture_event *events, uint8_t count, const buttons_settings &settings) {
@@ -65,7 +66,13 @@ void HAQuDA_ButtonActions::handleEvent(const touch_gesture_event &event, buttons
 		return;
 	}
 	if (event.kind == touch_gesture_kind::ap_chord) {
-		logger.LogInfo("Touch buttons: access point requested");
+		if (apRequest.RequestAccessPoint()) {
+			lamp.Flash(lamp_flash::access_point);
+			logger.LogInfo("Touch buttons: restarting into the access point");
+		} else {
+			lamp.Flash(lamp_flash::refused);
+			logger.LogInfo("Touch buttons: access point refused");
+		}
 		return;
 	}
 	if (event.kind == touch_gesture_kind::repeat_end) {

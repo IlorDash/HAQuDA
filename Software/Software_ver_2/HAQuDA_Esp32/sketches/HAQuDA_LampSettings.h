@@ -8,7 +8,7 @@ enum class lamp_mode : uint8_t { standard, multi, night, light };
 // In the order of the page's keys; total is for the standard mode only
 enum class lamp_param : uint8_t { total, temp, humid, eco2, tvoc, pm25 };
 
-enum class lamp_flash : uint8_t { locked, unlocked, refused };
+enum class lamp_flash : uint8_t { locked, unlocked, refused, access_point };
 
 constexpr size_t LAMP_MODE_NUM = 4;
 constexpr size_t LAMP_PARAM_NUM = 6;

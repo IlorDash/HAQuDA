@@ -29,6 +29,8 @@ constexpr char STA_HOSTNAME[] = "haquda";
 // just-submitted /lamp edit before the restart
 constexpr uint32_t USER_RESTART_DELAY_MS = 1000;
 
+enum class restart_request_result : uint8_t { accepted, restarting, checking };
+
 class HAQuDA_WebServer {
 	static void recvMsg(uint8_t *data, size_t len);
 
@@ -45,13 +47,14 @@ class HAQuDA_WebServer {
 	// What the user set for the lamp: POST /api/lamp submits to it, /api/status reports it, loop() applies it
 	HAQuDA_LampControl &lampControl;
 	// Written by loop() only (scheduleRestart(), from finishJoinOk / finishSwitchOk / finishSwitchFail and from
-	// HandleDeferredWork() for a restart the web page asked for), read by loop() and the async_tcp task. The time, the delay
-	// and the reason are stored before the flag, so they are read only while the flag is set.
+	// HandleDeferredWork() for a restart the user asked for, on the web page or with the touch buttons), read by loop() and the async_tcp task. The time, the
+	// delay and the reason are stored before the flag, so they are read only while the flag is set.
 	std::atomic<bool> restartPending{false};
 	std::atomic<uint32_t> restartRequestMs{0};
 	std::atomic<uint32_t> restartDelayMs{0};
 	std::atomic<bool> restartByUser{false};
-	// Set by the async_tcp task (handleRestart(), under joinMux, together with its check of the join state), never cleared:
+	// Set by RequestUserRestart() (under joinMux, together with its check of the join state) from the async_tcp task (web page) or
+	// the loop task (touch gesture), never cleared:
 	// loop() turns it into a scheduled restart. queueJoinRequest() refuses joins while it is set.
 	std::atomic<bool> restartRequested{false};
 	// A log call writes to SPIFFS and WebSerial and the logger has no lock, so the async_tcp task does not call it:
@@ -62,6 +65,9 @@ class HAQuDA_WebServer {
 	// task and loop(). In this mode the check of a new network runs next to the access point; in station mode the lamp scans,
 	// leaves its network and joins the new one instead.
 	std::atomic<bool> apMode{false};
+	// True when the access point mode was asked for with the touch buttons, not forced by a failed connect. Written once by setup()
+	// (loop task) before the web server starts, read by the async_tcp task for /api/status.
+	std::atomic<bool> apByButtons{false};
 
 	// Check of a new network (access point mode) or switch to it (station mode), see HAQuDA_WiFiJoin.h. The web server
 	// task queues the request and reads the view, loop() takes the request and writes the view; both sit behind joinMux,
@@ -105,10 +111,6 @@ class HAQuDA_WebServer {
 	// temporary file renamed. A power loss between those two steps leaves only the temporary file; RecoverCredsFile() restores
 	// it at the next boot. Returns false on failure (logged through postLogError). Any task; takes the credentials lock.
 	bool SaveCredsFirst(const TWiFiCreds &newCreds);
-	// Finishes or drops what an interrupted SaveCredsFirst() left (see HAQuDA_DecideCredsRecovery). Call at boot before
-	// the stored networks are read, with no other task using the file. setup() (loop task) only; logs.
-	void RecoverCredsFile();
-
 	void beginWebServer();
 
 	HAQuDA_WebServer(HAQuDA_FileStorage *curr_FS, const HAQuDA_MeasSnapshot &snapshot, HAQuDA_WebPageDisplayManip &webDispIn, HAQuDA_LampControl &lampControlIn)
@@ -134,7 +136,7 @@ class HAQuDA_WebServer {
 	void handleJoin(AsyncWebServerRequest *request);
 	void handleJoinDismiss(AsyncWebServerRequest *request);
 	void handleBoot(AsyncWebServerRequest *request);
-	// 202 when accepted, 409 while a network check is running or a restart is already coming. Only sets restartRequested.
+	// 202 when accepted, 409 while a network check is running or a restart is already coming.
 	void handleRestart(AsyncWebServerRequest *request);
 	void WebSerialPrintStoredLogs();
 
@@ -143,6 +145,17 @@ class HAQuDA_WebServer {
 	void HandleDeferredWork();
 
   public:
+	// Finishes or drops what an interrupted SaveCredsFirst() left (see HAQuDA_DecideCredsRecovery). Call at boot before
+	// the stored networks are read, with no other task using the file. setup() (loop task) only; logs.
+	void RecoverCredsFile();
+
+	// Only sets restartRequested: loop() turns it into the restart in HandleDeferredWork(). Refused (nothing set) while a network
+	// check runs or a restart is already coming. Any task.
+	restart_request_result RequestUserRestart();
+
+	// setup() (loop task) only, before CreateAP(): /api/status then reports "apWhy":"button" in access point mode
+	void SetApByButtons();
+
 	// Sends str plus CRLF as two websocket frames (println). Loop task only: a call from a web callback would race with the logger's sends.
 	static void WebSerialPrint(const char *str);
 	// Sends str as is in one websocket frame; the caller appends the line end. Loop task only.

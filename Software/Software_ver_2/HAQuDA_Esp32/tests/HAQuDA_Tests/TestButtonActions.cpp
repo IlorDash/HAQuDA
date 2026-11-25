@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include "HAQuDA_ButtonActions.h"
+#include "MockApRequest.h"
 #include "MockFileStorage.h"
 #include "MockLampActions.h"
 #include "MockLogger.h"
@@ -91,8 +92,9 @@ TEST(ButtonActionsTest, TapPowerTogglesPower) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, TogglePower());
@@ -111,8 +113,9 @@ TEST(ButtonActionsTest, TapUpStepsUpThenCommitsThenLogs) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, StepBrightness(true)).WillOnce(Return(true));
@@ -132,8 +135,9 @@ TEST(ButtonActionsTest, TapUpAtTheLimitStillCommits) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, StepBrightness(true)).WillOnce(Return(false));
@@ -153,8 +157,9 @@ TEST(ButtonActionsTest, TapDownStepsDownThenCommitsThenLogs) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, StepBrightness(false)).WillOnce(Return(true));
@@ -174,8 +179,9 @@ TEST(ButtonActionsTest, TapDownAtTheLimitStillCommits) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, StepBrightness(false)).WillOnce(Return(false));
@@ -195,8 +201,9 @@ TEST(ButtonActionsTest, TapNextCallsNextMode) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, NextMode());
@@ -216,8 +223,9 @@ TEST(ButtonActionsTest, TapModeSetsTheBoundMode) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, SetMode(lamp_mode::night)).WillOnce(Return(true));
@@ -237,8 +245,9 @@ TEST(ButtonActionsTest, TapModeMultiSetsTheBoundMode) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, SetMode(lamp_mode::multi)).WillOnce(Return(true));
@@ -258,8 +267,9 @@ TEST(ButtonActionsTest, TapModeRefusedFlashesRefusedThenLogs) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, SetMode(lamp_mode::night)).WillOnce(Return(false));
@@ -280,8 +290,9 @@ TEST(ButtonActionsTest, TapShowShowsTheBoundParameter) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, ShowReading(lamp_param::eco2)).WillOnce(Return(true));
@@ -301,8 +312,9 @@ TEST(ButtonActionsTest, TapShowRefusedFlashesRefusedThenLogs) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, ShowReading(lamp_param::tvoc)).WillOnce(Return(false));
@@ -323,8 +335,9 @@ TEST(ButtonActionsTest, TapNoneDoesNothingAndLogsNothing) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	actions.Handle(events, eventCount, settings);
 }
@@ -340,8 +353,9 @@ TEST(ButtonActionsTest, TapOnTheLastButtonUsesItsOwnBinding) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, TogglePower());
@@ -360,8 +374,9 @@ TEST(ButtonActionsTest, RepeatUpStepsUpWithoutCommitAndLog) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	EXPECT_CALL(lamp, StepBrightness(true)).WillOnce(Return(true));
 
@@ -378,8 +393,9 @@ TEST(ButtonActionsTest, RepeatDownStepsDownWithoutCommitAndLog) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	EXPECT_CALL(lamp, StepBrightness(false)).WillOnce(Return(true));
 
@@ -396,8 +412,9 @@ TEST(ButtonActionsTest, RepeatOnANonBrightnessButtonDoesNothing) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	actions.Handle(events, eventCount, settings);
 }
@@ -413,8 +430,9 @@ TEST(ButtonActionsTest, RepeatOnAReboundShowButtonDoesNothing) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	actions.Handle(events, eventCount, settings);
 }
@@ -429,8 +447,9 @@ TEST(ButtonActionsTest, RepeatEndCommitsThenLogsHeld) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, CommitBrightness());
@@ -449,8 +468,9 @@ TEST(ButtonActionsTest, RepeatEndOfDownLogsDimmerHeld) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, CommitBrightness());
@@ -469,8 +489,9 @@ TEST(ButtonActionsTest, RepeatEndOnAReboundButtonCommitsWithoutLog) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	EXPECT_CALL(lamp, CommitBrightness());
 
@@ -488,8 +509,9 @@ TEST(ButtonActionsTest, RepeatEndWhenLockedCommitsWithoutLog) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	EXPECT_CALL(lamp, CommitBrightness());
 
@@ -504,8 +526,9 @@ TEST(ButtonActionsTest, RepeatEndOutOfRangeCommitsWithoutLog) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	EXPECT_CALL(lamp, CommitBrightness());
 
@@ -522,8 +545,9 @@ TEST(ButtonActionsTest, RunOfRepeatsOfOneButtonDoesOneStep) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	EXPECT_CALL(lamp, StepBrightness(true)).Times(1).WillOnce(Return(true));
 
@@ -541,8 +565,9 @@ TEST(ButtonActionsTest, RunOfRepeatsThenRepeatEndStepsOnceCommitsThenLogs) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, StepBrightness(false)).WillOnce(Return(true));
@@ -563,8 +588,9 @@ TEST(ButtonActionsTest, RepeatsOfDifferentButtonsAreNotCollapsed) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, StepBrightness(true)).WillOnce(Return(true));
@@ -584,8 +610,9 @@ TEST(ButtonActionsTest, RepeatsSeparatedByATapAreNotCollapsed) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, StepBrightness(true)).WillOnce(Return(true));
@@ -606,8 +633,9 @@ TEST(ButtonActionsTest, RepeatsSeparatedByRepeatEndAreNotCollapsed) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, StepBrightness(true)).WillOnce(Return(true));
@@ -630,8 +658,9 @@ TEST(ButtonActionsTest, RunsOfTwoButtonsAreCollapsedEach) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, StepBrightness(true)).WillOnce(Return(true));
@@ -650,8 +679,9 @@ TEST(ButtonActionsTest, RunOfRepeatsAfterATapOfTheSameButtonStepsTwiceInTotal) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, StepBrightness(true)).WillOnce(Return(true));
@@ -673,8 +703,9 @@ TEST(ButtonActionsTest, LockedIgnoresTap) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	actions.Handle(events, eventCount, settings);
 }
@@ -690,8 +721,9 @@ TEST(ButtonActionsTest, LockedIgnoresRepeat) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	actions.Handle(events, eventCount, settings);
 }
@@ -710,8 +742,9 @@ TEST(ButtonActionsTest, LockedIgnoresModeAndShowTaps) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	actions.Handle(events, eventCount, settings);
 }
@@ -724,8 +757,9 @@ TEST(ButtonActionsTest, LockChordLocksFlashesLockedThenLogs) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, Flash(lamp_flash::locked));
@@ -745,8 +779,9 @@ TEST(ButtonActionsTest, LockChordWhenLockedUnlocksFlashesUnlockedThenLogs) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 	control.SetLocked(true);
 
 	InSequence seq;
@@ -766,8 +801,9 @@ TEST(ButtonActionsTest, LockChordTwiceInOneBatchLocksThenUnlocks) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, Flash(lamp_flash::locked));
@@ -790,8 +826,9 @@ TEST(ButtonActionsTest, TapAfterTheLockChordInTheSameBatchIsIgnored) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, Flash(lamp_flash::locked));
@@ -810,8 +847,9 @@ TEST(ButtonActionsTest, RepeatAfterTheLockChordInTheSameBatchIsIgnored) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, Flash(lamp_flash::locked));
@@ -830,8 +868,9 @@ TEST(ButtonActionsTest, RepeatEndAfterTheLockChordInTheSameBatchCommitsWithoutHe
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, Flash(lamp_flash::locked));
@@ -852,8 +891,9 @@ TEST(ButtonActionsTest, TapAfterTheUnlockChordInTheSameBatchWorks) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 	control.SetLocked(true);
 
 	InSequence seq;
@@ -875,8 +915,9 @@ TEST(ButtonActionsTest, TapBeforeTheLockChordInTheSameBatchWorks) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, TogglePower());
@@ -887,7 +928,7 @@ TEST(ButtonActionsTest, TapBeforeTheLockChordInTheSameBatchWorks) {
 	actions.Handle(events, eventCount, settings);
 }
 
-TEST(ButtonActionsTest, ApChordOnlyLogs) {
+TEST(ButtonActionsTest, ApChordRequestsTheAccessPointThenLogs) {
 	const touch_gesture_event events[] = {{TOUCH_NO_BUTTON, touch_gesture_kind::ap_chord}};
 	const uint8_t eventCount = 1;
 	buttons_settings settings = HAQuDA_ButtonsDefaults();
@@ -895,17 +936,41 @@ TEST(ButtonActionsTest, ApChordOnlyLogs) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
-	EXPECT_CALL(logger, LogInfo(StrEq("Touch buttons: access point requested")));
+	InSequence seq;
+	EXPECT_CALL(apRequest, RequestAccessPoint()).WillOnce(Return(true));
+	EXPECT_CALL(lamp, Flash(lamp_flash::access_point));
+	EXPECT_CALL(logger, LogInfo(StrEq("Touch buttons: restarting into the access point")));
 
 	actions.Handle(events, eventCount, settings);
 
 	EXPECT_FALSE(control.CopySettings().locked);
 }
 
-TEST(ButtonActionsTest, ApChordWhenLockedStillLogs) {
+TEST(ButtonActionsTest, ApChordRefusedFlashesRefusedThenLogs) {
+	const touch_gesture_event events[] = {{TOUCH_NO_BUTTON, touch_gesture_kind::ap_chord}};
+	const uint8_t eventCount = 1;
+	buttons_settings settings = HAQuDA_ButtonsDefaults();
+
+	StrictMock<MockLampActions> lamp;
+	StrictMock<MockFileStorage> files;
+	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
+	HAQuDA_ButtonsControl control(files, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
+
+	InSequence seq;
+	EXPECT_CALL(apRequest, RequestAccessPoint()).WillOnce(Return(false));
+	EXPECT_CALL(lamp, Flash(lamp_flash::refused));
+	EXPECT_CALL(logger, LogInfo(StrEq("Touch buttons: access point refused")));
+
+	actions.Handle(events, eventCount, settings);
+}
+
+TEST(ButtonActionsTest, ApChordWhenLockedStillRequestsTheAccessPoint) {
 	const touch_gesture_event events[] = {{TOUCH_NO_BUTTON, touch_gesture_kind::ap_chord}};
 	const uint8_t eventCount = 1;
 	buttons_settings settings = HAQuDA_ButtonsDefaults();
@@ -914,10 +979,204 @@ TEST(ButtonActionsTest, ApChordWhenLockedStillLogs) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
-	EXPECT_CALL(logger, LogInfo(StrEq("Touch buttons: access point requested")));
+	InSequence seq;
+	EXPECT_CALL(apRequest, RequestAccessPoint()).WillOnce(Return(true));
+	EXPECT_CALL(lamp, Flash(lamp_flash::access_point));
+	EXPECT_CALL(logger, LogInfo(StrEq("Touch buttons: restarting into the access point")));
+
+	actions.Handle(events, eventCount, settings);
+}
+
+TEST(ButtonActionsTest, ApChordWhenLockedRefusedFlashesRefused) {
+	const touch_gesture_event events[] = {{TOUCH_NO_BUTTON, touch_gesture_kind::ap_chord}};
+	const uint8_t eventCount = 1;
+	buttons_settings settings = HAQuDA_ButtonsDefaults();
+	settings.locked = true;
+
+	StrictMock<MockLampActions> lamp;
+	StrictMock<MockFileStorage> files;
+	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
+	HAQuDA_ButtonsControl control(files, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
+
+	InSequence seq;
+	EXPECT_CALL(apRequest, RequestAccessPoint()).WillOnce(Return(false));
+	EXPECT_CALL(lamp, Flash(lamp_flash::refused));
+	EXPECT_CALL(logger, LogInfo(StrEq("Touch buttons: access point refused")));
+
+	actions.Handle(events, eventCount, settings);
+}
+
+TEST(ButtonActionsTest, TapBeforeTheApChordInTheSameBatchWorks) {
+	const uint8_t btnPower = 0;
+
+	const touch_gesture_event events[] = {{btnPower, touch_gesture_kind::tap}, {TOUCH_NO_BUTTON, touch_gesture_kind::ap_chord}};
+	const uint8_t eventCount = 2;
+	buttons_settings settings = HAQuDA_ButtonsDefaults();
+
+	StrictMock<MockLampActions> lamp;
+	StrictMock<MockFileStorage> files;
+	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
+	HAQuDA_ButtonsControl control(files, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
+
+	InSequence seq;
+	EXPECT_CALL(lamp, TogglePower());
+	EXPECT_CALL(logger, LogInfo(StrEq("Touch 2: power")));
+	EXPECT_CALL(apRequest, RequestAccessPoint()).WillOnce(Return(true));
+	EXPECT_CALL(lamp, Flash(lamp_flash::access_point));
+	EXPECT_CALL(logger, LogInfo(StrEq("Touch buttons: restarting into the access point")));
+
+	actions.Handle(events, eventCount, settings);
+}
+
+TEST(ButtonActionsTest, TapAfterTheRefusedApChordInTheSameBatchWorks) {
+	const uint8_t btnPower = 0;
+
+	const touch_gesture_event events[] = {{TOUCH_NO_BUTTON, touch_gesture_kind::ap_chord}, {btnPower, touch_gesture_kind::tap}};
+	const uint8_t eventCount = 2;
+	buttons_settings settings = HAQuDA_ButtonsDefaults();
+
+	StrictMock<MockLampActions> lamp;
+	StrictMock<MockFileStorage> files;
+	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
+	HAQuDA_ButtonsControl control(files, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
+
+	InSequence seq;
+	EXPECT_CALL(apRequest, RequestAccessPoint()).WillOnce(Return(false));
+	EXPECT_CALL(lamp, Flash(lamp_flash::refused));
+	EXPECT_CALL(logger, LogInfo(StrEq("Touch buttons: access point refused")));
+	EXPECT_CALL(lamp, TogglePower());
+	EXPECT_CALL(logger, LogInfo(StrEq("Touch 2: power")));
+
+	actions.Handle(events, eventCount, settings);
+}
+
+TEST(ButtonActionsTest, LockChordAfterTheApChordInTheSameBatchStillLocks) {
+	const touch_gesture_event events[] = {{TOUCH_NO_BUTTON, touch_gesture_kind::ap_chord}, {TOUCH_NO_BUTTON, touch_gesture_kind::lock_chord}};
+	const uint8_t eventCount = 2;
+	buttons_settings settings = HAQuDA_ButtonsDefaults();
+
+	StrictMock<MockLampActions> lamp;
+	StrictMock<MockFileStorage> files;
+	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
+	HAQuDA_ButtonsControl control(files, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
+
+	InSequence seq;
+	EXPECT_CALL(apRequest, RequestAccessPoint()).WillOnce(Return(true));
+	EXPECT_CALL(lamp, Flash(lamp_flash::access_point));
+	EXPECT_CALL(logger, LogInfo(StrEq("Touch buttons: restarting into the access point")));
+	EXPECT_CALL(lamp, Flash(lamp_flash::locked));
+	EXPECT_CALL(logger, LogInfo(StrEq("Touch buttons locked")));
+
+	actions.Handle(events, eventCount, settings);
+}
+
+TEST(ButtonActionsTest, TapAfterTheLockChordAndTheApChordInTheSameBatchIsIgnored) {
+	const uint8_t btnPower = 0;
+
+	const touch_gesture_event events[]
+		= {{TOUCH_NO_BUTTON, touch_gesture_kind::lock_chord}, {TOUCH_NO_BUTTON, touch_gesture_kind::ap_chord}, {btnPower, touch_gesture_kind::tap}};
+	const uint8_t eventCount = 3;
+	buttons_settings settings = HAQuDA_ButtonsDefaults();
+
+	StrictMock<MockLampActions> lamp;
+	StrictMock<MockFileStorage> files;
+	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
+	HAQuDA_ButtonsControl control(files, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
+
+	InSequence seq;
+	EXPECT_CALL(lamp, Flash(lamp_flash::locked));
+	EXPECT_CALL(logger, LogInfo(StrEq("Touch buttons locked")));
+	EXPECT_CALL(apRequest, RequestAccessPoint()).WillOnce(Return(true));
+	EXPECT_CALL(lamp, Flash(lamp_flash::access_point));
+	EXPECT_CALL(logger, LogInfo(StrEq("Touch buttons: restarting into the access point")));
+
+	actions.Handle(events, eventCount, settings);
+}
+
+TEST(ButtonActionsTest, TwoApChordsInOneBatchAskTwiceAndSecondRefusedFlashes) {
+	const touch_gesture_event events[] = {{TOUCH_NO_BUTTON, touch_gesture_kind::ap_chord}, {TOUCH_NO_BUTTON, touch_gesture_kind::ap_chord}};
+	const uint8_t eventCount = 2;
+	buttons_settings settings = HAQuDA_ButtonsDefaults();
+
+	StrictMock<MockLampActions> lamp;
+	StrictMock<MockFileStorage> files;
+	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
+	HAQuDA_ButtonsControl control(files, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
+
+	InSequence seq;
+	EXPECT_CALL(apRequest, RequestAccessPoint()).WillOnce(Return(true));
+	EXPECT_CALL(lamp, Flash(lamp_flash::access_point));
+	EXPECT_CALL(logger, LogInfo(StrEq("Touch buttons: restarting into the access point")));
+	EXPECT_CALL(apRequest, RequestAccessPoint()).WillOnce(Return(false));
+	EXPECT_CALL(lamp, Flash(lamp_flash::refused));
+	EXPECT_CALL(logger, LogInfo(StrEq("Touch buttons: access point refused")));
+
+	actions.Handle(events, eventCount, settings);
+}
+
+TEST(ButtonActionsTest, RepeatsSeparatedByTheApChordAreNotCollapsed) {
+	const uint8_t btnUp = 1;
+
+	const touch_gesture_event events[]
+		= {{btnUp, touch_gesture_kind::repeat}, {TOUCH_NO_BUTTON, touch_gesture_kind::ap_chord}, {btnUp, touch_gesture_kind::repeat}};
+	const uint8_t eventCount = 3;
+	buttons_settings settings = HAQuDA_ButtonsDefaults();
+
+	StrictMock<MockLampActions> lamp;
+	StrictMock<MockFileStorage> files;
+	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
+	HAQuDA_ButtonsControl control(files, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
+
+	InSequence seq;
+	EXPECT_CALL(lamp, StepBrightness(true)).WillOnce(Return(true));
+	EXPECT_CALL(apRequest, RequestAccessPoint()).WillOnce(Return(false));
+	EXPECT_CALL(lamp, Flash(lamp_flash::refused));
+	EXPECT_CALL(logger, LogInfo(StrEq("Touch buttons: access point refused")));
+	EXPECT_CALL(lamp, StepBrightness(true)).WillOnce(Return(true));
+
+	actions.Handle(events, eventCount, settings);
+}
+
+TEST(ButtonActionsTest, RepeatEndAfterTheApChordStillCommitsAndLogsHeld) {
+	const uint8_t btnUp = 1;
+
+	const touch_gesture_event events[]
+		= {{btnUp, touch_gesture_kind::repeat}, {TOUCH_NO_BUTTON, touch_gesture_kind::ap_chord}, {btnUp, touch_gesture_kind::repeat_end}};
+	const uint8_t eventCount = 3;
+	buttons_settings settings = HAQuDA_ButtonsDefaults();
+
+	StrictMock<MockLampActions> lamp;
+	StrictMock<MockFileStorage> files;
+	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
+	HAQuDA_ButtonsControl control(files, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
+
+	InSequence seq;
+	EXPECT_CALL(lamp, StepBrightness(true)).WillOnce(Return(true));
+	EXPECT_CALL(apRequest, RequestAccessPoint()).WillOnce(Return(true));
+	EXPECT_CALL(lamp, Flash(lamp_flash::access_point));
+	EXPECT_CALL(logger, LogInfo(StrEq("Touch buttons: restarting into the access point")));
+	EXPECT_CALL(lamp, CommitBrightness());
+	EXPECT_CALL(logger, LogInfo(StrEq("Touch 6: brighter, held")));
 
 	actions.Handle(events, eventCount, settings);
 }
@@ -930,8 +1189,9 @@ TEST(ButtonActionsTest, TapOutOfRangeIsIgnored) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	actions.Handle(events, eventCount, settings);
 }
@@ -944,8 +1204,9 @@ TEST(ButtonActionsTest, RepeatOfNoButtonIsIgnored) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	actions.Handle(events, eventCount, settings);
 }
@@ -957,8 +1218,9 @@ TEST(ButtonActionsTest, NullEventsAreIgnored) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	actions.Handle(nullptr, eventCount, settings);
 }
@@ -973,8 +1235,9 @@ TEST(ButtonActionsTest, CountZeroHandlesNothing) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	actions.Handle(events, eventCount, settings);
 }
@@ -990,8 +1253,9 @@ TEST(ButtonActionsTest, CountLimitsTheEventsHandled) {
 	StrictMock<MockLampActions> lamp;
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLogger> logger;
+	StrictMock<MockApRequest> apRequest;
 	HAQuDA_ButtonsControl control(files, logger);
-	HAQuDA_ButtonActions actions(lamp, control, logger);
+	HAQuDA_ButtonActions actions(lamp, control, logger, apRequest);
 
 	InSequence seq;
 	EXPECT_CALL(lamp, TogglePower());

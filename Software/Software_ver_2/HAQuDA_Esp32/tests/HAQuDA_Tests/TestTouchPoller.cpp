@@ -633,7 +633,7 @@ TEST(TouchPollerTest, ReleaseAfterLockChordGivesNoEvent) {
 
 TEST(TouchPollerTest, ApPairHeldThreeSecondsGivesNothing) {
 	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
-	const bool apPair[TOUCH_BUTTONS_NUM] = {true, false, false, true};
+	const bool apPair[TOUCH_BUTTONS_NUM] = {true, false, true, false};
 
 	const uint8_t exp_quiet = 0;
 
@@ -652,7 +652,7 @@ TEST(TouchPollerTest, ApPairHeldThreeSecondsGivesNothing) {
 
 TEST(TouchPollerTest, ApPairHeldJustShortOfTenSecondsGivesNothing) {
 	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
-	const bool apPair[TOUCH_BUTTONS_NUM] = {true, false, false, true};
+	const bool apPair[TOUCH_BUTTONS_NUM] = {true, false, true, false};
 
 	const uint8_t exp_quiet = 0;
 
@@ -671,7 +671,7 @@ TEST(TouchPollerTest, ApPairHeldJustShortOfTenSecondsGivesNothing) {
 
 TEST(TouchPollerTest, ApPairHeldTenSecondsGivesApChord) {
 	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
-	const bool apPair[TOUCH_BUTTONS_NUM] = {true, false, false, true};
+	const bool apPair[TOUCH_BUTTONS_NUM] = {true, false, true, false};
 
 	const uint8_t exp_quiet = 0;
 	const uint8_t exp_count_chord = 1;
@@ -691,6 +691,54 @@ TEST(TouchPollerTest, ApPairHeldTenSecondsGivesApChord) {
 	res_chord = poller.Poll(apPair, 11130, out_chord, 1);
 
 	EXPECT_EQ(exp_quiet, quiet);
+	EXPECT_EQ(exp_count_chord, res_chord);
+	EXPECT_EQ(exp_kind_chord, out_chord[0].kind);
+	EXPECT_EQ(exp_button_chord, out_chord[0].button);
+}
+
+TEST(TouchPollerTest, FormerApPairOfPads2And9HeldTwelveSecondsGivesNothing) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad2and9[TOUCH_BUTTONS_NUM] = {true, false, false, true};
+
+	const uint8_t exp_quiet = 0;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	uint8_t quiet = 0;
+
+	quiet += poller.Poll(idle, 1000, scratch, 1);
+	quiet += poller.Poll(idle, 1030, scratch, 1);
+	quiet += poller.Poll(pad2and9, 1100, scratch, 1);
+	quiet += poller.Poll(pad2and9, 1130, scratch, 1);
+	quiet += poller.Poll(pad2and9, 13130, scratch, 1);
+
+	EXPECT_EQ(exp_quiet, quiet);
+}
+
+TEST(TouchPollerTest, SwitchFromLockPairToApPairGivesApChordTenSecondsAfterTheSwitch) {
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool lockPair[TOUCH_BUTTONS_NUM] = {false, true, true, false};
+	const bool apPair[TOUCH_BUTTONS_NUM] = {true, false, true, false};
+
+	const uint8_t exp_count_chord = 1;
+	const touch_gesture_kind exp_kind_chord = touch_gesture_kind::ap_chord;
+	const uint8_t exp_button_chord = TOUCH_NO_BUTTON;
+
+	HAQuDA_TouchPoller poller;
+	touch_gesture_event scratch[1];
+	touch_gesture_event out_chord[1];
+	uint8_t res_chord;
+
+	poller.Poll(idle, 1000, scratch, 1);
+	poller.Poll(idle, 1030, scratch, 1);
+	poller.Poll(lockPair, 1100, scratch, 1);
+	poller.Poll(lockPair, 1130, scratch, 1);
+	poller.Poll(lockPair, 4130, scratch, 1);
+	poller.Poll(apPair, 4200, scratch, 1);
+	poller.Poll(apPair, 4230, scratch, 1);
+
+	res_chord = poller.Poll(apPair, 14230, out_chord, 1);
+
 	EXPECT_EQ(exp_count_chord, res_chord);
 	EXPECT_EQ(exp_kind_chord, out_chord[0].kind);
 	EXPECT_EQ(exp_button_chord, out_chord[0].button);
@@ -792,7 +840,7 @@ TEST(TouchPollerTest, LockPairHeldAtBootGivesNoChord) {
 }
 
 TEST(TouchPollerTest, ApPairHeldAtBootGivesNoChord) {
-	const bool apPair[TOUCH_BUTTONS_NUM] = {true, false, false, true};
+	const bool apPair[TOUCH_BUTTONS_NUM] = {true, false, true, false};
 
 	const uint8_t exp_quiet = 0;
 

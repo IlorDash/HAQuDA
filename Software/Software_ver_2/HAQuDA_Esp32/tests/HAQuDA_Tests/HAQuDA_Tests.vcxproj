@@ -149,6 +149,7 @@
     <ClInclude Include="..\..\sketches\HAQuDA_RecordCodec.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_LampControl.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_ILampActions.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_IApRequest.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_CriticalLock.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_IFileStorage.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_ILampDisplay.h" />
@@ -160,6 +161,7 @@
     <ClInclude Include="..\mocks\MockLampDisplay.h" />
     <ClInclude Include="..\mocks\MockLogger.h" />
     <ClInclude Include="..\mocks\MockLampActions.h" />
+    <ClInclude Include="..\mocks\MockApRequest.h" />
     <ClInclude Include="..\fakes\FakePMSerial.h" />
   </ItemGroup>
   <ItemGroup>

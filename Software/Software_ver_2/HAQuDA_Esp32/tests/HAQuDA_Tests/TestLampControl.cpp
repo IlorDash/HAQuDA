@@ -2375,6 +2375,51 @@ TEST(LampActionsTest, FlashRefusedShowsItsColourAtTheLampBrightness) {
 	control.Flash(lamp_flash::refused);
 }
 
+TEST(LampActionsTest, FlashAccessPointShowsItsColourAtTheLampBrightness) {
+	const uint8_t exp_bright = DEFAULT_BRIGHTNESS;
+
+	StrictMock<MockFileStorage> files;
+	StrictMock<MockLampDisplay> display;
+	StrictMock<MockLogger> logger;
+	HAQuDA_LampControl control(files, display, logger);
+	control.SensorsStarted();
+
+	{
+		InSequence seq;
+		EXPECT_CALL(display, ErrorShown()).WillOnce(Return(false));
+		EXPECT_CALL(display, SetBrightnessPercent(exp_bright));
+		EXPECT_CALL(display, ShowFlash(lamp_flash::access_point));
+	}
+
+	control.Flash(lamp_flash::access_point);
+}
+
+TEST(LampActionsTest, FlashAccessPointEndsAfterItsTimeAndShowsTheSettingsAgain) {
+	const uint8_t exp_bright = DEFAULT_BRIGHTNESS;
+	const uint32_t start_ms = 2000;
+
+	StrictMock<MockFileStorage> files;
+	StrictMock<MockLampDisplay> display;
+	StrictMock<MockLogger> logger;
+	HAQuDA_LampControl control(files, display, logger);
+	control.SensorsStarted();
+
+	{
+		InSequence seq;
+		EXPECT_CALL(display, ErrorShown()).WillOnce(Return(false));
+		EXPECT_CALL(display, SetBrightnessPercent(exp_bright));
+		EXPECT_CALL(display, ShowFlash(lamp_flash::access_point));
+		EXPECT_CALL(display, ErrorShown()).WillOnce(Return(false));
+		EXPECT_CALL(display, SetBrightnessPercent(exp_bright));
+		EXPECT_CALL(display, ShowMulti(_));
+	}
+
+	control.Flash(lamp_flash::access_point);
+	control.Handle(start_ms, false, 0);
+
+	control.Handle(start_ms + LAMP_FLASH_MS, false, 0);
+}
+
 TEST(LampActionsTest, FlashIsShownUntilJustBeforeItsTime) {
 	const uint8_t exp_bright = DEFAULT_BRIGHTNESS;
 	const uint32_t start_ms = 2000;
@@ -2657,7 +2702,7 @@ TEST(LampActionsTest, FlashDuringAShownReadingLeavesNoReadingTimerBehind) {
 }
 
 TEST(LampActionsTest, FlashWithAKindOutOfRangeDoesNothing) {
-	const lamp_flash bad_kind = static_cast<lamp_flash>(static_cast<uint8_t>(lamp_flash::refused) + 1);
+	const lamp_flash bad_kind = static_cast<lamp_flash>(static_cast<uint8_t>(lamp_flash::access_point) + 1);
 
 	StrictMock<MockFileStorage> files;
 	StrictMock<MockLampDisplay> display;

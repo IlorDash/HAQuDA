@@ -834,7 +834,7 @@ TEST(TouchGesturesTest, NoApChordJustBeforeApHold) {
 
 	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
 	const bool pad2[TOUCH_BUTTONS_NUM] = {true, false, false, false};
-	const bool pad2and9[TOUCH_BUTTONS_NUM] = {true, false, false, true};
+	const bool pad2and8[TOUCH_BUTTONS_NUM] = {true, false, true, false};
 	HAQuDA_TouchGestures g;
 	touch_gesture_event events[TOUCH_GESTURE_MAX_EVENTS];
 
@@ -842,9 +842,9 @@ TEST(TouchGesturesTest, NoApChordJustBeforeApHold) {
 
 	g.Update(idle, startMs - 10, events, TOUCH_GESTURE_MAX_EVENTS);
 	g.Update(pad2, startMs, events, TOUCH_GESTURE_MAX_EVENTS);
-	g.Update(pad2and9, startMs + 50, events, TOUCH_GESTURE_MAX_EVENTS);
+	g.Update(pad2and8, startMs + 50, events, TOUCH_GESTURE_MAX_EVENTS);
 
-	res = g.Update(pad2and9, startMs + 50 + TOUCH_AP_HOLD_MS - 1, events, TOUCH_GESTURE_MAX_EVENTS);
+	res = g.Update(pad2and8, startMs + 50 + TOUCH_AP_HOLD_MS - 1, events, TOUCH_GESTURE_MAX_EVENTS);
 
 	EXPECT_EQ(exp_count, res);
 }
@@ -858,7 +858,7 @@ TEST(TouchGesturesTest, ApChordAtApHold) {
 
 	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
 	const bool pad2[TOUCH_BUTTONS_NUM] = {true, false, false, false};
-	const bool pad2and9[TOUCH_BUTTONS_NUM] = {true, false, false, true};
+	const bool pad2and8[TOUCH_BUTTONS_NUM] = {true, false, true, false};
 	HAQuDA_TouchGestures g;
 	touch_gesture_event events[TOUCH_GESTURE_MAX_EVENTS];
 
@@ -866,9 +866,9 @@ TEST(TouchGesturesTest, ApChordAtApHold) {
 
 	g.Update(idle, startMs - 10, events, TOUCH_GESTURE_MAX_EVENTS);
 	g.Update(pad2, startMs, events, TOUCH_GESTURE_MAX_EVENTS);
-	g.Update(pad2and9, startMs + 50, events, TOUCH_GESTURE_MAX_EVENTS);
+	g.Update(pad2and8, startMs + 50, events, TOUCH_GESTURE_MAX_EVENTS);
 
-	res = g.Update(pad2and9, startMs + 50 + TOUCH_AP_HOLD_MS, events, TOUCH_GESTURE_MAX_EVENTS);
+	res = g.Update(pad2and8, startMs + 50 + TOUCH_AP_HOLD_MS, events, TOUCH_GESTURE_MAX_EVENTS);
 
 	EXPECT_EQ(exp_count, res);
 	EXPECT_EQ(exp_button, events[0].button);
@@ -876,6 +876,120 @@ TEST(TouchGesturesTest, ApChordAtApHold) {
 }
 
 TEST(TouchGesturesTest, ApChordDoesNotFireTwiceInOneHold) {
+	const uint32_t startMs = 1000;
+
+	const uint8_t exp_count = 0;
+
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad2and8[TOUCH_BUTTONS_NUM] = {true, false, true, false};
+	HAQuDA_TouchGestures g;
+	touch_gesture_event events[TOUCH_GESTURE_MAX_EVENTS];
+
+	uint8_t res;
+
+	g.Update(idle, startMs - 10, events, TOUCH_GESTURE_MAX_EVENTS);
+	g.Update(pad2and8, startMs, events, TOUCH_GESTURE_MAX_EVENTS);
+	g.Update(pad2and8, startMs + TOUCH_AP_HOLD_MS, events, TOUCH_GESTURE_MAX_EVENTS);
+
+	res = g.Update(pad2and8, startMs + 2 * TOUCH_AP_HOLD_MS, events, TOUCH_GESTURE_MAX_EVENTS);
+
+	EXPECT_EQ(exp_count, res);
+}
+
+TEST(TouchGesturesTest, ApPairHeldLockHoldGivesNoLockChord) {
+	const uint32_t startMs = 1000;
+
+	const uint8_t exp_count = 0;
+
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad2and8[TOUCH_BUTTONS_NUM] = {true, false, true, false};
+	HAQuDA_TouchGestures g;
+	touch_gesture_event events[TOUCH_GESTURE_MAX_EVENTS];
+
+	uint8_t res;
+
+	g.Update(idle, startMs - 10, events, TOUCH_GESTURE_MAX_EVENTS);
+	g.Update(pad2and8, startMs, events, TOUCH_GESTURE_MAX_EVENTS);
+
+	res = g.Update(pad2and8, startMs + TOUCH_LOCK_HOLD_MS, events, TOUCH_GESTURE_MAX_EVENTS);
+
+	EXPECT_EQ(exp_count, res);
+}
+
+TEST(TouchGesturesTest, SwitchFromLockPairToApPairNeedsFullApHoldAfterTheSwitch) {
+	const uint32_t startMs = 1000;
+	const uint32_t switchMs = startMs + TOUCH_LOCK_HOLD_MS + 500;
+
+	const uint8_t exp_count = 0;
+
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad6and8[TOUCH_BUTTONS_NUM] = {false, true, true, false};
+	const bool pad2and8[TOUCH_BUTTONS_NUM] = {true, false, true, false};
+	HAQuDA_TouchGestures g;
+	touch_gesture_event events[TOUCH_GESTURE_MAX_EVENTS];
+
+	uint8_t res;
+
+	g.Update(idle, startMs - 10, events, TOUCH_GESTURE_MAX_EVENTS);
+	g.Update(pad6and8, startMs, events, TOUCH_GESTURE_MAX_EVENTS);
+	g.Update(pad6and8, startMs + TOUCH_LOCK_HOLD_MS, events, TOUCH_GESTURE_MAX_EVENTS);
+	g.Update(pad2and8, switchMs, events, TOUCH_GESTURE_MAX_EVENTS);
+
+	res = g.Update(pad2and8, switchMs + TOUCH_AP_HOLD_MS - 1, events, TOUCH_GESTURE_MAX_EVENTS);
+
+	EXPECT_EQ(exp_count, res);
+}
+
+TEST(TouchGesturesTest, SwitchFromLockPairToApPairGivesApChordTenSecondsAfterTheSwitch) {
+	const uint32_t startMs = 1000;
+	const uint32_t switchMs = startMs + TOUCH_LOCK_HOLD_MS + 500;
+
+	const uint8_t exp_count = 1;
+	const uint8_t exp_button = TOUCH_NO_BUTTON;
+	const touch_gesture_kind exp_kind = touch_gesture_kind::ap_chord;
+
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad6and8[TOUCH_BUTTONS_NUM] = {false, true, true, false};
+	const bool pad2and8[TOUCH_BUTTONS_NUM] = {true, false, true, false};
+	HAQuDA_TouchGestures g;
+	touch_gesture_event events[TOUCH_GESTURE_MAX_EVENTS];
+
+	uint8_t res;
+
+	g.Update(idle, startMs - 10, events, TOUCH_GESTURE_MAX_EVENTS);
+	g.Update(pad6and8, startMs, events, TOUCH_GESTURE_MAX_EVENTS);
+	g.Update(pad6and8, startMs + TOUCH_LOCK_HOLD_MS, events, TOUCH_GESTURE_MAX_EVENTS);
+	g.Update(pad2and8, switchMs, events, TOUCH_GESTURE_MAX_EVENTS);
+
+	res = g.Update(pad2and8, switchMs + TOUCH_AP_HOLD_MS, events, TOUCH_GESTURE_MAX_EVENTS);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_EQ(exp_button, events[0].button);
+	EXPECT_EQ(exp_kind, events[0].kind);
+}
+
+TEST(TouchGesturesTest, ThreeButtonsOnTheSharedPadGiveNeitherChord) {
+	const uint32_t startMs = 1000;
+
+	const uint8_t exp_count = 0;
+
+	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
+	const bool pad2and6and8[TOUCH_BUTTONS_NUM] = {true, true, true, false};
+	HAQuDA_TouchGestures g;
+	touch_gesture_event events[TOUCH_GESTURE_MAX_EVENTS];
+
+	uint8_t res;
+
+	g.Update(idle, startMs - 10, events, TOUCH_GESTURE_MAX_EVENTS);
+	g.Update(pad2and6and8, startMs, events, TOUCH_GESTURE_MAX_EVENTS);
+	g.Update(pad2and6and8, startMs + TOUCH_LOCK_HOLD_MS, events, TOUCH_GESTURE_MAX_EVENTS);
+
+	res = g.Update(pad2and6and8, startMs + TOUCH_AP_HOLD_MS, events, TOUCH_GESTURE_MAX_EVENTS);
+
+	EXPECT_EQ(exp_count, res);
+}
+
+TEST(TouchGesturesTest, FormerApPairOfPads2And9GivesNoChord) {
 	const uint32_t startMs = 1000;
 
 	const uint8_t exp_count = 0;
@@ -889,9 +1003,8 @@ TEST(TouchGesturesTest, ApChordDoesNotFireTwiceInOneHold) {
 
 	g.Update(idle, startMs - 10, events, TOUCH_GESTURE_MAX_EVENTS);
 	g.Update(pad2and9, startMs, events, TOUCH_GESTURE_MAX_EVENTS);
-	g.Update(pad2and9, startMs + TOUCH_AP_HOLD_MS, events, TOUCH_GESTURE_MAX_EVENTS);
 
-	res = g.Update(pad2and9, startMs + 2 * TOUCH_AP_HOLD_MS, events, TOUCH_GESTURE_MAX_EVENTS);
+	res = g.Update(pad2and9, startMs + TOUCH_AP_HOLD_MS, events, TOUCH_GESTURE_MAX_EVENTS);
 
 	EXPECT_EQ(exp_count, res);
 }
@@ -1387,16 +1500,16 @@ TEST(TouchGesturesTest, ApChordAcrossMillisWrap) {
 	const touch_gesture_kind exp_kind = touch_gesture_kind::ap_chord;
 
 	const bool idle[TOUCH_BUTTONS_NUM] = {false, false, false, false};
-	const bool pad2and9[TOUCH_BUTTONS_NUM] = {true, false, false, true};
+	const bool pad2and8[TOUCH_BUTTONS_NUM] = {true, false, true, false};
 	HAQuDA_TouchGestures g;
 	touch_gesture_event events[TOUCH_GESTURE_MAX_EVENTS];
 
 	uint8_t res;
 
 	g.Update(idle, startMs - 10, events, TOUCH_GESTURE_MAX_EVENTS);
-	g.Update(pad2and9, startMs, events, TOUCH_GESTURE_MAX_EVENTS);
+	g.Update(pad2and8, startMs, events, TOUCH_GESTURE_MAX_EVENTS);
 
-	res = g.Update(pad2and9, startMs + TOUCH_AP_HOLD_MS, events, TOUCH_GESTURE_MAX_EVENTS);
+	res = g.Update(pad2and8, startMs + TOUCH_AP_HOLD_MS, events, TOUCH_GESTURE_MAX_EVENTS);
 
 	EXPECT_EQ(exp_count, res);
 	EXPECT_EQ(exp_button, events[0].button);

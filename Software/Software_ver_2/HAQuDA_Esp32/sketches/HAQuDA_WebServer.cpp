@@ -174,7 +174,7 @@ void HAQuDA_WebServer::HandleDeferredWork() {
 		return;
 	}
 	if ((uint32_t)(millis() - restartRequestMs.load()) >= restartDelayMs.load()) {
-		HAQuDA_Logger::LogInfo(restartByUser.load() ? "Restart: web page request" : "Restart: WiFi network change");
+		HAQuDA_Logger::LogInfo(restartByUser.load() ? "Restart: user request" : "Restart: WiFi network change");
 		ESP.restart();
 	}
 }
@@ -257,21 +257,36 @@ join_queue_result HAQuDA_WebServer::queueJoinRequest(const TWiFiCreds &creds) {
 	return result;
 }
 
-void HAQuDA_WebServer::handleRestart(AsyncWebServerRequest *request) {
-	int code = 202;
-	const char *text = "The lamp is restarting.";
+restart_request_result HAQuDA_WebServer::RequestUserRestart() {
+	restart_request_result result = restart_request_result::accepted;
 	portENTER_CRITICAL(&joinMux);
 	if (restartPending.load() || restartRequested.load() || (joinView.state == join_state::ok)) {
-		code = 409;
-		text = "The lamp is already restarting.";
+		result = restart_request_result::restarting;
 	} else if (joinRequestPending.load() || (joinView.state == join_state::checking) || (joinView.state == join_state::switching)) {
-		code = 409;
-		text = "The lamp is checking a WiFi network. Try again when the check is over.";
+		result = restart_request_result::checking;
 	} else {
 		restartRequested.store(true);
 	}
 	portEXIT_CRITICAL(&joinMux);
-	sendText(request, code, text);
+	return result;
+}
+
+void HAQuDA_WebServer::SetApByButtons() {
+	apByButtons.store(true);
+}
+
+void HAQuDA_WebServer::handleRestart(AsyncWebServerRequest *request) {
+	switch (RequestUserRestart()) {
+		case restart_request_result::restarting:
+			sendText(request, 409, "The lamp is already restarting.");
+			return;
+		case restart_request_result::checking:
+			sendText(request, 409, "The lamp is checking a WiFi network. Try again when the check is over.");
+			return;
+		case restart_request_result::accepted:
+			break;
+	}
+	sendText(request, 202, "The lamp is restarting.");
 }
 
 bool HAQuDA_WebServer::takeJoinRequest(TWiFiCreds &creds) {
@@ -410,6 +425,9 @@ void HAQuDA_WebServer::handleStatus(AsyncWebServerRequest *request) {
 		fits = fits && appendFormat(buf, sizeof(buf), pos, "%d", (int)WiFi.RSSI());
 	} else {
 		fits = fits && appendFormat(buf, sizeof(buf), pos, "null");
+	}
+	if (!stationMode && apByButtons.load()) {
+		fits = fits && appendFormat(buf, sizeof(buf), pos, ",\"apWhy\":\"button\"");
 	}
 	fits = fits && appendFormat(buf, sizeof(buf), pos, ",\"meas\":{");
 
