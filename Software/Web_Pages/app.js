@@ -7,11 +7,12 @@
 	// PM1.0 and PM10 are not in /api/status of the current firmware: their tiles appear only when the field is present
 	var OPTIONAL = { pm1: true, pm10: true };
 	var UNITS = { temp: '°C', humid: '%', eco2: 'ppm', tvoc: 'ppb', pm1: 'µg/m³', pm25: 'µg/m³', pm10: 'µg/m³' };
-	// matrix rows from the top: the lamp shows temperature at the bottom, then eCO2, then dust
-	var MATRIX_ROWS = ['pm25', 'pm25', 'eco2', 'eco2', 'temp', 'temp'];
 	var LEGEND_KEYS = ['pm25', 'eco2', 'temp'];
 	var GRID_COLS = 4;
 	var GRID_ROWS = 6;
+	var LAMP_COLUMNS = 9;
+	var LAMP_ROWS = 12;
+	var LAMP_PIXELS = LAMP_COLUMNS * LAMP_ROWS;
 	// the lamp card: what the lamp can show and which keys it takes (the readings of /api/status, "total" for standard only)
 	var LAMP_MODES = ['standard', 'multi', 'night', 'light'];
 	var STD_KEYS = ['total', 'temp', 'humid', 'eco2', 'tvoc', 'pm25'];
@@ -140,7 +141,7 @@
 	var tileEls = {};
 	// disp: the picture of the lamp. pic is null until /api/disp answers (and after it failed): the matrix then shows the readings.
 	// t0: page time at which the picture started, frozenAt: page time of a "hold" that stopped the animation, or null
-	var disp = { pic: null, seq: -1, t0: 0, frozenAt: null, fails: 0, busy: false, timer: 0, raf: 0, sig: '', rnd: null };
+	var disp = { pic: null, seq: -1, t0: 0, frozenAt: null, fails: 0, busy: false, timer: 0, raf: 0, sig: '', rnd: null, bright: 100 };
 	// the outcome of a network switch that failed and restarted the lamp: { ssid, reason }, or null.
 	// lastAsked: /api/join has answered since the lamp last came back, so the outcome is known
 	var lastJoin = null;
@@ -229,13 +230,13 @@
 
 	function buildMatrix() {
 		var box = byId('matrix');
-		MATRIX_ROWS.forEach(function () {
-			for (var c = 0; c < 4; c++) {
+		for (var r = 0; r < GRID_ROWS; r++) {
+			for (var c = 0; c < GRID_COLS; c++) {
 				var i = el('i');
 				box.appendChild(i);
 				cells.push(i);
 			}
-		});
+		}
 	}
 
 	function buildTiles() {
@@ -333,7 +334,11 @@
 			if (!intIn(d.step, 0, DISP_MAX_MS) || !intIn(d.end, 0, DISP_MAX_MS) || (d.dark !== undefined && !intIn(d.dark, 0, DISP_MAX_MS))) {
 				return null;
 			}
+			if (!intIn(d.seed, 0, 4294967295)) {
+				return null;
+			}
 			pic.kind = 'random';
+			pic.seed = d.seed;
 			pic.step = d.step;
 			pic.end = d.end;
 			pic.dark = d.dark === undefined ? 0 : d.dark;
@@ -412,7 +417,10 @@
 		} else {
 			return null;
 		}
-		return { seq: d.seq, age: d.age, pic: pic };
+		if (d.bright !== undefined && !intIn(d.bright, 0, 100)) {
+			return null;
+		}
+		return { seq: d.seq, age: d.age, bright: d.bright === undefined ? 100 : d.bright, pic: pic };
 	}
 
 	function hex2(v) {
@@ -561,57 +569,85 @@
 		return colors;
 	}
 
-	// a random channel value like the lamp's (0..254), but the brightest channel of a colour is lifted to at least 100 so that no
-	// cell looks unlit
-	function randomColor() {
-		var ch = [0, 0, 0].map(function () {
-			return Math.floor(Math.random() * 255);
-		});
-		var top = Math.max(ch[0], ch[1], ch[2]);
-		if (top < 100) {
-			ch[Math.floor(Math.random() * 3)] = 100 + Math.floor(Math.random() * 155);
-		}
-		return '#' + hex2(ch[0]) + hex2(ch[1]) + hex2(ch[2]);
+	// the lamp's generator (HAQuDA_XorShift32): xorshift32 with the shifts 13, 17, 5 on an unsigned 32-bit state
+	function xorshift32(s) {
+		var x = s >>> 0;
+		x = (x ^ (x << 13)) >>> 0;
+		x = (x ^ (x >>> 17)) >>> 0;
+		x = (x ^ (x << 5)) >>> 0;
+		return x;
 	}
 
-	// the order the cells light up in and their colours for one cycle of the random effect. The page's own randomness, made once per
-	// cycle and kept, so every repaint inside the cycle draws the same picture (the frame signature does not change)
-	function randomCycle(n) {
-		if (disp.rnd && disp.rnd.n === n) {
+	// the grid cell a pixel of the lamp falls into. The lamp's strip is a column serpentine from the bottom (odd columns run top to
+	// bottom), and its 9 x 12 pixels are spread over the 4 x 6 cells: a cell takes 2 pixel rows and 2 or 3 pixel columns
+	function lampPixelCell(p) {
+		var x = Math.floor(p / LAMP_ROWS);
+		var r = p % LAMP_ROWS;
+		var y = x % 2 === 1 ? LAMP_ROWS - 1 - r : r;
+		return (GRID_ROWS - 1 - Math.floor((y * GRID_ROWS) / LAMP_ROWS)) * GRID_COLS + Math.floor((x * GRID_COLS) / LAMP_COLUMNS);
+	}
+
+	// the pixel order and colours of pass n as the lamp makes them (HAQuDA_RandomPixelsAnim): the pass seed is the seed of pass 0
+	// run through xorshift32 n times (0 counts as 1), the order is a Fisher-Yates shuffle from the top, then three channels per pixel
+	// (0..254), painted as they are. The page cannot show 108 pixels in 24 cells exactly: a cell takes the colour of the first
+	// pixel lit in it and keeps it until the pass ends, as a lit pixel does on the lamp. The pass is kept, so every repaint inside
+	// it draws the same picture
+	function randomPass(seed, n) {
+		var pass = disp.rnd;
+		var i;
+		if (!pass || pass.n > n) {
+			pass = { n: 0, seed: seed !== 0 ? seed >>> 0 : 1 };
+		}
+		var s = pass.seed;
+		for (i = pass.n; i < n; i++) {
+			s = xorshift32(s);
+		}
+		if (disp.rnd && disp.rnd.n === n && disp.rnd.seed === s) {
 			return disp.rnd;
 		}
-		var cellsNum = GRID_COLS * GRID_ROWS;
+		var state = s;
 		var order = [];
 		var colors = [];
-		var i;
-		for (i = 0; i < cellsNum; i++) {
+		for (i = 0; i < LAMP_PIXELS; i++) {
 			order.push(i);
-			colors.push(randomColor());
 		}
-		for (i = cellsNum - 1; i > 0; i--) {
-			var j = Math.floor(Math.random() * (i + 1));
+		for (i = LAMP_PIXELS - 1; i >= 1; i--) {
+			state = xorshift32(state);
+			var j = state % (i + 1);
 			var swap = order[i];
 			order[i] = order[j];
 			order[j] = swap;
 		}
-		disp.rnd = { n: n, order: order, colors: colors };
+		for (i = 0; i < LAMP_PIXELS; i++) {
+			var ch = [0, 0, 0];
+			for (var c = 0; c < 3; c++) {
+				state = xorshift32(state);
+				ch[c] = state % 255;
+			}
+			colors.push('#' + hex2(ch[0]) + hex2(ch[1]) + hex2(ch[2]));
+		}
+		disp.rnd = { n: n, seed: s, order: order, colors: colors };
 		return disp.rnd;
 	}
 
-	// Random at page time t. A cycle: pic.dark of dark, then one cell per step in a random order with a random colour, the full grid
-	// stays for pic.end more. With step 0 the whole grid is lit at once after the dark part. full: the finished grid of the first
-	// cycle, for reduced motion
+	// Random at page time t. A cycle: pic.dark of dark, then the lamp's pixels one after the other in the order of the pass, the
+	// full picture stays for pic.end more. The page step is one cell of 24, so a pixel is 24 / 108 of it. With step 0 every pixel is
+	// lit at once after the dark part. full: the finished picture of the first pass, for reduced motion
 	function randomFrame(pic, t, full) {
-		var cellsNum = GRID_COLS * GRID_ROWS;
 		var colors = fillGrid('');
-		var cycle = pic.dark + cellsNum * pic.step + pic.end;
+		var cycle = pic.dark + GRID_COLS * GRID_ROWS * pic.step + pic.end;
+		// the page cycle uses the rounded 24 * step, so over many passes its pass number can drift by one from the lamp's until the
+		// resync (DISP_RESYNC_MS) restarts the picture
 		var n = full || cycle <= 0 ? 0 : Math.floor(t / cycle);
 		var p = full ? cycle : (cycle > 0 ? t % cycle : 0);
 		if (p >= pic.dark) {
-			var lit = pic.step > 0 ? Math.min(cellsNum, 1 + Math.floor((p - pic.dark) / pic.step)) : cellsNum;
-			var rnd = randomCycle(n);
+			var lit = pic.step > 0 ? Math.min(LAMP_PIXELS, 1 + Math.floor(((p - pic.dark) * LAMP_PIXELS) / (GRID_COLS * GRID_ROWS * pic.step))) : LAMP_PIXELS;
+			var pass = randomPass(pic.seed, n);
 			for (var k = 0; k < lit; k++) {
-				colors[rnd.order[k]] = rnd.colors[k];
+				var cell = lampPixelCell(pass.order[k]);
+				if (colors[cell] === '') {
+					colors[cell] = pass.colors[k];
+				}
 			}
 		}
 		return colors;
@@ -621,40 +657,42 @@
 	function themeChanged() {
 		offRgb = null;
 		disp.sig = '';
-		paintGrid((state.data && state.data.meas) || {}, state.down);
+		paintGrid(state.down);
 	}
 
-	// draws the grid; down shows it dark, as before. While a fading, snake, growing or random picture plays, requestAnimationFrame
-	// calls it again, the DOM is touched only when the frame changed. With reduced motion the picture stays still, without flashing:
-	// fading at its first level, snake at its first step (the tail at the start of the path), growing and random as the full grid
-	function paintGrid(meas, down) {
+	// draws the grid from the lamp's picture only (/api/disp); no picture or the lamp down shows it dark. While a fading, snake,
+	// growing or random picture plays, requestAnimationFrame calls it again, the DOM is touched only when the frame changed. With
+	// reduced motion the picture stays still, without flashing: fading at its first level, snake at its first step (the tail at the
+	// start of the path), growing and random as the full grid
+	function paintGrid(down) {
 		var pic = down ? null : disp.pic;
-		var model = !down && lampModel();
 		var colors;
-		var animated = !!pic && !model && (pic.kind === 'fading' || pic.kind === 'snake' || pic.kind === 'growing' || pic.kind === 'random');
+		var animated = !!pic && (pic.kind === 'fading' || pic.kind === 'snake' || pic.kind === 'growing' || pic.kind === 'random');
 		var still = !!reduceMotion && reduceMotion.matches;
 		var t = disp.frozenAt === null ? now() : disp.frozenAt;
-		if (down) {
+		if (!pic) {
 			colors = fillGrid('');
-		} else if (model) {
-			colors = modelFrame(view(), meas);
-		} else if (pic && pic.kind === 'static') {
+		} else if (pic.kind === 'static') {
 			colors = fillGrid(pic.color);
-		} else if (pic && pic.kind === 'fading') {
+		} else if (pic.kind === 'fading') {
 			colors = fillGrid(fadeColor(pic.color, still ? pic.from / 100 : fadeAlpha(pic, t - disp.t0)));
-		} else if (pic && pic.kind === 'snake') {
+		} else if (pic.kind === 'snake') {
 			colors = snakeFrame(pic, still ? pic.dark : t - disp.t0);
-		} else if (pic && pic.kind === 'growing') {
+		} else if (pic.kind === 'growing') {
 			colors = still ? fillGrid(pic.color) : growingFrame(pic, t - disp.t0);
-		} else if (pic && pic.kind === 'random') {
+		} else if (pic.kind === 'random') {
 			colors = randomFrame(pic, t - disp.t0, still);
-		} else if (pic && pic.kind === 'meas') {
-			colors = measFrame(pic);
 		} else {
-			colors = fillGrid('');
-			for (var i = 0; i < colors.length; i++) {
-				colors[i] = measColor(meas, MATRIX_ROWS[Math.floor(i / GRID_COLS)]);
-			}
+			colors = measFrame(pic);
+		}
+		// brightness changes alone do not raise seq; the faded colours are in the signature, so a change repaints. Black stays black
+		// (the lamp is off), an unlit cell stays unlit. A fading picture is skipped: the lamp's fade sets its own brightness levels
+		// and replaces the user's brightness while it plays
+		if (pic && pic.kind !== 'fading' && disp.bright < 100) {
+			var fade = 0.35 + (0.65 * disp.bright) / 100;
+			colors = colors.map(function (c) {
+				return c && c.toLowerCase() !== '#000000' ? fadeColor(c, fade) : c;
+			});
 		}
 		var sig = colors.join();
 		if (sig !== disp.sig) {
@@ -670,7 +708,7 @@
 		if (animating && !disp.raf) {
 			disp.raf = requestAnimationFrame(function () {
 				disp.raf = 0;
-				paintGrid((state.data && state.data.meas) || {}, state.down);
+				paintGrid(state.down);
 			});
 		}
 	}
@@ -745,7 +783,7 @@
 	}
 
 	function renderMatrix(meas, down) {
-		paintGrid(meas, down);
+		paintGrid(down);
 		var model = !down && lampModel();
 		var note = model ? '' : fxNoteKey();
 		var rows = legendRows(meas, model);
@@ -826,31 +864,10 @@
 		byId('mup').textContent = d ? T.up + ' ' + uptimeText(d.uptime) : '';
 	}
 
-	// ---- lamp card: power, brightness, modes. The page edits a copy of the lamp's settings, and the matrix shows that copy at once
+	// ---- lamp card: power, brightness, modes. The page edits a copy of the lamp's settings; the grid waits for the lamp's picture
 
 	function hhmm(s) {
 		return typeof s === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(s);
-	}
-
-	function minutes(s) {
-		return parseInt(s.slice(0, 2), 10) * 60 + parseInt(s.slice(3), 10);
-	}
-
-	// night light cells on (0..18) at the lamp's clock, the firmware's rule: ceil(18 * elapsed / window) from the start, all outside it, none without a time
-	function nightLit(v) {
-		if (!v.now) {
-			return 0;
-		}
-		var from = minutes(v.night.from);
-		var span = (minutes(v.night.to) - from + 1440) % 1440;
-		var done = (minutes(v.now) - from + 1440) % 1440;
-		return !span || done >= span ? NIGHT_CELLS : Math.max(1, Math.ceil((NIGHT_CELLS * done) / span));
-	}
-
-	function nightColor() {
-		var t = root.getAttribute('data-theme');
-		var dark = t ? t === 'dark' : !!window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-		return dark ? '#fff1d6' : '#ffc46b';
 	}
 
 	// the "lamp" block of /api/status or of a POST reply, or null when it is not as expected
@@ -906,8 +923,8 @@
 		return v && lc.live !== null ? merge(v, { bright: lc.live }) : v;
 	}
 
-	// The matrix is drawn from the settings while an edit is not confirmed yet and while the lamp shows the user's picture
-	// (measurements, the lamp light colour or dark). What the lamp plays on top (an event, an error, the start) is drawn as it sends it.
+	// The legend lists the readings of the edited settings while an edit is not confirmed yet and while the lamp shows the user's
+	// picture (measurements, the lamp light colour or dark). The grid never follows this: it shows what /api/disp sends.
 	function lampModel() {
 		var v = view();
 		var p = disp.pic;
@@ -922,34 +939,6 @@
 		}
 		var c = p.color.toLowerCase();
 		return v.on ? v.mode === 'light' && c === LAMP_COLORS[v.color] : c === '#000000';
-	}
-
-	// Row 0 is the top. Lit cells fade with the brightness (35 % at the lowest), unlit ones stay as they are
-	function modelFrame(v, meas) {
-		var colors = fillGrid('');
-		var fade = 0.35 + (0.65 * v.bright) / 100;
-		var lit = v.mode === 'night' ? nightLit(v) : 0;
-		if (!v.on) {
-			return colors;
-		}
-		for (var i = 0; i < colors.length; i++) {
-			var col = i % GRID_COLS;
-			var row = Math.floor(i / GRID_COLS);
-			var c = '';
-			if (v.mode === 'standard') {
-				c = measColor(meas, v.std);
-			} else if (v.mode === 'multi') {
-				c = measColor(meas, v.multi[Math.floor(row / 2)]);
-			} else if (v.mode === 'light') {
-				c = LAMP_COLORS[v.color];
-			} else if (col === 0) {
-				c = measColor(meas, v.night.param);
-			} else if ((GRID_ROWS - 1 - row) * 3 + col - 1 < lit) {
-				c = nightColor();
-			}
-			colors[i] = c ? fadeColor(c, fade) : '';
-		}
-		return colors;
 	}
 
 	function lampErr(text) {
@@ -1325,6 +1314,7 @@
 			return;
 		}
 		disp.fails = 0;
+		disp.bright = p.bright;
 		var t = now();
 		if (p.pic.kind === 'hold') {
 			// the lamp keeps its last frame: so does the grid, with the animation stopped
@@ -1340,8 +1330,8 @@
 			disp.t0 = t - p.age;
 			disp.frozenAt = null;
 		}
-		// a new picture (or another kind) starts the random effect over: it must not replay the order and colours of an earlier cycle 0
-		if (p.seq !== disp.seq || !disp.pic || disp.pic.kind !== p.pic.kind) {
+		// a new picture (or another kind or seed) restarts the seed chain: it must not continue the passes of an earlier picture
+		if (p.seq !== disp.seq || !disp.pic || disp.pic.kind !== p.pic.kind || disp.pic.seed !== p.pic.seed) {
 			disp.rnd = null;
 		}
 		disp.seq = p.seq;
@@ -1383,7 +1373,7 @@
 			clearTimeout(disp.timer);
 			pollDisp();
 		}
-		paintGrid((state.data && state.data.meas) || {}, state.down);
+		paintGrid(state.down);
 	}
 
 	// one request at a time: the next poll is scheduled before the page is redrawn, so a drawing error cannot stop polling

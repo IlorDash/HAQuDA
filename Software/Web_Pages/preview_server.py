@@ -171,6 +171,8 @@ LEDS_SHOW_MS = 200
 CLEAR_DARK_MS = LEDS_SHOW_MS
 FADING_DARK_MS = 2 * LEDS_SHOW_MS
 DISP_BRIGHT = 50
+# Seed of the first random pass; above 2^31 so the page's unsigned arithmetic is exercised
+DISP_RANDOM_SEED = 0x9E3779B9
 DISP_EFFECT_SLOT_S = 25.0
 DISP_ERROR_SLOT_S = 15.0
 DISP_NIGHT_SLOT_S = 4.0
@@ -195,7 +197,7 @@ def fx_growing(color, grow_pause_ms):
 
 def fx_random(pause_ms, end_pause_ms):
     return {"fx": "random", "dark": CLEAR_DARK_MS, "step": div_round(LAMP_PIXELS * pause_ms, PAGE_CELLS),
-            "end": end_pause_ms + SHOW_PAUSE_MS}
+            "end": end_pause_ms + SHOW_PAUSE_MS, "seed": DISP_RANDOM_SEED}
 
 
 def fx_fading(color, fade_pause_ms, start_bright, stop_bright, step):
