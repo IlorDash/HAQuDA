@@ -7,31 +7,23 @@ bool HAQuDA_TouchDebounce::Active() const {
 	return stableActive;
 }
 
-bool HAQuDA_TouchDebounce::Update(bool rawLevel, uint32_t nowMs) {
+void HAQuDA_TouchDebounce::Update(bool rawLevel, uint32_t nowMs) {
 	const bool active = (rawLevel == activeLevel);
 
 	if (!started) {
 		started = true;
 		candidateActive = active;
 		candidateSinceMs = nowMs;
-		armed = !active;
-		return false;
+		return;
 	}
 
 	if (active != candidateActive) {
 		candidateActive = active;
 		candidateSinceMs = nowMs;
-		return false;
+		return;
 	}
 
-	if ((candidateActive == stableActive) || ((nowMs - candidateSinceMs) < TOUCH_DEBOUNCE_MS)) {
-		return false;
+	if ((candidateActive != stableActive) && ((nowMs - candidateSinceMs) >= TOUCH_DEBOUNCE_MS)) {
+		stableActive = candidateActive;
 	}
-
-	stableActive = candidateActive;
-	if (!stableActive) {
-		armed = true;
-		return false;
-	}
-	return armed;
 }
