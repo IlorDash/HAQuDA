@@ -2,10 +2,16 @@
 
 #include "HAQuDA_DisplayManip.h"
 #include "HAQuDA_FileStorage.h"
+#include "HAQuDA_LEDsParams.h"
 #include "HAQuDA_LampDisplayRules.h"
 #include "HAQuDA_Logger.h"
 
 static_assert(MULTI_MODE_PARAM_NUM == LAMP_MULTI_NUM, "the lamp page and the meas handler must have the same number of bands");
+
+namespace {
+	// COLOR_YELLOW is greenish on the WS2812B, this orange reads as amber
+	constexpr uint32_t COLOR_FLASH_AMBER = 0xFF8C00;
+} // namespace
 
 bool HAQuDA_FileStorageAdapter::Exists(const char *path) {
 	return HAQuDA_FileStorage::Exists(path);
@@ -76,4 +82,14 @@ void HAQuDA_LampDisplayAdapter::ShowNight(lamp_param param, uint16_t fromMin, ui
 	HAQuDA_DisplayManip::SetStandardMeasParam(HAQuDA_ToMeasType(param));
 	HAQuDA_DisplayManip::SetNightTime(window);
 	HAQuDA_DisplayManip::SetMeasMode(night);
+}
+
+void HAQuDA_LampDisplayAdapter::ShowFlash(lamp_flash kind) {
+	uint32_t rgb = COLOR_RED;
+	if (kind == lamp_flash::locked) {
+		rgb = COLOR_FLASH_AMBER;
+	} else if (kind == lamp_flash::unlocked) {
+		rgb = COLOR_GREEN;
+	}
+	ShowColor(rgb);
 }

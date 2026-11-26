@@ -9,11 +9,14 @@
 #include "HAQuDA_WebPageDisplayManip.h"
 #include "HAQuDA_LampControl.h"
 #include "HAQuDA_LampAdapters.h"
+#include "HAQuDA_ButtonsControl.h"
+#include "HAQuDA_ButtonActions.h"
 
 #include "HAQuDA_FileStorage.h"
 #include "HAQuDA_Logger.h"
 #include "HAQuDA_TimeHelper.h"
 #include "HAQuDA_LEDs.h"
+#include "HAQuDA_TouchButtons.h"
 
 #include "Tasks.h"
 #include "HAQuDA_Version.h"
@@ -35,6 +38,9 @@ HAQuDA_LampDisplayAdapter LampDisplay(ErrHandler);
 HAQuDA_LoggerAdapter LampLogger;
 HAQuDA_LampControl LampControl(LampFiles, LampDisplay, LampLogger);
 HAQuDA_WiFi_handler WiFiHandler(&FileStorage, &DispManip, MeasSnapshot, WebDisp, LampControl);
+HAQuDA_ButtonsControl ButtonsControl(LampFiles, LampLogger);
+HAQuDA_ButtonActions ButtonActions(LampControl, ButtonsControl, LampLogger);
+HAQuDA_TouchButtons TouchButtons;
 
 int meas_start_time = 0;
 int builtin_blink_start_time = 0;
@@ -81,6 +87,9 @@ void setup() {
 	HAQuDA_Logger::LogInfo("Started File system");
 	// Before the web server starts: the page reads the settings from it
 	LampControl.Load();
+	ButtonsControl.Load();
+	// The buttons are optional: a failed start is only logged and the lamp runs without them
+	TouchButtons.Begin();
 
 	if (!WiFiHandler.Connect()) {
 		DispManip.SetMode(error);
@@ -115,11 +124,14 @@ void setup() {
 			// The error has been on the matrix for the whole start attempt. A saved lamp light or power off needs no sensors and
 			// replaces it; a measurement mode keeps it.
 			LampControl.Apply();
+			TouchButtons.DiscardEvents();
 			return;
 		}
 		leaveSensorsError();
 	}
 	enableMeasurements();
+	// Touches made while setup() ran are stale by now
+	TouchButtons.DiscardEvents();
 }
 
 // Loop task only. SetMode() refuses to leave the error mode while currentError is set, so clear it first; the error
@@ -157,6 +169,26 @@ void retrySensorsStart() {
 	}
 }
 
+// Loop task only
+void handleTouchButtons() {
+	const buttons_settings buttonsCopy = ButtonsControl.CopySettings();
+	TouchButtons.SetRepeatableMask(HAQuDA_RepeatableMask(buttonsCopy));
+
+	touch_gesture_event batch[TOUCH_EVENT_QUEUE_LEN];
+	uint8_t count = 0;
+	while ((count < TOUCH_EVENT_QUEUE_LEN) && TouchButtons.TakeEvent(batch[count])) {
+		count++;
+	}
+	ButtonActions.Handle(batch, count, buttonsCopy);
+
+	const uint32_t dropped = TouchButtons.TakeDropped();
+	if (dropped > 0) {
+		char msg[48] = {};
+		snprintf(msg, sizeof(msg), "Touch events dropped: %lu", static_cast<unsigned long>(dropped));
+		HAQuDA_Logger::LogError(msg);
+	}
+}
+
 void loop() {
 	WiFiHandler.HandleConnection();
 	retrySensorsStart();
@@ -167,8 +199,10 @@ void loop() {
 	uint16_t minuteOfDay = 0;
 	const bool timeKnown = HAQuDA_TimeService::GetCachedMinuteOfDay(&minuteOfDay);
 	WebDisp.SetMinuteOfDay(timeKnown, minuteOfDay);
-	LampControl.Handle(timeKnown, minuteOfDay);
+	LampControl.Handle(millis(), timeKnown, minuteOfDay);
 	HAQuDA_Logger::FlushExpiredRepeats();
+	ButtonsControl.Handle();
+	handleTouchButtons();
 	if ((millis() - builtin_blink_start_time) > BUILTIN_LED_PERIOD) {
 		digitalWrite(BUILTIN_LED, !digitalRead(BUILTIN_LED));
 		builtin_blink_start_time = millis();

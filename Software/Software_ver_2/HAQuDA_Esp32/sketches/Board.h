@@ -9,6 +9,15 @@
 // Board Ver 2.1 routes it to IO27 (Ver 1.1 used IO5).
 #define CCS811_WAK 27
 
+// TTP223 touch ICs on HAQuDA_upper_PCB: push-pull output, active high (AHLB and TOG jumpers open).
+// They run from 3.3 V: the Ver 2 board fed them 5 V, which exceeds the ESP32 input limit.
+// The pins use pull-downs, because an unplugged LED board leaves the ESP32 end of the line open.
+// The numbers are the pad names on the board.
+#define TOUCH_2_PIN 25
+#define TOUCH_6_PIN 4
+#define TOUCH_8_PIN 32
+#define TOUCH_9_PIN 33
+
 #ifdef USE_WDT
 #include <esp_task_wdt.h>
 #include <WiFi.h>

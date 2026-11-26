@@ -66,6 +66,11 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="TestColorScale.cpp" />
     <ClCompile Include="TestLogDedup.cpp" />
+    <ClCompile Include="TestTouchDebounce.cpp" />
+    <ClCompile Include="TestTouchPoller.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_TouchDebounce.cpp" />
+    <ClCompile Include="TestTouchGestures.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_TouchGestures.cpp" />
     <ClCompile Include="TestMeasSnapshot.cpp" />
     <ClCompile Include="TestWiFiJoin.cpp" />
     <ClCompile Include="TestWiFiCreds.cpp" />
@@ -83,6 +88,12 @@
     <ClCompile Include="TestSensorsPresence.cpp" />
     <ClCompile Include="TestNightProgress.cpp" />
     <ClCompile Include="TestMeasShowPolicy.cpp" />
+    <ClCompile Include="TestButtonsSettings.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_ButtonsSettings.cpp" />
+    <ClCompile Include="TestButtonsControl.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_ButtonsControl.cpp" />
+    <ClCompile Include="TestButtonActions.cpp" />
+    <ClCompile Include="..\..\sketches\HAQuDA_ButtonActions.cpp" />
     <ClCompile Include="TestLampSettings.cpp" />
     <ClCompile Include="TestLampControl.cpp" />
     <ClCompile Include="TestLampForm.cpp" />
@@ -113,6 +124,9 @@
     <ClInclude Include="..\..\sketches\HAQuDA_LampDisplayRules.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_DateFormat.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_LogDedup.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_TouchDebounce.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_TouchGestures.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_TouchPoller.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_MeasSnapshot.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_WiFiJoin.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_JoinLast.h" />
@@ -129,7 +143,13 @@
     <ClInclude Include="..\..\sketches\HAQuDA_MeasShowPolicy.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_BrightnessApply.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_LampSettings.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_ButtonsSettings.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_ButtonsControl.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_ButtonActions.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_RecordCodec.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_LampControl.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_ILampActions.h" />
+    <ClInclude Include="..\..\sketches\HAQuDA_CriticalLock.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_IFileStorage.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_ILampDisplay.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_ILogger.h" />
@@ -139,6 +159,7 @@
     <ClInclude Include="..\mocks\MockFileStorage.h" />
     <ClInclude Include="..\mocks\MockLampDisplay.h" />
     <ClInclude Include="..\mocks\MockLogger.h" />
+    <ClInclude Include="..\mocks\MockLampActions.h" />
     <ClInclude Include="..\fakes\FakePMSerial.h" />
   </ItemGroup>
   <ItemGroup>

@@ -33,6 +33,7 @@ class HAQuDA_LampDisplayAdapter : public HAQuDA_ILampDisplay {
 	void ShowStandard(lamp_param param) override;
 	void ShowMulti(const lamp_param (&bottomToTop)[LAMP_MULTI_NUM]) override;
 	void ShowNight(lamp_param param, uint16_t fromMin, uint16_t toMin) override;
+	void ShowFlash(lamp_flash kind) override;
 
   private:
 	HAQuDA_ErrorHandler &errHandler;
