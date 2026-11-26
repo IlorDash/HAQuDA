@@ -82,7 +82,6 @@
     <ClCompile Include="TestPMResult.cpp" />
     <ClCompile Include="TestSensorsPresence.cpp" />
     <ClCompile Include="TestNightProgress.cpp" />
-    <ClCompile Include="TestMeasShowPolicy.cpp" />
     <ClCompile Include="TestLampSettings.cpp" />
     <ClCompile Include="TestLampControl.cpp" />
     <ClCompile Include="TestLampForm.cpp" />
@@ -90,7 +89,6 @@
     <ClCompile Include="TestTotalColor.cpp" />
     <ClCompile Include="TestCCS811Sample.cpp" />
     <ClCompile Include="TestLEDsParams.cpp" />
-    <ClCompile Include="TestBrightnessApply.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_NightProgress.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_LampSettings.cpp" />
     <ClCompile Include="..\..\sketches\HAQuDA_LampControl.cpp" />
@@ -148,8 +146,6 @@
     <ClInclude Include="..\..\sketches\HAQuDA_IMeasSource.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_DisplayEngine.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_NightProgress.h" />
-    <ClInclude Include="..\..\sketches\HAQuDA_MeasShowPolicy.h" />
-    <ClInclude Include="..\..\sketches\HAQuDA_BrightnessApply.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_LampSettings.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_LampControl.h" />
     <ClInclude Include="..\..\sketches\HAQuDA_IFileStorage.h" />

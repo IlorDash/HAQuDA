@@ -108,7 +108,7 @@ TEST(LEDsParamsTest, BrightPercentToRawMaxByteIsClamped) {
 }
 
 TEST(LEDsParamsTest, NightGreyIs70PercentOfMaxChannel) {
-	// showMeas_night() uses HAQuDA_NightGrey(): 150 * 70 / 100 = 105
+	// The night animation uses HAQuDA_NightGrey(): 150 * 70 / 100 = 105
 	const uint8_t exp_grey = 105;
 
 	uint8_t res;

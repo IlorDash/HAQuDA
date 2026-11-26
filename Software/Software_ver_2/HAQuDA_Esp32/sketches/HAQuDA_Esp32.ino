@@ -2,10 +2,8 @@
 
 #include "HAQuDA_WiFi_handler.h"
 
-#include "HAQuDA_DisplayManip.h"
 #include "HAQuDA_DisplayService.h"
 #include "HAQuDA_MeasHandler.h"
-#include "HAQuDA_EffectsHandler.h"
 #include "HAQuDA_ErrorHandler.h"
 #include "HAQuDA_WebPageDisplayManip.h"
 #include "HAQuDA_LampControl.h"
@@ -26,14 +24,12 @@
 HAQuDA_ErrorHandler ErrHandler;
 HAQuDA_FileStorage FileStorage;
 HAQuDA_LogDedup LogDedup;
-HAQuDA_EffectsHandler EffectsHandler;
 HAQuDA_MeasSnapshot MeasSnapshot;
 HAQuDA_WebPageDisplayManip WebDisp;
 HAQuDA_MeasHandler MeasHandler(&ErrHandler, MeasSnapshot);
 HAQuDA_DisplayService Display(*HAQuDA_LEDs::getInstance(), MeasHandler, WebDisp, DEFAULT_BRIGHTNESS);
-HAQuDA_DisplayManip DispManip(&MeasHandler, &EffectsHandler, &ErrHandler, &Display);
 HAQuDA_FileStorageAdapter LampFiles;
-HAQuDA_LampDisplayAdapter LampDisplay(ErrHandler, Display);
+HAQuDA_LampDisplayAdapter LampDisplay(ErrHandler, Display, MeasHandler);
 HAQuDA_LoggerAdapter LampLogger;
 HAQuDA_LampControl LampControl(LampFiles, LampDisplay, LampLogger);
 HAQuDA_WiFi_handler WiFiHandler(&FileStorage, Display, MeasSnapshot, WebDisp, LampControl);
@@ -82,7 +78,6 @@ void setup() {
 	Display.Post(display_event::bootSnake);
 
 	if (!FileStorage.Start()) {
-		DispManip.SetMode(error);
 		ErrHandler.FailedToStartFS();
 		while (true) {
 		}
@@ -93,26 +88,22 @@ void setup() {
 	LampControl.Load();
 
 	if (!WiFiHandler.Connect()) {
-		DispManip.SetMode(error);
 		ErrHandler.FailedToConnectToWiFi();
 
 		if (!WiFiHandler.CreateAP()) {
-			DispManip.SetMode(error);
 			ErrHandler.FailedToCreateAP();
 			while (true) {
 			}
 		}
 		HAQuDA_Logger::LogInfo("Created Acces Point");
-		DispManip.SetMode(noneMode);
 		ErrHandler.ClearError();
-		HAQuDA_DisplayManip::SetEffect(fading);
+		LampDisplay.ShowAccessPointRunning();
 	} else {
 		HAQuDA_TimeService::StartNTP();
 		HAQuDA_Logger::LogInfo("Connected to WiFi");
 	}
 
 	if (!MeasHandler.SensorsBegin()) {
-		DispManip.SetMode(error);
 		ErrHandler.FailedToStartSensors();
 		if (!MeasHandler.TryRebootSensors()) {
 			// No restart: it would take the access point, web server and WebSerial down with the lamp.
@@ -129,8 +120,6 @@ void setup() {
 	enableMeasurements();
 }
 
-// Loop task only. SetMode() refuses to leave the error mode while currentError is set, so clear it first. Nothing may be
-// logged between this call and SetMeasMode() in enableMeasurements().
 void leaveSensorsError() {
 	ErrHandler.ClearError();
 }
@@ -139,9 +128,7 @@ void enableMeasurements() {
 	sensorsRunning = true;
 	LampControl.SensorsStarted();
 	// The user's picture: what was saved in /lamp, or changed on the web page while the error was shown (the defaults
-	// otherwise: multi mode). Before the first log line: while NTP has never synced every log line sets the NTP error, and
-	// SetMode() refuses to leave the error mode while an error is set. Once the mode is meas, later log lines only set a stale
-	// error that nothing draws.
+	// otherwise: multi mode)
 	LampControl.Apply();
 	meas_start_time = 0;
 	HAQuDA_Logger::LogInfo("Started sensors");

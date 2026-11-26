@@ -11,9 +11,8 @@ constexpr uint8_t ANIM_COLUMNS = 9;
 constexpr uint8_t ANIM_ROWS = 12;
 constexpr uint16_t ANIM_PIXELS = ANIM_COLUMNS * ANIM_ROWS;
 
-// The old show_*() timing counted this long for every frame, which the driver's Show() and Clear() still block. Animations send frames
-// with Show(ANIM_NO_WAIT_MS) and SetBright(), neither waits, and return these waits from Step() instead. The pass pause is what
-// DisplayManip::Show() added.
+// A frame took this long on the lamp and a pass was followed by this pause, and the web page's timings are built on that. Animations
+// send frames with Show(ANIM_NO_WAIT_MS) and SetBright(), neither waits, and return these waits from Step() instead.
 constexpr uint32_t ANIM_LEDS_SHOW_MS = 200;
 constexpr uint32_t ANIM_PASS_PAUSE_MS = 100;
 constexpr uint16_t ANIM_NO_WAIT_MS = 0;

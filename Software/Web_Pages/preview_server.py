@@ -166,7 +166,7 @@ LAMP_ROWS = 12
 PAGE_CELLS = 24
 PAGE_ROWS = 6
 SHOW_PAUSE_MS = 100
-# HAQuDA_LEDs::Show() without an argument blocks 200 ms, so do Clear() and SetBright(); every effect starts with Clear()
+# A frame takes 200 ms on the lamp, so the clear frame and SetBright() each count 200 ms; every effect starts with a dark frame
 LEDS_SHOW_MS = 200
 CLEAR_DARK_MS = LEDS_SHOW_MS
 FADING_DARK_MS = 2 * LEDS_SHOW_MS
@@ -201,7 +201,7 @@ def fx_random(pause_ms, end_pause_ms):
 
 
 def fx_fading(color, fade_pause_ms, start_bright, stop_bright, step):
-    """The lamp is dark for Clear() and SetBright(start), shows the start level for 200 ms, then every level (the first is the
+    """The lamp is dark for the clear frame and SetBright(start), shows the start level for 200 ms, then every level (the first is the
     start level again) for 200 ms + the pause; the last level stays 100 ms longer.
 
     When the countdown does not run (start not above stop) the lamp flashes: one level, from = to = start, shown for 200 ms

@@ -22,15 +22,8 @@ namespace {
 			ON_CALL(mock, FillColor(_)).WillByDefault(Invoke([this](uint32_t color) { fill(color); }));
 			ON_CALL(mock, FillColor(_, _, _)).WillByDefault(Invoke([this](uint8_t r, uint8_t g, uint8_t b) { fill(pack(r, g, b)); }));
 			ON_CALL(mock, SetPixelColor(_, _)).WillByDefault(Invoke([this](uint16_t pixel, uint32_t color) { setPixel(pixel, color); }));
-			ON_CALL(mock, FillColorFrom(_, _, _)).WillByDefault(Invoke([this](uint32_t color, uint8_t start, uint8_t count) {
-				fillFrom(color, start, count);
-			}));
 			ON_CALL(mock, FillColorFrom(_, _, _, _, _)).WillByDefault(Invoke([this](uint8_t r, uint8_t g, uint8_t b, uint8_t start, uint8_t count) {
 				fillFrom(pack(r, g, b), start, count);
-			}));
-			ON_CALL(mock, Show()).WillByDefault(Invoke([this]() {
-				blockingCalls++;
-				sendFrame();
 			}));
 			ON_CALL(mock, Show(_)).WillByDefault(Invoke([this](uint16_t delayMs) {
 				if (delayMs != 0) {
@@ -38,18 +31,9 @@ namespace {
 				}
 				sendFrame();
 			}));
-			ON_CALL(mock, Clear()).WillByDefault(Invoke([this]() {
-				blockingCalls++;
-				fill(0);
-				sendFrame();
-			}));
 			ON_CALL(mock, SetBright(_)).WillByDefault(Invoke([this](uint8_t percent) {
 				brightCalls.push_back(percent);
 				sendFrame();
-			}));
-			ON_CALL(mock, GetBright()).WillByDefault(Invoke([this]() {
-				getBrightCalls++;
-				return static_cast<uint8_t>(0);
 			}));
 		}
 
@@ -61,7 +45,6 @@ namespace {
 		std::vector<std::vector<uint32_t>> frames;
 		std::vector<uint8_t> brightCalls;
 		int blockingCalls = 0;
-		int getBrightCalls = 0;
 		std::vector<uint32_t> pixels;
 
 		size_t litCount(const std::vector<uint32_t> &frame) const {
@@ -244,7 +227,6 @@ TEST(SnakeAnimTest, NeverUsesTheBlockingDriverCalls) {
 	stepsUntilTotal(snake, 2 * (1 + ANIM_PIXELS));
 
 	EXPECT_EQ(0, leds.blockingCalls);
-	EXPECT_EQ(0, leds.getBrightCalls);
 	EXPECT_TRUE(leds.brightCalls.empty());
 }
 
@@ -640,7 +622,6 @@ TEST(FadingAnimTest, StopMidFadePutsTheLampBrightnessBackInPercent) {
 	EXPECT_EQ(33, leds.brightCalls.back());
 	// the restore frame is dark: no flash of the faded colour at the lamp level
 	EXPECT_EQ(0u, leds.litCount(leds.frames.back()));
-	EXPECT_EQ(0, leds.getBrightCalls);
 }
 
 TEST(FadingAnimTest, NoBrightnessValueEverExceedsAPercent) {
@@ -840,7 +821,6 @@ TEST(MeasAnimTest, NeverTouchesTheBrightnessOfTheLamp) {
 	meas.Stop();
 
 	EXPECT_TRUE(leds.brightCalls.empty());
-	EXPECT_EQ(0, leds.getBrightCalls);
 }
 
 TEST(MeasAnimTest, DrawnIsEmptyBeforeTheFirstPicture) {

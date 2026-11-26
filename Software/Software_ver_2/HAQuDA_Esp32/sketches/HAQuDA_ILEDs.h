@@ -10,13 +10,7 @@ class HAQuDA_ILEDs {
 
 	// Sets brightness in percent of MAX_BRIGHTNESS (0..100) and sends the picture without waiting. ShowTask.
 	virtual void SetBright(uint8_t brightPerCent) = 0;
-	// Returns the brightness in percent (0..100) last set. ShowTask or loop.
-	virtual uint8_t GetBright() = 0;
 
-	// Clears the buffer and shows it. ShowTask.
-	virtual void Clear() = 0;
-	// Pushes the buffer to the strip, then waits 200 ms. ShowTask.
-	virtual void Show() = 0;
 	// Pushes the buffer to the strip, then waits delayMs. ShowTask.
 	virtual void Show(uint16_t delayMs) = 0;
 
@@ -27,10 +21,6 @@ class HAQuDA_ILEDs {
 	virtual void FillColor(uint32_t color) = 0;
 	// Fills all pixels in the buffer with r, g, b channels (0..255). ShowTask.
 	virtual void FillColor(uint8_t r, uint8_t g, uint8_t b) = 0;
-	// Fills numPixels pixels from startPixel with a packed colour in the buffer. ShowTask.
-	virtual void FillColorFrom(uint32_t color, uint8_t startPixel, uint8_t numPixels) = 0;
 	// Fills numPixels pixels from startPixel with r, g, b channels (0..255) in the buffer. ShowTask.
 	virtual void FillColorFrom(uint8_t r, uint8_t g, uint8_t b, uint8_t startPixel, uint8_t numPixels) = 0;
-	// Packs r, g, b channels (0..255) into the strip's colour word. Any task.
-	virtual uint32_t GetColor(uint8_t r, uint8_t g, uint8_t b) = 0;
 };

@@ -5,6 +5,7 @@
 #include "HAQuDA_IFileStorage.h"
 #include "HAQuDA_ILampDisplay.h"
 #include "HAQuDA_ILogger.h"
+#include "HAQuDA_MeasHandler.h"
 
 // HAQuDA_FileStorage and HAQuDA_Logger have static methods only, which cannot override the interface methods
 class HAQuDA_FileStorageAdapter : public HAQuDA_IFileStorage {
@@ -23,7 +24,10 @@ class HAQuDA_LoggerAdapter : public HAQuDA_ILogger {
 
 class HAQuDA_LampDisplayAdapter : public HAQuDA_ILampDisplay {
   public:
-	HAQuDA_LampDisplayAdapter(HAQuDA_ErrorHandler &errorHandler, HAQuDA_DisplayService &displayService);
+	HAQuDA_LampDisplayAdapter(HAQuDA_ErrorHandler &errorHandler, HAQuDA_DisplayService &displayService, HAQuDA_MeasHandler &measHandlerRef);
+
+	// The access point replaces the boot snake as the picture shown until the first sample. Loop task, setup() only.
+	void ShowAccessPointRunning();
 
 	bool ErrorShown() override;
 	void ClearError() override;
@@ -36,6 +40,10 @@ class HAQuDA_LampDisplayAdapter : public HAQuDA_ILampDisplay {
 	void ShowNight(lamp_param param, uint16_t fromMin, uint16_t toMin) override;
 
   private:
+	void showMeasMode(meas_mode m);
+
 	HAQuDA_ErrorHandler &errHandler;
 	HAQuDA_DisplayService &display;
+	HAQuDA_MeasHandler &measHandler;
+	display_item waitingItem = HAQuDA_ItemOf(display_event::bootSnake);
 };

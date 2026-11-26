@@ -13,9 +13,9 @@ namespace {
 	constexpr uint32_t LAMP_ROWS = LED_ROW_NUM;
 	constexpr uint32_t SHOW_PAUSE_MS = 100;
 	constexpr uint32_t LEDS_SHOW_MS = 200;
-	// Every effect starts with Clear(): the matrix is dark for LEDS_SHOW_MS before the first frame.
+	// Every effect starts with a dark frame: the matrix is dark for LEDS_SHOW_MS before the first picture.
 	constexpr uint32_t CLEAR_DARK_MS = LEDS_SHOW_MS;
-	// show_fading() is dark for Clear() and for SetBright(start) (still dark, the pixels are cleared).
+	// The fading is dark for the clear frame and for SetBright(start) (still dark, the pixels are cleared).
 	constexpr uint32_t FADING_DARK_MS = 2 * LEDS_SHOW_MS;
 
 	// Page grid: 4 columns x 6 rows (the lamp is 9 columns x 12 rows).
@@ -106,7 +106,7 @@ namespace {
 		return KEY_NAMES[(index < countOf(KEY_NAMES)) ? index : 0];
 	}
 
-	// Lamp: Clear() (dark), then one lap = LAMP_PIXELS draws of movePauseMs plus the 100 ms pause. Page: "dark" ms, then the same
+	// Lamp: dark frame, then one lap = LAMP_PIXELS draws of movePauseMs plus the 100 ms pause. Page: "dark" ms, then the same
 	// lap over PAGE_CELLS cells.
 	void appendSnake(JsonWriter &w, const web_snake_params &p) {
 		const uint32_t lapMs = LAMP_PIXELS * p.movePauseMs + SHOW_PAUSE_MS;
@@ -118,7 +118,7 @@ namespace {
 				 static_cast<unsigned long>(tail));
 	}
 
-	// Lamp: Clear() (dark), LAMP_ROWS rows, one per growPauseMs, then the full matrix for the 100 ms pause. Page: "dark" ms, then
+	// Lamp: dark frame, LAMP_ROWS rows, one per growPauseMs, then the full matrix for the 100 ms pause. Page: "dark" ms, then
 	// PAGE_ROWS rows, so each page row takes two lamp rows.
 	void appendGrowing(JsonWriter &w, const web_growing_params &p) {
 		const uint32_t stepMs = (LAMP_ROWS / PAGE_ROWS) * p.growPauseMs;
@@ -128,7 +128,7 @@ namespace {
 				 static_cast<unsigned long>(SHOW_PAUSE_MS));
 	}
 
-	// Lamp: Clear() (dark), LAMP_PIXELS pixels, one per pauseMs, then endPauseMs and the 100 ms pause. Page: "dark" ms, then
+	// Lamp: dark frame, LAMP_PIXELS pixels, one per pauseMs, then endPauseMs and the 100 ms pause. Page: "dark" ms, then
 	// PAGE_CELLS cells over the same time.
 	void appendRandom(JsonWriter &w, const web_random_params &p, uint32_t seed) {
 		const uint32_t stepMs = divRound(LAMP_PIXELS * p.pauseMs, PAGE_CELLS);
@@ -137,7 +137,7 @@ namespace {
 				 static_cast<unsigned long>(stepMs), static_cast<unsigned long>(endMs), static_cast<unsigned long>(seed));
 	}
 
-	// Lamp: Clear() and SetBright(start) are dark (2 x 200 ms), the fill shows startBright for 200 ms, then brightness moves
+	// Lamp: the clear frame and SetBright(start) are dark (2 x 200 ms), the fill shows startBright for 200 ms, then brightness moves
 	// from startBright towards stopBright (down or up) in `step` changes: every one is SetBright() = 200 ms plus fadePauseMs, the
 	// first is startBright again and stopBright itself is never shown. The last level stays for the 100 ms pause, then the cycle
 	// restarts. So the page gets: "dark" ms, the first level for "first" ms, every further level for "step" ms (steps levels in

@@ -30,13 +30,11 @@
         <string>sketches\HAQuDA_FileStorage.h</string>
         <string>sketches\HAQuDA_ErrorHandler.h</string>
         <string>sketches\HAQuDA_LEDsParams.h</string>
-        <string>sketches\HAQuDA_DisplayManip.h</string>
         <string>sketches\HAQuDA_CaptiveRequestHandler.h</string>
         <string>sketches\HAQuDA_Logger.h</string>
         <string>sketches\HAQuDA_MyWebSerial.h</string>
         <string>sketches\HAQuDA_TimeHelper.h</string>
         <string>sketches\HAQuDA_MeasHandler.h</string>
-        <string>sketches\HAQuDA_EffectsHandler.h</string>
         <string>sketches\HAQuDA_EventHandler.h</string>
         <string>sketches\HAQuDA_Touch.h</string>
         <string>sketches\HAQuDA_ColorScale.h</string>
@@ -65,8 +63,6 @@
         <string>sketches\HAQuDA_DisplayEngine.h</string>
         <string>sketches\HAQuDA_DisplayService.h</string>
         <string>sketches\HAQuDA_NightProgress.h</string>
-        <string>sketches\HAQuDA_MeasShowPolicy.h</string>
-        <string>sketches\HAQuDA_BrightnessApply.h</string>
         <string>sketches\HAQuDA_LampSettings.h</string>
         <string>sketches\HAQuDA_LampControl.h</string>
         <string>sketches\HAQuDA_IFileStorage.h</string>

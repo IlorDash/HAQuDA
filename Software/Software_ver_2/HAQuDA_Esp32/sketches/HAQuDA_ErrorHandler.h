@@ -2,13 +2,9 @@
 
 #include <atomic>
 
-#include "HAQuDA_DisplayTypes.h"
-#include "HAQuDA_EffectsHandler.h"
-
 class HAQuDA_DisplayService;
 
-class HAQuDA_ErrorHandler : HAQuDA_EffectsHandler {
-	static error_type currentError;
+class HAQuDA_ErrorHandler {
 	HAQuDA_DisplayService *display = nullptr;
 
 	// Set by the logger's time stamp, read and cleared by UpdateNtpError(): both run in the loop task, atomic so a log call from
@@ -18,23 +14,11 @@ class HAQuDA_ErrorHandler : HAQuDA_EffectsHandler {
 	bool ntpErrorPosted = false;
 	bool ntpErrorLogged = false;
 
-	static snake_params failedToCreateAPEffect;
-	static growing_params failedToConnectToWiFiEffect;
-	static random_led_params failedToStartSensorsEffect;
-	static fading_params failedToStartFSEffect;
-	static fading_params failedToUpdateNTPEffect;
-
   public:
-	HAQuDA_ErrorHandler();
+	HAQuDA_ErrorHandler() = default;
 
 	// The errors are posted to this service. Loop task, once in setup() before the first error
 	void SetDisplay(HAQuDA_DisplayService *displayService);
-
-	static void Show();
-
-	static error_type GetCurrentError() {
-		return currentError;
-	}
 
 	// Posts the error, logs it, does not block. Loop task only (setup runs in it).
 	void FailedToConnectToWiFi();

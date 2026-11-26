@@ -1,6 +1,5 @@
 #include "HAQuDA_LampAdapters.h"
 
-#include "HAQuDA_DisplayManip.h"
 #include "HAQuDA_DisplayService.h"
 #include "HAQuDA_FileStorage.h"
 #include "HAQuDA_LampDisplayRules.h"
@@ -33,8 +32,21 @@ void HAQuDA_LoggerAdapter::LogError(const char *msg) {
 	HAQuDA_Logger::LogError(msg);
 }
 
-HAQuDA_LampDisplayAdapter::HAQuDA_LampDisplayAdapter(HAQuDA_ErrorHandler &errorHandler, HAQuDA_DisplayService &displayService)
-	: errHandler(errorHandler), display(displayService) {
+HAQuDA_LampDisplayAdapter::HAQuDA_LampDisplayAdapter(HAQuDA_ErrorHandler &errorHandler, HAQuDA_DisplayService &displayService,
+													 HAQuDA_MeasHandler &measHandlerRef)
+	: errHandler(errorHandler), display(displayService), measHandler(measHandlerRef) {
+}
+
+void HAQuDA_LampDisplayAdapter::ShowAccessPointRunning() {
+	waitingItem = HAQuDA_ItemOf(display_event::apRunning);
+	display.Post(display_event::apRunning);
+}
+
+void HAQuDA_LampDisplayAdapter::showMeasMode(meas_mode m) {
+	measHandler.SetMeasDispMode(m);
+	const anim_id measAnim = measHandler.CurrentAnim();
+	display.SetBackground(measAnim, waitingItem);
+	display.SetMeasEnabled(measAnim != anim_id::none);
 }
 
 bool HAQuDA_LampDisplayAdapter::ErrorShown() {
@@ -46,26 +58,25 @@ void HAQuDA_LampDisplayAdapter::ClearError() {
 }
 
 void HAQuDA_LampDisplayAdapter::ShowSensorsError() {
-	// The same pair setup() uses; the error is the one an unstarted sensor set leaves on the matrix
-	HAQuDA_DisplayManip::SetMode(error);
 	errHandler.FailedToStartSensors();
 }
 
 void HAQuDA_LampDisplayAdapter::SetBrightnessPercent(uint8_t brightPercent) {
-	HAQuDA_DisplayManip::SetBrightness(brightPercent);
+	display.SetBrightness(brightPercent);
 }
 
 void HAQuDA_LampDisplayAdapter::ShowColor(uint32_t rgb) {
+	display.SetMeasEnabled(false);
 	if (rgb == COLOR_OFF) {
-		HAQuDA_DisplayManip::ShowLampOff();
+		display.SetLampOff();
 	} else {
-		HAQuDA_DisplayManip::ShowLampLight(rgb);
+		display.SetLampLight(rgb);
 	}
 }
 
 void HAQuDA_LampDisplayAdapter::ShowStandard(lamp_param param) {
-	HAQuDA_DisplayManip::SetStandardMeasParam(HAQuDA_ToMeasType(param));
-	HAQuDA_DisplayManip::SetMeasMode(standard);
+	measHandler.SetStandardMeasParam(HAQuDA_ToMeasType(param));
+	showMeasMode(standard);
 }
 
 void HAQuDA_LampDisplayAdapter::ShowMulti(const lamp_param (&bottomToTop)[LAMP_MULTI_NUM]) {
@@ -73,13 +84,13 @@ void HAQuDA_LampDisplayAdapter::ShowMulti(const lamp_param (&bottomToTop)[LAMP_M
 	for (size_t i = 0; i < MULTI_MODE_PARAM_NUM; i++) {
 		params.paramsArr[i] = HAQuDA_ToMeasType(bottomToTop[i]);
 	}
-	HAQuDA_DisplayManip::SetMultiMeasParam(params);
-	HAQuDA_DisplayManip::SetMeasMode(multi);
+	measHandler.SetMultiMeasParam(params);
+	showMeasMode(multi);
 }
 
 void HAQuDA_LampDisplayAdapter::ShowNight(lamp_param param, uint16_t fromMin, uint16_t toMin) {
 	const night_time window = {fromMin, toMin};
-	HAQuDA_DisplayManip::SetStandardMeasParam(HAQuDA_ToMeasType(param));
-	HAQuDA_DisplayManip::SetNightTime(window);
-	HAQuDA_DisplayManip::SetMeasMode(night);
+	measHandler.SetStandardMeasParam(HAQuDA_ToMeasType(param));
+	measHandler.SetNightTime(window);
+	showMeasMode(night);
 }

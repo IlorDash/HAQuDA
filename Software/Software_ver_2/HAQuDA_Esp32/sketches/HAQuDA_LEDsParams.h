@@ -15,15 +15,12 @@
 // Night bar grey as a percentage of the largest colour channel (COLOR_SCALE_MAX_CHANNEL)
 #define WHITE_BRIGHTNESS_COEFF 70
 
-#define COLORS_NUM 3
-
 #define COLOR_OFF 0x000000
 #define COLOR_AQUA 0x00FFFF
 #define COLOR_LIME 0x99FF33
 #define COLOR_GREEN 0x01FF00
 #define COLOR_RED 0xFF0000
 #define COLOR_YELLOW 0xFFFF00
-#define COLOR_WHITE 0xFFFFFF
 
 // The colour scale tops out at the raw brightness of 100 %: its channels are dimmed by the LED driver, never scaled again here
 static_assert(COLOR_SCALE_MAX_CHANNEL == MAX_BRIGHTNESS, "colour scale and LED limits must agree");

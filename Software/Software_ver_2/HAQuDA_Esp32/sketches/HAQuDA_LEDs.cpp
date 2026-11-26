@@ -18,11 +18,9 @@ HAQuDA_LEDs *HAQuDA_LEDs::getInstance() {
 
 void HAQuDA_LEDs::Begin() {
 	bus.Begin();
-	HAQuDA_LEDs::Show();
-	// Stored directly instead of through SetBright(): the picture is empty, so there is nothing to rescale, and SetBright()
-	// would add a second 200 ms Show().
+	HAQuDA_LEDs::Show(200);
+	// Stored directly instead of through SetBright(): the picture is empty, so there is nothing to rescale or send
 	brightness.store(HAQuDA_BrightPercentToRaw(DEFAULT_BRIGHTNESS) + 1);
-	brightPerCent.store(DEFAULT_BRIGHTNESS);
 }
 
 void HAQuDA_LEDs::SetBright(uint8_t bright_per_cent) {
@@ -48,19 +46,8 @@ void HAQuDA_LEDs::SetBright(uint8_t bright_per_cent) {
 		bus.Dirty();
 		brightness.store(newBrightness);
 	}
-	brightPerCent.store(bright_per_cent > 100 ? 100 : bright_per_cent);
-	// The animations count the 200 ms of the old blocking Show() in the wait they return from Step(), so waiting here as well would double it
+	// The animations count the 200 ms a frame takes in the wait they return from Step(), so waiting here as well would double it
 	showFrame();
-}
-
-uint8_t HAQuDA_LEDs::GetBright() {
-	return brightPerCent.load();
-}
-
-void HAQuDA_LEDs::Clear() {
-	memset(bus.Pixels(), 0, bus.PixelsSize());
-	bus.Dirty();
-	HAQuDA_LEDs::Show();
 }
 
 // A frame that cannot be sent within its wait is lost, without a log (ShowTask must not log); the next Show() sends the
@@ -77,11 +64,6 @@ bool HAQuDA_LEDs::showFrame() {
 		bus.Show();
 	}
 	return sent;
-}
-
-void HAQuDA_LEDs::Show() {
-	showFrame();
-	vTaskDelay(pdMS_TO_TICKS(200));
 }
 
 void HAQuDA_LEDs::Show(uint16_t delay) {
@@ -103,15 +85,15 @@ void HAQuDA_LEDs::SetPixelColor(uint16_t pixelNum, uint32_t color) {
 }
 
 void HAQuDA_LEDs::FillColor(uint32_t color) {
-	HAQuDA_LEDs::FillColorFrom(color, 0, LED_NUM_PIXELS);
+	fillColorFrom(color, 0, LED_NUM_PIXELS);
 }
 
 void HAQuDA_LEDs::FillColor(uint8_t r, uint8_t g, uint8_t b) {
-	HAQuDA_LEDs::FillColorFrom(HAQuDA_LEDs::GetColor(r, g, b), 0, LED_NUM_PIXELS);
+	fillColorFrom(getColor(r, g, b), 0, LED_NUM_PIXELS);
 }
 
-// Clipped at the end of the strip (showMeas_multi() relies on it); numPixels 0 fills to the end.
-void HAQuDA_LEDs::FillColorFrom(uint32_t color, uint8_t startPixel, uint8_t numPixels) {
+// Clipped at the end of the strip; numPixels 0 fills to the end.
+void HAQuDA_LEDs::fillColorFrom(uint32_t color, uint8_t startPixel, uint8_t numPixels) {
 	if (startPixel >= LED_NUM_PIXELS) {
 		return;
 	}
@@ -125,9 +107,9 @@ void HAQuDA_LEDs::FillColorFrom(uint32_t color, uint8_t startPixel, uint8_t numP
 }
 
 void HAQuDA_LEDs::FillColorFrom(uint8_t r, uint8_t g, uint8_t b, uint8_t startPixel, uint8_t numPixels) {
-	HAQuDA_LEDs::FillColorFrom(HAQuDA_LEDs::GetColor(r, g, b), startPixel, numPixels);
+	fillColorFrom(getColor(r, g, b), startPixel, numPixels);
 }
 
-uint32_t HAQuDA_LEDs::GetColor(uint8_t r, uint8_t g, uint8_t b) {
+uint32_t HAQuDA_LEDs::getColor(uint8_t r, uint8_t g, uint8_t b) {
 	return ((uint32_t)r << 16) | ((uint32_t)g << 8) | b;
 }
