@@ -22,6 +22,7 @@ button next to them switches the light and the dark theme. The browser remembers
 |---------|---------------|
 | `/` | The main page. |
 | `/wifi_manager` | The page that lists, adds and deletes WiFi networks. |
+| `/buttons` | The page that sets what the touch buttons do. |
 | `/webserial` | The live log of the lamp. Works in access point mode too. |
 
 In your network, any other address answers with an empty 404 page. In access point mode, any other
@@ -54,6 +55,7 @@ A banner appears under the header when there is something to do.
 |--------|-------|------------|
 | **The lamp couldn't find a saved network and started its own. Add your home WiFi.** and the button **Add WiFi network** | The lamp runs its access point. | Press the button; see [Quick guide](quick-guide.md#connect-the-lamp-to-your-wifi). |
 | **No response from the lamp. ...** | The lamp restarts, is off, or your phone changed networks. | Wait. The page keeps the last values, dims them and recovers by itself. |
+| **You opened the lamp’s own network with the touch buttons. Your saved networks are kept — restart the lamp to return to them.** and the button **Add WiFi network** | You held the touch buttons TOUCH 2 and TOUCH 8 for 10 seconds; see [Use the touch buttons](quick-guide.md#use-the-touch-buttons). | Add a network, or press **Restart lamp**: the lamp then joins its saved networks. |
 | Red banner **Could not join “network”: reason. The lamp is back on “network”.** and the button **Close** | The lamp tried a new network in station mode and failed; see [While the lamp is in your network](#add-in-station-mode). | Read the reason. **Close** hides the banner, and the lamp forgets the outcome. |
 
 ### The lamp's picture {#lamp-picture}
@@ -113,6 +115,11 @@ shows the lamp's reply in red for about 10 seconds. The replies are in English:
 | **The night light must start and end at different times.** | **Night light from** and **to** are equal. |
 | **The lamp did not accept the change.** or **No answer from the lamp.** | The page got no usable answer. |
 
+When the lamp could not write a change to its memory, it goes back to the last saved settings and
+the card shows them. A window opens: **Couldn’t save**, **The lamp couldn’t write the settings to
+its memory. It went back to the last saved settings.** and the button **OK**. The lamp does not
+try the write again; make the change once more.
+
 While the lamp does not answer, the card shows **Controls are unavailable while the lamp isn’t
 responding**. How the modes look on the lamp is in [Display modes](display-modes.md#multi-mode).
 
@@ -130,6 +137,7 @@ responding**. How the modes look on the lamp is in [Display modes](display-modes
 |---------|--------------|
 | Link **WiFi networks** | Opens the [WiFi networks page](#wifi-networks-page). |
 | Link **Live log** | Opens the [log page](#log-page). |
+| Link **Touch buttons** | Opens the [touch buttons page](#touch-buttons-page). |
 | Links **User guide ↗** and **GitHub ↗** | Open sites on the internet; the notes **needs internet** mark them. |
 | Red button **Restart lamp** | Restarts the lamp; see [Restart the lamp](#restart-lamp). |
 | **EN**, **RU** and the round theme button | Switch the language and the theme. |
@@ -245,6 +253,78 @@ that one.
 The lamp answers **Deleted all saved networks.**, or **There are no saved networks.** when the list
 is empty. **Error deleting the saved networks.** means the lamp could not delete the file: try
 again. The page cannot delete a single network.
+
+---
+
+## Touch buttons page {#touch-buttons-page}
+
+Open it with the link **Touch buttons** on the main page or on the WiFi networks page, or at
+`/buttons`. The arrow in the header leads back to the main page. The page asks the lamp every
+5 seconds, and a change applies at once. While the lamp does not answer, the page dims, and its
+footer reads **Settings are unavailable while the lamp isn’t responding**. How to use the buttons
+on the lamp is in the [Quick guide](quick-guide.md#use-the-touch-buttons).
+
+The page shows the lock card on top, a drawing of the four buttons **TOUCH 2**, **TOUCH 6**,
+**TOUCH 8** and **TOUCH 9**, and the card of the chosen button. Each button in the drawing carries
+the name of its action. Tap a button in the drawing, then choose its action in the card.
+
+### Actions {#button-actions}
+
+| Action | What the button does on a tap |
+|--------|-------------------------------|
+| **Nothing** | Nothing. |
+| **Turn lamp on / off** | Switches the lamp on and off. |
+| **Brighter** | Makes the lamp brighter by 5 %. A hold changes the brightness smoothly; see [System gestures](#system-gestures). |
+| **Dimmer** | Makes the lamp dimmer by 5 %. A hold works as for **Brighter**. |
+| **Next mode** | Shows the next mode: **Standard**, **Multi**, **Night**, **Lamp light**, then **Standard** again. It skips **Night** while the lamp has no time. |
+| **Switch to mode** | Shows the mode you choose in the list: **Standard**, **Multi**, **Night** or **Lamp light**. The lamp refuses **Night** while it has no time. |
+| **Show a reading** | Shows one reading on the whole matrix for 10 seconds, then the lamp returns to its own picture. Choose it in the list: **Overall**, **Temperature**, **Humidity**, **eCO₂**, **TVOC** or **PM2.5**. The lamp refuses it while it shows an error or its sensors are off. |
+
+The defaults are **Turn lamp on / off** on TOUCH 2, **Brighter** on TOUCH 6, **Next mode** on
+TOUCH 8 and **Dimmer** on TOUCH 9. The brightness steps are the steps of the Lamp card, 5 to
+100 %. **Brighter**, **Dimmer**, **Next mode** and **Switch to mode** switch on a lamp that is off.
+**Show a reading** does not change the power setting: the matrix goes dark again when the 10
+seconds end. A mode that a button selects replaces the mode of the Lamp card, and the lamp keeps
+it like any other change.
+
+When no button has **Turn lamp on / off**, a warning reads **No button turns the lamp off — you’ll
+only be able to switch it off from this page.**
+
+When the lamp refuses an action, its matrix flashes red for half a second and the log names the
+button; see [Running effects](troubleshooting.md#running-effects). When the lamp refuses a change
+on this page, a red line shows its reply for about 10 seconds: **The lamp did not accept the
+change.**, **No answer from the lamp.** or the text the lamp sent.
+
+### Lock and defaults {#lock-and-defaults}
+
+| Control | Action |
+|---------|--------|
+| Switch **Lock the buttons** | Locks and unlocks the touch buttons. The line next to it reads **Taps change the lamp.** or **Locked: taps do nothing until you unlock. Hold TOUCH 6 and 8 on the lamp for 3 s to unlock there.** While the buttons are locked, you can still edit their actions here; the footer reads **You can still edit while locked**. |
+| **Defaults** | Restores the four default actions and keeps the lock as it is. |
+
+The lamp keeps the actions and the lock in its flash and reads them at the next start. A missing or
+damaged file gives the defaults and an unlocked state.
+
+### System gestures {#system-gestures}
+
+The card **System gestures** marks three gestures **always on**. They do not depend on the
+actions you choose.
+
+| Gesture | Effect |
+|---------|--------|
+| **Hold** | On a **Brighter** or a **Dimmer** button the brightness changes smoothly while your finger stays on the button. After 0.6 seconds the lamp makes one step every 0.2 seconds, and it saves the brightness when you release the button. |
+| **6 + 8 · 3 s** | Hold TOUCH 6 and TOUCH 8 together for 3 seconds to lock or unlock the buttons. The matrix flashes amber for half a second when it locks and green when it unlocks. |
+| **2 + 8 · 10 s** | Hold TOUCH 2 and TOUCH 8 together for 10 seconds: the matrix flashes aqua for half a second, and the lamp restarts and opens its own access point, without the red picture of a failed join. Your saved networks stay, and the next restart is a normal one. It works while the buttons are locked. The lamp refuses it with a red flash while it checks a WiFi network or a restart is already coming. |
+
+A tap is a touch that you release within 0.6 seconds. Touching two buttons together does nothing
+except these two holds. The lamp ignores a touch that began while it was starting.
+
+### When the lamp cannot save {#buttons-save-failed}
+
+If the lamp could not write a change of the actions or of the lock to its memory, it goes back to
+the last saved settings and does not try the write again. The page shows the window **Couldn’t
+save**, **The lamp couldn’t write the settings to its memory. It went back to the last saved
+settings.** and the button **OK**. Make the change again.
 
 ---
 

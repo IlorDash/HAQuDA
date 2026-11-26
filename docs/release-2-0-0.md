@@ -48,8 +48,22 @@
 - **Restart from the page.** The red button **Restart lamp** on the main page restarts the lamp
   without unplugging it, after you confirm. The page shows **Lamp is restarting…** and reloads
   itself when the lamp is back. The lamp refuses while it checks a new WiFi network. The log line
-  of a WiFi restart is now `Restart: WiFi network change`, and a restart from the page logs
-  `Restart: web page request`. See [Restart the lamp](web-interface.md#restart-lamp).
+  of a WiFi restart is now `Restart: WiFi network change`, and a restart that you ask for, from
+  the page or with the touch buttons, logs `Restart: user request`. See
+  [Restart the lamp](web-interface.md#restart-lamp).
+- **Touch buttons.** The four touch buttons TOUCH 2, TOUCH 6, TOUCH 8 and TOUCH 9 control the
+  lamp: on and off, brighter and dimmer in steps of 5 % (a hold changes the brightness smoothly),
+  and the next mode. The new page **Touch buttons** gives each button another action: nothing, on
+  or off, brighter, dimmer, the next mode, a chosen mode, or one reading shown for 10 seconds.
+  Holding TOUCH 6 and TOUCH 8 for 3 seconds locks and unlocks the buttons, and a flash of the
+  matrix tells which: amber or green. Holding TOUCH 2 and TOUCH 8 for 10 seconds restarts the lamp
+  into its own access point, keeps your saved networks, and the main page says how the access
+  point was opened. A red flash marks a refused action, and the log has a line for every action.
+  See [Use the touch buttons](quick-guide.md#use-the-touch-buttons) and
+  [Touch buttons page](web-interface.md#touch-buttons-page).
+- **Settings that cannot be saved.** When the lamp cannot write the lamp settings or the settings
+  of the touch buttons, it goes back to the last saved settings, does not try again, and the page
+  shows the window **Couldn’t save**. See [Saved settings](display-modes.md#saved-settings).
 
 ## Improvements
 

@@ -116,11 +116,35 @@ value with your other settings.
 
 ---
 
+## Touch buttons and the picture {#touch-buttons-picture}
+
+The touch buttons change the same settings as the Lamp card; see
+[Use the touch buttons](quick-guide.md#use-the-touch-buttons).
+
+- A tap on **Brighter** or **Dimmer** moves the brightness by one step of 5 %. A hold moves it
+  smoothly, and the lamp saves the brightness when you release the button.
+- **Next mode** and **Switch to mode** replace the mode of the Lamp card, and the lamp saves it.
+  **Night** needs a time: with no time **Next mode** skips it and **Switch to mode** is refused.
+- **Show a reading** puts one reading on the whole matrix for 10 seconds, drawn as the
+  **Standard** mode draws it, and then the lamp draws its own picture again. It saves nothing.
+- A flash fills the whole matrix with one colour for half a second and then the lamp draws its own
+  picture again: amber for locked buttons, green for unlocked, red for a refused action, aqua for
+  the restart into the access point. A change of the settings ends a flash or a reading at once.
+- A flash or a reading does not switch on a lamp that is off: the matrix goes dark again after it.
+  While the lamp shows an error, it shows no flash and refuses a reading.
+
+---
+
 ## Saved settings {#saved-settings}
 
 The lamp writes every change to its flash at once, before it shows the change, so a reset right
 after a change keeps it. The settings are in the file `/lamp`. When the file is missing or damaged,
 the lamp uses the defaults: on, 35 %, multi mode (PM2.5 on top, eCO2 in the middle, temperature at
 the bottom), night window 21:00 to 09:00, the first lamp light colour.
+
+If the lamp cannot write a change, it goes back to the last saved settings, does not try the write
+again and logs `Lamp settings: save failed`; a window on the main page tells you. The actions and
+the lock of the touch buttons are in the file `/buttons` and follow the same rules; a missing or
+damaged file gives the default actions and unlocked buttons.
 
 → [Mode selection](quick-guide.md#select-the-display-mode)

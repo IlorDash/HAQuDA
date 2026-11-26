@@ -28,6 +28,7 @@ see [Colour scale](display-modes.md#colour-scale).
 | Services | Web server on port 80 (pages in English and Russian), WebSerial log, time from NTP with a fixed offset of UTC+3 (station mode only) |
 | Dynamic DNS (DuckDNS) | <span class="wip">WIP</span> |
 | Display update | Sensors are read every few seconds; the matrix is redrawn once a minute with the average of that minute, and at once when you change the mode |
+| Controls | Four touch buttons (power, brightness, mode), configurable on a web page |
 | Error indication | LED effects and log lines |
 
 ---
@@ -59,7 +60,8 @@ The limits of every value and the resulting colours are in [Display modes](displ
 | Lamp light | One of six solid colours. |
 
 You choose the mode, the brightness and the power on the main page of the lamp; see
-[Mode selection](quick-guide.md#select-the-display-mode). The lamp keeps your choice.
+[Mode selection](quick-guide.md#select-the-display-mode). The touch buttons on the lamp do the same;
+see [Touch buttons](quick-guide.md#use-the-touch-buttons). The lamp keeps your choice.
 
 Details are in [Display modes](display-modes.md).
 
@@ -69,9 +71,9 @@ Details are in [Display modes](display-modes.md).
 
 | Page | Content |
 |------|---------|
-| [Quick guide](quick-guide.md) | First start, WiFi setup, display mode selection. |
+| [Quick guide](quick-guide.md) | First start, WiFi setup, display mode selection, touch buttons. |
 | [Display modes](display-modes.md) | Picture update, colour scale, the three modes. |
-| [Web interface](web-interface.md) | Main page, adding and deleting WiFi networks, the log page. |
+| [Web interface](web-interface.md) | Main page, adding and deleting WiFi networks, the touch buttons page, the log page. |
 | [LED codes and troubleshooting](troubleshooting.md) | LED effects, matrix symptoms, log messages. |
 | [Building and flashing](build-and-flash.md) | Requirements, build variables, build and flash steps. |
 | [Release notes](release-2-0-0.md) | Changes per version and known limitations. |

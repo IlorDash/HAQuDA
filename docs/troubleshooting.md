@@ -36,6 +36,10 @@ Effects in the tables use these names:
 |------------------------|-------|------------|
 | Red, whole matrix, about 3 seconds, then a lime snake | The lamp lost the WiFi connection and reconnects. | Wait. |
 | Red, whole matrix, about 3 seconds, then a dark matrix | You added a network while the lamp ran in your network, and it left its network to try the new one. | Wait for the restart; see [While the lamp is in your network](web-interface.md#add-in-station-mode). |
+| Amber, whole matrix, half a second | You locked the touch buttons: taps do nothing. | Nothing. To unlock, hold TOUCH 6 and TOUCH 8 together for 3 seconds. |
+| Green, whole matrix, half a second | You unlocked the touch buttons. | Nothing. |
+| Red, whole matrix, half a second | The lamp refused an action of a touch button, for example **Night** while it has no time, a reading while it shows an error, or the restart into the access point while it checks a WiFi network. | Change the action or remove the cause. The log names the action; see [Log messages](#log-messages). |
+| Aqua, whole matrix, half a second, then a restart | You held TOUCH 2 and TOUCH 8 for 10 seconds. The lamp restarts into its own access point, without the red growing, and keeps your saved networks. | Wait for the aqua fading and join the lamp's network ([Quick guide](quick-guide.md#connect-the-lamp-to-your-wifi)). The next restart is a normal one. |
 | Lime snake that does not end after the lamp lost its WiFi <span class="wip">WIP</span> | The router is gone. The lamp retries without a limit. | Bring the router back, or unplug the lamp and plug it in again. |
 
 !!! note "WIP"
@@ -54,6 +58,7 @@ Effects in the tables use these names:
 | The picture does not change for several minutes | In a measurement mode, one of the shown values delivers no reading, and the lamp keeps the old picture. One missed CCS811 reading discards the whole minute of eCO2 and TVOC. | Open the log and look for `Failed to get ... meas` lines (see [Log messages](#log-messages)). Check the wiring of that sensor. |
 | eCO2 and TVOC never show green | The lamp shows these two values in steps. | Nothing; see [Colour scale](display-modes.md#colour-scale). |
 | An animation, for example the lime snake, freezes for a fraction of a second when WiFi connects | The WiFi connection and the matrix share one processor core, so the picture waits while WiFi starts. | Nothing. It is harmless. Parts of the matrix no longer flash random colours during file system writes or a WiFi connection. |
+| A touch button does nothing | The buttons are locked, the action of that button is **Nothing**, you touched two buttons together, you held a button other than **Brighter** or **Dimmer** for longer than 0.6 seconds, or the touch began while the lamp started. | Unlock the buttons, check the actions on the [touch buttons page](web-interface.md#touch-buttons-page) and touch one button for less than 0.6 seconds. If a tap of an unlocked button writes no `Touch` line to the log, the lamp does not detect it: check the connection of the touch buttons. |
 | The LED on the ESP32 board does not blink | The lamp has not finished its start, or its main loop is blocked, usually while it retries a lost WiFi connection. | Wait for the start or the reconnect. If the LED stays still for minutes, unplug the lamp and plug it in again. |
 
 The LED on the ESP32 board blinks once per second while the lamp works normally.
@@ -72,7 +77,10 @@ Each line has the form `time - level : message`; see [Log page](web-interface.md
 | `Started sensors` | Info | The sensors answer. | Nothing. |
 | `Lamp settings loaded` | Info | The lamp read its saved settings from `/lamp`. | Nothing. |
 | `Lamp settings bad, defaults` | ERROR | The file `/lamp` is damaged or of another format. The lamp uses the defaults. | Set your choice again on the web page; the lamp overwrites the file. |
-| `Lamp settings: save failed` | ERROR | The lamp could not write `/lamp`. The change works until the next restart. | Make the change again. If it repeats, flash the lamp again. |
+| `Lamp settings: save failed` | ERROR | The lamp could not write `/lamp`. It went back to the last saved settings, does not try again, and the main page shows the window **Couldn’t save**. | Make the change again. If it repeats, flash the lamp again. |
+| `Buttons settings loaded` | Info | The lamp read the actions and the lock of the touch buttons from `/buttons`. | Nothing. |
+| `Buttons settings bad, defaults` | ERROR | The file `/buttons` is damaged or of another format. The lamp uses the default actions and unlocked buttons. | Set your choice again on the touch buttons page; the lamp overwrites the file. |
+| `Buttons settings: save failed` | ERROR | The lamp could not write `/buttons`. It went back to the last saved settings, does not try again, and the touch buttons page shows the window **Couldn’t save**. | Make the change again. If it repeats, flash the lamp again. |
 | `Failed connection to WiFi` | ERROR | The lamp could not join a stored network. | Check the name and the password of your network. |
 | `Failed creating Acces Point` | ERROR | The access point cannot start. | See the dark matrix above. |
 | `CreateAP: captive DNS not started` | ERROR | The lamp's DNS for the access point did not start. | Open `http://192.168.4.22/` by hand. |
@@ -87,7 +95,15 @@ Each line has the form `time - level : message`; see [Log page](web-interface.md
 | `WiFi switch: no_network, staying on the current network` | ERROR | The lamp does not see the network. Nothing changes. The ending can also be `scan_failed`. | See [Results of adding a network](web-interface.md#add-results). |
 | `WiFi switch: wrong_password, restarting to rejoin the saved networks` | ERROR | The lamp could not join the new network and restarts. Other reasons: `no_network`, `timeout`, `save_failed`. | Wait; both pages then show the reason. |
 | `Restart: WiFi network change` | Info | The lamp restarts after a passed check or after a switch. | Nothing. |
-| `Restart: web page request` | Info | The lamp restarts because you pressed **Restart lamp**; see [Restart the lamp](web-interface.md#restart-lamp). | Nothing. |
+| `Restart: user request` | Info | The lamp restarts because you pressed **Restart lamp** (see [Restart the lamp](web-interface.md#restart-lamp)) or held TOUCH 2 and TOUCH 8 for 10 seconds. | Nothing. |
+| `Touch 6: brighter` | Info | A tap on a touch button did its action. The number is the button (2, 6, 8 or 9); the text is `power`, `brighter`, `dimmer`, `next mode`, `mode` or `show reading`. | Nothing. |
+| `Touch 9: dimmer, held` | Info | You released a button that you held; the lamp saved the brightness. The text is `brighter, held` or `dimmer, held`. | Nothing. |
+| `Touch 8: mode refused` | Info | The lamp refused the action and flashed red. The text is `mode refused` or `show reading refused`. | See the red flash in [Running effects](#running-effects). |
+| `Touch buttons locked` | Info | You locked the touch buttons. The line `Touch buttons unlocked` follows an unlock. | Nothing. |
+| `Touch buttons: restarting into the access point` | Info | You held TOUCH 2 and TOUCH 8 for 10 seconds, and the lamp restarts about 1 second later. | Join the lamp's network. |
+| `Touch buttons: access point refused` | Info | The lamp checks a WiFi network or a restart is already coming, so it did not restart and flashed red. | Hold the buttons again when the check is over. |
+| `Touch events dropped: 3` | ERROR | The main loop of the lamp was blocked for long, and 3 touches (the number varies) were lost. | Touch again. |
+| `Touch buttons: queue create failed` | ERROR | The lamp could not start the touch buttons and runs without them. Other endings: `timer create failed`, `timer start failed`. | Unplug the lamp and plug it in again. |
 | `Sensors start: CCS811 not found` | ERROR | The CCS811 does not answer. | Check the CCS811 power and I2C wiring. |
 | `Sensors start: DHT22 not responding` | ERROR | The DHT22 gave no reading within 5 seconds after the sensors powered on. | Check the DHT22 wiring. |
 | `Sensors start: ZH03B sends no frames` | ERROR | The ZH03B sent no valid frame within 5 seconds after the sensors powered on. | Check the ZH03B wiring and its 5 V supply. |

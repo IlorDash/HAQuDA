@@ -1,6 +1,7 @@
 # Quick guide
 
-Three everyday tasks: start the lamp, connect it to your WiFi, and select the display mode.
+Four everyday tasks: start the lamp, connect it to your WiFi, select the display mode, and use the
+touch buttons.
 
 ---
 
@@ -49,7 +50,9 @@ password that were set when the firmware was built. Your own network name and pa
 at most 31 bytes long, and the network works at 2.4 GHz.
 
 1. Unplug the lamp and plug it in again if you are not sure it runs in access point mode. Wait
-   for the aqua fading.
+   for the aqua fading. To open the access point of a lamp that runs in your network, hold the
+   touch buttons TOUCH 2 and TOUCH 8 together for 10 seconds instead: the lamp flashes aqua and
+   restarts into its access point, and it keeps your saved networks.
 2. On your phone or laptop, join the lamp's WiFi network with the access point name and password
    from the build.
 3. Open `http://192.168.4.22/` or `http://haquda.local/` in a browser. Type the address: opening
@@ -109,3 +112,42 @@ at 35 %.
       lamp again.
 
 → [Modes in detail](display-modes.md)
+
+---
+
+## Use the touch buttons {#use-the-touch-buttons}
+
+**Before you start:** the lamp has finished its start. It has four touch buttons, TOUCH 2,
+TOUCH 6, TOUCH 8 and TOUCH 9. A tap is a touch that you release within 0.6 seconds; the lamp acts
+when you release the button.
+
+1. Tap TOUCH 2 to switch the lamp off and on.
+2. Tap TOUCH 6 to make the lamp brighter by 5 %, or TOUCH 9 to make it dimmer by 5 %. Hold the
+   button for a smooth change: after 0.6 seconds the brightness moves one step every 0.2 seconds.
+   The lamp saves the brightness when you release the button. A lamp that is off switches on.
+3. Tap TOUCH 8 to show the next mode: **Standard**, **Multi**, **Night**, **Lamp light**, then
+   **Standard** again. The lamp skips **Night** while it has no time.
+4. To lock the buttons, hold TOUCH 6 and TOUCH 8 together for 3 seconds. The matrix flashes amber
+   for half a second. While the buttons are locked, taps do nothing. Do the same to unlock them:
+   the matrix flashes green.
+5. To give a button another action, press the link **Touch buttons** on the main page; see
+   [Touch buttons page](web-interface.md#touch-buttons-page).
+6. To open the lamp's own access point, hold TOUCH 2 and TOUCH 8 together for 10 seconds. The
+   matrix flashes aqua, and the lamp restarts into its access point. This works while the buttons
+   are locked.
+
+The lamp keeps the brightness, the mode, the actions of the buttons and the lock after a restart.
+Touches made while the lamp starts are ignored. Touching two buttons together does nothing,
+except the two holds above.
+
+!!! warning "If it fails"
+    - **The matrix flashes red for half a second** — the lamp refused the action. For example, a
+      button that selects **Night** works only when the lamp has a time. The
+      [log](troubleshooting.md#log-messages) names the button and the action.
+    - **A tap does nothing** — the buttons are locked (hold TOUCH 6 and TOUCH 8 for 3 seconds), the
+      action of that button is **Nothing**, you touched two buttons, or you held the button for
+      longer than 0.6 seconds.
+    - **A window "Couldn’t save" opens on the page** — the lamp could not write a change to its
+      memory and went back to the last saved settings. Make the change again.
+
+→ [All flashes](troubleshooting.md#running-effects)
