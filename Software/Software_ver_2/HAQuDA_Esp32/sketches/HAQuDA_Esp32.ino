@@ -37,8 +37,8 @@ HAQuDA_FileStorageAdapter LampFiles;
 HAQuDA_LampDisplayAdapter LampDisplay(ErrHandler);
 HAQuDA_LoggerAdapter LampLogger;
 HAQuDA_LampControl LampControl(LampFiles, LampDisplay, LampLogger);
-HAQuDA_WiFi_handler WiFiHandler(&FileStorage, &DispManip, MeasSnapshot, WebDisp, LampControl);
 HAQuDA_ButtonsControl ButtonsControl(LampFiles, LampLogger);
+HAQuDA_WiFi_handler WiFiHandler(&FileStorage, &DispManip, MeasSnapshot, WebDisp, LampControl, ButtonsControl);
 
 // Must live in RTC memory that the start-up code leaves alone (RTC_NOINIT_ATTR): it carries "start in access point mode" over the
 // software restart. It holds noise after a power-on, hence the magic value and the reset reason check. Loop task only.

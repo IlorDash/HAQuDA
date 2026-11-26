@@ -751,7 +751,7 @@ class RealSourcesTest(unittest.TestCase):
                 self.assertEqual(once, res)
 
     def test_served_js_and_css_equal_stripped_source(self):
-        for name in ("app.js", "wifi.js", "style.css"):
+        for name in ("app.js", "wifi.js", "buttons.js", "style.css"):
             with self.subTest(source=name):
                 exp_bytes = gen.strip_comments(name, gen.read_source(name).decode("utf-8")).encode("utf-8")
 
@@ -760,12 +760,20 @@ class RealSourcesTest(unittest.TestCase):
                 self.assertEqual(exp_bytes, res)
 
     def test_served_pages_reference_every_asset_with_a_hash(self):
-        for name in ("index.html", "wifi_manager.html"):
+        for name in ("index.html", "wifi_manager.html", "buttons.html"):
             with self.subTest(source=name):
                 text = gen.served(name).decode("utf-8")
 
                 self.assertNotIn('"/style.css"', text)
                 self.assertNotIn('"/app.js"', text)
+
+    def test_buttons_page_references_its_script_with_a_hash(self):
+        exp_ref = '"/buttons.js?v=' + gen.asset_hash("buttons.js") + '"'
+
+        res = gen.served("buttons.html").decode("utf-8")
+
+        self.assertIn(exp_ref, res)
+        self.assertNotIn('"/buttons.js"', res)
 
 
 class AssetHashTest(unittest.TestCase):
@@ -797,6 +805,7 @@ class AssetHashTest(unittest.TestCase):
             "style.css": b"a { b: c; }",
             "app.js": b"var a = 1;",
             "wifi.js": b"var b = 2;",
+            "buttons.js": b"var c = 3;",
         }
 
         with mock.patch.object(gen, "read_source", side_effect=pages.__getitem__):
@@ -809,8 +818,8 @@ class AssetHashTest(unittest.TestCase):
 
     def test_page_is_unchanged_when_only_an_asset_comment_is_added(self):
         page = b'<script src="/app.js"></script>'
-        plain = {"index.html": page, "style.css": b"", "wifi.js": b"", "app.js": b"var a = 1;"}
-        commented = {"index.html": page, "style.css": b"", "wifi.js": b"", "app.js": b"var a = 1; // note"}
+        plain = {"index.html": page, "style.css": b"", "wifi.js": b"", "buttons.js": b"", "app.js": b"var a = 1;"}
+        commented = {"index.html": page, "style.css": b"", "wifi.js": b"", "buttons.js": b"", "app.js": b"var a = 1; // note"}
 
         with mock.patch.object(gen, "read_source", side_effect=plain.__getitem__):
             exp_page = gen.served("index.html")
@@ -821,8 +830,8 @@ class AssetHashTest(unittest.TestCase):
 
     def test_page_changes_when_asset_code_changes(self):
         page = b'<script src="/app.js"></script>'
-        before = {"index.html": page, "style.css": b"", "wifi.js": b"", "app.js": b"var a = 1;"}
-        after = {"index.html": page, "style.css": b"", "wifi.js": b"", "app.js": b"var a = 2;"}
+        before = {"index.html": page, "style.css": b"", "wifi.js": b"", "buttons.js": b"", "app.js": b"var a = 1;"}
+        after = {"index.html": page, "style.css": b"", "wifi.js": b"", "buttons.js": b"", "app.js": b"var a = 2;"}
 
         with mock.patch.object(gen, "read_source", side_effect=before.__getitem__):
             old_page = gen.served("index.html")

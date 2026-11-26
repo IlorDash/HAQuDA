@@ -13,6 +13,7 @@
 #include "HAQuDA_JoinLast.h"
 #include "HAQuDA_WebPageDisplayManip.h"
 #include "HAQuDA_LampControl.h"
+#include "HAQuDA_ButtonsControl.h"
 
 #define SSID_PARAM_NAME "ssid"
 #define PASS_PARAM_NAME "pass"
@@ -46,6 +47,8 @@ class HAQuDA_WebServer {
 	HAQuDA_WebPageDisplayManip &webDisp;
 	// What the user set for the lamp: POST /api/lamp submits to it, /api/status reports it, loop() applies it
 	HAQuDA_LampControl &lampControl;
+	// What the user set for the touch buttons: POST /api/buttons submits to it, GET /api/buttons reports it, loop() saves it
+	HAQuDA_ButtonsControl &buttonsControl;
 	// Written by loop() only (scheduleRestart(), from finishJoinOk / finishSwitchOk / finishSwitchFail and from
 	// HandleDeferredWork() for a restart the user asked for, on the web page or with the touch buttons), read by loop() and the async_tcp task. The time, the
 	// delay and the reason are stored before the flag, so they are read only while the flag is set.
@@ -113,8 +116,9 @@ class HAQuDA_WebServer {
 	bool SaveCredsFirst(const TWiFiCreds &newCreds);
 	void beginWebServer();
 
-	HAQuDA_WebServer(HAQuDA_FileStorage *curr_FS, const HAQuDA_MeasSnapshot &snapshot, HAQuDA_WebPageDisplayManip &webDispIn, HAQuDA_LampControl &lampControlIn)
-		: _myFS(curr_FS), measSnapshot(snapshot), webDisp(webDispIn), lampControl(lampControlIn) {};
+	HAQuDA_WebServer(HAQuDA_FileStorage *curr_FS, const HAQuDA_MeasSnapshot &snapshot, HAQuDA_WebPageDisplayManip &webDispIn, HAQuDA_LampControl &lampControlIn,
+					 HAQuDA_ButtonsControl &buttonsControlIn)
+		: _myFS(curr_FS), measSnapshot(snapshot), webDisp(webDispIn), lampControl(lampControlIn), buttonsControl(buttonsControlIn) {};
 	~HAQuDA_WebServer();
 
 	TWiFiCreds GetStored_WiFi(int num);
@@ -132,6 +136,11 @@ class HAQuDA_WebServer {
 	// block, 400 with the reason, 409 when the night mode needs a time the lamp does not have yet. Only sets the requested state:
 	// loop() puts it on the display and writes the flash.
 	void handleLampUpdate(AsyncWebServerRequest *request);
+	// The buttons state with the save error counter, the reply of both routes below
+	void sendButtonsJson(AsyncWebServerRequest *request);
+	// Partial update of the touch button bindings and the lock (form fields, see HAQuDA_ButtonsSettings.h). 200 with the new state,
+	// 400 with the reason. Only sets the requested state: loop() writes the flash.
+	void handleButtonsUpdate(AsyncWebServerRequest *request);
 	void handleWiFiList(AsyncWebServerRequest *request);
 	void handleJoin(AsyncWebServerRequest *request);
 	void handleJoinDismiss(AsyncWebServerRequest *request);

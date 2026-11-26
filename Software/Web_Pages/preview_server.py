@@ -4,7 +4,8 @@
 Run from any directory:  py -3 Software/Web_Pages/preview_server.py
                          [--scenario normal|bad-air|sensor-fail|ap|sta-offline|errors|join-ok|join-wrong-pass|join-no-network|
                                      sta-switch-ok|sta-switch-wrong-pass|sta-switch-no-network|
-                                     disp-effects|disp-errors|disp-night|lamp-refuses|no-lamp|restart-refuses|ap-button]
+                                     disp-effects|disp-errors|disp-night|lamp-refuses|no-lamp|restart-refuses|ap-button|
+                                     buttons-locked|save-fails]
                          [--host 127.0.0.1] [--port 8080] [--latency MS] [--no-browser]
 
 The page sources next to this script are read from disk on every request (Cache-Control: no-store), so saving a file
@@ -42,6 +43,13 @@ text and returns to the confirmed settings), no-lamp leaves the block out like a
 picture of /api/disp follows the settings: measurements for the standard, multi and night modes, a static colour for the lamp light
 and for power off. Scenario "errors" answers POST /api/lamp with the 500 reply.
 
+GET /api/buttons and POST /api/buttons (the /buttons page) answer like the firmware: the bindings of the touch buttons 2, 6, 8 and 9
+and the lock, with "saveErr", and the POST takes the form fields a2..a9, arg2..arg9, locked and reset, all or nothing, the new state as
+the reply, a plain-text 400 with the firmware's reason otherwise. The state lives in the script's memory. Scenario buttons-locked starts
+with the buttons locked. Scenario save-fails shows the window of a failed flash write: a POST to /api/lamp or /api/buttons is
+accepted, but 1.5 s later the mock lamp goes back to what it had before the change and "saveErr" of that state grows, as the firmware
+does after a failed write; the page shows the "Couldn't save" window at its next poll (within 5 s).
+
 POST /api/restart (the Restart lamp button) answers 202 and, a second later, the server closes every connection without an
 answer for 5 s, then the uptime counts from zero again, so the page reloads itself. A second request while that runs gets the 409 "already
 restarting"; scenario restart-refuses answers every request with the 409 "checking a WiFi network".
@@ -71,11 +79,13 @@ ASSETS = {
     "/style.css": ("style.css", "text/css"),
     "/app.js": ("app.js", "application/javascript"),
     "/wifi.js": ("wifi.js", "application/javascript"),
+    "/buttons": ("buttons.html", "text/html"),
+    "/buttons.js": ("buttons.js", "application/javascript"),
 }
 
 SCENARIOS = ["normal", "bad-air", "sensor-fail", "ap", "sta-offline", "errors", "join-ok", "join-wrong-pass", "join-no-network",
              "sta-switch-ok", "sta-switch-wrong-pass", "sta-switch-no-network", "disp-effects", "disp-errors", "disp-night",
-             "lamp-refuses", "no-lamp", "restart-refuses", "ap-button"]
+             "lamp-refuses", "no-lamp", "restart-refuses", "ap-button", "buttons-locked", "save-fails"]
 # Scenarios in which the lamp runs as an access point: a new network is checked before it is saved
 AP_SCENARIOS = {"ap", "join-ok", "join-wrong-pass", "join-no-network", "ap-button"}
 # How long the mock check runs before it reports its result (the lamp takes up to 20 s)
@@ -278,6 +288,72 @@ LAMP_TEXTS = {
 }
 
 
+# The touch buttons (HAQuDA_ButtonsSettings.cpp): pads in the order of the board, the actions, the arguments the mode and show
+# actions take (lamp_mode and lamp_param names) and the reasons of POST /api/buttons
+BUTTON_PADS = ["2", "6", "8", "9"]
+BUTTON_ACTIONS = ["none", "power", "up", "down", "next", "mode", "show"]
+BUTTON_ARGS = {"mode": LAMP_MODES, "show": LAMP_PARAMS}
+BUTTONS_DEFAULTS = {"locked": False, "buttons": {"2": {"a": "power"}, "6": {"a": "up"}, "8": {"a": "next"}, "9": {"a": "down"}}}
+BUTTONS_MAX_FIELD_LEN = 16
+BUTTONS_TEXTS = {
+    "nothing": "Nothing to change.",
+    "field_too_long": "A value is too long.",
+    "bad_action": "Unknown button action.",
+    "bad_arg": "The mode and show actions need a known mode or reading.",
+    "arg_not_allowed": "Only the mode and show actions take an argument.",
+    "bad_locked": "Locked must be 1 or 0.",
+    "bad_reset": "Reset must be 1.",
+    "reset_with_fields": "Reset cannot be combined with other fields.",
+}
+# The mock flash write of the save-fails scenario fails this long after the POST
+SAVE_FAIL_DELAY_S = 1.5
+
+
+def buttons_update(settings, form):
+    """Applies the form fields to a copy of the buttons like HAQuDA_ButtonsUpdate: all or nothing.
+
+    Returns (None, new settings) or (error key of BUTTONS_TEXTS, None).
+    """
+    fields = ["a" + pad for pad in BUTTON_PADS] + ["arg" + pad for pad in BUTTON_PADS] + ["locked", "reset"]
+    if any(name in form and len(form[name]) > BUTTONS_MAX_FIELD_LEN for name in fields):
+        return "field_too_long", None
+    if not any(name in form for name in fields):
+        return "nothing", None
+    new = json.loads(json.dumps(settings))
+    if "reset" in form:
+        if form["reset"] != "1":
+            return "bad_reset", None
+        if any(name in form for name in fields if name != "reset"):
+            return "reset_with_fields", None
+        new["buttons"] = json.loads(json.dumps(BUTTONS_DEFAULTS["buttons"]))
+        return None, new
+    if "locked" in form:
+        if form["locked"] not in ("0", "1"):
+            return "bad_locked", None
+        new["locked"] = form["locked"] == "1"
+    for pad in BUTTON_PADS:
+        action, arg = form.get("a" + pad), form.get("arg" + pad)
+        if action is not None:
+            if action not in BUTTON_ACTIONS:
+                return "bad_action", None
+            if action in BUTTON_ARGS:
+                if arg not in BUTTON_ARGS[action]:
+                    return "bad_arg", None
+                new["buttons"][pad] = {"a": action, "arg": arg}
+            elif arg is not None:
+                return "arg_not_allowed", None
+            else:
+                new["buttons"][pad] = {"a": action}
+        elif arg is not None:
+            current = new["buttons"][pad]["a"]
+            if current not in BUTTON_ARGS:
+                return "arg_not_allowed", None
+            if arg not in BUTTON_ARGS[current]:
+                return "bad_arg", None
+            new["buttons"][pad] = {"a": current, "arg": arg}
+    return None, new
+
+
 def parse_clock(text):
     """'HH:MM' to minutes since midnight, None when it is not one (the firmware takes exactly two digits and two digits)."""
     if len(text) != 5 or text[2] != ":" or not (text[:2] + text[3:]).isdigit() or not (text[:2] + text[3:]).isascii():
@@ -400,6 +476,32 @@ class MockLamp:
         self.restart_at = None
         # What the user set on the lamp card
         self.lamp = json.loads(json.dumps(LAMP_DEFAULTS))
+        # What the user set for the touch buttons, the counts of failed writes of both settings and, in save-fails, the writes
+        # that will fail: kind -> (time of the failure, the settings the lamp goes back to)
+        self.buttons = json.loads(json.dumps(BUTTONS_DEFAULTS))
+        self.buttons["locked"] = scenario == "buttons-locked"
+        self.lamp_save_err = 0
+        self.buttons_save_err = 0
+        self.pending_revert = {}
+
+    def settle_saves(self):
+        """Lets the failed writes of the save-fails scenario happen once their time has come. The caller holds the lock."""
+        now = time.monotonic()
+        for kind, (at, saved) in list(self.pending_revert.items()):
+            if now < at:
+                continue
+            del self.pending_revert[kind]
+            if kind == "lamp":
+                self.lamp = saved
+                self.lamp_save_err += 1
+            else:
+                self.buttons = saved
+                self.buttons_save_err += 1
+
+    def note_save(self, kind, before):
+        """The write of an accepted change; in save-fails it fails and the settings go back to the first unsaved state. The caller holds the lock."""
+        if self.scenario == "save-fails" and kind not in self.pending_revert:
+            self.pending_revert[kind] = (time.monotonic() + SAVE_FAIL_DELAY_S, before)
 
     def lamp_time_known(self):
         """The lamp knows the time only when it has the internet, that is outside the access point scenarios."""
@@ -407,6 +509,7 @@ class MockLamp:
 
     def lamp_block(self):
         """The 'lamp' block of /api/status as the firmware writes it (HAQuDA_BuildLampJson). The caller holds the lock."""
+        self.settle_saves()
         lamp = self.lamp
         known = self.lamp_time_known()
         block = {"on": lamp["on"], "bright": lamp["bright"], "mode": lamp["mode"], "multi": lamp["multi"], "std": lamp["std"],
@@ -414,6 +517,7 @@ class MockLamp:
         if known:
             now = time.localtime()
             block["now"] = "{0:02d}:{1:02d}".format(now.tm_hour, now.tm_min)
+        block["saveErr"] = self.lamp_save_err
         return json.dumps(block, separators=(",", ":"))
 
     def update_lamp(self, form):
@@ -426,8 +530,36 @@ class MockLamp:
             error, new = lamp_update(self.lamp, form, self.lamp_time_known())
             if error is not None:
                 return (409 if error == "needs_time" else 400), "text/plain", LAMP_TEXTS[error]
+            self.settle_saves()
+            self.note_save("lamp", self.lamp)
             self.lamp = new
             return 200, "application/json", self.lamp_block()
+
+    def buttons_block(self):
+        """The body of /api/buttons as the firmware writes it (HAQuDA_BuildButtonsJson). The caller holds the lock."""
+        self.settle_saves()
+        return json.dumps({"locked": self.buttons["locked"], "buttons": self.buttons["buttons"], "saveErr": self.buttons_save_err},
+                          separators=(",", ":"))
+
+    def buttons_json(self):
+        """GET /api/buttons. Returns (status code, content type, body)."""
+        with self.lock:
+            if self.scenario == "errors":
+                return 500, "text/plain", STATUS_FAIL_TEXT
+            return 200, "application/json", self.buttons_block()
+
+    def update_buttons(self, form):
+        """POST /api/buttons. Returns (status code, content type, body) like HAQuDA_WebServer::handleButtonsUpdate."""
+        with self.lock:
+            if self.scenario == "errors":
+                return 500, "text/plain", STATUS_FAIL_TEXT
+            self.settle_saves()
+            error, new = buttons_update(self.buttons, form)
+            if error is not None:
+                return 400, "text/plain", BUTTONS_TEXTS[error]
+            self.note_save("buttons", self.buttons)
+            self.buttons = new
+            return 200, "application/json", self.buttons_block()
 
     def place_first(self, ssid):
         """Saves a passed network like the firmware: first in the list, a stored one of the same name replaced, the last one
@@ -583,6 +715,7 @@ class MockLamp:
     def lamp_picture(self):
         """The picture of the lamp card's settings and its source: (picture, source), like what the lamp draws for them."""
         with self.lock:
+            self.settle_saves()
             lamp = json.loads(json.dumps(self.lamp))
         if not lamp["on"]:
             return fx_static("#000000"), "effect"
@@ -782,6 +915,9 @@ class PreviewHandler(BaseHTTPRequestHandler):
         elif path == "/api/disp":
             code, body = self.lamp.disp_json()
             self.send_body(code, "application/json" if code == 200 else "text/plain", body)
+        elif path == "/api/buttons":
+            code, content_type, body = self.lamp.buttons_json()
+            self.send_body(code, content_type, body)
         elif path == "/api/boot":
             self.send_body(200, "application/json", self.lamp.boot_json(), cors=True)
         elif path == "/api/wifi":
@@ -846,6 +982,13 @@ class PreviewHandler(BaseHTTPRequestHandler):
                 return
             code, content_type, body = self.lamp.update_lamp(form)
             self.send_body(code, content_type, body)
+        elif path == "/api/buttons":
+            form = self.read_form()
+            if form is None:
+                self.send_body(413, "text/plain", "The request is too large.")
+                return
+            code, content_type, body = self.lamp.update_buttons(form)
+            self.send_body(code, content_type, body)
         else:
             self.send_not_found()
 
@@ -868,7 +1011,10 @@ def main():
                              "disp-effects, disp-errors, disp-night (the picture of /api/disp cycles through the effects, "
                              "the error effects, the night light); "
                              "lamp-refuses (POST /api/lamp answers 400), no-lamp (no lamp block: the card is hidden), "
-                             "restart-refuses (POST /api/restart answers 409: a WiFi check is running)")
+                             "restart-refuses (POST /api/restart answers 409: a WiFi check is running); "
+                             "buttons-locked (the touch buttons start locked); "
+                             "save-fails (a changed lamp or button setting goes back 1.5 s later and its saveErr grows: the "
+                             "\"Couldn't save\" window)")
     parser.add_argument("--host", default="127.0.0.1", help="address to bind (default 127.0.0.1)")
     parser.add_argument("--port", type=int, default=8080, help="port to listen on (default 8080)")
     parser.add_argument("--latency", type=int, default=0, metavar="MS", help="delay every answer by MS milliseconds")

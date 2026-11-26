@@ -223,6 +223,99 @@ TEST(ButtonsControlTest, SubmitOkReturnsOkAndChangesTheSettings) {
 	EXPECT_STREQ(exp_json, res_json);
 }
 
+TEST(ButtonsControlTest, SubmitFieldTooLongReturnsItAndKeepsTheSettings) {
+	const buttons_settings exp_settings = HAQuDA_ButtonsDefaults();
+	char exp_json[BUTTONS_JSON_BUF_LEN];
+	HAQuDA_BuildButtonsJson(exp_settings, 0, exp_json, sizeof(exp_json));
+
+	StrictMock<MockFileStorage> files;
+	StrictMock<MockLogger> logger;
+	HAQuDA_ButtonsControl control(files, logger);
+	buttons_request request = {};
+	request.action[0] = "none";
+	request.arg[1] = "seventeen_chars_x";
+
+	buttons_update_result res;
+	char res_json[BUTTONS_JSON_BUF_LEN];
+
+	res = control.Submit(request);
+
+	control.BuildJson(res_json, sizeof(res_json));
+	EXPECT_EQ(buttons_update_result::field_too_long, res);
+	EXPECT_STREQ(exp_json, res_json);
+}
+
+TEST(ButtonsControlTest, SubmitOfFormFieldsModeNightOnTheSecondButtonChangesOnlyIt) {
+	buttons_settings exp_settings = HAQuDA_ButtonsDefaults();
+	exp_settings.buttons[1] = {button_action::mode, lamp_mode::night, lamp_param::total};
+	char exp_json[BUTTONS_JSON_BUF_LEN];
+	HAQuDA_BuildButtonsJson(exp_settings, 0, exp_json, sizeof(exp_json));
+
+	StrictMock<MockFileStorage> files;
+	StrictMock<MockLogger> logger;
+	HAQuDA_ButtonsControl control(files, logger);
+	buttons_request request = {};
+	HAQuDA_SetButtonsField(request, "a6", "mode");
+	HAQuDA_SetButtonsField(request, "arg6", "night");
+
+	buttons_update_result res;
+	char res_json[BUTTONS_JSON_BUF_LEN];
+
+	res = control.Submit(request);
+
+	control.BuildJson(res_json, sizeof(res_json));
+	EXPECT_EQ(buttons_update_result::ok, res);
+	EXPECT_STREQ(exp_json, res_json);
+}
+
+TEST(ButtonsControlTest, SubmitOfFormFieldsWithARepeatedFieldUsesTheFirstValue) {
+	buttons_settings exp_settings = HAQuDA_ButtonsDefaults();
+	exp_settings.buttons[0] = {button_action::none, lamp_mode::standard, lamp_param::total};
+	char exp_json[BUTTONS_JSON_BUF_LEN];
+	HAQuDA_BuildButtonsJson(exp_settings, 0, exp_json, sizeof(exp_json));
+
+	StrictMock<MockFileStorage> files;
+	StrictMock<MockLogger> logger;
+	HAQuDA_ButtonsControl control(files, logger);
+	buttons_request request = {};
+	HAQuDA_SetButtonsField(request, "a2", "none");
+	HAQuDA_SetButtonsField(request, "a2", "up");
+
+	buttons_update_result res;
+	char res_json[BUTTONS_JSON_BUF_LEN];
+
+	res = control.Submit(request);
+
+	control.BuildJson(res_json, sizeof(res_json));
+	EXPECT_EQ(buttons_update_result::ok, res);
+	EXPECT_STREQ(exp_json, res_json);
+}
+
+TEST(ButtonsControlTest, SubmitOfFormFieldsIgnoresAnUnknownFieldBesideReset) {
+	const buttons_settings exp_settings = HAQuDA_ButtonsDefaults();
+	char exp_json[BUTTONS_JSON_BUF_LEN];
+	HAQuDA_BuildButtonsJson(exp_settings, 0, exp_json, sizeof(exp_json));
+
+	StrictMock<MockFileStorage> files;
+	StrictMock<MockLogger> logger;
+	HAQuDA_ButtonsControl control(files, logger);
+	buttons_request change = {};
+	change.action[0] = "none";
+	control.Submit(change);
+	buttons_request request = {};
+	HAQuDA_SetButtonsField(request, "extra", "1");
+	HAQuDA_SetButtonsField(request, "reset", "1");
+
+	buttons_update_result res;
+	char res_json[BUTTONS_JSON_BUF_LEN];
+
+	res = control.Submit(request);
+
+	control.BuildJson(res_json, sizeof(res_json));
+	EXPECT_EQ(buttons_update_result::ok, res);
+	EXPECT_STREQ(exp_json, res_json);
+}
+
 TEST(ButtonsControlTest, SubmitResetRestoresTheBindingsAndKeepsTheLock) {
 	buttons_settings exp_settings = HAQuDA_ButtonsDefaults();
 	exp_settings.locked = true;

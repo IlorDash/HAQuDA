@@ -94,6 +94,7 @@
 			<nav class="links">
 				<a class="lk" href="/wifi_manager"><span data-i="wifi">WiFi networks</span></a>
 				<a class="lk" href="/webserial"><span data-i="log">Live log</span></a>
+				<a class="lk" href="/buttons"><span data-i="btns">Touch buttons</span></a>
 				<a class="lk ext" href="https://ilordash.github.io/HAQuDA/" target="_blank" rel="noopener"><span data-i="guide">User guide &#8599;</span><span class="note" data-i="offNote">needs internet</span></a>
 				<a class="lk ext" href="https://github.com/IlorDash/HAQuDA" target="_blank" rel="noopener"><span>GitHub &#8599;</span><span class="note" data-i="offNote">needs internet</span></a>
 				<button type="button" class="lk danger" id="rsBtn"><span data-i="restart">Restart lamp</span></button>
@@ -102,6 +103,13 @@
 		</div>
 	</div>
 </main>
+<div class="modal" id="modal" hidden>
+	<div class="dlg" role="alertdialog" aria-modal="true" aria-labelledby="mdT" aria-describedby="mdX">
+		<h2 id="mdT" data-i="saveTitle">Couldn&rsquo;t save</h2>
+		<p id="mdX" data-i="saveText"></p>
+		<button type="button" class="submit" id="mdOk" data-i="ok">OK</button>
+	</div>
+</div>
 <script src="/app.js"></script>
 </body>
 </html>

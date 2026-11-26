@@ -57,7 +57,7 @@
 				return 'Delete all ' + n + ' networks? After its next restart the lamp starts its own access point.';
 			},
 			bAp: 'You’re on the lamp’s own network. Add your home WiFi — the lamp will restart and join it.',
-			main: 'Main page', log: 'Live log', fw: 'Firmware',
+			main: 'Main page', log: 'Live log', btns: 'Touch buttons', fw: 'Firmware',
 			checking: function (n) {
 				return 'Checking “' + n + '”…';
 			},
@@ -139,7 +139,7 @@
 				return 'Удалить все сети (' + n + ')? После следующей перезагрузки лампа включит свою точку доступа.';
 			},
 			bAp: 'Вы подключены к сети лампы. Добавьте домашний WiFi — лампа перезагрузится и подключится к нему.',
-			main: 'Главная', log: 'Живой лог', fw: 'Прошивка',
+			main: 'Главная', log: 'Живой лог', btns: 'Сенсорные кнопки', fw: 'Прошивка',
 			checking: function (n) {
 				return 'Проверяем «' + n + '»…';
 			},

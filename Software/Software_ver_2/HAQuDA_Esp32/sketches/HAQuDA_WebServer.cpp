@@ -503,6 +503,37 @@ void HAQuDA_WebServer::handleLampUpdate(AsyncWebServerRequest *request) {
 	request->send(response);
 }
 
+void HAQuDA_WebServer::sendButtonsJson(AsyncWebServerRequest *request) {
+	char buf[BUTTONS_JSON_BUF_LEN];
+	if (buttonsControl.BuildJson(buf, sizeof(buf)) == 0) {
+		postLogError("sendButtonsJson: buttons buffer too small");
+		sendText(request, 500, "Status unavailable.");
+		return;
+	}
+	AsyncWebServerResponse *response = request->beginResponse(200, "application/json", buf);
+	response->addHeader("Cache-Control", "no-store");
+	request->send(response);
+}
+
+void HAQuDA_WebServer::handleButtonsUpdate(AsyncWebServerRequest *request) {
+	// The values point into the parameters of the request, which live until the reply is sent
+	buttons_request buttonsRequest = {};
+	const size_t paramNum = request->params();
+	for (size_t i = 0; i < paramNum; i++) {
+		const AsyncWebParameter *param = request->getParam(i);
+		if ((param != nullptr) && param->isPost() && !param->isFile()) {
+			HAQuDA_SetButtonsField(buttonsRequest, param->name().c_str(), param->value().c_str());
+		}
+	}
+
+	const buttons_update_result result = buttonsControl.Submit(buttonsRequest);
+	if (result != buttons_update_result::ok) {
+		sendText(request, 400, HAQuDA_ButtonsUpdateText(result));
+		return;
+	}
+	sendButtonsJson(request);
+}
+
 // Identifies the lamp and tells how long it has run, nothing else. The WiFi page opened on the lamp's access point reads
 // it cross-origin from the new network's address after a passed check, to see that the lamp has restarted. It is the only
 // route that allows cross-origin reads, so it must not carry the network name, the address or measurements. A simple
@@ -577,16 +608,22 @@ void HAQuDA_WebServer::WebServerResponds_init() {
 	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) { HAQuDA_SendIndexPage(request); });
 	server.on("/wifi_manager", HTTP_GET,
 			  [](AsyncWebServerRequest *request) { sendAsset(request, "text/html", WEB_WIFI_MANAGER_HTML_GZ, WEB_WIFI_MANAGER_HTML_GZ_LEN, CACHE_NONE); });
+	server.on("/buttons", HTTP_GET,
+			  [](AsyncWebServerRequest *request) { sendAsset(request, "text/html", WEB_BUTTONS_HTML_GZ, WEB_BUTTONS_HTML_GZ_LEN, CACHE_NONE); });
 	server.on("/style.css", HTTP_GET,
 			  [](AsyncWebServerRequest *request) { sendAsset(request, "text/css", WEB_STYLE_CSS_GZ, WEB_STYLE_CSS_GZ_LEN, CACHE_STATIC); });
 	server.on("/app.js", HTTP_GET,
 			  [](AsyncWebServerRequest *request) { sendAsset(request, "application/javascript", WEB_APP_JS_GZ, WEB_APP_JS_GZ_LEN, CACHE_STATIC); });
 	server.on("/wifi.js", HTTP_GET,
 			  [](AsyncWebServerRequest *request) { sendAsset(request, "application/javascript", WEB_WIFI_JS_GZ, WEB_WIFI_JS_GZ_LEN, CACHE_STATIC); });
+	server.on("/buttons.js", HTTP_GET,
+			  [](AsyncWebServerRequest *request) { sendAsset(request, "application/javascript", WEB_BUTTONS_JS_GZ, WEB_BUTTONS_JS_GZ_LEN, CACHE_STATIC); });
 
 	server.on("/api/status", HTTP_GET, [this](AsyncWebServerRequest *request) { handleStatus(request); });
 	server.on("/api/disp", HTTP_GET, [this](AsyncWebServerRequest *request) { handleDisp(request); });
 	server.on("/api/lamp", HTTP_POST, [this](AsyncWebServerRequest *request) { handleLampUpdate(request); });
+	server.on("/api/buttons", HTTP_GET, [this](AsyncWebServerRequest *request) { sendButtonsJson(request); });
+	server.on("/api/buttons", HTTP_POST, [this](AsyncWebServerRequest *request) { handleButtonsUpdate(request); });
 	server.on("/api/wifi", HTTP_GET, [this](AsyncWebServerRequest *request) { handleWiFiList(request); });
 	server.on("/api/boot", HTTP_GET, [this](AsyncWebServerRequest *request) { handleBoot(request); });
 	server.on("/api/join", HTTP_GET, [this](AsyncWebServerRequest *request) { handleJoin(request); });

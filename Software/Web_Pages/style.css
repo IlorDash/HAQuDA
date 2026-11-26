@@ -1207,6 +1207,306 @@ button.lk {
 	overflow-wrap: anywhere;
 }
 
+/* touch buttons page */
+
+.lockc {
+	margin-top: 14px;
+	gap: 0;
+	border: 1px solid transparent;
+}
+
+.lockc.on {
+	border-color: var(--ink);
+}
+
+.lock-h {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.lock-x {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+}
+
+.bcols {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-top: 10px;
+}
+
+/* on a phone the cards stack in the order board, action, gestures */
+.bleft {
+	display: contents;
+}
+
+.boardc {
+	order: 1;
+	align-items: center;
+	gap: 12px;
+	overflow: hidden;
+}
+
+.actc {
+	order: 2;
+}
+
+.sys {
+	order: 3;
+}
+
+.board {
+	position: relative;
+	flex: none;
+	width: 300px;
+	height: 300px;
+}
+
+.board svg {
+	display: block;
+}
+
+.board circle {
+	fill: var(--bg);
+	stroke: var(--border);
+	stroke-width: 1.5;
+}
+
+.pad {
+	cursor: pointer;
+	outline: 0;
+}
+
+.pad path {
+	fill: var(--surface);
+	stroke: var(--muted);
+	stroke-width: 1;
+	stroke-linejoin: round;
+}
+
+.pad[aria-pressed="true"] path {
+	fill: var(--cta);
+	stroke: var(--ink);
+	stroke-width: 2;
+}
+
+.pad:focus-visible path {
+	stroke: var(--ink);
+	stroke-width: 3;
+}
+
+.pl {
+	position: absolute;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 2px;
+	width: 80px;
+	height: 40px;
+	text-align: center;
+	pointer-events: none;
+}
+
+.pl span {
+	font-size: 11px;
+	font-weight: 700;
+	line-height: 1.1;
+}
+
+.pl i {
+	font: 700 9.5px ui-monospace, Menlo, Consolas, monospace;
+	letter-spacing: 0.06em;
+	color: var(--muted);
+}
+
+.pl.on span,
+.pl.on i {
+	color: var(--cta-ink);
+}
+
+.acts {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.act {
+	display: flex;
+	flex-direction: column;
+	border: 1px solid var(--border);
+	border-radius: 10px;
+}
+
+.act.on {
+	border-color: var(--ink);
+}
+
+.ar {
+	display: grid;
+	grid-template-columns: 20px minmax(0, 1fr);
+	gap: 10px;
+	align-items: center;
+	min-height: 48px;
+	padding: 6px 12px;
+	cursor: pointer;
+}
+
+.ar input {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 20px;
+	height: 20px;
+	margin: 0;
+	border: 2px solid var(--border);
+	border-radius: 50%;
+	background: transparent;
+	cursor: pointer;
+}
+
+.ar input:checked {
+	border: 6px solid var(--ink);
+}
+
+.ar input:focus-visible {
+	outline: 2px solid var(--ink);
+	outline-offset: 2px;
+}
+
+.ar input:disabled {
+	cursor: default;
+}
+
+.at {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+
+.at b {
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.at small {
+	font-size: 12px;
+	color: var(--muted);
+}
+
+.act .sel {
+	width: auto;
+	margin: 0 12px 12px 42px;
+}
+
+.warn {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	padding: 10px 12px;
+	border: 1px solid #d39a1c;
+	border-radius: 10px;
+	font-size: 13px;
+	line-height: 1.4;
+}
+
+.warn i {
+	flex: none;
+	width: 8px;
+	height: 8px;
+	margin-top: 5px;
+	border-radius: 50%;
+	background: #d39a1c;
+}
+
+.foot {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+}
+
+.ghost {
+	flex: none;
+	min-height: 40px;
+	padding: 0 12px;
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	background: transparent;
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.ghost:disabled {
+	cursor: default;
+}
+
+.sys {
+	gap: 4px;
+}
+
+.gr {
+	display: grid;
+	grid-template-columns: 96px minmax(0, 1fr);
+	gap: 10px;
+	padding: 10px 0;
+	border-top: 1px solid var(--border);
+	font-size: 13px;
+	line-height: 1.4;
+}
+
+.gk {
+	font-family: ui-monospace, Menlo, Consolas, monospace;
+	font-size: 12px;
+	font-weight: 700;
+}
+
+.btnpg .links {
+	margin-top: 10px;
+}
+
+/* the "could not save" window, shared by both pages */
+
+.modal {
+	position: fixed;
+	inset: 0;
+	z-index: 10;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+	background: rgba(0, 0, 0, 0.5);
+}
+
+.dlg {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	width: 100%;
+	max-width: 360px;
+	padding: 20px;
+	border: 1px solid var(--border);
+	border-radius: 16px;
+	background: var(--surface);
+}
+
+.dlg h2 {
+	margin: 0;
+	font-size: 18px;
+	font-weight: 700;
+}
+
+.dlg p {
+	margin: 0;
+	font-size: 14px;
+	line-height: 1.45;
+}
+
 /* desktop: two columns */
 
 @media (min-width: 900px) {
@@ -1373,8 +1673,49 @@ button.lk {
 		margin-top: 20px;
 	}
 
-	.wifi .meta {
+	.wifi .meta,
+	.btnpg .meta {
 		padding-top: 20px;
+	}
+
+	.lockc {
+		margin-top: 20px;
+	}
+
+	.bcols {
+		display: grid;
+		grid-template-columns: 360px minmax(0, 1fr);
+		gap: 20px;
+		align-items: start;
+		margin-top: 20px;
+	}
+
+	.bleft {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.acts {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 8px;
+		align-items: start;
+	}
+
+	.ar {
+		min-height: 56px;
+	}
+
+	.gr {
+		display: flex;
+		flex-direction: column;
+		gap: 3px;
+	}
+
+	.btnpg .links {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		margin-top: 20px;
 	}
 }
 

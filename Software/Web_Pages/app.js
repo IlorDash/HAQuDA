@@ -88,7 +88,8 @@
 			lcFail: 'The lamp did not accept the change.', lcNoAnswer: 'No answer from the lamp.',
 			modes: { standard: ['Standard', 'One reading'], multi: ['Multi', 'Three readings'], night: ['Night', 'Reading + night light'], light: ['Lamp light', 'Solid color'] },
 			colors: ['Warm white', 'Neutral', 'Cool white', 'Amber', 'Lavender', 'Teal'],
-			wifi: 'WiFi networks', log: 'Live log', guide: 'User guide ↗', offNote: 'needs internet',
+			wifi: 'WiFi networks', log: 'Live log', btns: 'Touch buttons', guide: 'User guide ↗', offNote: 'needs internet',
+			saveTitle: 'Couldn’t save', saveText: 'The lamp couldn’t write the settings to its memory. It went back to the last saved settings.', ok: 'OK',
 			restart: 'Restart lamp', rsConfirm: 'Restart the lamp? It will be unavailable for up to a minute.',
 			rsWait: 'Lamp is restarting…', rsNoAnswer: 'No answer from the lamp.',
 			rsLate: 'The lamp has not answered for a minute and a half. Open this page again in a moment. In access point mode your phone may need to rejoin the lamp’s WiFi network first.',
@@ -134,7 +135,8 @@
 			lcFail: 'Лампа не приняла изменение.', lcNoAnswer: 'Лампа не ответила.',
 			modes: { standard: ['Стандартный', 'Один показатель'], multi: ['Мульти', 'Три показателя'], night: ['Ночной', 'Показатель + ночник'], light: ['Светильник', 'Один цвет'] },
 			colors: ['Тёплый белый', 'Нейтральный', 'Холодный', 'Янтарный', 'Лавандовый', 'Бирюзовый'],
-			wifi: 'WiFi-сети', log: 'Живой лог', guide: 'Руководство ↗', offNote: 'нужен интернет',
+			wifi: 'WiFi-сети', log: 'Живой лог', btns: 'Сенсорные кнопки', guide: 'Руководство ↗', offNote: 'нужен интернет',
+			saveTitle: 'Не удалось сохранить', saveText: 'Лампа не смогла записать настройки в память и вернула последние сохранённые.', ok: 'OK',
 			restart: 'Перезагрузить лампу', rsConfirm: 'Перезагрузить лампу? Она будет недоступна до минуты.',
 			rsWait: 'Лампа перезагружается…', rsNoAnswer: 'Лампа не ответила.',
 			rsLate: 'Лампа не отвечает уже полторы минуты. Откройте страницу снова чуть позже. В режиме точки доступа телефону может понадобиться заново подключиться к WiFi-сети лампы.',
@@ -160,6 +162,10 @@
 	// those edits as a partial lamp still to send, busy: a POST is out, live: the brightness while the slider is dragged, err: the lamp's reply to a refused POST
 	// gen: counts the confirmed POSTs, so a status answer that was asked before the last confirmation can be told from a current one
 	var lc = { conf: null, want: null, pend: null, busy: false, live: null, err: '', timer: 0, gen: 0 };
+	// the lamp's count of failed settings writes at the last status answer (null before the first one): when it grows the lamp has gone
+	// back to its last saved settings, and the page says so. modalFrom: what had the focus before the window opened
+	var saveErr = null;
+	var modalFrom = null;
 	// the restart button. busy: the POST is out, on: the lamp accepted it and the page waits for it to come back, late: it did not come
 	// back in time, err: the lamp's refusal, seen: the last uptime the lamp reported, failed: /api/boot has not answered since the restart began
 	var rs = { busy: false, on: false, late: false, err: '', seen: null, failed: false, errTimer: 0 };
@@ -901,6 +907,7 @@
 					multi: l.multi.slice(),
 					night: { param: n.param, from: n.from, to: n.to },
 					color: l.color,
+					saveErr: intIn(l.saveErr, 0, 4294967295) ? l.saveErr : 0,
 					time: l.time === true,
 					now: l.time === true && hhmm(l.now) ? l.now : ''
 				}
@@ -1062,11 +1069,37 @@
 		lampSend();
 	}
 
-	// an answer of /api/status: it must not overwrite edits the lamp has not confirmed
+	function openModal() {
+		if (!byId('modal').hidden) {
+			return;
+		}
+		modalFrom = document.activeElement;
+		byId('modal').hidden = false;
+		byId('mdOk').focus();
+	}
+
+	function closeModal() {
+		byId('modal').hidden = true;
+		if (modalFrom && modalFrom.focus) {
+			modalFrom.focus();
+		}
+		modalFrom = null;
+	}
+
+	// an answer of /api/status: it must not overwrite edits the lamp has not confirmed. A grown count of failed writes means the lamp
+	// went back to its last saved settings: this answer carries them, so the card takes them (the edits sent after the failure stay on top)
 	function syncLamp(raw) {
 		var l = parseLamp(raw);
 		if (!l) {
 			lc.conf = lc.want = lc.pend = null;
+			return;
+		}
+		var grew = saveErr !== null && l.saveErr > saveErr;
+		saveErr = l.saveErr;
+		if (grew) {
+			lc.conf = l;
+			lc.want = lc.pend ? merge(l, lc.pend) : null;
+			openModal();
 		} else if (!lc.conf || (!lc.busy && !lc.pend && !lc.want && lc.live === null)) {
 			lc.conf = l;
 		}
@@ -1528,6 +1561,18 @@
 	byId('theme').addEventListener('click', toggleTheme);
 	byId('lastClose').addEventListener('click', dismissLast);
 	byId('rsBtn').addEventListener('click', restartLamp);
+	byId('mdOk').addEventListener('click', closeModal);
+	document.addEventListener('keydown', function (e) {
+		if (byId('modal').hidden) {
+			return;
+		}
+		if (e.key === 'Escape') {
+			closeModal();
+		} else if (e.key === 'Tab') {
+			e.preventDefault();
+			byId('mdOk').focus();
+		}
+	});
 	Array.prototype.forEach.call(document.querySelectorAll('[data-lang]'), function (b) {
 		b.addEventListener('click', function () {
 			setLang(b.getAttribute('data-lang'));

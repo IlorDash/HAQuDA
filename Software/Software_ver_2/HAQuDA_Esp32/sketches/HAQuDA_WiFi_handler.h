@@ -107,9 +107,10 @@ class HAQuDA_WiFi_handler : public HAQuDA_WebServer {
 
   public:
 	// snapshot feeds the web page with the latest measurements, webDisp with the picture the lamp shows and lampControl holds the
-	// user's lamp settings (the web routes change them, a reconnect restores them on the display); all must outlive the handler.
+	// user's lamp settings (the web routes change them, a reconnect restores them on the display) and buttonsControl the touch button
+	// settings; all must outlive the handler.
 	HAQuDA_WiFi_handler(HAQuDA_FileStorage *currFS, HAQuDA_DisplayManip *_dispManip, const HAQuDA_MeasSnapshot &snapshot, HAQuDA_WebPageDisplayManip &webDispIn,
-						HAQuDA_LampControl &lampControlIn);
+						HAQuDA_LampControl &lampControlIn, HAQuDA_ButtonsControl &buttonsControlIn);
 	~HAQuDA_WiFi_handler();
 	// True from GOT_IP until DISCONNECTED (LOST_IP does not clear it). Written only by the WiFi event task (GOT_IP and
 	// disconnect handlers); the loop task reads it.
