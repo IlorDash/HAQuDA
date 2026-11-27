@@ -99,7 +99,7 @@ The card controls the lamp. It is hidden when the lamp sends no lamp settings.
 | **Brightness** | Slider from 5 to 100 % in steps of 5. The grid follows the slider while you drag it, and the page sends the value when you release it. |
 | **Standard** | One reading on the whole matrix. Pick it from the chips: **Overall**, **Temperature**, **Humidity**, **eCO₂**, **TVOC** or **PM2.5**. **Overall** shows the colour of the first reading out of its range, in the order temperature, humidity, eCO₂, TVOC, PM2.5, or the average colour of all readings when none is out of range. |
 | **Multi** | Three readings in three bands, **Top**, **Middle** and **Bottom**, each from a list. |
-| **Night** | One reading from the list **Reading** and the night light, set with the times **Night light from** and **to** (`HH:MM`). The button reads **needs internet** and stays locked while the lamp has no time. |
+| **Night** | One reading from the list **Reading** and the night light, set with the times **Night light from** and **to** (`HH:MM`). The button reads **Needs internet** and stays locked while the lamp has no time. |
 | **Lamp light** | One of six solid colours: **Warm white**, **Neutral**, **Cool white**, **Amber**, **Lavender**, **Teal**. |
 
 The grid shows a change at once, before the lamp answers; the lamp draws it within about a
