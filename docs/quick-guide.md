@@ -13,12 +13,13 @@ plug.
 1. Plug the power supply into the Micro-USB socket of the lamp.
 2. Watch the matrix. A lime snake runs while the lamp starts the file system and looks for a
    stored WiFi network.
-3. If a network is stored and the lamp joins it, the whole matrix turns green for about 3 seconds
-   and then goes dark. The green flash starts once your router has given the lamp an address.
-4. If no network is stored, the matrix shows a red growing for about 12 seconds. Then the lamp
-   has opened its own access point, and an aqua fading plays once. This is normal on the first
-   start. If a network is stored but the lamp cannot join it, the lime snake runs for about 30
-   seconds first, and then the same red growing and aqua fading follow.
+3. If a network is stored and the lamp joins it, the whole matrix turns green for 5 seconds. The
+   green matrix starts once your router has given the lamp an address. Then the lime snake runs
+   again until the first readings exist.
+4. If no network is stored, the matrix shows a red growing for 5 seconds. Then the lamp has
+   opened its own access point, and an aqua fading plays until the first readings exist. This is
+   normal on the first start. If a network is stored but the lamp cannot join it, the lime snake
+   runs for about 30 seconds first, and then the same red growing and aqua fading follow.
 5. Wait a few seconds. The lamp draws the first colours as soon as the sensors have delivered
    the readings of the mode; PM2.5 comes about 12 seconds later than the others.
 6. Read the colours as described in [Display modes](display-modes.md).
@@ -27,12 +28,11 @@ plug.
     - **The whole matrix fades in red again and again and nothing else happens** — the lamp
       cannot start its file system and stops. Unplug the lamp and plug it in again. If this
       repeats, the flash memory needs attention: flash the lamp again.
-    - **The matrix goes dark and stays dark, and the lamp's WiFi network usually does not
-      appear** — the lamp cannot create its access point and stops. Unplug the lamp and plug it
+    - **A red pixel runs along the matrix without end, and the lamp's WiFi network usually does
+      not appear** — the lamp cannot create its access point and stops. Unplug the lamp and plug it
       in again. If this repeats, check the access point password in your build (8 to 63
       characters).
-    - **Pixels light up one by one in random colours after the green flash or the aqua fading,
-      and the colours do not start** — the lamp cannot start its sensors. It tries again every
+    - **Pixels light up one by one in random colours, and the colours do not start** — the lamp cannot start its sensors. It tries again every
       5 minutes and starts the colours as soon as the sensors answer. **Lamp light** and power
       off work meanwhile. Check the sensor wiring;
       see [LED codes and troubleshooting](troubleshooting.md).
@@ -59,8 +59,8 @@ at most 31 bytes long, and the network works at 2.4 GHz.
 6. Press **Save and restart**. The lamp checks the network first, for up to 20 seconds, and the
    page shows **Checking “network”…**. Nothing is saved until the lamp has joined the network.
 7. When the check passes, the page shows **The lamp joined “network”** with two addresses and a
-   countdown. About 20 seconds later the lamp restarts: the lime snake runs and the matrix flashes
-   green.
+   countdown. About 20 seconds later the lamp restarts: the lime snake runs and the matrix turns
+   green for 5 seconds.
 8. Join your phone or laptop to your home network. The lamp's access point is gone. The page
    opens the lamp's new address by itself within 2 minutes; if it does not, open
    `http://haquda.local/`.
@@ -93,7 +93,7 @@ address of its main page (see [Page addresses](web-interface.md#page-addresses))
 1. Open the main page in a browser and find the **Lamp** card under the lamp's picture.
 2. Press **Standard**, **Multi**, **Night** or **Lamp light**.
 3. Choose what the mode shows: a reading, three readings, a reading and the night times, or a
-   colour. The grid shows the change at once and the lamp draws it within about a second.
+   colour. The lamp draws the change within about a second, and the grid follows.
 4. Move the **Brightness** slider if you want. The page sends the value when you release it.
 5. Use the power switch to turn the matrix off and on.
 

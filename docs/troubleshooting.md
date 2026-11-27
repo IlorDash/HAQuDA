@@ -20,12 +20,12 @@ Effects in the tables use these names:
 
 | Effect | Cause | Action |
 |------------------------|-------|------------|
-| Lime snake | The lamp starts, or it reconnects to a stored WiFi network. | Wait for it to end. |
-| Green, whole matrix, about 3 seconds | The lamp joined your WiFi network and got an address from your router. | Nothing. The matrix goes dark, then shows colours as soon as the sensors have delivered the readings of the mode: after a few seconds, and about 12 to 14 seconds with PM2.5. |
-| Red growing for about 12 seconds, then an aqua fading. Before the red growing the lime snake runs for about 2 seconds, or for about 30 seconds when a network is stored | No network is stored, or the lamp could not join the stored one. It opens its access point. | Nothing on the first start. Otherwise check the name and the password of your network and add it again ([Quick guide](quick-guide.md#connect-the-lamp-to-your-wifi)). |
-| Aqua fading, once | The access point runs and the sensors start. | Join the lamp's network and open `http://192.168.4.22/`. |
-| Dark matrix that stays dark, the lamp's WiFi network usually does not appear, the LED on the ESP32 board does not blink | The lamp could not create its access point and stops. | Unplug the lamp and plug it in again. If it repeats, check the access point password in your build (8 to 63 characters). |
-| Random pixels after the green flash or the aqua fading, until the sensors start | The lamp could not start its sensors (the CCS811, the DHT22 or the ZH03B does not answer). It tries up to three times to power the sensors off and on, keeps the effect, and tries again every 5 minutes. Each round of tries blocks the lamp for several seconds, up to about 27 seconds when the DHT22 or the ZH03B is missing. | Check the sensor power and the wiring; the log names the missing sensor (see [Log messages](#log-messages)). The colours start by themselves once the sensors answer. **Lamp light** and power off from the web page replace the effect, because they need no readings; a measurement mode keeps it. In your network, when the time server has not answered since the start, the matrix stays dark instead of showing the effect. |
+| Lime snake | The lamp starts and joins a stored WiFi network. A stored network that does not answer keeps the snake for about 30 seconds. | Wait for the result: the green matrix, the red growing or the aqua fading. |
+| Green, whole matrix, 5 seconds | The lamp joined your WiFi network and got an address from your router, at the start or after a lost connection. | Nothing. |
+| Lime snake after the green matrix | The lamp is in your network and waits for the first readings of the mode you chose. It plays again when the sensors start after a failed start. | Wait. The snake ends when the readings exist, a few seconds after the start. PM2.5 needs about 12 seconds, because the ZH03B warms up first; eCO2 and TVOC wait until the CCS811 reports at least 400 ppm. **Lamp light** and power off from the web page end it at once. |
+| Red growing for 5 seconds, then an aqua fading again and again. Before the red growing the lime snake runs briefly, or for about 30 seconds when a network is stored | No network is stored, or the lamp could not join the stored one. It opens its access point. The aqua fading goes from full aqua to dark and stays until the readings of the mode exist, or until you choose **Lamp light** or power off. | Nothing on the first start. Otherwise check the name and the password of your network and add it again ([Quick guide](quick-guide.md#connect-the-lamp-to-your-wifi)). To set the lamp up, join its network and open `http://192.168.4.22/`. |
+| Red growing, then one red pixel that runs along the matrix without end; the LED on the ESP32 board does not blink | The lamp could not create its access point and stops. Its WiFi network usually does not appear. | Unplug the lamp and plug it in again. If it repeats, check the access point password in your build (8 to 63 characters). |
+| Random pixels, one by one, again and again | The lamp could not start its sensors (the CCS811, the DHT22 or the ZH03B does not answer). It tries up to three times to power the sensors off and on, keeps the effect, and tries again every 5 minutes. Each round of tries blocks the lamp, up to about 27 seconds when the DHT22 or the ZH03B is missing, so the web pages answer slowly meanwhile. When a retry succeeds, the matrix waits for the first readings (the lime snake or the aqua fading above) and then shows the mode you chose. | Check the sensor power and the wiring; the log names the missing sensor (see [Log messages](#log-messages)). **Lamp light** and power off from the web page replace the effect, because they need no readings; a measurement mode shows it again. |
 | Red fading, again and again; it does not stop | The lamp could not start its file system and stops. | Unplug the lamp and plug it in again. If it repeats, flash the lamp again. |
 
 ---
@@ -34,13 +34,15 @@ Effects in the tables use these names:
 
 | Effect | Cause | Action |
 |------------------------|-------|------------|
-| Red, whole matrix, about 3 seconds, then a lime snake | The lamp lost the WiFi connection and reconnects. | Wait. |
-| Red, whole matrix, about 3 seconds, then a dark matrix | You added a network while the lamp ran in your network, and it left its network to try the new one. | Wait for the restart; see [While the lamp is in your network](web-interface.md#add-in-station-mode). |
+| Red, whole matrix, 10 seconds, then a lime snake until the lamp has joined, then green, whole matrix, 5 seconds | The lamp lost the WiFi connection and reconnects. A connection that returns within the 10 seconds still shows the red matrix to its end, and the green matrix follows. | Wait. |
+| Lime snake until the restart | You added a network while the lamp ran in your network, and the lamp found it: it leaves its network to try the new one. When the lamp does not find the network, the picture does not change. | Wait for the restart; see [While the lamp is in your network](web-interface.md#add-in-station-mode). |
 | Lime snake that does not end after the lamp lost its WiFi <span class="wip">WIP</span> | The router is gone. The lamp retries without a limit. | Bring the router back, or unplug the lamp and plug it in again. |
+| Yellow fading from dark to full yellow for 10 seconds, every minute | The lamp is in your network, but it has not received the time from the internet since the start. It asks again about once a minute. After the 10 seconds your picture shows for 50 seconds (the measurements, **Lamp light**, the dark matrix when the lamp is off, or the lime snake while the lamp waits for readings), and so on until the first answer. When another problem is active too, the two take turns as in the last row, and your picture does not come in between. A new WiFi or error picture shows at once, also during the 50 seconds. After the first answer a lost time server shows nothing: the lamp keeps the last time. | Check that your router has internet access. The fading ends by itself at the first answer. The night mode needs this time. |
+| Two or more of the pictures above that have no end of their own, for example the random pixels and the aqua fading | Several problems are active at once. They take turns, every picture for at least 10 seconds (5 seconds for the lime snake and the aqua fading), in the order they started. A new error shows at once over any playing effect, the green matrix included, and the interrupted effect comes back later. A new error waits until the error on the matrix has shown for 10 seconds. The red pixel and the red fading stop the lamp and play without taking turns. | Fix each problem as described in its row. |
 
 !!! note "WIP"
     Recovery after a WiFi loss is not ready: the lamp does not open its access point and retries
-    without a limit. Once it rejoins, the matrix flashes green for about 3 seconds and the colours
+    without a limit. Once it rejoins, the matrix shows green for 5 seconds and the colours
     return. If the router stays away, unplug the lamp and plug it in again.
 
 ---
@@ -49,7 +51,7 @@ Effects in the tables use these names:
 
 | Effect | Cause | Action |
 |------------------------|-------|------------|
-| The matrix is dark for the first seconds after a start | The lamp draws once every value of the mode has a reading; PM2.5 needs a 12-second warm-up. | Wait. |
+| The lime snake or the aqua fading keeps playing instead of colours | The lamp draws once every value of the mode has a reading. PM2.5 needs a 12-second warm-up, and eCO2 and TVOC wait until the CCS811 reports at least 400 ppm. | Wait. If it lasts minutes, look for `Failed to get ... meas` lines in the log (see [Log messages](#log-messages)). |
 | The matrix is dark and the web page shows the lamp as off | You switched the lamp off in the Lamp card. | Press the power switch ([The Lamp card](web-interface.md#lamp-card)). |
 | The picture does not change for several minutes | In a measurement mode, one of the shown values delivers no reading, and the lamp keeps the old picture. One missed CCS811 reading discards the whole minute of eCO2 and TVOC. | Open the log and look for `Failed to get ... meas` lines (see [Log messages](#log-messages)). Check the wiring of that sensor. |
 | eCO2 and TVOC never show green | The lamp shows these two values in steps. | Nothing; see [Colour scale](display-modes.md#colour-scale). |
@@ -98,5 +100,6 @@ Each line has the form `time - level : message`; see [Log page](web-interface.md
 | `Failed to get PM 2.5 meas` | ERROR | The ZH03B sent no valid frame. The lamp does not log this line during the first 12 seconds after the sensors power on (boot, the 5-minute retry), while the ZH03B warms up. | Check the ZH03B wiring and its 5 V supply. |
 | `Failed to get TEMP meas` | ERROR | The DHT22 delivered no temperature. | Check the DHT22 wiring. |
 | `Failed to get HUMID meas` | ERROR | The DHT22 delivered no humidity. | Check the DHT22 wiring. |
+| `NTP not synced` | ERROR | The lamp is in your network and has not received the time since the start. It logs the line once. | See the yellow fading above. |
 
 Lines about a failed reading appear again every few seconds while the failure lasts.

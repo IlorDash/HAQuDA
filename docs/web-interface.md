@@ -57,24 +57,25 @@ A banner appears under the header when there is something to do.
 
 ### The lamp's picture {#lamp-picture}
 
-The grid of 4 × 6 cells mirrors the lamp's matrix. The page asks the lamp for its picture every
-second and starts an animation in step with the lamp.
+The grid of 4 × 6 cells mirrors the lamp's matrix and shows only what the lamp draws. The page
+asks the lamp for its picture once a second and starts an animation in step with the lamp, so the
+grid follows the lamp up to a second late. It does not preview a change: after you change the Lamp
+card, the grid waits until the lamp has accepted the change and drawn it.
 
 | The lamp shows | The grid shows |
 |----------------|----------------|
 | A measurement picture: multi, standard or night mode | The same layout in the colours the lamp drew. The colours change when the lamp redraws, about once a minute, not with every reading. |
 | Snake | A snake runs along the grid, one lap as long as on the lamp. |
 | Growing | The rows fill from the top down. |
-| Random pixels | The cells light up one by one in random colours; every cycle takes a new order. The order is the page's own. |
+| Random pixels | The cells light up one by one in the order and the colours of the lamp: the page replays them from the seed the lamp sends. The grid has 24 cells for the lamp's 108 pixels, so a cell takes the colour of the first pixel lit in it. |
 | Fading | The grid fades in the colour of the effect with the lamp's timing. |
 | One colour | The whole grid in that colour. |
 | Nothing new: it keeps its last frame | The grid keeps its last picture and stops the animation. |
 
 With "reduce motion" set in your device, the grid shows still frames: the fading at its start level,
 the snake at the start of its path, the growing and the random pixels as the full grid. Until the
-lamp has answered, and after three missed answers in a row, the grid shows three bands of the
-readings instead: PM2.5 above, eCO₂ in the middle, temperature below. When the lamp does not answer
-at all, the grid goes dark.
+lamp has answered, and after three missed answers in a row, the grid goes dark. The lit cells dim
+with the lamp's brightness, except during a fading picture, which has its own levels.
 
 While the lamp shows your picture, the legend beside the grid lists the readings of the current
 mode, or **Lamp light** with the colour name, or **Lamp is off**. While the grid shows an effect or
@@ -96,14 +97,14 @@ The card controls the lamp. It is hidden when the lamp sends no lamp settings.
 | Control | Action |
 |---------|--------|
 | Power switch | Switches the lamp on and off. When it is off, the matrix goes dark, and the other controls of the card are locked. The measurements, the web pages and the log keep running. |
-| **Brightness** | Slider from 5 to 100 % in steps of 5. The grid follows the slider while you drag it, and the page sends the value when you release it. |
+| **Brightness** | Slider from 5 to 100 % in steps of 5. The page sends the value when you release it, and the grid dims once the lamp has drawn it. |
 | **Standard** | One reading on the whole matrix. Pick it from the chips: **Overall**, **Temperature**, **Humidity**, **eCO₂**, **TVOC** or **PM2.5**. **Overall** shows the colour of the first reading out of its range, in the order temperature, humidity, eCO₂, TVOC, PM2.5, or the average colour of all readings when none is out of range. |
 | **Multi** | Three readings in three bands, **Top**, **Middle** and **Bottom**, each from a list. |
 | **Night** | One reading from the list **Reading** and the night light, set with the times **Night light from** and **to** (`HH:MM`). The button reads **Needs internet** and stays locked while the lamp has no time. |
 | **Lamp light** | One of six solid colours: **Warm white**, **Neutral**, **Cool white**, **Amber**, **Lavender**, **Teal**. |
 
-The grid shows a change at once, before the lamp answers; the lamp draws it within about a
-second. When the lamp refuses a change, the card returns to the last settings the lamp accepted and
+The grid shows a change only after the lamp has accepted it and drawn it, within about a second.
+When the lamp refuses a change, the card returns to the last settings the lamp accepted and
 shows the lamp's reply in red for about 10 seconds. The replies are in English:
 
 | Reply | Cause |
@@ -175,8 +176,8 @@ reason with the form still filled in; see [Results of adding a network](#add-res
    the reason at once. Nothing changes and nothing restarts.
 2. Otherwise the page warns that the lamp goes away: **The lamp leaves “network” to try “network”;
    this page loses it for about a minute.**
-3. The lamp leaves its network and tries the new one for up to 20 seconds. The matrix can flash red
-   and go dark meanwhile.
+3. The lamp leaves its network and tries the new one for up to 20 seconds. The matrix shows the lime
+   snake until the restart.
 4. If the lamp joins, it saves the network as the first one and restarts. The page shows **The lamp
    joined “network”**. If the page stops answering, connect your phone to the new network and open
    `http://haquda.local/`.

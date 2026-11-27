@@ -356,7 +356,7 @@ DISP_EFFECTS = [
     ("fading", DISP_AP_PICTURE),
     ("static", fx_static("#01ff00")),
 ]
-# The five error effects in disp-errors: (error kind, picture). The NTP error starts at brightness 0 and never counts down, so the lamp stays dark.
+# The five error effects in disp-errors: (error kind, picture). The NTP error counts up from brightness 0 to full.
 DISP_ERRORS = [
     ("wifi", fx_growing("#ff0000", 100)),
     ("ap", fx_snake("#ff0000", 100, 1)),

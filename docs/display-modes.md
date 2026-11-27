@@ -12,8 +12,8 @@ what the colours mean and how the three modes lay them out.
   picture therefore changes at most once a minute.
 - After a start, and after you change the mode on the web page, the lamp draws as soon as every
   value the mode shows has been read once. That takes a few seconds, and longer for PM2.5, because
-  the ZH03B warms up for 12 seconds. Until then the matrix shows the end of the start-up animation
-  or stays dark.
+  the ZH03B warms up for 12 seconds. eCO2 and TVOC also wait until the CCS811 reports at least
+  400 ppm. Until then the matrix shows the lime snake, or the aqua fading in access point mode.
 - A sensor reading that fails is not counted. When no reading of a shown value arrives, the
   matrix keeps the previous picture and the lamp draws again as soon as a reading arrives.
 - The picture does not blink dark before a redraw: the new picture replaces the old one.
@@ -101,7 +101,16 @@ The night mode shows one value that you choose, plus a night light that fills up
 lavender or teal. It needs no readings.
 
 When you switch the lamp off, the matrix goes dark. The measurements, the web pages and the log
-keep running, and the picture you chose comes back when you switch the lamp on.
+keep running, and the picture you chose comes back when you switch the lamp on. While the lamp is
+off, only errors light the matrix, and the lamp returns to dark afterwards; the lime snake, the
+green matrix and the aqua fading stay away. **Lamp light** shows them over its colour and returns
+to the colour.
+
+While the sensors do not start, **Lamp light** and power off work as usual and replace the sensor
+error picture. A measurement mode shows the error picture, and the lamp draws the mode once the
+sensors start. Only the file system error and the access point error stop the lamp, before the
+web pages can change anything; a lost WiFi connection and the missing time do not stop it. See
+[LED codes and troubleshooting](troubleshooting.md).
 
 ---
 
@@ -110,9 +119,9 @@ keep running, and the picture you chose comes back when you switch the lamp on.
 The brightness runs from 5 to 100 % in steps of 5, and the lamp starts at 35 %. The lamp keeps the
 value with your other settings.
 
-!!! note "Start-up and WiFi pictures use the default brightness"
-    In {{ app_version }} the start-up snake and the WiFi pictures play at 35 %, not at the
-    saved brightness. The saved brightness applies when your picture comes back.
+!!! note "Start-up pictures use the default brightness"
+    In {{ app_version }} the start-up and WiFi pictures play at 35 % until your picture first
+    appears, not at the saved brightness. The saved brightness applies from your picture on.
 
 ---
 

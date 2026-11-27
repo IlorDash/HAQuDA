@@ -20,12 +20,15 @@
   come in English and Russian, in a light and a dark theme; see [Main page](web-interface.md#main-page).
 - **The lamp's picture on the page.** A grid of 4 × 6 cells repeats what the matrix shows: the
   measurement layouts in the colours the lamp drew, the snake, the growing, the random pixels, the
-  fading and the single colours, and a caption that names what the lamp is doing. See
+  fading and the single colours, and a caption that names what the lamp is doing. The grid shows
+  only what the lamp draws, polled once a second: it does not preview a change before the lamp has
+  accepted and drawn it, it replays the random pixels from the lamp's seed, its lit cells dim with
+  the lamp's brightness, and it goes dark after three failed answers. See
   [The lamp's picture](web-interface.md#lamp-picture).
 - **The Lamp card.** The main page switches the lamp on and off, sets the brightness from 5 to
   100 % in steps of 5 and selects the mode: **Standard**, **Multi**, **Night** with its own night
-  window, or **Lamp light** in one of six colours. The grid shows a change at once; the lamp shows
-  it within about a second. See [The Lamp card](web-interface.md#lamp-card) and
+  window, or **Lamp light** in one of six colours. The lamp shows a change within about a
+  second, and the grid follows. See [The Lamp card](web-interface.md#lamp-card) and
   [Display modes](display-modes.md).
 - **Saved settings.** The lamp writes every change to its flash before it shows it, so a reset
   right after a change keeps it. With no file, or a damaged one, it starts with the defaults: on,
@@ -54,16 +57,33 @@
 - **Slow routers.** The lamp waits up to about 8 seconds for each connection attempt instead of
   about 3, so a slow router gets connected. With a wrong stored password the lime snake now runs
   for about 30 seconds before the access point.
-- **WiFi error visible.** After a failed connection the red growing shows for about 10 seconds,
-  so you can see it before the access point effect.
-- **Green flash.** The green flash starts once the lamp has an address from your router. After
-  a lost WiFi connection returns, the green flash shows and the colours come back.
+- **WiFi error visible.** After a failed connection the red growing shows for 5 seconds, so you
+  can see it before the access point effect. A lost WiFi connection shows the red matrix for 10
+  seconds, then the lime snake until the lamp has rejoined.
+- **Green matrix.** The green matrix shows for 5 seconds (it was 3) once the lamp has an address
+  from your router, also after a lost WiFi connection returns, and then the colours come back.
+- **Waiting for the first readings.** After the green matrix the lime snake runs until the first
+  readings of your mode exist, and in access point mode the aqua fading does, instead of a dark
+  matrix. PM2.5 needs about 12 seconds, and eCO2 and TVOC wait until the CCS811 reports at least
+  400 ppm. **Lamp light** and power off end the wait at once.
+- **Network switch.** While the lamp leaves its network to try a new one, it shows the lime snake
+  until the restart, not a dark matrix.
+- **Time error.** When the lamp is in your network and has not received the time since the start,
+  a yellow fading shows for 10 seconds every minute, and your picture for 50 seconds between. After
+  the first answer of the time server a lost server shows nothing. The log line is `NTP not synced`.
+  See [Running effects](troubleshooting.md#running-effects).
+- **Several pictures at once.** Pictures that have no end of their own take turns, each for at
+  least 10 seconds (5 seconds for the lime snake and the aqua fading), in the order they started.
+  A new error shows at once over any effect, the green matrix included. Only the file system
+  error and the access point error stop the lamp. In the access point error one red pixel runs
+  along the matrix without end.
 - **Sensors that do not start.** The lamp no longer restarts itself. It shows random pixels and
-  tries the sensors again every 5 minutes; the colours start when they answer. Lamp light and
-  power off work meanwhile and replace the random pixels; a measurement mode keeps them.
+  tries the sensors again every 5 minutes; the lime snake or the aqua fading waits for the first
+  readings after a successful retry, and then the colours start. Lamp light and power off work
+  meanwhile and replace the random pixels; a measurement mode keeps them.
 - **Brightness.** The lamp starts at 35 %. The colours of the measurements no longer depend on the
-  brightness: the colour scale is fixed and the LEDs dim it. The start-up snake and the WiFi
-  pictures play at 35 %, not at the saved brightness.
+  brightness: the colour scale is fixed and the LEDs dim it. The start-up and WiFi pictures play
+  at 35 % until your picture first appears, not at the saved brightness.
 - **Night light.** The night mode shows 18 cells that fill from the bottom over a window you set,
   instead of six bars that grew by one LED per hour from 21:00 to 09:00.
 - **Overall reading.** The standard mode can show **Overall**: the first reading out of its range,
