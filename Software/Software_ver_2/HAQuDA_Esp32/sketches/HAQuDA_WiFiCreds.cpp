@@ -70,6 +70,39 @@ size_t HAQuDA_RemoveCredsByName(const TWiFiCreds *stored, size_t storedCount, co
 	return count;
 }
 
+size_t HAQuDA_FindVisibleCreds(const TWiFiCreds *stored, size_t storedCount, const wifi_scan_name *scan, size_t scanCount, uint8_t *outIndices,
+							   size_t outCapacity) {
+	if (outIndices == nullptr) {
+		return 0;
+	}
+	if (stored == nullptr) {
+		storedCount = 0;
+	}
+	if (scan == nullptr) {
+		scanCount = 0;
+	}
+	if (storedCount > static_cast<size_t>(MAX_WIFI_CREDS_NUM)) {
+		storedCount = static_cast<size_t>(MAX_WIFI_CREDS_NUM);
+	}
+
+	size_t count = 0;
+	for (size_t i = 0; (i < storedCount) && (count < outCapacity); i++) {
+		size_t storedLen = strnlen(stored[i].ssid, WIFI_SSID_LEN);
+		if ((storedLen == 0) || (storedLen >= WIFI_SSID_LEN)) {
+			continue;
+		}
+		for (size_t j = 0; j < scanCount; j++) {
+			size_t scanLen = (scan[j].len > WIFI_SSID_LEN) ? WIFI_SSID_LEN : scan[j].len;
+			if ((scanLen == storedLen) && (memcmp(stored[i].ssid, scan[j].ssid, storedLen) == 0)) {
+				outIndices[count] = static_cast<uint8_t>(i);
+				count++;
+				break;
+			}
+		}
+	}
+	return count;
+}
+
 creds_recovery HAQuDA_DecideCredsRecovery(bool listExists, bool tmpExists, int tmpSize) {
 	if (!tmpExists) {
 		return creds_recovery::none;

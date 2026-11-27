@@ -34,6 +34,23 @@ size_t HAQuDA_PlaceCredsFirst(const TWiFiCreds *stored, size_t storedCount, cons
 // means the deleted network was the last one. The caller writes the list only when *found is true. Any task.
 size_t HAQuDA_RemoveCredsByName(const TWiFiCreds *stored, size_t storedCount, const char *ssid, TWiFiCreds *out, size_t outCapacity, bool *found);
 
+// One network name of a WiFi scan. The name has no terminator: a 32-byte name fills the array, len says how many bytes
+// count. An empty name (len 0) is a hidden access point.
+struct wifi_scan_name {
+	char ssid[WIFI_SSID_LEN] = "";
+	uint8_t len = 0;
+};
+
+// Finds which saved networks the scan sees: writes the indices into stored of the visible records to outIndices, in the
+// order of the saved list (which is the join priority), at most outCapacity of them. Only the first MAX_WIFI_CREDS_NUM
+// stored records are looked at. A record is visible when a scan name equals its name byte for byte (case matters, "Home"
+// does not match "Home2"); a scan name that appears several times (mesh, 2.4 and 5 GHz) gives its record once. Records with
+// an empty name and scan entries with an empty name match nothing; a len above WIFI_SSID_LEN counts as WIFI_SSID_LEN. A
+// stored name with no terminator inside its field is damaged (the lamp stores at most 31 bytes) and matches nothing.
+// stored or scan may be nullptr when its count is 0. Returns the number of indices written; 0 when outIndices is nullptr. Any task.
+size_t HAQuDA_FindVisibleCreds(const TWiFiCreds *stored, size_t storedCount, const wifi_scan_name *scan, size_t scanCount, uint8_t *outIndices,
+							   size_t outCapacity);
+
 // A save writes the whole list to a temporary file, deletes /WiFiNetworks and renames the temporary file over it. A power
 // loss between the delete and the rename leaves only the temporary file.
 enum class creds_recovery : uint8_t { none, restore_tmp, delete_tmp };

@@ -287,6 +287,186 @@ TEST(WiFiJoinTest, MergeDisconnectReasonNothingKeptAndNothingNewGivesZero) {
 	EXPECT_EQ(exp_code, res);
 }
 
+// ---------------------------------------------------------------- HAQuDA_DecideStoredJoin
+
+TEST(WiFiJoinTest, DecideStoredJoinConnectedIsConnected) {
+	const stored_join_step exp_step = stored_join_step::connected;
+
+	const uint8_t retries_done = 0;
+
+	stored_join_step res;
+
+	res = HAQuDA_DecideStoredJoin(true, join_reason::none, retries_done);
+
+	EXPECT_EQ(exp_step, res);
+}
+
+TEST(WiFiJoinTest, DecideStoredJoinConnectedWinsOverStaleReason) {
+	const stored_join_step exp_step = stored_join_step::connected;
+
+	const uint8_t retries_done = 1;
+
+	stored_join_step res;
+
+	res = HAQuDA_DecideStoredJoin(true, join_reason::wrong_password, retries_done);
+
+	EXPECT_EQ(exp_step, res);
+}
+
+TEST(WiFiJoinTest, DecideStoredJoinWrongPasswordGoesToNextNetwork) {
+	const stored_join_step exp_step = stored_join_step::next_network;
+
+	const uint8_t retries_done = 0;
+
+	stored_join_step res;
+
+	res = HAQuDA_DecideStoredJoin(false, join_reason::wrong_password, retries_done);
+
+	EXPECT_EQ(exp_step, res);
+}
+
+TEST(WiFiJoinTest, DecideStoredJoinNoNetworkGoesToNextNetwork) {
+	const stored_join_step exp_step = stored_join_step::next_network;
+
+	const uint8_t retries_done = 0;
+
+	stored_join_step res;
+
+	res = HAQuDA_DecideStoredJoin(false, join_reason::no_network, retries_done);
+
+	EXPECT_EQ(exp_step, res);
+}
+
+TEST(WiFiJoinTest, DecideStoredJoinWrongPasswordAfterRetryGoesToNextNetwork) {
+	const stored_join_step exp_step = stored_join_step::next_network;
+
+	const uint8_t retries_done = STORED_JOIN_TIMEOUT_RETRIES;
+
+	stored_join_step res;
+
+	res = HAQuDA_DecideStoredJoin(false, join_reason::wrong_password, retries_done);
+
+	EXPECT_EQ(exp_step, res);
+}
+
+TEST(WiFiJoinTest, DecideStoredJoinTimeoutWithoutRetriesRetries) {
+	const stored_join_step exp_step = stored_join_step::retry;
+
+	const uint8_t retries_done = 0;
+
+	stored_join_step res;
+
+	res = HAQuDA_DecideStoredJoin(false, join_reason::timeout, retries_done);
+
+	EXPECT_EQ(exp_step, res);
+}
+
+TEST(WiFiJoinTest, DecideStoredJoinNoTellingReasonWithoutRetriesRetries) {
+	const stored_join_step exp_step = stored_join_step::retry;
+
+	const uint8_t retries_done = 0;
+
+	stored_join_step res;
+
+	res = HAQuDA_DecideStoredJoin(false, join_reason::none, retries_done);
+
+	EXPECT_EQ(exp_step, res);
+}
+
+TEST(WiFiJoinTest, DecideStoredJoinTimeoutAfterOneRetryGoesToNextNetwork) {
+	const stored_join_step exp_step = stored_join_step::next_network;
+
+	const uint8_t retries_done = 1;
+
+	stored_join_step res;
+
+	res = HAQuDA_DecideStoredJoin(false, join_reason::timeout, retries_done);
+
+	EXPECT_EQ(exp_step, res);
+}
+
+TEST(WiFiJoinTest, DecideStoredJoinNoTellingReasonAfterOneRetryGoesToNextNetwork) {
+	const stored_join_step exp_step = stored_join_step::next_network;
+
+	const uint8_t retries_done = 1;
+
+	stored_join_step res;
+
+	res = HAQuDA_DecideStoredJoin(false, join_reason::none, retries_done);
+
+	EXPECT_EQ(exp_step, res);
+}
+
+TEST(WiFiJoinTest, DecideStoredJoinSaveFailedWithoutRetriesRetries) {
+	const stored_join_step exp_step = stored_join_step::retry;
+
+	const uint8_t retries_done = 0;
+
+	stored_join_step res;
+
+	res = HAQuDA_DecideStoredJoin(false, join_reason::save_failed, retries_done);
+
+	EXPECT_EQ(exp_step, res);
+}
+
+TEST(WiFiJoinTest, DecideStoredJoinSaveFailedAfterOneRetryGoesToNextNetwork) {
+	const stored_join_step exp_step = stored_join_step::next_network;
+
+	const uint8_t retries_done = STORED_JOIN_TIMEOUT_RETRIES;
+
+	stored_join_step res;
+
+	res = HAQuDA_DecideStoredJoin(false, join_reason::save_failed, retries_done);
+
+	EXPECT_EQ(exp_step, res);
+}
+
+TEST(WiFiJoinTest, DecideStoredJoinScanFailedWithoutRetriesRetries) {
+	const stored_join_step exp_step = stored_join_step::retry;
+
+	const uint8_t retries_done = 0;
+
+	stored_join_step res;
+
+	res = HAQuDA_DecideStoredJoin(false, join_reason::scan_failed, retries_done);
+
+	EXPECT_EQ(exp_step, res);
+}
+
+TEST(WiFiJoinTest, DecideStoredJoinScanFailedAfterOneRetryGoesToNextNetwork) {
+	const stored_join_step exp_step = stored_join_step::next_network;
+
+	const uint8_t retries_done = STORED_JOIN_TIMEOUT_RETRIES;
+
+	stored_join_step res;
+
+	res = HAQuDA_DecideStoredJoin(false, join_reason::scan_failed, retries_done);
+
+	EXPECT_EQ(exp_step, res);
+}
+
+TEST(WiFiJoinTest, DecideStoredJoinTimeoutWithRetriesAboveLimitGoesToNextNetwork) {
+	const stored_join_step exp_step = stored_join_step::next_network;
+
+	const uint8_t retries_done = 255;
+
+	stored_join_step res;
+
+	res = HAQuDA_DecideStoredJoin(false, join_reason::timeout, retries_done);
+
+	EXPECT_EQ(exp_step, res);
+}
+
+TEST(WiFiJoinTest, DecideStoredJoinRetryLimitIsOne) {
+	const uint8_t exp_retries = 1;
+
+	uint8_t res;
+
+	res = STORED_JOIN_TIMEOUT_RETRIES;
+
+	EXPECT_EQ(exp_retries, res);
+}
+
 // ---------------------------------------------------------------- names
 
 TEST(WiFiJoinTest, JoinStateNameIdle) {

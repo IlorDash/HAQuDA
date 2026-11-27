@@ -1477,6 +1477,403 @@ TEST(WiFiCredsTest, FilterRecoveredCredsDoesNotModifyTheInput) {
 	EXPECT_EQ(0, memcmp(exp_records, records, sizeof(records)));
 }
 
+// ---------------------------------------------------------------- HAQuDA_FindVisibleCreds
+
+TEST(WiFiCredsTest, FindVisibleCredsEmptySavedListFindsNothing) {
+	const size_t exp_count = 0;
+
+	const wifi_scan_name scan[] = {{"Home", 4}};
+	uint8_t out[MAX_WIFI_CREDS_NUM] = {0};
+
+	size_t res;
+
+	res = HAQuDA_FindVisibleCreds(nullptr, 0, scan, 1, out, MAX_WIFI_CREDS_NUM);
+
+	EXPECT_EQ(exp_count, res);
+}
+
+TEST(WiFiCredsTest, FindVisibleCredsEmptyScanFindsNothing) {
+	const size_t exp_count = 0;
+
+	const TWiFiCreds stored[] = {{"Home", "p1"}, {"Work", "p2"}};
+	uint8_t out[MAX_WIFI_CREDS_NUM] = {0};
+
+	size_t res;
+
+	res = HAQuDA_FindVisibleCreds(stored, 2, nullptr, 0, out, MAX_WIFI_CREDS_NUM);
+
+	EXPECT_EQ(exp_count, res);
+}
+
+TEST(WiFiCredsTest, FindVisibleCredsNullOutputReturnsZero) {
+	const size_t exp_count = 0;
+
+	const TWiFiCreds stored[] = {{"Home", "p1"}};
+	const wifi_scan_name scan[] = {{"Home", 4}};
+
+	size_t res;
+
+	res = HAQuDA_FindVisibleCreds(stored, 1, scan, 1, nullptr, MAX_WIFI_CREDS_NUM);
+
+	EXPECT_EQ(exp_count, res);
+}
+
+TEST(WiFiCredsTest, FindVisibleCredsReturnsIndicesInSavedOrderNotScanOrder) {
+	const size_t exp_count = 2;
+	const uint8_t exp_first = 0;
+	const uint8_t exp_second = 2;
+
+	const TWiFiCreds stored[] = {{"Home", "p1"}, {"Work", "p2"}, {"Cafe", "p3"}};
+	const wifi_scan_name scan[] = {{"Cafe", 4}, {"Home", 4}};
+	uint8_t out[MAX_WIFI_CREDS_NUM] = {0};
+
+	size_t res;
+
+	res = HAQuDA_FindVisibleCreds(stored, 3, scan, 2, out, MAX_WIFI_CREDS_NUM);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_EQ(exp_first, out[0]);
+	EXPECT_EQ(exp_second, out[1]);
+}
+
+TEST(WiFiCredsTest, FindVisibleCredsPrefixNamesDoNotMatch) {
+	const size_t exp_count = 0;
+
+	const TWiFiCreds stored[] = {{"Home", "p1"}};
+	const wifi_scan_name scan[] = {{"Home2", 5}};
+	uint8_t out[MAX_WIFI_CREDS_NUM] = {0};
+
+	size_t res;
+
+	res = HAQuDA_FindVisibleCreds(stored, 1, scan, 1, out, MAX_WIFI_CREDS_NUM);
+
+	EXPECT_EQ(exp_count, res);
+}
+
+TEST(WiFiCredsTest, FindVisibleCredsLongerSavedNameDoesNotMatchScanPrefix) {
+	const size_t exp_count = 0;
+
+	const TWiFiCreds stored[] = {{"Home2", "p1"}};
+	const wifi_scan_name scan[] = {{"Home", 4}};
+	uint8_t out[MAX_WIFI_CREDS_NUM] = {0};
+
+	size_t res;
+
+	res = HAQuDA_FindVisibleCreds(stored, 1, scan, 1, out, MAX_WIFI_CREDS_NUM);
+
+	EXPECT_EQ(exp_count, res);
+}
+
+TEST(WiFiCredsTest, FindVisibleCredsCaseDiffersDoesNotMatch) {
+	const size_t exp_count = 0;
+
+	const TWiFiCreds stored[] = {{"Home", "p1"}};
+	const wifi_scan_name scan[] = {{"home", 4}};
+	uint8_t out[MAX_WIFI_CREDS_NUM] = {0};
+
+	size_t res;
+
+	res = HAQuDA_FindVisibleCreds(stored, 1, scan, 1, out, MAX_WIFI_CREDS_NUM);
+
+	EXPECT_EQ(exp_count, res);
+}
+
+TEST(WiFiCredsTest, FindVisibleCredsDuplicateScanNamesGiveRecordOnce) {
+	const size_t exp_count = 1;
+	const uint8_t exp_index = 0;
+
+	const TWiFiCreds stored[] = {{"Home", "p1"}};
+	const wifi_scan_name scan[] = {{"Home", 4}, {"Home", 4}, {"Home", 4}};
+	uint8_t out[MAX_WIFI_CREDS_NUM] = {0};
+
+	size_t res;
+
+	res = HAQuDA_FindVisibleCreds(stored, 1, scan, 3, out, MAX_WIFI_CREDS_NUM);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_EQ(exp_index, out[0]);
+}
+
+TEST(WiFiCredsTest, FindVisibleCredsHiddenScanNameMatchesNothing) {
+	const size_t exp_count = 0;
+
+	const TWiFiCreds stored[] = {{"Home", "p1"}};
+	const wifi_scan_name scan[] = {{"", 0}};
+	uint8_t out[MAX_WIFI_CREDS_NUM] = {0};
+
+	size_t res;
+
+	res = HAQuDA_FindVisibleCreds(stored, 1, scan, 1, out, MAX_WIFI_CREDS_NUM);
+
+	EXPECT_EQ(exp_count, res);
+}
+
+TEST(WiFiCredsTest, FindVisibleCredsHiddenScanNameDoesNotHideOthers) {
+	const size_t exp_count = 1;
+	const uint8_t exp_index = 0;
+
+	const TWiFiCreds stored[] = {{"Home", "p1"}};
+	const wifi_scan_name scan[] = {{"", 0}, {"Home", 4}};
+	uint8_t out[MAX_WIFI_CREDS_NUM] = {0};
+
+	size_t res;
+
+	res = HAQuDA_FindVisibleCreds(stored, 1, scan, 2, out, MAX_WIFI_CREDS_NUM);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_EQ(exp_index, out[0]);
+}
+
+TEST(WiFiCredsTest, FindVisibleCredsEmptySavedNameIsSkippedAgainstHiddenScanName) {
+	const size_t exp_count = 1;
+	const uint8_t exp_index = 1;
+
+	const TWiFiCreds stored[] = {{"", "p0"}, {"Home", "p1"}};
+	const wifi_scan_name scan[] = {{"", 0}, {"Home", 4}};
+	uint8_t out[MAX_WIFI_CREDS_NUM] = {0};
+
+	size_t res;
+
+	res = HAQuDA_FindVisibleCreds(stored, 2, scan, 2, out, MAX_WIFI_CREDS_NUM);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_EQ(exp_index, out[0]);
+}
+
+TEST(WiFiCredsTest, FindVisibleCreds31ByteNameMatches) {
+	const size_t exp_count = 1;
+	const uint8_t exp_index = 0;
+	const size_t name_len = WIFI_SSID_LEN - 1;
+
+	TWiFiCreds stored[1];
+	memset(stored[0].ssid, 'A', name_len);
+	wifi_scan_name scan[1];
+	memset(scan[0].ssid, 'A', name_len);
+	scan[0].len = static_cast<uint8_t>(name_len);
+	uint8_t out[MAX_WIFI_CREDS_NUM] = {0};
+
+	size_t res;
+
+	res = HAQuDA_FindVisibleCreds(stored, 1, scan, 1, out, MAX_WIFI_CREDS_NUM);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_EQ(exp_index, out[0]);
+}
+
+TEST(WiFiCredsTest, FindVisibleCreds32ByteScanNameWithoutTerminatorDoesNotMatchItsPrefix) {
+	const size_t exp_count = 0;
+	const size_t scan_len = WIFI_SSID_LEN;
+
+	TWiFiCreds stored[1];
+	memset(stored[0].ssid, 'A', WIFI_SSID_LEN - 1);
+	wifi_scan_name scan[1];
+	memset(scan[0].ssid, 'A', scan_len);
+	scan[0].len = static_cast<uint8_t>(scan_len);
+	uint8_t out[MAX_WIFI_CREDS_NUM] = {0};
+
+	size_t res;
+
+	res = HAQuDA_FindVisibleCreds(stored, 1, scan, 1, out, MAX_WIFI_CREDS_NUM);
+
+	EXPECT_EQ(exp_count, res);
+}
+
+TEST(WiFiCredsTest, FindVisibleCredsUnterminatedSavedNameMatchesNothing) {
+	const size_t exp_count = 0;
+	const size_t scan_len = WIFI_SSID_LEN;
+
+	TWiFiCreds stored[1];
+	memset(stored[0].ssid, 'A', WIFI_SSID_LEN);
+	wifi_scan_name scan[1];
+	memset(scan[0].ssid, 'A', scan_len);
+	scan[0].len = static_cast<uint8_t>(scan_len);
+	uint8_t out[MAX_WIFI_CREDS_NUM] = {0};
+
+	size_t res;
+
+	res = HAQuDA_FindVisibleCreds(stored, 1, scan, 1, out, MAX_WIFI_CREDS_NUM);
+
+	EXPECT_EQ(exp_count, res);
+}
+
+TEST(WiFiCredsTest, FindVisibleCredsScanLengthAboveFieldDoesNotMatchItsPrefix) {
+	const size_t exp_count = 0;
+	const uint8_t scan_len_too_long = 200;
+
+	TWiFiCreds stored[1];
+	memset(stored[0].ssid, 'A', WIFI_SSID_LEN - 1);
+	wifi_scan_name scan[1];
+	memset(scan[0].ssid, 'A', WIFI_SSID_LEN);
+	scan[0].len = scan_len_too_long;
+	uint8_t out[MAX_WIFI_CREDS_NUM] = {0};
+
+	size_t res;
+
+	res = HAQuDA_FindVisibleCreds(stored, 1, scan, 1, out, MAX_WIFI_CREDS_NUM);
+
+	EXPECT_EQ(exp_count, res);
+}
+
+TEST(WiFiCredsTest, FindVisibleCredsScanLengthShorterThanNameDoesNotMatch) {
+	const size_t exp_count = 0;
+
+	const TWiFiCreds stored[] = {{"Home", "p1"}};
+	const wifi_scan_name scan[] = {{"Home", 3}};
+	uint8_t out[MAX_WIFI_CREDS_NUM] = {0};
+
+	size_t res;
+
+	res = HAQuDA_FindVisibleCreds(stored, 1, scan, 1, out, MAX_WIFI_CREDS_NUM);
+
+	EXPECT_EQ(exp_count, res);
+}
+
+TEST(WiFiCredsTest, FindVisibleCredsScanLengthZeroWithBytesIsHidden) {
+	const size_t exp_count = 0;
+
+	const TWiFiCreds stored[] = {{"Home", "p1"}};
+	const wifi_scan_name scan[] = {{"Home", 0}};
+	uint8_t out[MAX_WIFI_CREDS_NUM] = {0};
+
+	size_t res;
+
+	res = HAQuDA_FindVisibleCreds(stored, 1, scan, 1, out, MAX_WIFI_CREDS_NUM);
+
+	EXPECT_EQ(exp_count, res);
+}
+
+TEST(WiFiCredsTest, FindVisibleCredsMatchOnLaterScanEntryIsFound) {
+	const size_t exp_count = 1;
+	const uint8_t exp_index = 0;
+
+	const TWiFiCreds stored[] = {{"Home", "p1"}};
+	const wifi_scan_name scan[] = {{"Work", 4}, {"Cafe", 4}, {"Home", 4}};
+	uint8_t out[MAX_WIFI_CREDS_NUM] = {0};
+
+	size_t res;
+
+	res = HAQuDA_FindVisibleCreds(stored, 1, scan, 3, out, MAX_WIFI_CREDS_NUM);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_EQ(exp_index, out[0]);
+}
+
+TEST(WiFiCredsTest, FindVisibleCredsAllSavedVisibleGivesAllIndices) {
+	const size_t exp_count = 3;
+	const uint8_t exp_first = 0;
+	const uint8_t exp_second = 1;
+	const uint8_t exp_third = 2;
+
+	const TWiFiCreds stored[] = {{"Home", "p1"}, {"Work", "p2"}, {"Cafe", "p3"}};
+	const wifi_scan_name scan[] = {{"Cafe", 4}, {"Work", 4}, {"Home", 4}};
+	uint8_t out[MAX_WIFI_CREDS_NUM] = {0};
+
+	size_t res;
+
+	res = HAQuDA_FindVisibleCreds(stored, 3, scan, 3, out, MAX_WIFI_CREDS_NUM);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_EQ(exp_first, out[0]);
+	EXPECT_EQ(exp_second, out[1]);
+	EXPECT_EQ(exp_third, out[2]);
+}
+
+TEST(WiFiCredsTest, FindVisibleCredsSavedRecordsWithSameNameBothFound) {
+	const size_t exp_count = 2;
+	const uint8_t exp_first = 0;
+	const uint8_t exp_second = 1;
+
+	const TWiFiCreds stored[] = {{"Home", "p1"}, {"Home", "p2"}};
+	const wifi_scan_name scan[] = {{"Home", 4}};
+	uint8_t out[MAX_WIFI_CREDS_NUM] = {0};
+
+	size_t res;
+
+	res = HAQuDA_FindVisibleCreds(stored, 2, scan, 1, out, MAX_WIFI_CREDS_NUM);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_EQ(exp_first, out[0]);
+	EXPECT_EQ(exp_second, out[1]);
+}
+
+TEST(WiFiCredsTest, FindVisibleCredsNullSavedListWithCountIsEmpty) {
+	const size_t exp_count = 0;
+
+	const wifi_scan_name scan[] = {{"Home", 4}};
+	uint8_t out[MAX_WIFI_CREDS_NUM] = {0};
+
+	size_t res;
+
+	res = HAQuDA_FindVisibleCreds(nullptr, 3, scan, 1, out, MAX_WIFI_CREDS_NUM);
+
+	EXPECT_EQ(exp_count, res);
+}
+
+TEST(WiFiCredsTest, FindVisibleCredsNullScanWithCountIsEmpty) {
+	const size_t exp_count = 0;
+
+	const TWiFiCreds stored[] = {{"Home", "p1"}};
+	uint8_t out[MAX_WIFI_CREDS_NUM] = {0};
+
+	size_t res;
+
+	res = HAQuDA_FindVisibleCreds(stored, 1, nullptr, 3, out, MAX_WIFI_CREDS_NUM);
+
+	EXPECT_EQ(exp_count, res);
+}
+
+TEST(WiFiCredsTest, FindVisibleCredsCapacitySmallerThanMatchesKeepsFirstInSavedOrder) {
+	const size_t exp_count = 2;
+	const uint8_t exp_first = 0;
+	const uint8_t exp_second = 1;
+	const uint8_t untouched = 0xEE;
+
+	const TWiFiCreds stored[] = {{"Home", "p1"}, {"Work", "p2"}, {"Cafe", "p3"}};
+	const wifi_scan_name scan[] = {{"Cafe", 4}, {"Work", 4}, {"Home", 4}};
+	uint8_t out[3] = {untouched, untouched, untouched};
+
+	size_t res;
+
+	res = HAQuDA_FindVisibleCreds(stored, 3, scan, 3, out, 2);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_EQ(exp_first, out[0]);
+	EXPECT_EQ(exp_second, out[1]);
+	EXPECT_EQ(untouched, out[2]);
+}
+
+TEST(WiFiCredsTest, FindVisibleCredsZeroCapacityWritesNothing) {
+	const size_t exp_count = 0;
+	const uint8_t untouched = 0xEE;
+
+	const TWiFiCreds stored[] = {{"Home", "p1"}};
+	const wifi_scan_name scan[] = {{"Home", 4}};
+	uint8_t out[1] = {untouched};
+
+	size_t res;
+
+	res = HAQuDA_FindVisibleCreds(stored, 1, scan, 1, out, 0);
+
+	EXPECT_EQ(exp_count, res);
+	EXPECT_EQ(untouched, out[0]);
+}
+
+TEST(WiFiCredsTest, FindVisibleCredsLooksOnlyAtFirstMaxRecords) {
+	const size_t exp_count = 0;
+	const size_t stored_count = MAX_WIFI_CREDS_NUM + 1;
+
+	TWiFiCreds stored[stored_count];
+	strcpy(stored[MAX_WIFI_CREDS_NUM].ssid, "Home");
+	const wifi_scan_name scan[] = {{"Home", 4}};
+	uint8_t out[stored_count] = {0};
+
+	size_t res;
+
+	res = HAQuDA_FindVisibleCreds(stored, stored_count, scan, 1, out, stored_count);
+
+	EXPECT_EQ(exp_count, res);
+}
+
 // ---------------------------------------------------------------- HAQuDA_WipeBytes
 
 TEST(WiFiCredsTest, WipeBytesZeroesExactlyTheRequestedBytes) {

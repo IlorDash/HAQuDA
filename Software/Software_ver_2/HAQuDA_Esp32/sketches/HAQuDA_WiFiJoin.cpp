@@ -94,6 +94,16 @@ join_reason HAQuDA_StreakReason(uint32_t streak) {
 	return join_reason::none;
 }
 
+stored_join_step HAQuDA_DecideStoredJoin(bool connected, join_reason reason, uint8_t retriesDone) {
+	if (connected) {
+		return stored_join_step::connected;
+	}
+	if ((reason == join_reason::wrong_password) || (reason == join_reason::no_network)) {
+		return stored_join_step::next_network;
+	}
+	return (retriesDone < STORED_JOIN_TIMEOUT_RETRIES) ? stored_join_step::retry : stored_join_step::next_network;
+}
+
 join_scan_status HAQuDA_MapScanResult(int16_t scanComplete) {
 	// WIFI_SCAN_RUNNING is -1, WIFI_SCAN_FAILED is -2
 	if (scanComplete == -1) {

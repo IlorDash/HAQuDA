@@ -85,6 +85,18 @@ uint32_t HAQuDA_AddDisconnectEvent(uint32_t streak, uint8_t code);
 // The reason the streak decides: wrong_password or no_network once it holds JOIN_EARLY_FAIL_EVENTS events, else none
 join_reason HAQuDA_StreakReason(uint32_t streak);
 
+// Joining the saved networks one after another: a wait that ends on a timeout is retried this many times (a
+// WiFi.reconnect() and another wait) before the lamp moves on
+constexpr uint8_t STORED_JOIN_TIMEOUT_RETRIES = 1;
+
+enum class stored_join_step : uint8_t { connected, next_network, retry };
+
+// What to do after one wait on a saved network. connected = the station got its address. Otherwise reason is what the
+// disconnect streak decided (HAQuDA_StreakReason()); none, timeout or any other value means the wait ran out with nothing
+// telling. wrong_password and no_network are final for this network: next_network at once, no retry. A wait that ran
+// out gives retry while retriesDone is below STORED_JOIN_TIMEOUT_RETRIES, then next_network.
+stored_join_step HAQuDA_DecideStoredJoin(bool connected, join_reason reason, uint8_t retriesDone);
+
 // Maps what WiFi.scanComplete() returns (-1 still running, -2 failed or never started, 0 or more = number of networks the
 // scan found) to a scan status. The scan is asked for the one network name, so any network found is the one wanted.
 join_scan_status HAQuDA_MapScanResult(int16_t scanComplete);
