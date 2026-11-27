@@ -219,7 +219,11 @@ uint32_t HAQuDA_FadingAnim::Step(uint32_t nowMs) {
 			return ANIM_LEDS_SHOW_MS;
 		}
 		default: {
+			// SetBright() rescales the stored picture and loses the colour when it climbs from a low level (from 0 % it stays black),
+			// so the colour is drawn again at the new level; the rescaled frame is replaced a few ms later
 			leds.SetBright(static_cast<uint8_t>(level));
+			leds.FillColor(color);
+			leds.Show(ANIM_NO_WAIT_MS);
 			uint32_t waitMs = ANIM_LEDS_SHOW_MS + fadePauseMs;
 			const int16_t next = (toPercent < fromPercent) ? (level - stepPercent) : (level + stepPercent);
 			const bool passEnds = (toPercent < fromPercent) ? (next <= toPercent) : (next >= toPercent);

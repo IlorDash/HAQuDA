@@ -111,6 +111,14 @@ TEST(DisplayCatalogTest, ClassesFollowTheTable) {
 	EXPECT_EQ(display_class::error, row(display_error::ntpFailed).cls);
 }
 
+TEST(DisplayCatalogTest, OnlyTheNtpErrorYieldsToTheBackground) {
+	for (uint8_t item = 0; item < DISPLAY_ITEM_COUNT; item++) {
+		const display_entry &entry = *HAQuDA_GetDisplayEntry(item);
+		EXPECT_EQ(item == HAQuDA_ItemOf(display_error::ntpFailed), entry.yields) << entry.name;
+	}
+	EXPECT_EQ(50000u, DISPLAY_YIELD_BACKGROUND_MS);
+}
+
 TEST(DisplayCatalogTest, FatalRowsNeverEnd) {
 	for (display_error fatal : {display_error::apFailed, display_error::fsFailed}) {
 		EXPECT_EQ(display_end_cond::untilEvent, row(fatal).end);

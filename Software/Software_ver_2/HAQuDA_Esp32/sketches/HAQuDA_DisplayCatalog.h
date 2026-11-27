@@ -36,6 +36,7 @@ constexpr uint16_t HAQuDA_EndBit(display_end end) {
 
 constexpr uint32_t DISPLAY_EVENT_MIN_MS = 5 * 1000;
 constexpr uint32_t DISPLAY_ERROR_MIN_MS = 10 * 1000;
+constexpr uint32_t DISPLAY_YIELD_BACKGROUND_MS = 50 * 1000;
 
 struct display_entry {
 	// Must equal the row index, the host test checks it
@@ -47,6 +48,7 @@ struct display_entry {
 	uint16_t endsOn;
 	uint16_t raises;
 	uint32_t minMs;
+	bool yields;
 };
 
 const display_entry *HAQuDA_GetDisplayEntry(display_item item);

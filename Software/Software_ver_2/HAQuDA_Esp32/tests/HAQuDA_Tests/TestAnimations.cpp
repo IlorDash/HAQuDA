@@ -33,6 +33,11 @@ namespace {
 			}));
 			ON_CALL(mock, SetBright(_)).WillByDefault(Invoke([this](uint8_t percent) {
 				brightCalls.push_back(percent);
+				// The real SetBright() rescales the stored picture by new / old level, which is 0 when the old level is 0
+				if ((level == 0) && (percent != 0)) {
+					fill(0);
+				}
+				level = percent;
 				sendFrame();
 			}));
 		}
@@ -44,6 +49,8 @@ namespace {
 		testing::NiceMock<MockLEDs> mock;
 		std::vector<std::vector<uint32_t>> frames;
 		std::vector<uint8_t> brightCalls;
+		std::vector<uint8_t> frameLevels;
+		uint8_t level = 0;
 		int blockingCalls = 0;
 		std::vector<uint32_t> pixels;
 
@@ -75,6 +82,7 @@ namespace {
 		}
 		void sendFrame() {
 			frames.push_back(pixels);
+			frameLevels.push_back(level);
 		}
 	};
 
@@ -563,6 +571,30 @@ TEST(FadingAnimTest, CountingUpReallyFades) {
 	}
 	EXPECT_EQ(expected, leds.brightCalls);
 	EXPECT_EQ(400u + 200u + 10u * 210u + 100u, sum(waits));
+}
+
+TEST(FadingAnimTest, CountingUpFromZeroShowsTheColourAtEveryLevel) {
+	LedRecorder leds;
+	HAQuDA_FadingAnim fading(leds.mock);
+	ASSERT_TRUE(fading.Begin(HAQuDA_FadingParams(ANIM_COLOR_YELLOW, 10, 0, 100, 10), contextWithBright(33)));
+
+	stepsUntilTotal(fading, 2 + 10);
+
+	// the last frame sent at each level is the true colour on every pixel, so the matrix is not black while the level climbs
+	for (uint8_t level = 10; level <= 90; level += 10) {
+		size_t last = leds.frames.size();
+		for (size_t i = 0; i < leds.frames.size(); i++) {
+			if (leds.frameLevels[i] == level) {
+				last = i;
+			}
+		}
+		ASSERT_LT(last, leds.frames.size()) << "level " << static_cast<int>(level);
+		EXPECT_EQ(ANIM_PIXELS, leds.litCount(leds.frames[last])) << "level " << static_cast<int>(level);
+		for (uint32_t color : leds.frames[last]) {
+			EXPECT_EQ(ANIM_COLOR_YELLOW, color);
+		}
+	}
+	EXPECT_EQ(std::vector<uint8_t>({0, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90}), leds.brightCalls);
 }
 
 TEST(FadingAnimTest, ColourIsOnTheMatrixDuringTheLevels) {

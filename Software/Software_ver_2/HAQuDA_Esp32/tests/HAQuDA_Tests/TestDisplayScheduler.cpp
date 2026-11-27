@@ -894,3 +894,287 @@ TEST(DisplaySchedulerTest, ANewLampColourRestartsTheSolidPictureButNotAnEventOve
 	EXPECT_EQ(display_source::event, pick.source);
 	EXPECT_FALSE(pick.changed);
 }
+
+namespace {
+	constexpr uint32_t BACKGROUND_MS = DISPLAY_YIELD_BACKGROUND_MS;
+
+	void startMeasBackground(HAQuDA_DisplayScheduler &scheduler) {
+		scheduler.SetBackground(anim_id::measMulti, DISPLAY_ITEM_NONE);
+		scheduler.MeasReady(true);
+	}
+} // namespace
+
+TEST(DisplaySchedulerTest, NtpErrorAloneAlternatesWithTheMeasurements) {
+	HAQuDA_DisplayScheduler scheduler;
+	startMeasBackground(scheduler);
+	scheduler.Post(display_error::ntpFailed);
+
+	const display_pick first = scheduler.Next(0);
+	const display_pick lastErrorMs = scheduler.Next(10 * SECOND - 1);
+	const display_pick background = scheduler.Next(10 * SECOND);
+	const display_pick again = scheduler.Next(10 * SECOND + BACKGROUND_MS - 1);
+	const display_pick errorAgain = scheduler.Next(10 * SECOND + BACKGROUND_MS);
+	const display_pick backgroundAgain = scheduler.Next(20 * SECOND + BACKGROUND_MS);
+
+	EXPECT_EQ(NTP, first.item);
+	EXPECT_EQ(10 * SECOND, first.nextMs);
+	EXPECT_EQ(NTP, lastErrorMs.item);
+	EXPECT_EQ(1u, lastErrorMs.nextMs);
+	EXPECT_EQ(display_source::meas, background.source);
+	EXPECT_TRUE(background.changed);
+	EXPECT_EQ(BACKGROUND_MS, background.nextMs);
+	EXPECT_EQ(display_source::meas, again.source);
+	EXPECT_FALSE(again.changed);
+	EXPECT_EQ(1u, again.nextMs);
+	EXPECT_EQ(display_source::error, errorAgain.source);
+	EXPECT_EQ(NTP, errorAgain.item);
+	EXPECT_TRUE(errorAgain.changed);
+	EXPECT_EQ(10 * SECOND, errorAgain.nextMs);
+	EXPECT_EQ(display_source::meas, backgroundAgain.source);
+	EXPECT_TRUE(backgroundAgain.changed);
+}
+
+TEST(DisplaySchedulerTest, NextMsCountsDownTheBackgroundSlot) {
+	HAQuDA_DisplayScheduler scheduler;
+	startMeasBackground(scheduler);
+	scheduler.Post(display_error::ntpFailed);
+	scheduler.Next(0);
+	scheduler.Next(10 * SECOND);
+
+	EXPECT_EQ(BACKGROUND_MS - 20 * SECOND, scheduler.Next(30 * SECOND).nextMs);
+}
+
+TEST(DisplaySchedulerTest, BackgroundSlotWorksForTheWaitingItemAndTheLampLight) {
+	HAQuDA_DisplayScheduler waiting;
+	waiting.SetBackground(anim_id::measMulti, BOOT);
+	waiting.Post(display_error::ntpFailed);
+	waiting.Next(0);
+	HAQuDA_DisplayScheduler light;
+	light.SetSolid(false);
+	light.Post(display_error::ntpFailed);
+	light.Next(0);
+
+	EXPECT_EQ(display_source::waiting, waiting.Next(10 * SECOND).source);
+	EXPECT_EQ(display_source::solid, light.Next(10 * SECOND).source);
+}
+
+TEST(DisplaySchedulerTest, NtpErrorStaysOnScreenWhenThereIsNoBackgroundToShow) {
+	HAQuDA_DisplayScheduler scheduler;
+	scheduler.Post(display_error::ntpFailed);
+	scheduler.Next(0);
+
+	const display_pick later = scheduler.Next(3600 * SECOND);
+
+	EXPECT_EQ(NTP, later.item);
+	EXPECT_FALSE(later.changed);
+	EXPECT_EQ(DISPLAY_NO_DEADLINE, later.nextMs);
+}
+
+TEST(DisplaySchedulerTest, NtpErrorWithTheSensorsErrorGivesNoBackgroundSlot) {
+	HAQuDA_DisplayScheduler scheduler;
+	startMeasBackground(scheduler);
+	scheduler.Post(display_error::ntpFailed);
+	scheduler.Post(display_error::sensorsFailed);
+	scheduler.Next(0);
+
+	for (uint32_t nowMs = 0; nowMs <= 300 * SECOND; nowMs += 10 * SECOND) {
+		const display_pick pick = scheduler.Next(nowMs);
+		EXPECT_EQ(display_source::error, pick.source) << nowMs;
+		EXPECT_EQ((nowMs / (10 * SECOND) % 2 == 0) ? NTP : SENSORS, pick.item) << nowMs;
+	}
+}
+
+TEST(DisplaySchedulerTest, NtpErrorAloneAfterTheSensorsErrorEndedGetsItsBackgroundSlot) {
+	HAQuDA_DisplayScheduler scheduler;
+	startMeasBackground(scheduler);
+	scheduler.Post(display_error::ntpFailed);
+	scheduler.Post(display_error::sensorsFailed);
+	scheduler.Next(0);
+	scheduler.End(display_end::sensorsRecovered);
+
+	EXPECT_EQ(NTP, scheduler.Next(10 * SECOND - 1).item);
+	EXPECT_EQ(display_source::meas, scheduler.Next(10 * SECOND).source);
+}
+
+TEST(DisplaySchedulerTest, NtpSyncDuringTheBackgroundSlotRemovesTheError) {
+	HAQuDA_DisplayScheduler scheduler;
+	startMeasBackground(scheduler);
+	scheduler.Post(display_error::ntpFailed);
+	scheduler.Next(0);
+	scheduler.Next(10 * SECOND);
+
+	scheduler.End(display_end::ntpSynced);
+
+	const display_pick during = scheduler.Next(30 * SECOND);
+	const display_pick after = scheduler.Next(10 * SECOND + BACKGROUND_MS);
+	EXPECT_EQ(0, scheduler.QueuedCount());
+	EXPECT_EQ(display_source::meas, during.source);
+	EXPECT_FALSE(during.changed);
+	EXPECT_EQ(DISPLAY_NO_DEADLINE, during.nextMs);
+	EXPECT_EQ(display_source::meas, after.source);
+	EXPECT_FALSE(after.changed);
+}
+
+TEST(DisplaySchedulerTest, NtpSyncWhileTheErrorPlaysStillEndsItAfterItsSlot) {
+	HAQuDA_DisplayScheduler scheduler;
+	startMeasBackground(scheduler);
+	scheduler.Post(display_error::ntpFailed);
+	scheduler.Next(0);
+
+	scheduler.End(display_end::ntpSynced);
+
+	EXPECT_EQ(NTP, scheduler.Next(10 * SECOND - 1).item);
+	EXPECT_EQ(display_source::meas, scheduler.Next(10 * SECOND).source);
+	EXPECT_EQ(DISPLAY_NO_DEADLINE, scheduler.Next(10 * SECOND).nextMs);
+}
+
+TEST(DisplaySchedulerTest, ANewErrorPostedAfterTheSyncDoesNotWaitForTheOldBackgroundSlot) {
+	HAQuDA_DisplayScheduler scheduler;
+	startMeasBackground(scheduler);
+	scheduler.Post(display_error::ntpFailed);
+	scheduler.Next(0);
+	scheduler.Next(10 * SECOND);
+	scheduler.End(display_end::ntpSynced);
+
+	scheduler.Post(display_error::ntpFailed);
+
+	EXPECT_EQ(NTP, scheduler.Next(20 * SECOND).item);
+}
+
+TEST(DisplaySchedulerTest, NonYieldingPostDuringTheBackgroundSlotShowsAtOnceThenTheCycleContinues) {
+	HAQuDA_DisplayScheduler scheduler;
+	startMeasBackground(scheduler);
+	scheduler.Post(display_error::ntpFailed);
+	scheduler.Next(0);
+	scheduler.Next(10 * SECOND);
+
+	scheduler.Post(display_event::wifiJoined);
+	const display_pick event = scheduler.Next(20 * SECOND);
+	const display_pick lastEventMs = scheduler.Next(25 * SECOND - 1);
+	const display_pick error = scheduler.Next(25 * SECOND);
+	const display_pick background = scheduler.Next(35 * SECOND);
+
+	EXPECT_EQ(JOINED, event.item);
+	EXPECT_TRUE(event.changed);
+	EXPECT_EQ(5 * SECOND, event.nextMs);
+	EXPECT_EQ(JOINED, lastEventMs.item);
+	EXPECT_EQ(NTP, error.item);
+	EXPECT_TRUE(error.changed);
+	EXPECT_EQ(10 * SECOND, error.nextMs);
+	EXPECT_EQ(display_source::meas, background.source);
+	EXPECT_EQ(BACKGROUND_MS, background.nextMs);
+}
+
+TEST(DisplaySchedulerTest, SensorsErrorPostedDuringTheBackgroundSlotAlternatesWithTheNtpError) {
+	HAQuDA_DisplayScheduler scheduler;
+	startMeasBackground(scheduler);
+	scheduler.Post(display_error::ntpFailed);
+	scheduler.Next(0);
+	scheduler.Next(10 * SECOND);
+
+	scheduler.Post(display_error::sensorsFailed);
+
+	EXPECT_EQ(SENSORS, scheduler.Next(20 * SECOND).item);
+	EXPECT_EQ(NTP, scheduler.Next(30 * SECOND).item);
+	EXPECT_EQ(SENSORS, scheduler.Next(40 * SECOND).item);
+}
+
+TEST(DisplaySchedulerTest, DuplicateNtpPostWhileParkedIsANoOp) {
+	HAQuDA_DisplayScheduler scheduler;
+	startMeasBackground(scheduler);
+	scheduler.Post(display_error::ntpFailed);
+	scheduler.Next(0);
+	scheduler.Next(10 * SECOND);
+	ASSERT_EQ(1, scheduler.QueuedCount());
+
+	EXPECT_TRUE(scheduler.Post(display_error::ntpFailed));
+
+	EXPECT_EQ(1, scheduler.QueuedCount());
+	const display_pick pick = scheduler.Next(30 * SECOND);
+	EXPECT_EQ(display_source::meas, pick.source);
+	EXPECT_FALSE(pick.changed);
+	EXPECT_EQ(NTP, scheduler.Next(10 * SECOND + BACKGROUND_MS).item);
+}
+
+TEST(DisplaySchedulerTest, LampOffDuringTheBackgroundSlotKeepsTheNtpError) {
+	HAQuDA_DisplayScheduler scheduler;
+	startMeasBackground(scheduler);
+	scheduler.Post(display_error::ntpFailed);
+	scheduler.Next(0);
+	scheduler.Next(10 * SECOND);
+
+	scheduler.SetSolid(true);
+
+	const display_pick off = scheduler.Next(20 * SECOND);
+	EXPECT_EQ(display_source::solid, off.source);
+	EXPECT_EQ(1, scheduler.QueuedCount());
+	EXPECT_EQ(NTP, scheduler.Next(10 * SECOND + BACKGROUND_MS).item);
+}
+
+TEST(DisplaySchedulerTest, BackgroundThatDisappearsDuringTheSlotEndsItAtOnce) {
+	HAQuDA_DisplayScheduler notReady;
+	startMeasBackground(notReady);
+	notReady.Post(display_error::ntpFailed);
+	notReady.Next(0);
+	notReady.Next(10 * SECOND);
+	HAQuDA_DisplayScheduler noAnim;
+	startMeasBackground(noAnim);
+	noAnim.Post(display_error::ntpFailed);
+	noAnim.Next(0);
+	noAnim.Next(10 * SECOND);
+
+	notReady.MeasReady(false);
+	noAnim.SetBackground(anim_id::none, DISPLAY_ITEM_NONE);
+
+	const display_pick first = notReady.Next(20 * SECOND);
+	const display_pick second = noAnim.Next(20 * SECOND);
+	EXPECT_EQ(NTP, first.item);
+	EXPECT_TRUE(first.changed);
+	EXPECT_EQ(DISPLAY_NO_DEADLINE, first.nextMs);
+	EXPECT_EQ(NTP, second.item);
+	EXPECT_EQ(DISPLAY_NO_DEADLINE, noAnim.Next(3600 * SECOND).nextMs);
+}
+
+TEST(DisplaySchedulerTest, FatalErrorDuringTheBackgroundSlotShowsAtOnceAndStays) {
+	HAQuDA_DisplayScheduler scheduler;
+	startMeasBackground(scheduler);
+	scheduler.Post(display_error::ntpFailed);
+	scheduler.Next(0);
+	scheduler.Next(10 * SECOND);
+
+	scheduler.Post(display_error::apFailed);
+
+	const display_pick fatal = scheduler.Next(20 * SECOND);
+	EXPECT_EQ(AP_FAILED, fatal.item);
+	EXPECT_TRUE(fatal.changed);
+	EXPECT_EQ(AP_FAILED, scheduler.Next(3600 * SECOND).item);
+}
+
+TEST(DisplaySchedulerTest, NtpErrorStaysOnScreenWhenTheQueueIsFullAndRotatesInsteadOfParking) {
+	HAQuDA_DisplayScheduler scheduler;
+	startMeasBackground(scheduler);
+	scheduler.Post(display_error::ntpFailed);
+	scheduler.Next(0);
+	for (int i = 0; i < 4; i++) {
+		scheduler.Post(display_event::wifiJoined);
+		scheduler.Post(display_error::wifiConnectFailed);
+	}
+	ASSERT_EQ(DISPLAY_QUEUE_CAPACITY, scheduler.QueuedCount());
+
+	const display_pick pick = scheduler.Next(10 * SECOND);
+
+	EXPECT_NE(display_source::meas, pick.source);
+	EXPECT_NE(NTP, pick.item);
+}
+
+TEST(DisplaySchedulerTest, BackgroundSlotSurvivesTheWrapOfTheClock) {
+	HAQuDA_DisplayScheduler scheduler;
+	startMeasBackground(scheduler);
+	const uint32_t start = 0xFFFFFFFFu - 20 * SECOND;
+	scheduler.Post(display_error::ntpFailed);
+	scheduler.Next(start);
+
+	EXPECT_EQ(display_source::meas, scheduler.Next(start + 10 * SECOND).source);
+	EXPECT_EQ(display_source::meas, scheduler.Next(start + 10 * SECOND + BACKGROUND_MS - 1).source);
+	EXPECT_EQ(NTP, scheduler.Next(start + 10 * SECOND + BACKGROUND_MS).item);
+}

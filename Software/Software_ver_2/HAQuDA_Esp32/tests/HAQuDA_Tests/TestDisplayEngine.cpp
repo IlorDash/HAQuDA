@@ -354,6 +354,29 @@ TEST_F(DisplayEngineTest, TheRefreshAtTheEndOfAPeriodRedrawsInPlaceWithoutADarkF
 	EXPECT_EQ(anim_id::measStandard, engine.ActiveAnim());
 }
 
+TEST_F(DisplayEngineTest, NtpErrorAlternatesWithTheMeasurementsOnTimeAndTheMeasurementsAreDrawnAtOnce) {
+	source.nextAnim = anim_id::measStandard;
+	startMeasurements(0);
+	source.ready = true;
+	engine.Run(5 * SECOND);
+	engine.Apply(errorMsg(display_error::ntpFailed));
+	engine.Run(6 * SECOND);
+	ASSERT_EQ(anim_id::fading, engine.ActiveAnim());
+	EXPECT_EQ(HAQuDA_ItemOf(display_error::ntpFailed), engine.Shown().item);
+	EXPECT_LE(engine.Run(16 * SECOND - 1), 1u);
+	const uint32_t sleepMs = engine.Run(16 * SECOND);
+
+	EXPECT_EQ(anim_id::measStandard, engine.ActiveAnim());
+	EXPECT_EQ(display_source::meas, engine.Shown().source);
+	EXPECT_LE(sleepMs, DISPLAY_YIELD_BACKGROUND_MS);
+	EXPECT_TRUE(engine.Shown().measDrawn);
+	engine.Run(16 * SECOND + DISPLAY_YIELD_BACKGROUND_MS - 1);
+	EXPECT_EQ(anim_id::measStandard, engine.ActiveAnim());
+	engine.Run(16 * SECOND + DISPLAY_YIELD_BACKGROUND_MS);
+	EXPECT_EQ(anim_id::fading, engine.ActiveAnim());
+	EXPECT_EQ(HAQuDA_ItemOf(display_error::ntpFailed), engine.Shown().item);
+}
+
 TEST_F(DisplayEngineTest, TwoQuickBrightnessChangesKeepTheMeasurementPicture) {
 	startMeasurements(0);
 	source.ready = true;

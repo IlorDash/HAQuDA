@@ -88,6 +88,9 @@ void HAQuDA_DisplayScheduler::raise(uint16_t mask) {
 			current.ended = true;
 		}
 	}
+	if (backgroundSlot && !anyQueuedYields()) {
+		backgroundSlot = false;
+	}
 }
 
 void HAQuDA_DisplayScheduler::SetBackground(anim_id newMeasAnim, display_item newWaiting) {
@@ -145,6 +148,36 @@ bool HAQuDA_DisplayScheduler::isActive(display_item item) const {
 bool HAQuDA_DisplayScheduler::persists(const current_item &item) const {
 	const display_entry *entry = HAQuDA_GetDisplayEntry(item.id);
 	return (entry != nullptr) && isUntilEvent(*entry) && !item.ended;
+}
+
+bool HAQuDA_DisplayScheduler::hasBackground() const {
+	return solidActive || (measReadyNow && (measAnim != anim_id::none)) || (HAQuDA_GetDisplayEntry(waitingItem) != nullptr);
+}
+
+bool HAQuDA_DisplayScheduler::allQueuedYield() const {
+	for (uint8_t i = 0; i < queueCount; i++) {
+		const display_entry *entry = HAQuDA_GetDisplayEntry(queue[i].id);
+		if ((entry == nullptr) || !entry->yields) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool HAQuDA_DisplayScheduler::anyQueuedYields() const {
+	for (uint8_t i = 0; i < queueCount; i++) {
+		const display_entry *entry = HAQuDA_GetDisplayEntry(queue[i].id);
+		if ((entry != nullptr) && entry->yields) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// Without a background to show the item stays on screen: the matrix would otherwise freeze on a stopped animation
+bool HAQuDA_DisplayScheduler::canYield() const {
+	const display_entry *playing = current.valid ? HAQuDA_GetDisplayEntry(current.id) : nullptr;
+	return (playing != nullptr) && playing->yields && persists(current) && (queueCount < DISPLAY_QUEUE_CAPACITY) && allQueuedYield() && hasBackground();
 }
 
 bool HAQuDA_DisplayScheduler::shouldPreempt(const display_entry &incoming) const {
@@ -232,6 +265,10 @@ int8_t HAQuDA_DisplayScheduler::pickIndex() const {
 	int8_t best = -1;
 	uint8_t bestTier = TIER_NONE;
 	for (uint8_t i = 0; i < queueCount; i++) {
+		const display_entry *entry = HAQuDA_GetDisplayEntry(queue[i].id);
+		if (backgroundSlot && (entry != nullptr) && entry->yields) {
+			continue;
+		}
 		const uint8_t tier = tierOf(queue[i]);
 		if (tier < bestTier) {
 			best = static_cast<int8_t>(i);
@@ -243,15 +280,24 @@ int8_t HAQuDA_DisplayScheduler::pickIndex() const {
 
 void HAQuDA_DisplayScheduler::startCurrent(display_item item, uint32_t nowMs) {
 	current = current_item{true, item, nowMs, false};
+	backgroundSlot = false;
 	startSerial++;
 }
 
 display_pick HAQuDA_DisplayScheduler::Next(uint32_t nowMs) {
+	if (backgroundSlot && ((static_cast<uint32_t>(nowMs - backgroundStartMs) >= DISPLAY_YIELD_BACKGROUND_MS) || !hasBackground())) {
+		backgroundSlot = false;
+	}
 	if (current.valid) {
 		const display_entry *playing = HAQuDA_GetDisplayEntry(current.id);
 		const bool slotOver
 			= (playing != nullptr) && (playing->cls != display_class::fatal) && (static_cast<uint32_t>(nowMs - current.startMs) >= playing->minMs);
-		if (slotOver) {
+		if (slotOver && canYield()) {
+			insertAt(queueCount, current.id, entry_state::rotated);
+			current.valid = false;
+			backgroundSlot = true;
+			backgroundStartMs = nowMs;
+		} else if (slotOver) {
 			const int8_t next = pickIndex();
 			if (next >= 0) {
 				const display_item nextItem = queue[next].id;
@@ -288,7 +334,7 @@ display_pick HAQuDA_DisplayScheduler::describe(uint32_t nowMs) {
 		pick.source = (playing->cls == display_class::event) ? display_source::event : display_source::error;
 		pick.item = current.id;
 		pick.anim = playing->anim.anim;
-		const bool waitsForever = (playing->cls == display_class::fatal) || (persists(current) && (queueCount == 0));
+		const bool waitsForever = (playing->cls == display_class::fatal) || (persists(current) && (queueCount == 0) && !canYield());
 		if (!waitsForever) {
 			const uint32_t elapsedMs = nowMs - current.startMs;
 			pick.nextMs = (elapsedMs < playing->minMs) ? (playing->minMs - elapsedMs) : 0;
@@ -306,6 +352,11 @@ display_pick HAQuDA_DisplayScheduler::describe(uint32_t nowMs) {
 			pick.item = waitingItem;
 			pick.anim = waiting->anim.anim;
 		}
+	}
+
+	if (backgroundSlot && (playing == nullptr)) {
+		const uint32_t elapsedMs = nowMs - backgroundStartMs;
+		pick.nextMs = (elapsedMs < DISPLAY_YIELD_BACKGROUND_MS) ? (DISPLAY_YIELD_BACKGROUND_MS - elapsedMs) : 0;
 	}
 
 	const bool solidRestarted = (pick.source == display_source::solid) && (solidSerial != shownSolidSerial);

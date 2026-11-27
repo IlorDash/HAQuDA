@@ -61,6 +61,10 @@ class HAQuDA_DisplayScheduler {
 	void raise(uint16_t mask);
 	bool isActive(display_item item) const;
 	bool persists(const current_item &item) const;
+	bool hasBackground() const;
+	bool canYield() const;
+	bool allQueuedYield() const;
+	bool anyQueuedYields() const;
 	bool shouldPreempt(const display_entry &incoming) const;
 	void preemptCurrent();
 	bool makeRoom();
@@ -85,6 +89,9 @@ class HAQuDA_DisplayScheduler {
 	anim_id measAnim = anim_id::none;
 	display_item waitingItem = DISPLAY_ITEM_NONE;
 	uint8_t droppedCount = 0;
+	// Items that yield wait in the queue while the background has the screen
+	bool backgroundSlot = false;
+	uint32_t backgroundStartMs = 0;
 
 	display_source shownSource = display_source::none;
 	display_item shownItem = DISPLAY_ITEM_NONE;
